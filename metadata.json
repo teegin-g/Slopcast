@@ -1,5 +1,8 @@
 {
-  "name": "StrataValuator",
-  "description": "A professional Oil & Gas deal evaluation platform featuring interactive well selection, type curve forecasting, CAPEX modeling, and AI-driven investment analysis.",
-  "requestFramePermissions": []
+  "name": "Slopcast",
+  "description": "Electric Night Ride - Advanced O&G deal intelligence and visual forecasting engine.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
 }

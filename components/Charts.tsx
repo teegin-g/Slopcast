@@ -1,50 +1,78 @@
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Bar, Area } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Bar, Area } from 'recharts';
 import { MonthlyCashFlow } from '../types';
 
 interface ChartsProps {
   data: MonthlyCashFlow[];
+  theme?: 'slate' | 'synthwave';
 }
 
-const Charts: React.FC<ChartsProps> = ({ data }) => {
+/**
+ * SLOPCAST 8-Color Palette (Series Order)
+ * 1. #9ED3F0 (cyan)
+ * 2. #E566DA (magenta)
+ * 3. #DBA1DD (lavender)
+ * 4. #952A99 (violet)
+ * 5. #6053A0 (indigo border tone)
+ * 6. #EBE9EE (white highlight)
+ * 7. #FFB86B (warning series)
+ * 8. #2DFFB1 (success series)
+ */
+
+const Charts: React.FC<ChartsProps> = ({ data, theme = 'slate' }) => {
+  const isSynthwave = theme === 'synthwave';
+
+  const palette = {
+    oil: isSynthwave ? "#9ED3F0" : "#3b82f6",
+    cash: isSynthwave ? "#E566DA" : "#10b981",
+    lav: isSynthwave ? "#DBA1DD" : "#8b5cf6",
+    grid: isSynthwave ? "rgba(96, 83, 160, 0.25)" : "#1e293b",
+    text: isSynthwave ? "#A8A3A8" : "#475569",
+    surface: isSynthwave ? "#0E061A" : "#0f172a",
+    border: isSynthwave ? "rgba(96, 83, 160, 0.4)" : "#334155"
+  };
+
   return (
-    <div className="space-y-6">
-      
+    <div className="space-y-6 h-full flex flex-col justify-between p-2">
       {/* Production Forecast */}
-      <div className="bg-slate-900/30 rounded-lg border border-slate-800/50 p-4">
-        <h4 className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mb-4 ml-2">Production Profile</h4>
-        <div className="h-48">
+      <div className={`rounded-xl border p-5 flex-1 transition-all ${isSynthwave ? 'bg-transparent border-theme-border/40' : 'bg-slate-900/30 border-slate-800/50'}`}>
+        <h4 className={`font-black text-[10px] uppercase tracking-[0.3em] mb-6 flex items-center transition-all ${isSynthwave ? 'text-theme-cyan' : 'text-slate-500'}`}>
+          <span className="w-1 h-1 rounded-full bg-theme-cyan mr-2"></span>
+          Production Forecast (BBL/D)
+        </h4>
+        <div className="h-40">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+            <LineChart data={data} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="4 4" stroke={palette.grid} vertical={false} />
               <XAxis 
                 dataKey="month" 
-                stroke="#475569" 
-                fontSize={10} 
+                stroke={palette.text} 
+                fontSize={9} 
                 tickLine={false} 
                 axisLine={false}
-                tickFormatter={(value) => value % 12 === 0 ? `${value/12}yr` : ''} 
+                tickFormatter={(value) => value % 12 === 0 ? `Y${value/12}` : ''} 
               />
               <YAxis 
-                stroke="#475569" 
-                fontSize={10} 
+                stroke={palette.text} 
+                fontSize={9} 
                 tickLine={false} 
                 axisLine={false}
                 tickFormatter={(value) => `${(value/1000).toFixed(0)}k`}
               />
               <Tooltip 
-                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#cbd5e1', fontSize: '12px' }} 
+                contentStyle={{ backgroundColor: palette.surface, borderRadius: '8px', border: `1px solid ${palette.border}`, color: '#fff', fontSize: '11px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }} 
                 itemStyle={{ padding: 0 }}
                 formatter={(value: number) => [Math.round(value).toLocaleString(), 'BBLs']}
-                cursor={{ stroke: '#334155' }}
+                cursor={{ stroke: palette.lav, strokeWidth: 1 }}
               />
               <Line 
                 type="monotone" 
                 dataKey="oilProduction" 
-                stroke="#3b82f6" 
-                strokeWidth={2} 
+                stroke={palette.oil} 
+                strokeWidth={3} 
                 dot={false} 
-                activeDot={{ r: 4, strokeWidth: 0 }} 
+                activeDot={{ r: 4, strokeWidth: 0, fill: palette.oil }} 
+                animationDuration={1500}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -52,40 +80,50 @@ const Charts: React.FC<ChartsProps> = ({ data }) => {
       </div>
 
       {/* Cash Flow */}
-      <div className="bg-slate-900/30 rounded-lg border border-slate-800/50 p-4">
-        <h4 className="text-slate-500 font-bold text-[10px] uppercase tracking-widest mb-4 ml-2">Cumulative Cash Flow</h4>
-        <div className="h-48">
+      <div className={`rounded-xl border p-5 flex-1 transition-all ${isSynthwave ? 'bg-transparent border-theme-border/40' : 'bg-slate-900/30 border-slate-800/50'}`}>
+        <h4 className={`font-black text-[10px] uppercase tracking-[0.3em] mb-6 flex items-center transition-all ${isSynthwave ? 'text-theme-magenta' : 'text-slate-500'}`}>
+          <span className="w-1 h-1 rounded-full bg-theme-magenta mr-2"></span>
+          Cumulative Recovery (USD)
+        </h4>
+        <div className="h-40">
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+            <ComposedChart data={data} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="4 4" stroke={palette.grid} vertical={false} />
               <XAxis 
                 dataKey="month" 
-                stroke="#475569" 
-                fontSize={10} 
+                stroke={palette.text} 
+                fontSize={9} 
                 tickLine={false} 
                 axisLine={false}
-                tickFormatter={(value) => value % 12 === 0 ? `${value/12}yr` : ''}
+                tickFormatter={(value) => value % 12 === 0 ? `Y${value/12}` : ''}
               />
               <YAxis 
-                stroke="#475569" 
-                fontSize={10} 
+                stroke={palette.text} 
+                fontSize={9} 
                 tickLine={false} 
                 axisLine={false}
                 tickFormatter={(value) => `$${(value/1e6).toFixed(0)}M`}
               />
               <Tooltip 
-                contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#cbd5e1', fontSize: '12px' }}
+                contentStyle={{ backgroundColor: palette.surface, borderRadius: '8px', border: `1px solid ${palette.border}`, color: '#fff', fontSize: '11px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}
                 formatter={(value: number) => [`$${(value/1e6).toFixed(2)}MM`, '']}
-                cursor={{ fill: '#1e293b', opacity: 0.4 }}
+                cursor={{ fill: palette.grid, opacity: 0.3 }}
               />
               <defs>
-                <linearGradient id="colorCum" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                <linearGradient id="colorCash" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={palette.cash} stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor={palette.cash} stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <Area type="monotone" dataKey="cumulativeCashFlow" stroke="#10b981" fill="url(#colorCum)" strokeWidth={2} />
-              <Bar dataKey="netCashFlow" fill="#6366f1" opacity={0.3} barSize={2} />
+              <Area 
+                type="monotone" 
+                dataKey="cumulativeCashFlow" 
+                stroke={palette.cash} 
+                fill="url(#colorCash)" 
+                strokeWidth={3} 
+                animationDuration={2000}
+              />
+              <Bar dataKey="netCashFlow" fill={palette.lav} opacity={0.3} barSize={2} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>

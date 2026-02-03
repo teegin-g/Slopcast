@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { SensitivityMatrixResult, SensitivityVariable } from '../types';
 
@@ -13,6 +12,7 @@ const formatAxisLabel = (v: SensitivityVariable) => {
         case 'OIL_PRICE': return 'Oil Price ($/bbl)';
         case 'CAPEX_SCALAR': return 'Capex Scalar (%)';
         case 'EUR_SCALAR': return 'EUR Scalar (%)';
+        case 'RIG_COUNT': return 'Rig Count';
         default: return v;
     }
 };
@@ -24,27 +24,28 @@ const formatValue = (v: SensitivityVariable, val: number) => {
 };
 
 const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar }) => {
-  
-  // Flatten to find Min/Max for coloring
+  const theme = document.documentElement.getAttribute('data-theme') || 'slate';
+  const isSynthwave = theme === 'synthwave';
+
   const allNpvs = useMemo(() => data.flat().map(d => d.npv), [data]);
   const maxNpv = Math.max(...allNpvs);
   const minNpv = Math.min(...allNpvs);
-  const zeroPoint = 0;
 
-  // Color Interpolation (Red -> White -> Green)
   const getColor = (val: number) => {
-      if (val === 0) return 'rgba(255,255,255,0.1)';
+      if (val === 0) return 'rgba(255,255,255,0.05)';
       
       if (val > 0) {
-          // Green Scale
           const range = maxNpv - 0;
           const pct = Math.min(1, val / (range || 1));
-          return `rgba(16, 185, 129, ${0.1 + (pct * 0.6)})`; // Emerald
+          return isSynthwave 
+            ? `rgba(45, 255, 177, ${0.1 + (pct * 0.5)})` // Synthwave Success (Cyan-ish Green)
+            : `rgba(16, 185, 129, ${0.1 + (pct * 0.6)})`; // Emerald
       } else {
-          // Red Scale
           const range = 0 - minNpv;
           const pct = Math.min(1, Math.abs(val) / (range || 1));
-          return `rgba(239, 68, 68, ${0.1 + (pct * 0.6)})`; // Red
+          return isSynthwave
+            ? `rgba(255, 79, 163, ${0.1 + (pct * 0.5)})` // Synthwave Danger (Magenta-Red)
+            : `rgba(239, 68, 68, ${0.1 + (pct * 0.6)})`; // Red
       }
   };
 
@@ -52,27 +53,25 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
   const yLabels = data.map(d => d[0].yValue);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-900/50 shadow-xl">
-        <div className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/30">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-slate-300">
-                Sensitivity Matrix <span className="text-slate-500 ml-2">(NPV10)</span>
+    <div className={`overflow-hidden rounded-lg border transition-all ${isSynthwave ? 'bg-theme-bg border-theme-border shadow-xl glow-cyan' : 'bg-slate-900/50 border-slate-800'}`}>
+        <div className={`p-4 border-b flex justify-between items-center transition-all ${isSynthwave ? 'bg-theme-surface1 border-theme-border' : 'bg-slate-950/30 border-slate-800'}`}>
+            <h3 className={`text-xs font-bold uppercase tracking-widest ${isSynthwave ? 'brand-font text-theme-magenta' : 'text-slate-300'}`}>
+                Portfolio NPV Sensitivity <span className="text-theme-muted ml-2">(MM)</span>
             </h3>
         </div>
         
         <div className="p-6 overflow-x-auto flex flex-col items-center">
             <div className="relative">
-                
-                {/* Y Axis Label (Rotated) */}
-                <div className="absolute -left-12 top-1/2 transform -translate-y-1/2 -rotate-90 text-[10px] font-bold uppercase tracking-widest text-slate-500 whitespace-nowrap text-center w-32">
+                <div className={`absolute -left-12 top-1/2 transform -translate-y-1/2 -rotate-90 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap text-center w-32 transition-all ${isSynthwave ? 'brand-font text-theme-lavender' : 'text-slate-500'}`}>
                     {formatAxisLabel(yVar)}
                 </div>
 
                 <table className="border-collapse">
                     <thead>
                         <tr>
-                            <th className="p-2"></th> {/* Empty Corner */}
+                            <th className="p-2"></th>
                             {xLabels.map((x, i) => (
-                                <th key={i} className="p-2 text-[10px] text-slate-400 font-mono font-medium border-b border-slate-800">
+                                <th key={i} className={`p-2 text-[10px] font-mono font-medium border-b transition-all ${isSynthwave ? 'text-theme-cyan border-theme-border' : 'text-slate-400 border-slate-800'}`}>
                                     {formatValue(xVar, x)}
                                 </th>
                             ))}
@@ -81,17 +80,16 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
                     <tbody>
                         {data.map((row, rowIdx) => (
                             <tr key={rowIdx}>
-                                <th className="p-2 text-[10px] text-slate-400 font-mono font-medium border-r border-slate-800 text-right">
+                                <th className={`p-2 text-[10px] font-mono font-medium border-r text-right transition-all ${isSynthwave ? 'text-theme-cyan border-theme-border' : 'text-slate-400 border-slate-800'}`}>
                                     {formatValue(yVar, yLabels[rowIdx])}
                                 </th>
                                 {row.map((cell, colIdx) => (
                                     <td 
                                         key={colIdx} 
-                                        className="p-3 text-[11px] font-mono text-center border border-slate-800/50 transition-all hover:border-slate-500 cursor-default"
+                                        className={`p-3 text-[11px] font-mono text-center border transition-all hover:scale-110 cursor-default ${isSynthwave ? 'border-theme-border/20' : 'border-slate-800/50 hover:border-slate-500'}`}
                                         style={{ backgroundColor: getColor(cell.npv) }}
-                                        title={`NPV: $${(cell.npv/1e6).toFixed(2)}MM`}
                                     >
-                                        <span className={cell.npv > 0 ? "text-slate-100" : "text-red-100"}>
+                                        <span className={cell.npv > 0 ? (isSynthwave ? "text-theme-text" : "text-white") : "text-red-100"}>
                                             {(cell.npv / 1e6).toFixed(1)}
                                         </span>
                                     </td>
@@ -101,8 +99,7 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
                     </tbody>
                 </table>
                 
-                {/* X Axis Label */}
-                <div className="text-center mt-4 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                <div className={`text-center mt-4 text-[10px] font-bold uppercase tracking-widest transition-all ${isSynthwave ? 'brand-font text-theme-lavender' : 'text-slate-500'}`}>
                     {formatAxisLabel(xVar)}
                 </div>
             </div>

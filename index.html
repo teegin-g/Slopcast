@@ -3,30 +3,145 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>StrataValuator - O&G Deal Evaluation</title>
+    <title>Slopcast - O&G Deal Evaluation</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&family=Permanent+Marker&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              theme: {
+                bg: 'var(--bg-deep)',
+                space: 'var(--bg-space)',
+                surface1: 'var(--surface-1)',
+                surface2: 'var(--surface-2)',
+                border: 'var(--border)',
+                cyan: 'var(--cyan)',
+                magenta: 'var(--magenta)',
+                violet: 'var(--violet)',
+                purple: 'var(--purple)',
+                lavender: 'var(--lav)',
+                text: 'var(--text)',
+                muted: 'var(--muted)',
+                success: 'var(--success)',
+                warning: 'var(--warning)',
+                danger: 'var(--danger)',
+              }
+            },
+            fontFamily: {
+              brand: ['var(--font-brand)', 'sans-serif'],
+              script: ['"Permanent Marker"', 'cursive'],
+            },
+            boxShadow: {
+              'glow-cyan': '0 0 18px rgba(158,211,240,.45), 0 0 48px rgba(158,211,240,.25)',
+              'glow-magenta': '0 0 18px rgba(229,102,218,.45), 0 0 48px rgba(229,102,218,.25)',
+              'card': '0 10px 30px rgba(0,0,0,.45)',
+            }
+          }
+        }
+      }
+    </script>
     <style>
+      :root {
+        /* Default Slate Theme */
+        --bg-deep: #0f172a;
+        --bg-space: #1B293E;
+        --surface-1: #1e293b;
+        --surface-2: #334155;
+        --border: #475569;
+        --cyan: #3b82f6;
+        --magenta: #ec4899;
+        --violet: #8b5cf6;
+        --purple: #1e1b4b;
+        --lav: #d8b4fe;
+        --text: #f1f5f9;
+        --muted: #94a3b8;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --glow-cyan: 0 0 10px rgba(59, 130, 246, 0.3);
+        --glow-magenta: 0 0 10px rgba(236, 72, 153, 0.3);
+        --grad-space: radial-gradient(1200px circle at 50% 20%, #1e293b 0%, #0f172a 100%);
+        --font-brand: 'Inter';
+      }
+
+      [data-theme='synthwave'] {
+        --bg-deep: #0E061A;
+        --bg-space: #1B0E2B;
+        --surface-1: #232558;
+        --surface-2: #2F3887;
+        --border: #6053A0;
+        --cyan: #9ED3F0;
+        --magenta: #E566DA;
+        --violet: #952A99;
+        --purple: #541963;
+        --lav: #DBA1DD;
+        --text: #EBE9EE;
+        --muted: #A8A3A8;
+        --success: #2DFFB1;
+        --warning: #FFB86B;
+        --danger: #FF4FA3;
+        --glow-cyan: 0 0 18px rgba(158,211,240,.45), 0 0 48px rgba(158,211,240,.25);
+        --glow-magenta: 0 0 18px rgba(229,102,218,.45), 0 0 48px rgba(229,102,218,.25);
+        --grad-space: radial-gradient(1200px circle at 50% 20%, #541963 0%, #1B0E2B 45%, #0E061A 100%);
+        --font-brand: 'Orbitron';
+      }
+
       body {
         font-family: 'Inter', sans-serif;
-        background-color: #0f172a; /* Slate 900 */
-        color: #e2e8f0; /* Slate 200 */
+        background: var(--grad-space);
+        color: var(--text);
+        margin: 0;
+        transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        min-height: 100vh;
       }
-      /* Custom Scrollbar */
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
+
+      .grad-sunset {
+        background: linear-gradient(135deg, #E566DA 0%, #952A99 55%, #232558 100%);
       }
-      ::-webkit-scrollbar-track {
-        background: #1e293b; 
+
+      .grad-cyan-pop {
+        background: linear-gradient(135deg, #9ED3F0 0%, #DBA1DD 55%, #E566DA 100%);
       }
-      ::-webkit-scrollbar-thumb {
-        background: #475569; 
-        border-radius: 4px;
+
+      .glow-cyan-hover:hover { box-shadow: var(--glow-cyan); }
+      .glow-magenta-hover:hover { box-shadow: var(--glow-magenta); }
+      
+      .brand-title {
+        font-family: var(--font-brand);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        font-weight: 900;
       }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #64748b; 
+
+      /* Transitions for theme swap */
+      .theme-transition {
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
       }
+      
+      /* Retro Grid Background Overlay */
+      [data-theme='synthwave'] .retro-grid {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 40vh;
+        background-image: linear-gradient(transparent 0%, rgba(149, 42, 153, 0.2) 100%),
+          linear-gradient(90deg, transparent 0%, rgba(149, 42, 153, 0.1) 50%, transparent 100%),
+          linear-gradient(to right, rgba(149, 42, 153, 0.1) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(149, 42, 153, 0.1) 1px, transparent 1px);
+        background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+        transform: perspective(500px) rotateX(60deg);
+        transform-origin: bottom;
+        z-index: -1;
+        pointer-events: none;
+      }
+
+      ::-webkit-scrollbar { width: 8px; height: 8px; }
+      ::-webkit-scrollbar-track { background: var(--bg-deep); }
+      ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: var(--cyan); }
     </style>
   <script type="importmap">
 {
@@ -42,6 +157,7 @@
 </script>
 </head>
   <body>
+    <div class="retro-grid"></div>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

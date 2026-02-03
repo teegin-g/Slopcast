@@ -8,29 +8,28 @@ interface MapVisualizerProps {
   groups: WellGroup[];
   onToggleWell: (id: string) => void;
   onSelectWells: (ids: string[]) => void;
+  theme?: 'slate' | 'synthwave';
 }
 
-const MapVisualizer: React.FC<MapVisualizerProps> = ({ wells, selectedWellIds, groups, onToggleWell, onSelectWells }) => {
+const MapVisualizer: React.FC<MapVisualizerProps> = ({ wells, selectedWellIds, groups, onToggleWell, onSelectWells, theme = 'slate' }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [isLassoMode, setIsLassoMode] = useState(false);
   const [lassoPoints, setLassoPoints] = useState<[number, number][]>([]);
   
-  // Ref to track points synchronously for D3 callbacks to avoid stale closures
   const lassoPointsRef = useRef<[number, number][]>([]);
+  const isSynthwave = theme === 'synthwave';
 
-  // Create a quick lookup for well ID -> Group Color
   const getWellColor = (wellId: string): string => {
     for (const group of groups) {
       if (group.wellIds.has(wellId)) {
         return group.color;
       }
     }
-    return "#475569";
+    return isSynthwave ? "#6053A0" : "#475569";
   };
 
-  // Handle Resize
   useEffect(() => {
     const handleResize = () => {
       if (containerRef.current) {
@@ -45,53 +44,42 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({ wells, selectedWellIds, g
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Main Drawing & Lasso Logic
   useEffect(() => {
     if (!svgRef.current || dimensions.width === 0) return;
 
     const svg = d3.select(svgRef.current);
-    svg.selectAll(".map-content").remove(); // Clear map content but keep potential lasso overlay if needed
+    svg.selectAll(".map-content").remove();
 
-    // Create a group for map content to separate from lasso
     const mapG = svg.append("g").classed("map-content", true);
-
     const width = dimensions.width;
     const height = dimensions.height;
     const padding = 40;
 
-    // Scales
     const xExtent = d3.extent(wells, d => d.lng) as [number, number];
     const yExtent = d3.extent(wells, d => d.lat) as [number, number];
 
-    const xScale = d3.scaleLinear()
-      .domain(xExtent)
-      .range([padding, width - padding]);
+    const xScale = d3.scaleLinear().domain(xExtent).range([padding, width - padding]);
+    const yScale = d3.scaleLinear().domain(yExtent).range([height - padding, padding]);
 
-    const yScale = d3.scaleLinear()
-      .domain(yExtent)
-      .range([height - padding, padding]);
-
-    // Background Grid
-    mapG.append("rect")
-        .attr("width", width)
-        .attr("height", height)
-        .attr("fill", "#0f172a")
-        .attr("opacity", 0); // Transparent to show parent BG
+    // Grid
+    const gridColor = isSynthwave ? "#6053A0" : "#1e293b";
+    const gridOpacity = isSynthwave ? 0.4 : 0.3;
     
-    // Draw "Lease Lines" (Grid)
-    const gridData = d3.range(0, width, 100);
     mapG.selectAll(".grid-v")
-        .data(gridData)
+        .data(d3.range(0, width, 100))
         .enter().append("line")
-        .attr("x1", d => d)
-        .attr("x2", d => d)
-        .attr("y1", 0)
-        .attr("y2", height)
-        .attr("stroke", "#1e293b")
-        .attr("stroke-width", 1)
-        .attr("opacity", 0.3);
+        .attr("x1", d => d).attr("x2", d => d)
+        .attr("y1", 0).attr("y2", height)
+        .attr("stroke", gridColor).attr("stroke-width", 1).attr("opacity", gridOpacity);
 
-    // Draw Lateral Sticks
+    mapG.selectAll(".grid-h")
+        .data(d3.range(0, height, 100))
+        .enter().append("line")
+        .attr("x1", 0).attr("x2", width)
+        .attr("y1", d => d).attr("y2", d => d)
+        .attr("stroke", gridColor).attr("stroke-width", 1).attr("opacity", gridOpacity);
+
+    // Laterals
     mapG.selectAll("line.lateral")
       .data(wells)
       .enter()
@@ -99,25 +87,26 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({ wells, selectedWellIds, g
       .classed("lateral", true)
       .attr("x1", d => xScale(d.lng))
       .attr("y1", d => yScale(d.lat))
-      .attr("x2", d => xScale(d.lng) + (d.lateralLength / 1000) * 2)
+      .attr("x2", d => xScale(d.lng) + (d.lateralLength / 1000) * 4)
       .attr("y2", d => yScale(d.lat) + 5)
       .attr("stroke", d => getWellColor(d.id))
       .attr("stroke-width", 2)
-      .attr("opacity", 0.2) // Reduced visibility
+      .attr("opacity", 0.4)
       .attr("pointer-events", "none");
 
-    // Draw Wells
-    mapG.selectAll("circle")
+    // Wells
+    const wellNodes = mapG.selectAll("circle")
       .data(wells)
       .enter()
       .append("circle")
       .attr("cx", d => xScale(d.lng))
       .attr("cy", d => yScale(d.lat))
-      .attr("r", 5) // Slightly smaller
+      .attr("r", 5)
       .attr("fill", d => getWellColor(d.id))
-      .attr("stroke", d => selectedWellIds.has(d.id) ? "#ffffff" : "#1e293b")
-      .attr("stroke-width", d => selectedWellIds.has(d.id) ? 2 : 0)
-      .attr("fill-opacity", d => selectedWellIds.has(d.id) ? 1 : 0.5) // Less intrusive by default
+      .attr("stroke", d => selectedWellIds.has(d.id) ? (isSynthwave ? "#9ED3F0" : "#ffffff") : "none")
+      .attr("stroke-width", d => selectedWellIds.has(d.id) ? 3 : 0)
+      .attr("fill-opacity", d => selectedWellIds.has(d.id) ? 1 : 0.6)
+      .attr("filter", d => selectedWellIds.has(d.id) && isSynthwave ? "url(#neon-glow)" : "none")
       .attr("cursor", "pointer") 
       .on("click", (event, d) => {
         if (!event.defaultPrevented) {
@@ -130,21 +119,13 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({ wells, selectedWellIds, g
       .on("mouseout", function(event, d) {
          d3.select(this)
             .attr("r", 5)
-            .attr("fill-opacity", selectedWellIds.has(d.id) ? 1 : 0.5);
-      })
-      .append("title")
-      .text(d => `${d.name}\n${d.status}\nLatLen: ${d.lateralLength}'`);
+            .attr("fill-opacity", selectedWellIds.has(d.id) ? 1 : 0.6);
+      });
 
-    // --- Lasso Implementation ---
-    
-    // Remove old drag behavior to prevent stacking
+    // Lasso
     svg.on(".drag", null);
-
     const drag = d3.drag<SVGSVGElement, unknown>()
-        .filter((event) => {
-            // Allow drag if Lasso Mode is ON or Shift key is held
-            return isLassoMode || event.shiftKey;
-        })
+        .filter((event) => isLassoMode || event.shiftKey)
         .on("start", () => {
             setLassoPoints([]);
             lassoPointsRef.current = [];
@@ -152,16 +133,11 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({ wells, selectedWellIds, g
         .on("drag", (event) => {
             const [x, y] = d3.pointer(event, svgRef.current);
             const newPoint: [number, number] = [x, y];
-            
-            // Update State (for rendering)
             setLassoPoints(prev => [...prev, newPoint]);
-            // Update Ref (for logic)
             lassoPointsRef.current.push(newPoint);
         })
-        .on("end", (event) => {
-            // Use Ref to get points to avoid stale closure issues
+        .on("end", () => {
             const currentPoints = lassoPointsRef.current;
-
             if (currentPoints.length > 2) {
                 const selected: string[] = [];
                 wells.forEach(w => {
@@ -171,34 +147,24 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({ wells, selectedWellIds, g
                         selected.push(w.id);
                     }
                 });
-                
-                if (selected.length > 0) {
-                    onSelectWells(selected);
-                }
+                if (selected.length > 0) onSelectWells(selected);
             }
-            
             setLassoPoints([]);
             lassoPointsRef.current = [];
-            
-            // Auto-exit lasso mode if it was on
-            if (isLassoMode) {
-                setIsLassoMode(false);
-            }
+            if (isLassoMode) setIsLassoMode(false);
         });
 
     svg.call(drag);
-
-    // Update cursor based on mode
     svg.style("cursor", isLassoMode ? "crosshair" : "default");
 
-  }, [wells, selectedWellIds, groups, dimensions, isLassoMode, onToggleWell, onSelectWells]); 
+  }, [wells, selectedWellIds, groups, dimensions, isLassoMode, onToggleWell, onSelectWells, theme]); 
 
   return (
     <div ref={containerRef} className="w-full h-full min-h-[400px] overflow-hidden relative select-none">
       
       {/* HUD Info */}
       <div className="absolute top-4 left-4 z-10 pointer-events-none select-none">
-        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest bg-slate-900/50 px-2 py-1 rounded backdrop-blur">
+        <p className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded backdrop-blur transition-all ${isSynthwave ? 'bg-theme-bg/80 text-theme-cyan border border-theme-border' : 'bg-slate-900/50 text-slate-500'}`}>
             {selectedWellIds.size} Wells Selected
         </p>
       </div>
@@ -210,23 +176,34 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({ wells, selectedWellIds, g
             className={`
                 flex items-center space-x-2 px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wide shadow-lg transition-all
                 ${isLassoMode 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}
+                    ? (isSynthwave ? 'bg-theme-magenta text-white glow-magenta' : 'bg-blue-600 text-white') 
+                    : (isSynthwave ? 'bg-theme-surface2 text-theme-cyan hover:bg-theme-surface1' : 'bg-slate-800 text-slate-400 hover:bg-slate-700')}
             `}
           >
-             <span>{isLassoMode ? 'Lasso Active' : 'Lasso'}</span>
+             <span>{isLassoMode ? 'LASSO ENGAGED' : 'LASSO'}</span>
           </button>
       </div>
 
       <svg ref={svgRef} width="100%" height="100%">
-          {/* Render Lasso Polygon dynamically */}
+          <defs>
+            <filter id="neon-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
+              <feOffset dx="0" dy="0" result="offsetblur" />
+              <feFlood floodColor={isSynthwave ? "#9ED3F0" : "#3b82f6"} result="color" />
+              <feComposite in="color" in2="offsetblur" operator="in" result="glow" />
+              <feMerge>
+                <feMergeNode in="glow" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
           {lassoPoints.length > 0 && (
               <polygon 
                 points={lassoPoints.map(p => p.join(",")).join(" ")}
-                fill="rgba(59, 130, 246, 0.1)"
-                stroke="#3b82f6"
-                strokeWidth={1}
-                strokeDasharray="4"
+                fill={isSynthwave ? "rgba(229, 102, 218, 0.15)" : "rgba(59, 130, 246, 0.1)"}
+                stroke={isSynthwave ? "#E566DA" : "#3b82f6"}
+                strokeWidth={isSynthwave ? 2 : 1}
+                strokeDasharray={isSynthwave ? "8, 4" : "4"}
               />
           )}
       </svg>
