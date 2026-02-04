@@ -16,11 +16,13 @@
 ### 3. **Current Segment** (`segment`)
 - 1-indexed segment number (1, 2, 3, ...)
 - Tracks which decline segment each time point belongs to
+- Alias: `segment_index` (same values)
 - **Test coverage**: `test_segment_field_tracks_current_segment`
 
 ### 4. **Calculation Method** (`method`)
 - One of: "Exp", "Hyperbolic", "Harmonic", "Linear", "Flat", "PowerLaw"
 - Identifies the decline equation used for each time point
+- Alias: `calculation_method` (same values)
 - **Test coverage**: `test_method_field_tracks_calculation_method`
 
 ### 5. **Secant Effective Decline** (`secant_effective_pct_per_year`)
@@ -37,6 +39,12 @@
 - Zero at t=0 (no previous point)
 - For exponential decline, equals the input Di parameter
 - **Test coverage**: `test_secant_effective_and_nominal_decline_rates`
+
+### 6b. **Secant Declines (fraction per year, Di/De)** (`secant_nominal_per_year`, `secant_effective_per_year`)
+- Same secant declines as above, but returned as fractions per year (e.g. 0.80 = 80%/yr)
+- Aliases (same values):
+  - `secant_nominal_Di_per_year` (Di)
+  - `secant_effective_De_per_year` (De)
 
 ### 7. **Rate Change (Absolute)** (`rate_change`)
 - Absolute change in rate: Δq = q(t) - q(t-1)
@@ -57,6 +65,7 @@
 - Units: %
 - Tracks total decline from start
 - Zero at t=0
+- Alias: `rate_pct_change_cumulative` (same values)
 - **Test coverage**: `test_rate_pct_change_from_start_cumulative`
 
 ## Additional Fields (Bonus)

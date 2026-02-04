@@ -188,15 +188,38 @@ def test_all_required_fields_present():
         "rate",
         "cum",
         "segment",
+        "segment_index",
         "method",
+        "calculation_method",
         "secant_effective_pct_per_year",
         "secant_nominal_pct_per_year",
+        "secant_effective_per_year",
+        "secant_nominal_per_year",
+        "secant_effective_De_per_year",
+        "secant_nominal_Di_per_year",
         "rate_change",
         "rate_pct_change_step",
         "rate_pct_change_from_start",
+        "rate_pct_change_cumulative",
     }
 
     assert required_fields.issubset(set(out.keys())), f"Missing fields: {required_fields - set(out.keys())}"
+
+
+def test_alias_fields_match_source_fields_exactly():
+    """Verify aliases are exact copies (no unit changes)."""
+    out = simulate_multisegment(
+        [SegmentSpec(method="Exp", duration=1.0, params={"qi": 1000.0, "Di": 0.8})],
+        frequency="monthly",
+    )
+
+    assert np.array_equal(out["segment_index"], out["segment"])
+    assert np.array_equal(out["calculation_method"], out["method"])
+    assert np.allclose(out["rate_pct_change_cumulative"], out["rate_pct_change_from_start"], rtol=0, atol=0)
+    assert np.allclose(out["secant_nominal_per_year"], out["secant_nominal_pct_per_year"] / 100.0, rtol=0, atol=0)
+    assert np.allclose(out["secant_effective_per_year"], out["secant_effective_pct_per_year"] / 100.0, rtol=0, atol=0)
+    assert np.allclose(out["secant_nominal_Di_per_year"], out["secant_nominal_per_year"], rtol=0, atol=0)
+    assert np.allclose(out["secant_effective_De_per_year"], out["secant_effective_per_year"], rtol=0, atol=0)
 
 
 def test_multisegment_all_fields_integration():

@@ -140,14 +140,21 @@ def simulate_multisegment(
       - t_years
       - t_days
       - segment (1-indexed)
+      - segment_index (alias of segment; 1-indexed)
       - method
+      - calculation_method (alias of method)
       - rate
       - cum (cumulative production, trapezoid in days; if rate is bbl/d then cum is bbl)
       - rate_change (Δq vs previous time step; 0 at t=0)
       - rate_pct_change_step (Δq / q_prev * 100; 0 at t=0)
       - rate_pct_change_from_start ((q / q0 - 1) * 100)
+      - rate_pct_change_cumulative (alias of rate_pct_change_from_start)
       - secant_nominal_pct_per_year (-ln(q/q_prev)/dt * 100; 0 at t=0)
       - secant_effective_pct_per_year ((1 - (q/q_prev)^(1/dt)) * 100; 0 at t=0)
+      - secant_nominal_per_year (-ln(q/q_prev)/dt; 0 at t=0)  [aka Di, 1/yr]
+      - secant_effective_per_year (1 - (q/q_prev)^(1/dt); 0 at t=0)  [aka De, frac/yr]
+      - secant_nominal_Di_per_year (alias of secant_nominal_per_year)
+      - secant_effective_De_per_year (alias of secant_effective_per_year)
 
     Time stepping:
       - Provide `frequency` in {"daily","monthly","yearly"} to use a standard step based on 365.25 days/year.
@@ -272,18 +279,29 @@ def simulate_multisegment(
         de_eff = 1.0 - math.exp(math.log(q_cur / q_prev) / dt_i_years)
         secant_effective_pct_per_year[i] = 100.0 * de_eff
 
+    # Also provide fraction-per-year versions (0..1 typical), which many workflows call Di/De.
+    secant_nominal_per_year = secant_nominal_pct_per_year / 100.0
+    secant_effective_per_year = secant_effective_pct_per_year / 100.0
+
     return {
         "t_years": t_years,
         "t_days": t_days,
         "segment": seg_arr,
+        "segment_index": seg_arr,  # alias
         "method": method_arr,
+        "calculation_method": method_arr,  # alias
         "rate": rate,
         "cum": cum,
         "rate_change": rate_change,
         "rate_pct_change_step": rate_pct_change_step,
         "rate_pct_change_from_start": rate_pct_change_from_start,
+        "rate_pct_change_cumulative": rate_pct_change_from_start,  # alias
         "secant_effective_pct_per_year": secant_effective_pct_per_year,
         "secant_nominal_pct_per_year": secant_nominal_pct_per_year,
+        "secant_effective_per_year": secant_effective_per_year,
+        "secant_nominal_per_year": secant_nominal_per_year,
+        "secant_effective_De_per_year": secant_effective_per_year,  # alias
+        "secant_nominal_Di_per_year": secant_nominal_per_year,  # alias
     }
 
 
