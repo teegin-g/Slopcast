@@ -1,0 +1,21 @@
+# Jupyter and notebook essentials
+jupyter==1.0.0
+jupyterlab==4.0.9
+notebook==7.0.6
+ipykernel==6.27.1
+
+# Data analysis and visualization
+numpy==1.26.2
+pandas==2.1.4
+matplotlib==3.8.2
+seaborn==0.13.0
+
+# Scientific computing
+scipy==1.11.4
+
+# Pretty printing and progress bars
+tqdm==4.66.1
+rich==13.7.0
+
+# Testing
+pytest
