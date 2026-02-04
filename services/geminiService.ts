@@ -1,7 +1,23 @@
 import { GoogleGenAI } from "@google/genai";
 import { DealMetrics, TypeCurveParams, PricingAssumptions } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+function getAiClient(): GoogleGenAI | null {
+  const apiKey =
+    (process.env.GEMINI_API_KEY as string | undefined) ??
+    (process.env.API_KEY as string | undefined) ??
+    "";
+
+  // Avoid crashing the whole app on load if no key is configured.
+  if (!apiKey || apiKey.trim().length === 0) return null;
+
+  try {
+    return new GoogleGenAI({ apiKey });
+  } catch (e) {
+    // If the SDK throws on bad/missing key, degrade gracefully.
+    console.error("Gemini client init error:", e);
+    return null;
+  }
+}
 
 export const generateDealAnalysis = async (
   metrics: DealMetrics,
@@ -10,6 +26,11 @@ export const generateDealAnalysis = async (
   selectedWellCount: number
 ): Promise<string> => {
   
+  const ai = getAiClient();
+  if (!ai) {
+    return "AI analysis is unavailable (missing Gemini API key). Add GEMINI_API_KEY to your local env and reload.";
+  }
+
   const prompt = `
     Act as a Senior Investment Analyst for an Oil & Gas Private Equity firm.
     Evaluate the following deal metrics for a drilling program in the Permian Basin.
