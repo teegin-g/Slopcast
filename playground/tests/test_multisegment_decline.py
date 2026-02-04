@@ -10,10 +10,11 @@ def test_multisegment_outputs_columns_and_length_monthly_grid():
         SegmentSpec(method="Exp", duration=1.0, params={"qi": 1000.0, "Di": 1.0}),
         SegmentSpec(method="Flat", duration=1.0, params={}),
     ]
-    out = simulate_multisegment(segments, dt_years=1.0 / 12.0)
+    out = simulate_multisegment(segments, frequency="monthly")
 
     expected_cols = {
         "t_years",
+        "t_days",
         "segment",
         "method",
         "rate",
@@ -37,7 +38,7 @@ def test_segment_transition_is_continuous_at_boundary():
         SegmentSpec(method="Exp", duration=1.0, params={"qi": 800.0, "Di": 0.8}),
         SegmentSpec(method="Harmonic", duration=1.0, params={"Di": 0.5}),
     ]
-    out = simulate_multisegment(segments, dt_years=1.0 / 12.0)
+    out = simulate_multisegment(segments, frequency="monthly")
 
     # Boundary is at exactly t=1.0 years.
     idx = int(np.where(np.round(out["t_years"], 12) == 1.0)[0][0])
@@ -49,9 +50,8 @@ def test_segment_transition_is_continuous_at_boundary():
 
 def test_secant_nominal_matches_exponential_Di_and_effective_is_constant():
     Di = 1.1
-    dt = 1.0 / 12.0
     segments = [SegmentSpec(method="Exp", duration=1.0, params={"qi": 1000.0, "Di": Di})]
-    out = simulate_multisegment(segments, dt_years=dt)
+    out = simulate_multisegment(segments, frequency="monthly")
 
     # For exp: q2/q1 = exp(-Di*dt) => secant nominal = Di
     nom = out["secant_nominal_pct_per_year"]
@@ -67,7 +67,7 @@ def test_linear_segment_hits_qf_at_end():
     segments = [
         SegmentSpec(method="Linear", duration=1.0, params={"qi": 1000.0, "qf": 500.0}),
     ]
-    out = simulate_multisegment(segments, dt_years=1.0 / 12.0)
+    out = simulate_multisegment(segments, frequency="monthly")
     assert math.isclose(out["rate"][0], 1000.0, rel_tol=0, abs_tol=1e-12)
     assert math.isclose(out["rate"][-1], 500.0, rel_tol=0, abs_tol=1e-12)
 

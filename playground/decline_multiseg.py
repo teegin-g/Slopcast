@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List, Literal, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Literal, Mapping, Optional, Sequence
 
 import numpy as np
+
+_DAYS_PER_YEAR = 365.25
 
 
 def exponential_rate(qi: float, Di: float, t: np.ndarray) -> np.ndarray:
@@ -78,6 +80,7 @@ def power_law_rate(qi: float, m: float, tau: float, t: np.ndarray) -> np.ndarray
 
 
 MethodName = Literal["Exp", "Hyperbolic", "Harmonic", "Linear", "Flat", "PowerLaw"]
+FrequencyName = Literal["daily", "monthly", "yearly"]
 
 
 @dataclass(frozen=True)
@@ -127,32 +130,58 @@ def _segment_rate(
 def simulate_multisegment(
     segments: Sequence[SegmentSpec],
     *,
-    dt_years: float = 1.0 / 12.0,
+    frequency: Optional[FrequencyName] = None,
+    dt_years: Optional[float] = None,
 ) -> Dict[str, np.ndarray]:
     """
     Build a multi-segment decline model and return per-time calculated data.
 
     Output columns (per time t, in years):
       - t_years
+      - t_days
       - segment (1-indexed)
       - method
       - rate
-      - cum (trapezoidal integral of rate over time)
+      - cum (cumulative production, trapezoid in days; if rate is bbl/d then cum is bbl)
       - rate_change (Δq vs previous time step; 0 at t=0)
       - rate_pct_change_step (Δq / q_prev * 100; 0 at t=0)
       - rate_pct_change_from_start ((q / q0 - 1) * 100)
       - secant_nominal_pct_per_year (-ln(q/q_prev)/dt * 100; 0 at t=0)
       - secant_effective_pct_per_year ((1 - (q/q_prev)^(1/dt)) * 100; 0 at t=0)
+
+    Time stepping:
+      - Provide `frequency` in {"daily","monthly","yearly"} to use a standard step based on 365.25 days/year.
+      - Or provide `dt_years` directly for custom spacing.
     """
-    dt = float(dt_years)
+    if frequency is None and dt_years is None:
+        dt_years = 1.0 / 12.0
+
+    if frequency is not None and dt_years is not None:
+        raise ValueError("Provide either frequency or dt_years, not both")
+
+    if frequency is not None:
+        if frequency == "daily":
+            dt_days = 1.0
+        elif frequency == "monthly":
+            dt_days = _DAYS_PER_YEAR / 12.0
+        elif frequency == "yearly":
+            dt_days = _DAYS_PER_YEAR
+        else:
+            raise ValueError(f"Unknown frequency: {frequency}")
+        dt = dt_days / _DAYS_PER_YEAR
+    else:
+        dt = float(dt_years)
+        dt_days = dt * _DAYS_PER_YEAR
+
     _validate_segments(segments, dt=dt)
 
-    t_all: List[float] = []
+    t_years_all: List[float] = []
+    t_days_all: List[float] = []
     seg_all: List[int] = []
     method_all: List[str] = []
     rate_all: List[float] = []
 
-    t_cursor = 0.0
+    t_cursor_days = 0.0
     q_start = float(segments[0].params["qi"])
     if q_start < 0:
         raise ValueError("qi must be >= 0")
@@ -162,52 +191,58 @@ def simulate_multisegment(
         # Store times for this segment *excluding* the end boundary time.
         # The end boundary time (t=duration) is owned by the next segment (except for the last segment),
         # which avoids duplicates and makes "current segment" unambiguous at boundaries.
-        t_local_store = np.arange(0.0, float(seg.duration), dt, dtype=float)
+        duration_years = float(seg.duration)
+        duration_days = duration_years * _DAYS_PER_YEAR
+        t_local_days_store = np.arange(0.0, duration_days, dt_days, dtype=float)
 
         # For the last segment, include the final endpoint.
         if seg_idx == n_segments:
-            if t_local_store.size == 0 or abs(t_local_store[-1] - float(seg.duration)) > 1e-12:
-                t_local_store = np.append(t_local_store, float(seg.duration))
+            if t_local_days_store.size == 0 or abs(t_local_days_store[-1] - duration_days) > 1e-12:
+                t_local_days_store = np.append(t_local_days_store, duration_days)
 
-        if t_local_store.size:
+        if t_local_days_store.size:
+            t_local_years_store = t_local_days_store / _DAYS_PER_YEAR
             q_store = _segment_rate(
                 method=seg.method,
                 qi=q_start,
-                t_local=t_local_store,
-                duration=float(seg.duration),
+                t_local=t_local_years_store,
+                duration=duration_years,
                 params=seg.params,
             )
 
-            t_global = t_cursor + t_local_store
-            t_all.extend(t_global.tolist())
+            t_days_global = t_cursor_days + t_local_days_store
+            t_years_global = t_days_global / _DAYS_PER_YEAR
+            t_days_all.extend(t_days_global.tolist())
+            t_years_all.extend(t_years_global.tolist())
             rate_all.extend(q_store.astype(float).tolist())
-            seg_all.extend([seg_idx] * t_local_store.size)
-            method_all.extend([seg.method] * t_local_store.size)
+            seg_all.extend([seg_idx] * t_local_days_store.size)
+            method_all.extend([seg.method] * t_local_days_store.size)
 
         # Always compute the boundary end rate at t=duration to seed the next segment.
         q_end = _segment_rate(
             method=seg.method,
             qi=q_start,
-            t_local=np.asarray([float(seg.duration)], dtype=float),
-            duration=float(seg.duration),
+            t_local=np.asarray([duration_years], dtype=float),
+            duration=duration_years,
             params=seg.params,
         )
         q_start = float(q_end[-1])
-        t_cursor += float(seg.duration)
+        t_cursor_days += duration_days
 
-    if not t_all:
+    if not t_years_all:
         raise ValueError("No times were generated; check segment durations and dt_years")
 
-    t = np.asarray(t_all, dtype=float)
+    t_years = np.asarray(t_years_all, dtype=float)
+    t_days = np.asarray(t_days_all, dtype=float)
     rate = np.asarray(rate_all, dtype=float)
     seg_arr = np.asarray(seg_all, dtype=int)
     method_arr = np.asarray(method_all, dtype=object)
 
-    # Cumulative via trapezoidal integration
+    # Cumulative production via trapezoidal integration in DAYS
     cum = np.zeros_like(rate, dtype=float)
-    dt_steps = np.diff(t)
-    if dt_steps.size:
-        cum[1:] = np.cumsum(0.5 * (rate[:-1] + rate[1:]) * dt_steps)
+    dt_steps_days = np.diff(t_days)
+    if dt_steps_days.size:
+        cum[1:] = np.cumsum(0.5 * (rate[:-1] + rate[1:]) * dt_steps_days)
 
     rate_change = np.zeros_like(rate, dtype=float)
     rate_change[1:] = rate[1:] - rate[:-1]
@@ -227,18 +262,19 @@ def simulate_multisegment(
     for i in range(1, rate.size):
         q_prev = float(rate[i - 1])
         q_cur = float(rate[i])
-        dt_i = float(t[i] - t[i - 1])
-        if dt_i <= 0 or q_prev <= 0 or q_cur <= 0:
+        dt_i_years = float(t_years[i] - t_years[i - 1])
+        if dt_i_years <= 0 or q_prev <= 0 or q_cur <= 0:
             continue
         # Nominal: D = -ln(q2/q1)/Δt
-        d_nom = -math.log(q_cur / q_prev) / dt_i
+        d_nom = -math.log(q_cur / q_prev) / dt_i_years
         secant_nominal_pct_per_year[i] = 100.0 * d_nom
         # Effective annual: De = 1 - (q2/q1)^(1/Δt)
-        de_eff = 1.0 - math.exp(math.log(q_cur / q_prev) / dt_i)
+        de_eff = 1.0 - math.exp(math.log(q_cur / q_prev) / dt_i_years)
         secant_effective_pct_per_year[i] = 100.0 * de_eff
 
     return {
-        "t_years": t,
+        "t_years": t_years,
+        "t_days": t_days,
         "segment": seg_arr,
         "method": method_arr,
         "rate": rate,
