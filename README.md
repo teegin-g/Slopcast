@@ -18,3 +18,15 @@ View your app in AI Studio: https://ai.studio/apps/drive/12YB-fbdVhBUTK7AIo6AYsp
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## Launch and deploy (no cloud-specific tooling)
+
+Use the provided shell script to build and run the app locally without any
+Google Cloud deployment tooling:
+
+- Production build and run:
+  `bash deploy.sh`
+- Development server:
+  `bash deploy.sh --dev`
+- Build only:
+  `bash deploy.sh --build-only`

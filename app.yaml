@@ -1,6 +1,0 @@
-command:
-  - "node"
-  - "server.js"
-env:
-  - name: GEMINI_API_KEY
-    valueFrom: secret

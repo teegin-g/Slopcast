@@ -1,42 +1,21 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Bar, Area } from 'recharts';
 import { MonthlyCashFlow } from '../types';
+import { ThemeId, getTheme } from '../theme/themes';
 
 interface ChartsProps {
   data: MonthlyCashFlow[];
-  theme?: 'slate' | 'synthwave';
+  themeId: ThemeId;
 }
 
-/**
- * SLOPCAST 8-Color Palette (Series Order)
- * 1. #9ED3F0 (cyan)
- * 2. #E566DA (magenta)
- * 3. #DBA1DD (lavender)
- * 4. #952A99 (violet)
- * 5. #6053A0 (indigo border tone)
- * 6. #EBE9EE (white highlight)
- * 7. #FFB86B (warning series)
- * 8. #2DFFB1 (success series)
- */
-
-const Charts: React.FC<ChartsProps> = ({ data, theme = 'slate' }) => {
-  const isSynthwave = theme === 'synthwave';
-
-  const palette = {
-    oil: isSynthwave ? "#9ED3F0" : "#3b82f6",
-    cash: isSynthwave ? "#E566DA" : "#10b981",
-    lav: isSynthwave ? "#DBA1DD" : "#8b5cf6",
-    grid: isSynthwave ? "rgba(96, 83, 160, 0.25)" : "#1e293b",
-    text: isSynthwave ? "#A8A3A8" : "#475569",
-    surface: isSynthwave ? "#0E061A" : "#0f172a",
-    border: isSynthwave ? "rgba(96, 83, 160, 0.4)" : "#334155"
-  };
+const Charts: React.FC<ChartsProps> = ({ data, themeId }) => {
+  const { chartPalette: palette } = getTheme(themeId);
 
   return (
     <div className="space-y-6 h-full flex flex-col justify-between p-2">
       {/* Production Forecast */}
-      <div className={`rounded-xl border p-5 flex-1 transition-all ${isSynthwave ? 'bg-transparent border-theme-border/40' : 'bg-slate-900/30 border-slate-800/50'}`}>
-        <h4 className={`font-black text-[10px] uppercase tracking-[0.3em] mb-6 flex items-center transition-all ${isSynthwave ? 'text-theme-cyan' : 'text-slate-500'}`}>
+      <div className="rounded-xl border p-5 flex-1 transition-all bg-transparent border-theme-border/40">
+        <h4 className="font-black text-[10px] uppercase tracking-[0.3em] mb-6 flex items-center transition-all text-theme-cyan">
           <span className="w-1 h-1 rounded-full bg-theme-cyan mr-2"></span>
           Production Forecast (BBL/D)
         </h4>
@@ -80,8 +59,8 @@ const Charts: React.FC<ChartsProps> = ({ data, theme = 'slate' }) => {
       </div>
 
       {/* Cash Flow */}
-      <div className={`rounded-xl border p-5 flex-1 transition-all ${isSynthwave ? 'bg-transparent border-theme-border/40' : 'bg-slate-900/30 border-slate-800/50'}`}>
-        <h4 className={`font-black text-[10px] uppercase tracking-[0.3em] mb-6 flex items-center transition-all ${isSynthwave ? 'text-theme-magenta' : 'text-slate-500'}`}>
+      <div className="rounded-xl border p-5 flex-1 transition-all bg-transparent border-theme-border/40">
+        <h4 className="font-black text-[10px] uppercase tracking-[0.3em] mb-6 flex items-center transition-all text-theme-magenta">
           <span className="w-1 h-1 rounded-full bg-theme-magenta mr-2"></span>
           Cumulative Recovery (USD)
         </h4>

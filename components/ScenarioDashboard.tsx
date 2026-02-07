@@ -4,6 +4,7 @@ import { calculateEconomics } from '../utils/economics';
 import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import SensitivityMatrix from './SensitivityMatrix';
 import { generateSensitivityMatrix } from '../utils/economics';
+import { useTheme } from '../theme/ThemeProvider';
 
 interface ScenarioDashboardProps {
   groups: WellGroup[]; 
@@ -23,15 +24,14 @@ interface AccordionItemProps {
   isOpen: boolean;
   onClick: () => void;
   children: React.ReactNode;
-  theme?: string;
+  useBrandFont?: boolean;
 }
 
-const AccordionItem: React.FC<AccordionItemProps> = ({ title, isOpen, onClick, children, theme }) => {
-    const isSynthwave = theme === 'synthwave';
+const AccordionItem: React.FC<AccordionItemProps> = ({ title, isOpen, onClick, children, useBrandFont }) => {
     return (
-        <div className={`border rounded-xl overflow-hidden transition-all duration-300 mb-3 ${isOpen ? (isSynthwave ? 'bg-theme-surface1 border-theme-magenta shadow-glow-magenta' : 'bg-slate-900 border-blue-500/30') : 'bg-theme-surface1/40 border-theme-border'}`}>
-            <button onClick={onClick} className={`w-full flex items-center justify-between px-5 py-4 text-left transition-all ${isOpen ? (isSynthwave ? 'text-theme-cyan' : 'text-blue-400') : 'text-theme-muted'}`}>
-                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isSynthwave ? 'brand-font' : ''}`}>{title}</span>
+        <div className={`border rounded-xl overflow-hidden transition-all duration-300 mb-3 ${isOpen ? 'bg-theme-surface1 border-theme-magenta shadow-glow-magenta' : 'bg-theme-surface1/40 border-theme-border'}`}>
+            <button onClick={onClick} className={`w-full flex items-center justify-between px-5 py-4 text-left transition-all ${isOpen ? 'text-theme-cyan' : 'text-theme-muted'}`}>
+                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${useBrandFont ? 'brand-font' : ''}`}>{title}</span>
                 <span className={`transform transition-transform opacity-30 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
             </button>
             {isOpen && <div className="p-5 border-t border-theme-border/20">{children}</div>}
@@ -40,6 +40,9 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ title, isOpen, onClick, c
 };
 
 const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) => {
+  const { theme } = useTheme();
+  const { chartPalette } = theme;
+
   const [scenarios, setScenarios] = useState<Scenario[]>([
     {
         id: 's-base',
@@ -79,9 +82,6 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
 
   const [sensX, setSensX] = useState<SensitivityVariable>('OIL_PRICE');
   const [sensY, setSensY] = useState<SensitivityVariable>('RIG_COUNT');
-
-  const theme = document.documentElement.getAttribute('data-theme') || 'slate';
-  const isSynthwave = theme === 'synthwave';
 
   const scenarioResults = useMemo(() => {
     return scenarios.map(scenario => {
@@ -131,7 +131,7 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
   }, [groups, wells, sensX, sensY]);
 
   const handleAddScenario = () => {
-      const newScen: Scenario = { id: `s-${Date.now()}`, name: 'NEW CASE', color: isSynthwave ? '#DBA1DD' : '#94a3b8', isBaseCase: false, pricing: { ...DEFAULT_PRICING }, schedule: { ...DEFAULT_SCHEDULE }, capexScalar: 1.0, productionScalar: 1.0 };
+      const newScen: Scenario = { id: `s-${Date.now()}`, name: 'NEW CASE', color: '#DBA1DD', isBaseCase: false, pricing: { ...DEFAULT_PRICING }, schedule: { ...DEFAULT_SCHEDULE }, capexScalar: 1.0, productionScalar: 1.0 };
       setScenarios([...scenarios, newScen]);
       setActiveScenarioId(newScen.id);
       setEditingScenario(true);
@@ -156,18 +156,18 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
   };
 
   const activeScenario = scenarios.find(s => s.id === activeScenarioId);
-  const inputClass = `w-full bg-theme-bg border rounded-lg px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition ${isSynthwave ? 'border-theme-border' : 'border-slate-700'}`;
-  const labelClass = `text-[9px] font-black text-theme-muted block mb-2 uppercase tracking-[0.2em] ${isSynthwave ? 'brand-font' : ''}`;
+  const inputClass = 'w-full bg-theme-bg border rounded-lg px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition border-theme-border';
+  const labelClass = `text-[9px] font-black text-theme-muted block mb-2 uppercase tracking-[0.2em] ${theme.features.brandFont ? 'brand-font' : ''}`;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-700">
       
       {/* LEFT: Scenario Management */}
       <div className="lg:col-span-3 space-y-6">
-          <div className={`rounded-2xl border p-6 shadow-card transition-all ${isSynthwave ? 'bg-theme-surface1 border-theme-border' : 'bg-slate-900/50 border-slate-800'}`}>
+          <div className="rounded-2xl border p-6 shadow-card transition-all bg-theme-surface1 border-theme-border">
               <div className="flex justify-between items-center mb-6">
-                  <h3 className={`text-xs font-black uppercase tracking-[0.3em] ${isSynthwave ? 'brand-font text-theme-cyan' : 'text-slate-300'}`}>MODEL STACK</h3>
-                  <button onClick={handleAddScenario} className={`text-[9px] px-4 py-2 rounded-lg text-theme-bg font-black uppercase tracking-widest hover:shadow-glow-cyan transition-all ${isSynthwave ? 'bg-theme-cyan' : 'bg-blue-600'}`}>
+                  <h3 className={`text-xs font-black uppercase tracking-[0.3em] text-theme-cyan ${theme.features.brandFont ? 'brand-font' : ''}`}>MODEL STACK</h3>
+                  <button onClick={handleAddScenario} className="text-[9px] px-4 py-2 rounded-lg text-theme-bg font-black uppercase tracking-widest hover:shadow-glow-cyan transition-all bg-theme-cyan">
                       + NEW
                   </button>
               </div>
@@ -176,18 +176,18 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
                       <div 
                         key={s.id} 
                         onClick={() => { setActiveScenarioId(s.id); setEditingScenario(true); }}
-                        className={`group p-4 rounded-xl border cursor-pointer transition-all ${s.id === activeScenarioId ? (isSynthwave ? 'bg-theme-surface2 border-theme-magenta shadow-glow-magenta' : 'bg-slate-800 border-blue-500 shadow-md') : (isSynthwave ? 'bg-theme-bg border-theme-border hover:border-theme-cyan hover:scale-[1.02]' : 'bg-slate-900 border-slate-800 hover:border-slate-600')}`}
+                        className={`group p-4 rounded-xl border cursor-pointer transition-all ${s.id === activeScenarioId ? 'bg-theme-surface2 border-theme-magenta shadow-glow-magenta' : 'bg-theme-bg border-theme-border hover:border-theme-cyan hover:scale-[1.02]'}`}
                       >
                           <div className="flex items-center justify-between mb-3">
                               <div className="flex items-center space-x-3">
                                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 10px ${s.color}66` }}></div>
-                                  <span className={`font-black text-[11px] uppercase tracking-[0.1em] ${isSynthwave ? 'brand-font text-theme-text' : 'text-slate-200'}`}>{s.name}</span>
+                                  <span className={`font-black text-[11px] uppercase tracking-[0.1em] text-theme-text ${theme.features.brandFont ? 'brand-font' : ''}`}>{s.name}</span>
                               </div>
                               <div className="w-1.5 h-1.5 rounded-full bg-theme-cyan/20 group-hover:bg-theme-cyan animate-pulse"></div>
                           </div>
                           <div className="flex justify-between text-[10px] text-theme-muted font-mono tracking-tight">
                               <span>OIL: ${s.pricing.oilPrice}</span>
-                              <span className={`font-bold uppercase ${isSynthwave ? 'text-theme-cyan' : 'text-blue-400'}`}>
+                              <span className="font-bold uppercase text-theme-cyan">
                                   {Math.max(...s.schedule.annualRigs)} RIGS
                               </span>
                           </div>
@@ -198,7 +198,7 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
 
           {activeScenario && editingScenario && (
               <div className="animate-in slide-in-from-left-6 duration-500">
-                   <div className={`rounded-t-2xl border border-b-0 p-6 theme-transition ${isSynthwave ? 'bg-theme-surface1 border-theme-border' : 'bg-slate-900/80 border-slate-800'}`}>
+                   <div className="rounded-t-2xl border border-b-0 p-6 theme-transition bg-theme-surface1 border-theme-border">
                        <h3 className={labelClass}>Edit Selected Model</h3>
                        <div className="mb-4">
                            <label className={labelClass}>MODEL NAME</label>
@@ -212,8 +212,8 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
                        </div>
                    </div>
 
-                   <div className={`rounded-b-2xl border p-2 space-y-1 theme-transition shadow-card ${isSynthwave ? 'bg-theme-bg border-theme-border' : 'bg-slate-900/30 border-slate-800'}`}>
-                       <AccordionItem title="Economic Anchors" isOpen={openSection === 'PRICING'} onClick={() => setOpenSection('PRICING')} theme={theme}>
+                   <div className="rounded-b-2xl border p-2 space-y-1 theme-transition shadow-card bg-theme-bg border-theme-border">
+                       <AccordionItem title="Economic Anchors" isOpen={openSection === 'PRICING'} onClick={() => setOpenSection('PRICING')} useBrandFont={theme.features.brandFont}>
                            <div className="grid grid-cols-2 gap-4">
                                <div><label className={labelClass}>OIL PRICE</label><input type="number" value={activeScenario.pricing.oilPrice} onChange={e => updatePricing(activeScenario.id, 'oilPrice', parseFloat(e.target.value))} className={inputClass} /></div>
                                <div><label className={labelClass}>GAS PRICE</label><input type="number" value={activeScenario.pricing.gasPrice} onChange={e => updatePricing(activeScenario.id, 'gasPrice', parseFloat(e.target.value))} className={inputClass} /></div>
@@ -222,7 +222,7 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
                            </div>
                        </AccordionItem>
 
-                       <AccordionItem title="Fleet Scheduling" isOpen={openSection === 'SCHEDULE'} onClick={() => setOpenSection('SCHEDULE')} theme={theme}>
+                       <AccordionItem title="Fleet Scheduling" isOpen={openSection === 'SCHEDULE'} onClick={() => setOpenSection('SCHEDULE')} useBrandFont={theme.features.brandFont}>
                            <div className="space-y-6">
                                <div className="grid grid-cols-2 gap-4">
                                     <div><label className={labelClass}>DRILL DAYS</label><input type="number" value={activeScenario.schedule.drillDurationDays} onChange={e => updateScheduleParam(activeScenario.id, 'drillDurationDays', parseFloat(e.target.value))} className={inputClass} /></div>
@@ -242,14 +242,14 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
                            </div>
                        </AccordionItem>
 
-                       <AccordionItem title="Risk Scalars" isOpen={openSection === 'SCALARS'} onClick={() => setOpenSection('SCALARS')} theme={theme}>
+                       <AccordionItem title="Risk Scalars" isOpen={openSection === 'SCALARS'} onClick={() => setOpenSection('SCALARS')} useBrandFont={theme.features.brandFont}>
                            <div className="space-y-6">
                                <div>
-                                   <div className="flex justify-between mb-2"><label className={labelClass}>CAPEX MULTIPLIER</label><span className={`text-[10px] font-black ${isSynthwave ? 'text-theme-cyan' : 'text-blue-400'}`}>{(activeScenario.capexScalar * 100).toFixed(0)}%</span></div>
+                                   <div className="flex justify-between mb-2"><label className={labelClass}>CAPEX MULTIPLIER</label><span className="text-[10px] font-black text-theme-cyan">{(activeScenario.capexScalar * 100).toFixed(0)}%</span></div>
                                    <input type="range" min="0.5" max="2.0" step="0.05" value={activeScenario.capexScalar} onChange={e => updateScenario(activeScenario.id, { capexScalar: parseFloat(e.target.value) })} className="w-full h-1.5 bg-theme-surface1 border border-theme-border rounded-lg appearance-none cursor-pointer accent-theme-cyan" />
                                </div>
                                <div>
-                                   <div className="flex justify-between mb-2"><label className={labelClass}>RECOVERY MULTIPLIER</label><span className={`text-[10px] font-black ${isSynthwave ? 'text-theme-magenta' : 'text-emerald-400'}`}>{(activeScenario.productionScalar * 100).toFixed(0)}%</span></div>
+                                   <div className="flex justify-between mb-2"><label className={labelClass}>RECOVERY MULTIPLIER</label><span className="text-[10px] font-black text-theme-magenta">{(activeScenario.productionScalar * 100).toFixed(0)}%</span></div>
                                    <input type="range" min="0.5" max="1.5" step="0.05" value={activeScenario.productionScalar} onChange={e => updateScenario(activeScenario.id, { productionScalar: parseFloat(e.target.value) })} className="w-full h-1.5 bg-theme-surface1 border border-theme-border rounded-lg appearance-none cursor-pointer accent-theme-magenta" />
                                </div>
                            </div>
@@ -262,13 +262,13 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
       <div className="lg:col-span-9 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {scenarioResults.map((res) => (
-                  <div key={res.scenario.id} className={`rounded-2xl border p-6 relative overflow-hidden theme-transition shadow-card group ${isSynthwave ? 'bg-theme-surface1/80 border-theme-border hover:border-theme-cyan' : 'bg-slate-900/40 border-slate-800'}`}>
+                  <div key={res.scenario.id} className="rounded-2xl border p-6 relative overflow-hidden theme-transition shadow-card group bg-theme-surface1/80 border-theme-border hover:border-theme-cyan">
                       <div className="absolute top-0 left-0 w-1.5 h-full opacity-60" style={{ backgroundColor: res.scenario.color }}></div>
                       <div className="absolute top-0 right-0 w-32 h-32 blur-[50px] opacity-10 pointer-events-none" style={{ backgroundColor: res.scenario.color }}></div>
                       
-                      <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] mb-4 ml-2 transition-all ${isSynthwave ? 'brand-font text-theme-cyan group-hover:text-theme-magenta' : 'text-slate-400'}`}>{res.scenario.name}</h4>
+                      <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] mb-4 ml-2 transition-all text-theme-cyan group-hover:text-theme-magenta ${theme.features.brandFont ? 'brand-font' : ''}`}>{res.scenario.name}</h4>
                       <div className="ml-2">
-                          <div className={`text-3xl font-black tracking-tight theme-transition ${isSynthwave ? 'text-theme-text' : ''}`}>${(res.metrics.npv10 / 1e6).toFixed(1)}M <span className="text-[10px] text-theme-muted font-black tracking-[0.1em] ml-1">NPV10</span></div>
+                          <div className="text-3xl font-black tracking-tight theme-transition text-theme-text">${(res.metrics.npv10 / 1e6).toFixed(1)}M <span className="text-[10px] text-theme-muted font-black tracking-[0.1em] ml-1">NPV10</span></div>
                           <div className="flex justify-between mt-6 text-[10px] text-theme-muted font-bold tracking-widest border-t border-white/5 pt-3">
                               <span>ROI: {res.metrics.roi.toFixed(2)}X</span>
                               <span>FLEET: {Math.max(...res.scenario.schedule.annualRigs)} RIGS</span>
@@ -279,19 +279,19 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className={`rounded-2xl border p-8 shadow-card theme-transition ${isSynthwave ? 'bg-theme-surface1/60 border-theme-border' : 'bg-slate-900/40 border-slate-800'}`}>
-                    <h3 className={`text-[11px] font-black uppercase tracking-[0.4em] mb-8 flex items-center gap-3 ${isSynthwave ? 'brand-font text-theme-lavender' : 'text-slate-400'}`}>
+                <div className="rounded-2xl border p-8 shadow-card theme-transition bg-theme-surface1/60 border-theme-border">
+                    <h3 className={`text-[11px] font-black uppercase tracking-[0.4em] mb-8 flex items-center gap-3 text-theme-lavender ${theme.features.brandFont ? 'brand-font' : ''}`}>
                       <span className="w-1.5 h-1.5 rounded-full bg-theme-magenta shadow-glow-magenta"></span>
                       PORTFOLIO OVERLAY
                     </h3>
                     <div className="h-[320px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={cfChartData}>
-                                <CartesianGrid strokeDasharray="6 6" stroke={isSynthwave ? "rgba(96, 83, 160, 0.25)" : "#1e293b"} vertical={false} />
-                                <XAxis dataKey="month" stroke={isSynthwave ? "#A8A3A8" : "#64748b"} fontSize={9} tickFormatter={(v) => v % 12 === 0 ? `Y${v/12}` : ''} axisLine={false} tickLine={false} />
-                                <YAxis stroke={isSynthwave ? "#A8A3A8" : "#64748b"} fontSize={9} tickFormatter={(v) => `$${(v/1e6).toFixed(0)}M`} axisLine={false} tickLine={false} />
+                                <CartesianGrid strokeDasharray="6 6" stroke={chartPalette.grid} vertical={false} />
+                                <XAxis dataKey="month" stroke={chartPalette.text} fontSize={9} tickFormatter={(v) => v % 12 === 0 ? `Y${v/12}` : ''} axisLine={false} tickLine={false} />
+                                <YAxis stroke={chartPalette.text} fontSize={9} tickFormatter={(v) => `$${(v/1e6).toFixed(0)}M`} axisLine={false} tickLine={false} />
                                 <Tooltip 
-                                  contentStyle={{ backgroundColor: isSynthwave ? '#0E061A' : '#0f172a', borderRadius: '12px', borderColor: isSynthwave ? '#6053A0' : '#334155', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)' }} 
+                                  contentStyle={{ backgroundColor: chartPalette.surface, borderRadius: '12px', borderColor: chartPalette.border, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)' }} 
                                   formatter={(val: number) => [`$${(val/1e6).toFixed(2)}MM`, '']} 
                                 />
                                 <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '20px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em' }} iconType="circle" />
@@ -303,15 +303,15 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
 
                 <div className="space-y-6">
                     <div className="flex items-center space-x-4 justify-end pr-2">
-                        <span className={`text-[9px] font-black uppercase tracking-[0.2em] theme-transition ${isSynthwave ? 'text-theme-muted' : 'text-slate-500'}`}>Primary Variable</span>
-                        <select value={sensY} onChange={(e) => setSensY(e.target.value as SensitivityVariable)} className={`text-[10px] font-black rounded-lg px-3 py-1.5 outline-none transition-all cursor-pointer ${isSynthwave ? 'bg-theme-bg border border-theme-border text-theme-cyan focus:border-theme-magenta' : 'bg-slate-900 border border-slate-700 text-slate-300'}`}>
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] theme-transition text-theme-muted">Primary Variable</span>
+                        <select value={sensY} onChange={(e) => setSensY(e.target.value as SensitivityVariable)} className="text-[10px] font-black rounded-lg px-3 py-1.5 outline-none transition-all cursor-pointer bg-theme-bg border border-theme-border text-theme-cyan focus:border-theme-magenta">
                             <option value="CAPEX_SCALAR">CAPEX SCALAR</option>
                             <option value="EUR_SCALAR">RECOVERY SCALAR</option>
                             <option value="OIL_PRICE">OIL BENCHMARK</option>
                             <option value="RIG_COUNT">FLEET SIZE</option>
                         </select>
-                        <span className={`text-[10px] font-black theme-transition ${isSynthwave ? 'text-theme-lavender opacity-40' : 'text-slate-500'}`}>VS</span>
-                        <select value={sensX} onChange={(e) => setSensX(e.target.value as SensitivityVariable)} className={`text-[10px] font-black rounded-lg px-3 py-1.5 outline-none transition-all cursor-pointer ${isSynthwave ? 'bg-theme-bg border border-theme-border text-theme-magenta focus:border-theme-cyan' : 'bg-slate-900 border border-slate-700 text-slate-300'}`}>
+                        <span className="text-[10px] font-black theme-transition text-theme-lavender opacity-40">VS</span>
+                        <select value={sensX} onChange={(e) => setSensX(e.target.value as SensitivityVariable)} className="text-[10px] font-black rounded-lg px-3 py-1.5 outline-none transition-all cursor-pointer bg-theme-bg border border-theme-border text-theme-magenta focus:border-theme-cyan">
                             <option value="OIL_PRICE">OIL BENCHMARK</option>
                             <option value="CAPEX_SCALAR">CAPEX SCALAR</option>
                             <option value="EUR_SCALAR">RECOVERY SCALAR</option>

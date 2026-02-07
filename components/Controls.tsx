@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { WellGroup, TypeCurveParams, CapexAssumptions, PricingAssumptions } from '../types';
 import CapexControls from './CapexControls';
+import { useTheme } from '../theme/ThemeProvider';
 
 interface ControlsProps {
   group: WellGroup;
@@ -20,24 +21,24 @@ interface AccordionSectionProps {
 const AccordionSection: React.FC<AccordionSectionProps> = ({ 
   id, title, isOpen, onToggle, children 
 }) => {
-  const isSynthwave = document.documentElement.getAttribute('data-theme') === 'synthwave';
+  const { theme } = useTheme();
   return (
     <div className={`
       border rounded-xl overflow-hidden theme-transition mb-4 shadow-sm
       ${isOpen 
-        ? (isSynthwave ? 'bg-theme-surface1 border-theme-magenta shadow-glow-magenta' : 'bg-slate-900 border-blue-500/30') 
-        : (isSynthwave ? 'bg-theme-surface1/40 border-theme-border' : 'bg-slate-900/40 border-slate-800')}
+        ? 'bg-theme-surface1 border-theme-magenta shadow-glow-magenta' 
+        : 'bg-theme-surface1/40 border-theme-border'}
     `}>
       <button 
         onClick={() => onToggle(id)}
-        className={`w-full flex items-center justify-between px-5 py-4 text-left transition-all ${isOpen ? (isSynthwave ? 'text-theme-cyan' : 'text-blue-400') : 'text-slate-400'}`}
+        className={`w-full flex items-center justify-between px-5 py-4 text-left transition-all ${isOpen ? 'text-theme-cyan' : 'text-theme-muted'}`}
       >
-        <span className={`text-[10px] font-black uppercase tracking-[0.3em] ${isSynthwave ? 'brand-font' : ''}`}>{title}</span>
+        <span className={`text-[10px] font-black uppercase tracking-[0.3em] ${theme.features.brandFont ? 'brand-font' : ''}`}>{title}</span>
         <span className={`transform transition-transform duration-500 opacity-30 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
       </button>
       
       <div className={`transition-all duration-500 ease-in-out ${isOpen ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-        <div className={`p-5 border-t ${isSynthwave ? 'border-theme-border/20' : 'border-slate-800/50'}`}>
+        <div className="p-5 border-t border-theme-border/20">
           {children}
         </div>
       </div>
@@ -47,7 +48,7 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
 
 const Controls: React.FC<ControlsProps> = ({ group, onUpdateGroup }) => {
   const [activeSection, setActiveSection] = useState<SectionKey>('TYPE_CURVE');
-  const isSynthwave = document.documentElement.getAttribute('data-theme') === 'synthwave';
+  const { theme } = useTheme();
 
   const handleTcChange = (key: keyof TypeCurveParams, val: string) => {
     onUpdateGroup({ ...group, typeCurve: { ...group.typeCurve, [key]: parseFloat(val) || 0 } });
@@ -61,25 +62,25 @@ const Controls: React.FC<ControlsProps> = ({ group, onUpdateGroup }) => {
     onUpdateGroup({ ...group, pricing: { ...group.pricing, [key]: parseFloat(val) || 0 } });
   };
 
-  const inputClass = `w-full bg-theme-bg border rounded-lg px-3 py-2 text-xs text-theme-text outline-none focus:ring-1 theme-transition ${isSynthwave ? 'border-theme-border focus:border-theme-cyan focus:ring-theme-cyan/30' : 'border-slate-700 focus:border-blue-500'}`;
-  const labelClass = `text-[9px] font-black uppercase tracking-[0.2em] mb-2 block ${isSynthwave ? 'text-theme-muted' : 'text-slate-500'}`;
-  const badgeClass = `text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border ${isSynthwave ? 'bg-theme-bg border-theme-border text-theme-cyan' : 'bg-slate-800 text-slate-400 border-slate-700/50'}`;
+  const inputClass = 'w-full bg-theme-bg border rounded-lg px-3 py-2 text-xs text-theme-text outline-none focus:ring-1 theme-transition border-theme-border focus:border-theme-cyan focus:ring-theme-cyan/30';
+  const labelClass = 'text-[9px] font-black uppercase tracking-[0.2em] mb-2 block text-theme-muted';
+  const badgeClass = 'text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border bg-theme-bg border-theme-border text-theme-cyan';
 
   return (
     <div className="space-y-4 pb-12">
-      <div className={`rounded-2xl border p-5 mb-8 shadow-card theme-transition ${isSynthwave ? 'bg-theme-surface1 border-theme-border/60' : 'bg-slate-900 border-slate-800'}`}>
+      <div className="rounded-2xl border p-5 mb-8 shadow-card theme-transition bg-theme-surface1 border-theme-border/60">
         <div className="flex items-center space-x-3 mb-4">
-            <div className="w-4 h-4 rounded-full border border-white/10" style={{ backgroundColor: group.color, boxShadow: isSynthwave ? `0 0 12px ${group.color}44` : 'none' }}></div>
-            <h2 className={`font-black text-sm uppercase tracking-[0.1em] ${isSynthwave ? 'brand-font text-theme-text' : 'text-slate-100'}`}>{group.name}</h2>
+            <div className="w-4 h-4 rounded-full border border-white/10" style={{ backgroundColor: group.color, boxShadow: theme.features.glowEffects ? `0 0 12px ${group.color}44` : 'none' }}></div>
+            <h2 className={`font-black text-sm uppercase tracking-[0.1em] text-theme-text ${theme.features.brandFont ? 'brand-font' : ''}`}>{group.name}</h2>
         </div>
         <div className="grid grid-cols-2 gap-4">
-            <div className={`p-3 rounded-xl border theme-transition ${isSynthwave ? 'bg-theme-bg border-theme-border/40' : 'bg-slate-950/50 border-slate-800'}`}>
+            <div className="p-3 rounded-xl border theme-transition bg-theme-bg border-theme-border/40">
                 <span className={labelClass}>WELL COUNT</span>
                 <span className="text-theme-text text-lg font-black tracking-tight">{group.wellIds.size}</span>
             </div>
-            <div className={`p-3 rounded-xl border theme-transition ${isSynthwave ? 'bg-theme-bg border-theme-border/40' : 'bg-slate-950/50 border-slate-800'}`}>
+            <div className="p-3 rounded-xl border theme-transition bg-theme-bg border-theme-border/40">
                 <span className={labelClass}>TOTAL CAPEX</span>
-                <span className={`text-lg font-black tracking-tight ${isSynthwave ? 'text-theme-cyan' : 'text-emerald-400'}`}>
+                <span className="text-lg font-black tracking-tight text-theme-cyan">
                     ${group.metrics ? (group.metrics.totalCapex / 1e6).toFixed(1) : 0}M
                 </span>
             </div>

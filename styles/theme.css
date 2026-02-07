@@ -1,0 +1,161 @@
+/* ==========================================================================
+   Theme CSS — single source of truth for CSS custom properties + helpers.
+   Every colour is stored as space-separated R G B channels so that Tailwind's
+   opacity modifier syntax (bg-theme-bg/60) works correctly.
+   
+   Usage from Tailwind config:
+     bg: 'rgb(var(--bg-deep) / <alpha-value>)'
+   ========================================================================== */
+
+/* ---------- Default: Slate ---------- */
+:root {
+  --bg-deep: 15 23 42;         /* #0f172a */
+  --bg-space: 27 41 62;        /* #1B293E */
+  --surface-1: 30 41 59;       /* #1e293b */
+  --surface-2: 51 65 85;       /* #334155 */
+  --border: 71 85 105;         /* #475569 */
+  --cyan: 59 130 246;          /* #3b82f6 */
+  --magenta: 236 72 153;       /* #ec4899 */
+  --violet: 139 92 246;        /* #8b5cf6 */
+  --purple: 30 27 75;          /* #1e1b4b */
+  --lav: 216 180 254;          /* #d8b4fe */
+  --text: 241 245 249;         /* #f1f5f9 */
+  --muted: 148 163 184;        /* #94a3b8 */
+  --success: 16 185 129;       /* #10b981 */
+  --warning: 245 158 11;       /* #f59e0b */
+  --danger: 239 68 68;         /* #ef4444 */
+
+  --shadow-glow-cyan: 0 0 10px rgba(59, 130, 246, 0.3);
+  --shadow-glow-magenta: 0 0 10px rgba(236, 72, 153, 0.3);
+
+  --grad-space: radial-gradient(1200px circle at 50% 20%, #1e293b 0%, #0f172a 100%);
+  --font-brand: 'Inter';
+}
+
+/* ---------- Synthwave ---------- */
+[data-theme='synthwave'] {
+  --bg-deep: 14 6 26;          /* #0E061A */
+  --bg-space: 27 14 43;        /* #1B0E2B */
+  --surface-1: 35 37 88;       /* #232558 */
+  --surface-2: 47 56 135;      /* #2F3887 */
+  --border: 96 83 160;         /* #6053A0 */
+  --cyan: 158 211 240;         /* #9ED3F0 */
+  --magenta: 229 102 218;      /* #E566DA */
+  --violet: 149 42 153;        /* #952A99 */
+  --purple: 84 25 99;          /* #541963 */
+  --lav: 219 161 221;          /* #DBA1DD */
+  --text: 235 233 238;         /* #EBE9EE */
+  --muted: 168 163 168;        /* #A8A3A8 */
+  --success: 45 255 177;       /* #2DFFB1 */
+  --warning: 255 184 107;      /* #FFB86B */
+  --danger: 255 79 163;        /* #FF4FA3 */
+
+  --shadow-glow-cyan: 0 0 18px rgba(158,211,240,.45), 0 0 48px rgba(158,211,240,.25);
+  --shadow-glow-magenta: 0 0 18px rgba(229,102,218,.45), 0 0 48px rgba(229,102,218,.25);
+
+  --grad-space: radial-gradient(1200px circle at 50% 20%, #541963 0%, #1B0E2B 45%, #0E061A 100%);
+  --font-brand: 'Orbitron';
+}
+
+/* ---------- Tropical / Tommy Bahama ---------- */
+[data-theme='tropical'] {
+  --bg-deep: 18 28 40;         /* dark ocean midnight */
+  --bg-space: 26 35 50;        /* deep lagoon */
+  --surface-1: 30 50 60;       /* driftwood dark */
+  --surface-2: 42 72 82;       /* wet palm bark */
+  --border: 45 212 191;        /* seafoam teal (accent border) */
+  --cyan: 45 212 191;          /* teal-400  – primary accent */
+  --magenta: 249 115 22;       /* orange-500 – coral / sunset */
+  --violet: 192 132 252;       /* purple-400 */
+  --purple: 30 58 48;          /* deep palm shadow */
+  --lav: 253 186 116;          /* light sunset peach */
+  --text: 236 242 238;         /* off-white sea-foam */
+  --muted: 148 180 170;        /* faded palm green */
+  --success: 52 211 153;       /* emerald-400 */
+  --warning: 251 191 36;       /* amber-400 */
+  --danger: 248 113 113;       /* red-400 */
+
+  --shadow-glow-cyan: 0 0 14px rgba(45, 212, 191, 0.35), 0 0 40px rgba(45, 212, 191, 0.15);
+  --shadow-glow-magenta: 0 0 14px rgba(249, 115, 22, 0.35), 0 0 40px rgba(249, 115, 22, 0.15);
+
+  --grad-space: radial-gradient(1200px circle at 50% 20%, #1e3a30 0%, #1a2332 50%, #121c28 100%);
+  --font-brand: 'Inter';
+}
+
+/* ==========================================================================
+   Global base styles
+   ========================================================================== */
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--grad-space);
+  color: rgb(var(--text));
+  margin: 0;
+  transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 100vh;
+}
+
+/* ---------- Utility helper classes (variable-driven) ---------- */
+
+.brand-title {
+  font-family: var(--font-brand);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 900;
+}
+
+.brand-font {
+  font-family: var(--font-brand);
+}
+
+.theme-transition {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glow-cyan        { box-shadow: var(--shadow-glow-cyan); }
+.glow-magenta     { box-shadow: var(--shadow-glow-magenta); }
+.glow-cyan-hover:hover    { box-shadow: var(--shadow-glow-cyan); }
+.glow-magenta-hover:hover { box-shadow: var(--shadow-glow-magenta); }
+
+.shadow-glow-cyan    { box-shadow: var(--shadow-glow-cyan); }
+.shadow-glow-magenta { box-shadow: var(--shadow-glow-magenta); }
+
+.neon-border-magenta {
+  border: 1px solid rgb(var(--magenta) / 0.35);
+  box-shadow: var(--shadow-glow-magenta);
+}
+
+/* ---------- Gradient helpers ---------- */
+.grad-sunset {
+  background: linear-gradient(135deg, rgb(var(--magenta)) 0%, rgb(var(--violet)) 55%, rgb(var(--surface-1)) 100%);
+}
+.grad-cyan-pop {
+  background: linear-gradient(135deg, rgb(var(--cyan)) 0%, rgb(var(--lav)) 55%, rgb(var(--magenta)) 100%);
+}
+
+/* ---------- Retro grid – appears only when synthwave theme is active ---------- */
+[data-theme='synthwave'] .retro-grid {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 40vh;
+  background-image:
+    linear-gradient(transparent 0%, rgba(149, 42, 153, 0.2) 100%),
+    linear-gradient(90deg, transparent 0%, rgba(149, 42, 153, 0.1) 50%, transparent 100%),
+    linear-gradient(to right, rgba(149, 42, 153, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(149, 42, 153, 0.1) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+  transform: perspective(500px) rotateX(60deg);
+  transform-origin: bottom;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Hide retro-grid for all other themes */
+:root .retro-grid { display: none; }
+[data-theme='synthwave'] .retro-grid { display: block; }
+
+/* ---------- Scrollbar ---------- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: rgb(var(--bg-deep)); }
+::-webkit-scrollbar-thumb { background: rgb(var(--border)); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(var(--cyan)); }
