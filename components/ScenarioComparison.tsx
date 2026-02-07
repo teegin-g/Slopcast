@@ -10,6 +10,7 @@ interface ScenarioComparisonProps {
 const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({ groups }) => {
   const { theme } = useTheme();
   const { chartPalette } = theme;
+  const isClassic = theme.id === 'mario';
 
   // Prepare data for table
   const tableData = groups.map(g => {
@@ -63,7 +64,7 @@ const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({ groups }) => {
       </div>
 
       {/* 1. Comparison League Table */}
-      <div className="bg-theme-bg/50 rounded-xl border border-theme-border overflow-hidden shadow-xl">
+      <div className={isClassic ? 'sc-panel theme-transition overflow-hidden' : 'bg-theme-bg/50 rounded-xl border border-theme-border overflow-hidden shadow-xl'}>
           <div className="overflow-x-auto">
               <table className="w-full text-left text-sm text-theme-muted">
                   <thead className="bg-theme-surface1 text-xs uppercase font-bold text-theme-muted tracking-wider">
@@ -112,7 +113,7 @@ const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({ groups }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* 2. Cumulative Cash Flow Overlay */}
-          <div className="bg-theme-bg/40 rounded-xl border border-theme-border p-6 shadow-lg">
+          <div className={isClassic ? 'sc-panel theme-transition p-6' : 'bg-theme-bg/40 rounded-xl border border-theme-border p-6 shadow-lg'}>
               <h3 className="text-theme-muted text-xs font-bold uppercase tracking-widest mb-6">Cumulative Cash Flow Overlay</h3>
               <div className="h-[350px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -130,7 +131,7 @@ const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({ groups }) => {
                             tickFormatter={(v) => `$${(v/1e6).toFixed(0)}M`}
                         />
                         <Tooltip 
-                            contentStyle={{ backgroundColor: chartPalette.surface, borderColor: chartPalette.border, color: '#cbd5e1', fontSize: '12px' }}
+                            contentStyle={{ backgroundColor: chartPalette.surface, borderColor: chartPalette.border, color: 'rgb(var(--text))', fontSize: '12px' }}
                             formatter={(val: number) => [`$${(val/1e6).toFixed(2)}MM`, 'Cum Cash']}
                             labelFormatter={(label) => `Month ${label}`}
                         />
@@ -152,7 +153,7 @@ const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({ groups }) => {
           </div>
 
           {/* 3. Efficiency Chart (NPV vs CAPEX) */}
-          <div className="bg-theme-bg/40 rounded-xl border border-theme-border p-6 shadow-lg">
+          <div className={isClassic ? 'sc-panel theme-transition p-6' : 'bg-theme-bg/40 rounded-xl border border-theme-border p-6 shadow-lg'}>
               <h3 className="text-theme-muted text-xs font-bold uppercase tracking-widest mb-6">Capital Efficiency (NPV vs Capex)</h3>
               <div className="h-[350px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
@@ -162,7 +163,7 @@ const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({ groups }) => {
                           <YAxis dataKey="name" type="category" stroke={chartPalette.text} fontSize={11} width={100} />
                           <Tooltip 
                               cursor={{fill: chartPalette.grid, opacity: 0.5}}
-                              contentStyle={{ backgroundColor: chartPalette.surface, borderColor: chartPalette.border, color: '#cbd5e1' }}
+                              contentStyle={{ backgroundColor: chartPalette.surface, borderColor: chartPalette.border, color: 'rgb(var(--text))' }}
                               formatter={(val: number) => [`$${(val/1e6).toFixed(1)}MM`, '']}
                           />
                           <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />

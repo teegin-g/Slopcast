@@ -28,20 +28,45 @@ interface AccordionItemProps {
 }
 
 const AccordionItem: React.FC<AccordionItemProps> = ({ title, isOpen, onClick, children, useBrandFont }) => {
+  const { theme } = useTheme();
+  const isClassic = theme.id === 'mario';
+
+  if (isClassic) {
     return (
-        <div className={`border rounded-xl overflow-hidden transition-all duration-300 mb-3 ${isOpen ? 'bg-theme-surface1 border-theme-magenta shadow-glow-magenta' : 'bg-theme-surface1/40 border-theme-border'}`}>
-            <button onClick={onClick} className={`w-full flex items-center justify-between px-5 py-4 text-left transition-all ${isOpen ? 'text-theme-cyan' : 'text-theme-muted'}`}>
-                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${useBrandFont ? 'brand-font' : ''}`}>{title}</span>
-                <span className={`transform transition-transform opacity-30 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
-            </button>
-            {isOpen && <div className="p-5 border-t border-theme-border/20">{children}</div>}
-        </div>
+      <div className="sc-panel theme-transition mb-3">
+        <button
+          onClick={onClick}
+          className="w-full flex items-center justify-between px-5 py-4 text-left transition-all sc-panelTitlebar sc-titlebar--red"
+        >
+          <span className={`text-[10px] font-black uppercase tracking-[0.2em] text-white ${useBrandFont ? 'brand-font' : ''}`}>{title}</span>
+          <span className={`transform transition-transform opacity-30 text-white ${isOpen ? 'rotate-180' : ''}`}>▼</span>
+        </button>
+        {isOpen && (
+          <div className="p-4">
+            <div className="sc-insetLight rounded-lg p-4">
+              {children}
+            </div>
+          </div>
+        )}
+      </div>
     );
+  }
+
+  return (
+    <div className={`border rounded-xl overflow-hidden transition-all duration-300 mb-3 ${isOpen ? 'bg-theme-surface1 border-theme-magenta shadow-glow-magenta' : 'bg-theme-surface1/40 border-theme-border'}`}>
+      <button onClick={onClick} className={`w-full flex items-center justify-between px-5 py-4 text-left transition-all ${isOpen ? 'text-theme-cyan' : 'text-theme-muted'}`}>
+        <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${useBrandFont ? 'brand-font' : ''}`}>{title}</span>
+        <span className={`transform transition-transform opacity-30 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
+      </button>
+      {isOpen && <div className="p-5 border-t border-theme-border/20">{children}</div>}
+    </div>
+  );
 };
 
 const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) => {
   const { theme } = useTheme();
   const { chartPalette } = theme;
+  const isClassic = theme.id === 'mario';
 
   const [scenarios, setScenarios] = useState<Scenario[]>([
     {
@@ -156,63 +181,131 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
   };
 
   const activeScenario = scenarios.find(s => s.id === activeScenarioId);
-  const inputClass = 'w-full bg-theme-bg border rounded-lg px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition border-theme-border';
-  const labelClass = `text-[9px] font-black text-theme-muted block mb-2 uppercase tracking-[0.2em] ${theme.features.brandFont ? 'brand-font' : ''}`;
+  const inputClass = isClassic
+    ? 'w-full rounded-lg px-3 py-2 text-xs font-black sc-inputClassic'
+    : 'w-full bg-theme-bg border rounded-lg px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition border-theme-border';
+  const labelClass = isClassic
+    ? `text-[9px] font-black block mb-2 uppercase tracking-[0.2em] sc-insetMuted ${theme.features.brandFont ? 'brand-font' : ''}`
+    : `text-[9px] font-black text-theme-muted block mb-2 uppercase tracking-[0.2em] ${theme.features.brandFont ? 'brand-font' : ''}`;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-700">
       
       {/* LEFT: Scenario Management */}
       <div className="lg:col-span-3 space-y-6">
-          <div className="rounded-2xl border p-6 shadow-card transition-all bg-theme-surface1 border-theme-border">
-              <div className="flex justify-between items-center mb-6">
-                  <h3 className={`text-xs font-black uppercase tracking-[0.3em] text-theme-cyan ${theme.features.brandFont ? 'brand-font' : ''}`}>MODEL STACK</h3>
-                  <button onClick={handleAddScenario} className="text-[9px] px-4 py-2 rounded-lg text-theme-bg font-black uppercase tracking-widest hover:shadow-glow-cyan transition-all bg-theme-cyan">
+          <div className={isClassic ? 'sc-panel theme-transition overflow-hidden' : 'rounded-2xl border p-6 shadow-card transition-all bg-theme-surface1 border-theme-border'}>
+              {isClassic ? (
+                <>
+                  <div className="sc-panelTitlebar sc-titlebar--red px-5 py-4 flex justify-between items-center">
+                    <h3 className={`text-[10px] font-black uppercase tracking-[0.3em] text-white ${theme.features.brandFont ? 'brand-font' : ''}`}>MODEL STACK</h3>
+                    <button onClick={handleAddScenario} className="sc-btnPrimary text-[9px] px-4 py-2 rounded-lg font-black uppercase tracking-widest transition-all">
                       + NEW
-                  </button>
-              </div>
-              <div className="space-y-3">
-                  {scenarios.map(s => (
-                      <div 
-                        key={s.id} 
-                        onClick={() => { setActiveScenarioId(s.id); setEditingScenario(true); }}
-                        className={`group p-4 rounded-xl border cursor-pointer transition-all ${s.id === activeScenarioId ? 'bg-theme-surface2 border-theme-magenta shadow-glow-magenta' : 'bg-theme-bg border-theme-border hover:border-theme-cyan hover:scale-[1.02]'}`}
-                      >
-                          <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center space-x-3">
-                                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 10px ${s.color}66` }}></div>
-                                  <span className={`font-black text-[11px] uppercase tracking-[0.1em] text-theme-text ${theme.features.brandFont ? 'brand-font' : ''}`}>{s.name}</span>
+                    </button>
+                  </div>
+                  <div className="p-4">
+                    <div className="sc-insetLight rounded-lg p-3 space-y-3">
+                      {scenarios.map(s => (
+                        <div
+                          key={s.id}
+                          onClick={() => { setActiveScenarioId(s.id); setEditingScenario(true); }}
+                          className={`group p-3 rounded-lg border cursor-pointer transition-all ${
+                            s.id === activeScenarioId ? 'border-[rgb(var(--bar-red-border))] bg-white/70' : 'border-[rgb(var(--inset-border)/0.55)] bg-white/45 hover:bg-white/70'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 10px ${s.color}66` }}></div>
+                              <span className={`font-black text-[11px] uppercase tracking-[0.1em] sc-insetText ${theme.features.brandFont ? 'brand-font' : ''}`}>{s.name}</span>
+                            </div>
+                            <div className="w-1.5 h-1.5 rounded-full bg-black/20 group-hover:bg-black/40 animate-pulse"></div>
+                          </div>
+                          <div className="flex justify-between text-[10px] font-mono tracking-tight sc-insetMuted">
+                            <span>OIL: ${s.pricing.oilPrice}</span>
+                            <span className="font-black uppercase sc-insetText">
+                              {Math.max(...s.schedule.annualRigs)} RIGS
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center mb-6">
+                      <h3 className={`text-xs font-black uppercase tracking-[0.3em] text-theme-cyan ${theme.features.brandFont ? 'brand-font' : ''}`}>MODEL STACK</h3>
+                      <button onClick={handleAddScenario} className="text-[9px] px-4 py-2 rounded-lg text-theme-bg font-black uppercase tracking-widest hover:shadow-glow-cyan transition-all bg-theme-cyan">
+                          + NEW
+                      </button>
+                  </div>
+                  <div className="space-y-3">
+                      {scenarios.map(s => (
+                          <div 
+                            key={s.id} 
+                            onClick={() => { setActiveScenarioId(s.id); setEditingScenario(true); }}
+                            className={`group p-4 rounded-xl border cursor-pointer transition-all ${s.id === activeScenarioId ? 'bg-theme-surface2 border-theme-magenta shadow-glow-magenta' : 'bg-theme-bg border-theme-border hover:border-theme-cyan hover:scale-[1.02]'}`}
+                          >
+                              <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center space-x-3">
+                                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 10px ${s.color}66` }}></div>
+                                      <span className={`font-black text-[11px] uppercase tracking-[0.1em] text-theme-text ${theme.features.brandFont ? 'brand-font' : ''}`}>{s.name}</span>
+                                  </div>
+                                  <div className="w-1.5 h-1.5 rounded-full bg-theme-cyan/20 group-hover:bg-theme-cyan animate-pulse"></div>
                               </div>
-                              <div className="w-1.5 h-1.5 rounded-full bg-theme-cyan/20 group-hover:bg-theme-cyan animate-pulse"></div>
+                              <div className="flex justify-between text-[10px] text-theme-muted font-mono tracking-tight">
+                                  <span>OIL: ${s.pricing.oilPrice}</span>
+                                  <span className="font-bold uppercase text-theme-cyan">
+                                      {Math.max(...s.schedule.annualRigs)} RIGS
+                                  </span>
+                              </div>
                           </div>
-                          <div className="flex justify-between text-[10px] text-theme-muted font-mono tracking-tight">
-                              <span>OIL: ${s.pricing.oilPrice}</span>
-                              <span className="font-bold uppercase text-theme-cyan">
-                                  {Math.max(...s.schedule.annualRigs)} RIGS
-                              </span>
-                          </div>
-                      </div>
-                  ))}
-              </div>
+                      ))}
+                  </div>
+                </>
+              )}
           </div>
 
           {activeScenario && editingScenario && (
               <div className="animate-in slide-in-from-left-6 duration-500">
-                   <div className="rounded-t-2xl border border-b-0 p-6 theme-transition bg-theme-surface1 border-theme-border">
-                       <h3 className={labelClass}>Edit Selected Model</h3>
-                       <div className="mb-4">
-                           <label className={labelClass}>MODEL NAME</label>
-                           <input type="text" value={activeScenario.name} onChange={e => updateScenario(activeScenario.id, { name: e.target.value.toUpperCase() })} className={inputClass} />
-                       </div>
-                       <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className={labelClass}>INDICATOR</label>
-                                <input type="color" value={activeScenario.color} onChange={e => updateScenario(activeScenario.id, { color: e.target.value })} className="w-full h-10 bg-theme-bg border border-theme-border rounded-lg cursor-pointer" />
-                            </div>
-                       </div>
+                   <div className={isClassic ? 'sc-panel theme-transition overflow-hidden rounded-b-none' : 'rounded-t-2xl border border-b-0 p-6 theme-transition bg-theme-surface1 border-theme-border'}>
+                       {isClassic ? (
+                         <>
+                           <div className="sc-panelTitlebar sc-titlebar--red px-5 py-4 flex justify-between items-center">
+                             <h3 className={`text-[10px] font-black uppercase tracking-[0.3em] text-white ${theme.features.brandFont ? 'brand-font' : ''}`}>EDIT SELECTED MODEL</h3>
+                           </div>
+                           <div className="p-4">
+                             <div className="sc-insetLight rounded-lg p-4">
+                               <div className="mb-4">
+                                   <label className={labelClass}>MODEL NAME</label>
+                                   <input type="text" value={activeScenario.name} onChange={e => updateScenario(activeScenario.id, { name: e.target.value.toUpperCase() })} className={inputClass} />
+                               </div>
+                               <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className={labelClass}>INDICATOR</label>
+                                        <input type="color" value={activeScenario.color} onChange={e => updateScenario(activeScenario.id, { color: e.target.value })} className="w-full h-10 rounded-lg cursor-pointer sc-inputClassic" />
+                                    </div>
+                               </div>
+                             </div>
+                           </div>
+                         </>
+                       ) : (
+                         <>
+                           <h3 className={labelClass}>Edit Selected Model</h3>
+                           <div className="mb-4">
+                               <label className={labelClass}>MODEL NAME</label>
+                               <input type="text" value={activeScenario.name} onChange={e => updateScenario(activeScenario.id, { name: e.target.value.toUpperCase() })} className={inputClass} />
+                           </div>
+                           <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className={labelClass}>INDICATOR</label>
+                                    <input type="color" value={activeScenario.color} onChange={e => updateScenario(activeScenario.id, { color: e.target.value })} className="w-full h-10 bg-theme-bg border border-theme-border rounded-lg cursor-pointer" />
+                                </div>
+                           </div>
+                         </>
+                       )}
                    </div>
 
-                   <div className="rounded-b-2xl border p-2 space-y-1 theme-transition shadow-card bg-theme-bg border-theme-border">
+                   <div className={isClassic ? 'sc-panel theme-transition p-2 space-y-1 rounded-t-none' : 'rounded-b-2xl border p-2 space-y-1 theme-transition shadow-card bg-theme-bg border-theme-border'}>
                        <AccordionItem title="Economic Anchors" isOpen={openSection === 'PRICING'} onClick={() => setOpenSection('PRICING')} useBrandFont={theme.features.brandFont}>
                            <div className="grid grid-cols-2 gap-4">
                                <div><label className={labelClass}>OIL PRICE</label><input type="number" value={activeScenario.pricing.oilPrice} onChange={e => updatePricing(activeScenario.id, 'oilPrice', parseFloat(e.target.value))} className={inputClass} /></div>
@@ -262,29 +355,58 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
       <div className="lg:col-span-9 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {scenarioResults.map((res) => (
-                  <div key={res.scenario.id} className="rounded-2xl border p-6 relative overflow-hidden theme-transition shadow-card group bg-theme-surface1/80 border-theme-border hover:border-theme-cyan">
+                  <div key={res.scenario.id} className={isClassic ? 'sc-panel theme-transition overflow-hidden group' : 'rounded-2xl border p-6 relative overflow-hidden theme-transition shadow-card group bg-theme-surface1/80 border-theme-border hover:border-theme-cyan'}>
                       <div className="absolute top-0 left-0 w-1.5 h-full opacity-60" style={{ backgroundColor: res.scenario.color }}></div>
                       <div className="absolute top-0 right-0 w-32 h-32 blur-[50px] opacity-10 pointer-events-none" style={{ backgroundColor: res.scenario.color }}></div>
                       
-                      <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] mb-4 ml-2 transition-all text-theme-cyan group-hover:text-theme-magenta ${theme.features.brandFont ? 'brand-font' : ''}`}>{res.scenario.name}</h4>
-                      <div className="ml-2">
-                          <div className="text-3xl font-black tracking-tight theme-transition text-theme-text">${(res.metrics.npv10 / 1e6).toFixed(1)}M <span className="text-[10px] text-theme-muted font-black tracking-[0.1em] ml-1">NPV10</span></div>
-                          <div className="flex justify-between mt-6 text-[10px] text-theme-muted font-bold tracking-widest border-t border-white/5 pt-3">
+                      {isClassic ? (
+                        <>
+                          <div className="sc-panelTitlebar sc-titlebar--red px-5 py-3">
+                            <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] text-white ${theme.features.brandFont ? 'brand-font' : ''}`}>{res.scenario.name}</h4>
+                          </div>
+                          <div className="p-5">
+                            <div className="text-3xl font-black tracking-tight theme-transition text-theme-text">
+                              ${(res.metrics.npv10 / 1e6).toFixed(1)}M <span className="text-[10px] text-theme-muted font-black tracking-[0.1em] ml-1">NPV10</span>
+                            </div>
+                            <div className="flex justify-between mt-6 text-[10px] text-theme-muted font-bold tracking-widest border-t border-white/5 pt-3">
                               <span>ROI: {res.metrics.roi.toFixed(2)}X</span>
                               <span>FLEET: {Math.max(...res.scenario.schedule.annualRigs)} RIGS</span>
+                            </div>
                           </div>
-                      </div>
+                        </>
+                      ) : (
+                        <>
+                          <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] mb-4 ml-2 transition-all text-theme-cyan group-hover:text-theme-magenta ${theme.features.brandFont ? 'brand-font' : ''}`}>{res.scenario.name}</h4>
+                          <div className="ml-2">
+                              <div className="text-3xl font-black tracking-tight theme-transition text-theme-text">${(res.metrics.npv10 / 1e6).toFixed(1)}M <span className="text-[10px] text-theme-muted font-black tracking-[0.1em] ml-1">NPV10</span></div>
+                              <div className="flex justify-between mt-6 text-[10px] text-theme-muted font-bold tracking-widest border-t border-white/5 pt-3">
+                                  <span>ROI: {res.metrics.roi.toFixed(2)}X</span>
+                                  <span>FLEET: {Math.max(...res.scenario.schedule.annualRigs)} RIGS</span>
+                              </div>
+                          </div>
+                        </>
+                      )}
                   </div>
               ))}
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="rounded-2xl border p-8 shadow-card theme-transition bg-theme-surface1/60 border-theme-border">
-                    <h3 className={`text-[11px] font-black uppercase tracking-[0.4em] mb-8 flex items-center gap-3 text-theme-lavender ${theme.features.brandFont ? 'brand-font' : ''}`}>
-                      <span className="w-1.5 h-1.5 rounded-full bg-theme-magenta shadow-glow-magenta"></span>
-                      PORTFOLIO OVERLAY
-                    </h3>
-                    <div className="h-[320px] w-full">
+                <div className={isClassic ? 'sc-panel theme-transition overflow-hidden' : 'rounded-2xl border p-8 shadow-card theme-transition bg-theme-surface1/60 border-theme-border'}>
+                    {isClassic ? (
+                      <div className="sc-panelTitlebar sc-titlebar--red px-5 py-4">
+                        <h3 className={`text-[10px] font-black uppercase tracking-[0.4em] text-white ${theme.features.brandFont ? 'brand-font' : ''}`}>
+                          PORTFOLIO OVERLAY
+                        </h3>
+                      </div>
+                    ) : (
+                      <h3 className={`text-[11px] font-black uppercase tracking-[0.4em] mb-8 flex items-center gap-3 text-theme-lavender ${theme.features.brandFont ? 'brand-font' : ''}`}>
+                        <span className="w-1.5 h-1.5 rounded-full bg-theme-magenta shadow-glow-magenta"></span>
+                        PORTFOLIO OVERLAY
+                      </h3>
+                    )}
+
+                    <div className={isClassic ? 'p-5' : ''}>
+                      <div className="h-[320px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={cfChartData}>
                                 <CartesianGrid strokeDasharray="6 6" stroke={chartPalette.grid} vertical={false} />
@@ -298,26 +420,46 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
                                 {scenarios.map(s => <Line key={s.id} type="monotone" dataKey={s.id} name={s.name} stroke={s.color} strokeWidth={4} dot={false} animationDuration={2000} />)}
                             </LineChart>
                         </ResponsiveContainer>
+                      </div>
                     </div>
                 </div>
 
                 <div className="space-y-6">
-                    <div className="flex items-center space-x-4 justify-end pr-2">
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] theme-transition text-theme-muted">Primary Variable</span>
-                        <select value={sensY} onChange={(e) => setSensY(e.target.value as SensitivityVariable)} className="text-[10px] font-black rounded-lg px-3 py-1.5 outline-none transition-all cursor-pointer bg-theme-bg border border-theme-border text-theme-cyan focus:border-theme-magenta">
+                    {isClassic ? (
+                      <div className="sc-insetLight rounded-lg p-3 flex items-center space-x-4 justify-end">
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] sc-insetMuted">Primary Variable</span>
+                        <select value={sensY} onChange={(e) => setSensY(e.target.value as SensitivityVariable)} className="sc-selectClassic text-[10px] font-black rounded-lg px-3 py-1.5 outline-none transition-all cursor-pointer">
                             <option value="CAPEX_SCALAR">CAPEX SCALAR</option>
                             <option value="EUR_SCALAR">RECOVERY SCALAR</option>
                             <option value="OIL_PRICE">OIL BENCHMARK</option>
                             <option value="RIG_COUNT">FLEET SIZE</option>
                         </select>
-                        <span className="text-[10px] font-black theme-transition text-theme-lavender opacity-40">VS</span>
-                        <select value={sensX} onChange={(e) => setSensX(e.target.value as SensitivityVariable)} className="text-[10px] font-black rounded-lg px-3 py-1.5 outline-none transition-all cursor-pointer bg-theme-bg border border-theme-border text-theme-magenta focus:border-theme-cyan">
+                        <span className="text-[10px] font-black sc-insetMuted opacity-60">VS</span>
+                        <select value={sensX} onChange={(e) => setSensX(e.target.value as SensitivityVariable)} className="sc-selectClassic text-[10px] font-black rounded-lg px-3 py-1.5 outline-none transition-all cursor-pointer">
                             <option value="OIL_PRICE">OIL BENCHMARK</option>
                             <option value="CAPEX_SCALAR">CAPEX SCALAR</option>
                             <option value="EUR_SCALAR">RECOVERY SCALAR</option>
                             <option value="RIG_COUNT">FLEET SIZE</option>
                         </select>
-                    </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-4 justify-end pr-2">
+                          <span className="text-[9px] font-black uppercase tracking-[0.2em] theme-transition text-theme-muted">Primary Variable</span>
+                          <select value={sensY} onChange={(e) => setSensY(e.target.value as SensitivityVariable)} className="text-[10px] font-black rounded-lg px-3 py-1.5 outline-none transition-all cursor-pointer bg-theme-bg border border-theme-border text-theme-cyan focus:border-theme-magenta">
+                              <option value="CAPEX_SCALAR">CAPEX SCALAR</option>
+                              <option value="EUR_SCALAR">RECOVERY SCALAR</option>
+                              <option value="OIL_PRICE">OIL BENCHMARK</option>
+                              <option value="RIG_COUNT">FLEET SIZE</option>
+                          </select>
+                          <span className="text-[10px] font-black theme-transition text-theme-lavender opacity-40">VS</span>
+                          <select value={sensX} onChange={(e) => setSensX(e.target.value as SensitivityVariable)} className="text-[10px] font-black rounded-lg px-3 py-1.5 outline-none transition-all cursor-pointer bg-theme-bg border border-theme-border text-theme-magenta focus:border-theme-cyan">
+                              <option value="OIL_PRICE">OIL BENCHMARK</option>
+                              <option value="CAPEX_SCALAR">CAPEX SCALAR</option>
+                              <option value="EUR_SCALAR">RECOVERY SCALAR</option>
+                              <option value="RIG_COUNT">FLEET SIZE</option>
+                          </select>
+                      </div>
+                    )}
                     <SensitivityMatrix data={sensitivityData} xVar={sensX} yVar={sensY} />
                 </div>
           </div>

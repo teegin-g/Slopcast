@@ -18,6 +18,7 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({ wells, selectedWellIds, g
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [isLassoMode, setIsLassoMode] = useState(false);
   const [lassoPoints, setLassoPoints] = useState<[number, number][]>([]);
+  const isClassic = themeId === 'mario';
   
   const lassoPointsRef = useRef<[number, number][]>([]);
 
@@ -163,21 +164,33 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({ wells, selectedWellIds, g
     <div ref={containerRef} className="w-full h-full min-h-[400px] overflow-hidden relative select-none">
       
       {/* HUD Info */}
-      <div className="absolute top-4 left-4 z-10 pointer-events-none select-none">
-        <p className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded backdrop-blur transition-all bg-theme-bg/80 text-theme-cyan border border-theme-border">
-            {selectedWellIds.size} Wells Selected
-        </p>
-      </div>
+      {!isClassic && (
+        <div className="absolute top-4 left-4 z-10 pointer-events-none select-none">
+          <p className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded backdrop-blur transition-all bg-theme-bg/80 text-theme-cyan border border-theme-border">
+              {selectedWellIds.size} Wells Selected
+          </p>
+        </div>
+      )}
+
+      {isClassic && (
+        <div className="absolute top-4 left-4 z-10 pointer-events-none select-none">
+          <div className="px-3 py-1.5 rounded border border-black/40 shadow-card bg-theme-cyan text-white text-[10px] font-black uppercase tracking-widest">
+            <span className="mr-2">🔒</span>
+            BASIN VISUALIZER
+          </div>
+        </div>
+      )}
 
       {/* Lasso Button */}
       <div className="absolute top-4 right-4 z-10">
           <button 
             onClick={() => setIsLassoMode(!isLassoMode)}
             className={`
-                flex items-center space-x-2 px-3 py-1.5 rounded text-[10px] font-bold uppercase tracking-wide shadow-lg transition-all
+                flex items-center space-x-2 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide transition-all
+                ${isClassic ? 'rounded-md border border-black/40 shadow-card' : 'rounded shadow-lg'}
                 ${isLassoMode 
-                    ? 'bg-theme-magenta text-white glow-magenta' 
-                    : 'bg-theme-surface2 text-theme-cyan hover:bg-theme-surface1'}
+                    ? (isClassic ? 'bg-theme-magenta text-white' : 'bg-theme-magenta text-white glow-magenta')
+                    : (isClassic ? 'bg-theme-cyan text-white' : 'bg-theme-surface2 text-theme-cyan hover:bg-theme-surface1')}
             `}
           >
              <span>{isLassoMode ? 'LASSO ENGAGED' : 'LASSO'}</span>

@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Slopcast - O&G Deal Evaluation</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&family=Permanent+Marker&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles/theme.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&family=Permanent+Marker&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <!-- Theme tokens are bundled via `index.tsx` import for production builds. -->
     <script>
       tailwind.config = {
         theme: {
@@ -37,7 +37,7 @@
             boxShadow: {
               'glow-cyan':    'var(--shadow-glow-cyan)',
               'glow-magenta': 'var(--shadow-glow-magenta)',
-              'card': '0 10px 30px rgba(0,0,0,.45)',
+              'card': 'var(--shadow-card)',
             }
           }
         }

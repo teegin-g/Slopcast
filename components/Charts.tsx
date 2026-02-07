@@ -10,16 +10,26 @@ interface ChartsProps {
 
 const Charts: React.FC<ChartsProps> = ({ data, themeId }) => {
   const { chartPalette: palette } = getTheme(themeId);
+  const isClassic = themeId === 'mario';
 
   return (
-    <div className="space-y-6 h-full flex flex-col justify-between p-2">
+    <div className={`space-y-6 h-full flex flex-col justify-between ${isClassic ? '' : 'p-2'}`}>
       {/* Production Forecast */}
-      <div className="rounded-xl border p-5 flex-1 transition-all bg-transparent border-theme-border/40">
-        <h4 className="font-black text-[10px] uppercase tracking-[0.3em] mb-6 flex items-center transition-all text-theme-cyan">
-          <span className="w-1 h-1 rounded-full bg-theme-cyan mr-2"></span>
-          Production Forecast (BBL/D)
-        </h4>
-        <div className="h-40">
+      <div className={isClassic ? 'sc-screen theme-transition flex-1' : 'rounded-xl border p-5 flex-1 transition-all bg-transparent border-theme-border/40'}>
+        {isClassic ? (
+          <div className="sc-screenTitlebar sc-titlebar--red px-4 py-2">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-white">
+              PRODUCTION FORECAST (BBL/D)
+            </h4>
+          </div>
+        ) : (
+          <h4 className="font-black text-[10px] uppercase tracking-[0.3em] mb-6 flex items-center transition-all text-theme-cyan">
+            <span className="w-1 h-1 rounded-full bg-theme-cyan mr-2"></span>
+            Production Forecast (BBL/D)
+          </h4>
+        )}
+        <div className={isClassic ? 'p-4' : ''}>
+          <div className="h-40">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="4 4" stroke={palette.grid} vertical={false} />
@@ -39,7 +49,7 @@ const Charts: React.FC<ChartsProps> = ({ data, themeId }) => {
                 tickFormatter={(value) => `${(value/1000).toFixed(0)}k`}
               />
               <Tooltip 
-                contentStyle={{ backgroundColor: palette.surface, borderRadius: '8px', border: `1px solid ${palette.border}`, color: '#fff', fontSize: '11px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }} 
+                contentStyle={{ backgroundColor: palette.surface, borderRadius: '8px', border: `1px solid ${palette.border}`, color: 'rgb(var(--text))', fontSize: '11px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }} 
                 itemStyle={{ padding: 0 }}
                 formatter={(value: number) => [Math.round(value).toLocaleString(), 'BBLs']}
                 cursor={{ stroke: palette.lav, strokeWidth: 1 }}
@@ -55,16 +65,26 @@ const Charts: React.FC<ChartsProps> = ({ data, themeId }) => {
               />
             </LineChart>
           </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
       {/* Cash Flow */}
-      <div className="rounded-xl border p-5 flex-1 transition-all bg-transparent border-theme-border/40">
-        <h4 className="font-black text-[10px] uppercase tracking-[0.3em] mb-6 flex items-center transition-all text-theme-magenta">
-          <span className="w-1 h-1 rounded-full bg-theme-magenta mr-2"></span>
-          Cumulative Recovery (USD)
-        </h4>
-        <div className="h-40">
+      <div className={isClassic ? 'sc-screen theme-transition flex-1' : 'rounded-xl border p-5 flex-1 transition-all bg-transparent border-theme-border/40'}>
+        {isClassic ? (
+          <div className="sc-screenTitlebar sc-titlebar--red px-4 py-2">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-white">
+              CUMULATIVE RECOVERY (%)
+            </h4>
+          </div>
+        ) : (
+          <h4 className="font-black text-[10px] uppercase tracking-[0.3em] mb-6 flex items-center transition-all text-theme-magenta">
+            <span className="w-1 h-1 rounded-full bg-theme-magenta mr-2"></span>
+            Cumulative Recovery (USD)
+          </h4>
+        )}
+        <div className={isClassic ? 'p-4' : ''}>
+          <div className="h-40">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={data} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="4 4" stroke={palette.grid} vertical={false} />
@@ -84,7 +104,7 @@ const Charts: React.FC<ChartsProps> = ({ data, themeId }) => {
                 tickFormatter={(value) => `$${(value/1e6).toFixed(0)}M`}
               />
               <Tooltip 
-                contentStyle={{ backgroundColor: palette.surface, borderRadius: '8px', border: `1px solid ${palette.border}`, color: '#fff', fontSize: '11px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}
+                contentStyle={{ backgroundColor: palette.surface, borderRadius: '8px', border: `1px solid ${palette.border}`, color: 'rgb(var(--text))', fontSize: '11px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}
                 formatter={(value: number) => [`$${(value/1e6).toFixed(2)}MM`, '']}
                 cursor={{ fill: palette.grid, opacity: 0.3 }}
               />
@@ -105,6 +125,7 @@ const Charts: React.FC<ChartsProps> = ({ data, themeId }) => {
               <Bar dataKey="netCashFlow" fill={palette.lav} opacity={0.3} barSize={2} />
             </ComposedChart>
           </ResponsiveContainer>
+          </div>
         </div>
       </div>
     </div>

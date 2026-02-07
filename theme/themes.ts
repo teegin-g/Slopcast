@@ -4,7 +4,7 @@
 // the rest of the UI will pick it up automatically.
 // ---------------------------------------------------------------------------
 
-export type ThemeId = 'slate' | 'synthwave' | 'tropical';
+export type ThemeId = 'slate' | 'synthwave' | 'tropical' | 'mario';
 
 /** Per-theme chart series colors (Recharts / D3). */
 export interface ChartPalette {
@@ -151,11 +151,44 @@ const tropical: ThemeMeta = {
   },
 };
 
+const mario: ThemeMeta = {
+  id: 'mario',
+  label: 'Classic',
+  icon: '🧱',
+  description: 'Slopcast Classic — beveled retro dashboard',
+  appName: 'SLOPCAST',
+  appSubtitle: '1-ECONOMICS',
+  chartPalette: {
+    oil: '#FF2A2A',                 // production line (classic red)
+    cash: '#FF2A2A',                // recovery line / fill
+    lav: '#BDBDBD',                 // secondary bars / accents
+    grid: 'rgba(255, 255, 255, 0.10)',
+    text: 'rgba(255, 255, 255, 0.75)',
+    surface: '#101010',             // tooltip bg
+    border: 'rgba(255, 255, 255, 0.18)',
+  },
+  mapPalette: {
+    gridColor: '#2C2C2C',
+    gridOpacity: 0.35,
+    selectedStroke: '#FFFFFF',
+    glowColor: '#1270FF',
+    unassignedFill: '#3b82f6',
+    lassoFill: 'rgba(255, 213, 0, 0.10)',
+    lassoStroke: '#FFD500',
+    lassoDash: '0',
+  },
+  features: {
+    retroGrid: false,
+    brandFont: false,
+    glowEffects: false,
+  },
+};
+
 // ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
-export const THEMES: ThemeMeta[] = [slate, synthwave, tropical];
+export const THEMES: ThemeMeta[] = [slate, synthwave, tropical, mario];
 
 export const DEFAULT_THEME: ThemeId = 'synthwave';
 

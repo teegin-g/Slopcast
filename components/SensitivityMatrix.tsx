@@ -26,6 +26,7 @@ const formatValue = (v: SensitivityVariable, val: number) => {
 
 const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar }) => {
   const { theme } = useTheme();
+  const isClassic = theme.id === 'mario';
 
   const allNpvs = useMemo(() => data.flat().map(d => d.npv), [data]);
   const maxNpv = Math.max(...allNpvs);
@@ -33,20 +34,35 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
 
   // Colors are theme-token-aware: we read the CSS variables via computed style
   // for the positive/negative heatmap shading.
+  const readCssRgb = useMemo(() => {
+    const read = (varName: string, fallback: [number, number, number]) => {
+      if (typeof window === 'undefined') return fallback;
+      const raw = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+      const parts = raw.split(/\s+/).map(Number);
+      if (parts.length === 3 && parts.every(n => Number.isFinite(n))) {
+        return [parts[0], parts[1], parts[2]] as [number, number, number];
+      }
+      return fallback;
+    };
+
+    return {
+      success: read('--success', [16, 185, 129]),
+      danger: read('--danger', [239, 68, 68]),
+    };
+  }, [theme.id]);
+
   const getColor = (val: number) => {
       if (val === 0) return 'rgba(255,255,255,0.05)';
       
-      // Use success / danger from the current theme's computed CSS vars
       if (val > 0) {
           const range = maxNpv - 0;
           const pct = Math.min(1, val / (range || 1));
-          // Pull from the theme registry for consistent colour references
-          const [r, g, b] = theme.id === 'synthwave' ? [45,255,177] : theme.id === 'tropical' ? [52,211,153] : [16,185,129];
+          const [r, g, b] = readCssRgb.success;
           return `rgba(${r}, ${g}, ${b}, ${0.1 + (pct * 0.5)})`;
       } else {
           const range = 0 - minNpv;
           const pct = Math.min(1, Math.abs(val) / (range || 1));
-          const [r, g, b] = theme.id === 'synthwave' ? [255,79,163] : theme.id === 'tropical' ? [248,113,113] : [239,68,68];
+          const [r, g, b] = readCssRgb.danger;
           return `rgba(${r}, ${g}, ${b}, ${0.1 + (pct * 0.5)})`;
       }
   };
@@ -55,14 +71,62 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
   const yLabels = data.map(d => d[0].yValue);
 
   return (
-    <div className="overflow-hidden rounded-lg border transition-all bg-theme-bg border-theme-border shadow-xl">
-        <div className="p-4 border-b flex justify-between items-center transition-all bg-theme-surface1 border-theme-border">
+    <div className={isClassic ? 'sc-panel theme-transition' : 'overflow-hidden rounded-lg border transition-all bg-theme-bg border-theme-border shadow-xl'}>
+        <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--red p-4 flex justify-between items-center' : 'p-4 border-b flex justify-between items-center transition-all bg-theme-surface1 border-theme-border'}>
             <h3 className={`text-xs font-bold uppercase tracking-widest text-theme-magenta ${theme.features.brandFont ? 'brand-font' : ''}`}>
                 Portfolio NPV Sensitivity <span className="text-theme-muted ml-2">(MM)</span>
             </h3>
         </div>
         
-        <div className="p-6 overflow-x-auto flex flex-col items-center">
+        <div className={isClassic ? 'p-4' : 'p-6 overflow-x-auto flex flex-col items-center'}>
+          {isClassic && (
+            <div className="sc-insetLight rounded-lg p-4 overflow-x-auto flex flex-col items-center">
+              <div className="relative">
+                  <div className={`absolute -left-12 top-1/2 transform -translate-y-1/2 -rotate-90 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap text-center w-32 sc-insetMuted ${theme.features.brandFont ? 'brand-font' : ''}`}>
+                      {formatAxisLabel(yVar)}
+                  </div>
+  
+                  <table className="border-collapse">
+                      <thead>
+                          <tr>
+                              <th className="p-2"></th>
+                              {xLabels.map((x, i) => (
+                                  <th key={i} className="p-2 text-[10px] font-mono font-black border-b sc-insetText" style={{ borderColor: 'rgb(var(--inset-border) / 0.55)' }}>
+                                      {formatValue(xVar, x)}
+                                  </th>
+                              ))}
+                          </tr>
+                      </thead>
+                      <tbody>
+                          {data.map((row, rowIdx) => (
+                              <tr key={rowIdx}>
+                                  <th className="p-2 text-[10px] font-mono font-black border-r text-right sc-insetText" style={{ borderColor: 'rgb(var(--inset-border) / 0.55)' }}>
+                                      {formatValue(yVar, yLabels[rowIdx])}
+                                  </th>
+                                  {row.map((cell, colIdx) => (
+                                      <td 
+                                          key={colIdx} 
+                                          className="p-3 text-[11px] font-mono text-center border transition-all hover:scale-110 cursor-default"
+                                          style={{ backgroundColor: getColor(cell.npv), borderColor: 'rgb(var(--inset-border) / 0.25)' }}
+                                      >
+                                          <span className="sc-insetText">
+                                              {(cell.npv / 1e6).toFixed(1)}
+                                          </span>
+                                      </td>
+                                  ))}
+                              </tr>
+                          ))}
+                      </tbody>
+                  </table>
+                  
+                  <div className={`text-center mt-4 text-[10px] font-bold uppercase tracking-widest sc-insetMuted ${theme.features.brandFont ? 'brand-font' : ''}`}>
+                      {formatAxisLabel(xVar)}
+                  </div>
+              </div>
+            </div>
+          )}
+
+          {!isClassic && (
             <div className="relative">
                 <div className={`absolute -left-12 top-1/2 transform -translate-y-1/2 -rotate-90 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap text-center w-32 transition-all text-theme-lavender ${theme.features.brandFont ? 'brand-font' : ''}`}>
                     {formatAxisLabel(yVar)}
@@ -91,7 +155,7 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
                                         className="p-3 text-[11px] font-mono text-center border transition-all hover:scale-110 cursor-default border-theme-border/20"
                                         style={{ backgroundColor: getColor(cell.npv) }}
                                     >
-                                        <span className={cell.npv > 0 ? "text-theme-text" : "text-red-100"}>
+                                        <span className="text-theme-text">
                                             {(cell.npv / 1e6).toFixed(1)}
                                         </span>
                                     </td>
@@ -105,6 +169,7 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
                     {formatAxisLabel(xVar)}
                 </div>
             </div>
+          )}
         </div>
     </div>
   );

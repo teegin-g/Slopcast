@@ -25,6 +25,7 @@ const CATEGORY_COLORS: Record<CapexCategory, string> = {
 const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
   const [isEditing, setIsEditing] = useState(false);
   const { theme } = useTheme();
+  const isClassic = theme.id === 'mario';
 
   const handleUpdateItem = (id: string, field: keyof CapexItem, value: any) => {
     const newItems = capex.items.map(item => {
@@ -84,7 +85,9 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
           <div className="space-y-4">
               <div 
                 onClick={() => setIsEditing(true)}
-                className="group cursor-pointer bg-theme-bg/50 rounded-lg border border-theme-border p-4 hover:border-theme-cyan transition-all relative"
+                className={`group cursor-pointer rounded-lg border p-4 transition-all relative ${
+                  isClassic ? 'bg-black/10 border-black/30 hover:border-theme-warning' : 'bg-theme-bg/50 border-theme-border hover:border-theme-cyan'
+                }`}
               >
                   <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none z-10">
                       <p className="text-[10px] text-theme-muted uppercase font-bold tracking-widest">Est. D&C</p>
@@ -109,7 +112,7 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
                                 ))}
                               </Pie>
                               <Tooltip 
-                                contentStyle={{ backgroundColor: theme.chartPalette.surface, borderColor: theme.chartPalette.border, color: '#cbd5e1', fontSize: '10px' }}
+                                contentStyle={{ backgroundColor: theme.chartPalette.surface, borderColor: theme.chartPalette.border, color: 'rgb(var(--text))', fontSize: '10px' }}
                                 formatter={(value: number) => [`$${(value/1e6).toFixed(2)}MM`, '']}
                                 itemStyle={{ padding: 0 }}
                               />
@@ -147,15 +150,19 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
           <h4 className="text-xs font-bold text-theme-text">Detailed Line Items</h4>
           <button 
             onClick={() => setIsEditing(false)}
-            className="text-[10px] bg-theme-cyan hover:opacity-90 text-theme-bg px-2 py-1 rounded font-bold uppercase tracking-wide transition-colors"
+            className={
+              isClassic
+                ? 'sc-btnPrimary text-[10px] px-2 py-1 rounded font-black uppercase tracking-wide transition-colors'
+                : 'text-[10px] bg-theme-cyan hover:opacity-90 text-theme-bg px-2 py-1 rounded font-bold uppercase tracking-wide transition-colors'
+            }
           >
             Done
           </button>
       </div>
 
       {/* Grid Table */}
-      <div className="border border-theme-border rounded-lg overflow-hidden bg-theme-bg">
-        <div className="grid grid-cols-12 gap-0 bg-theme-bg text-[10px] font-bold text-theme-muted p-2 border-b border-theme-border">
+      <div className={`border rounded-lg overflow-hidden ${isClassic ? 'border-black/30 bg-black/10' : 'border-theme-border bg-theme-bg'}`}>
+        <div className={`grid grid-cols-12 gap-0 text-[10px] font-bold text-theme-muted p-2 border-b ${isClassic ? 'bg-black/10 border-black/30' : 'bg-theme-bg border-theme-border'}`}>
           <div className="col-span-4">ITEM</div>
           <div className="col-span-3">CATEGORY</div>
           <div className="col-span-2 text-right">COST</div>
@@ -222,7 +229,7 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
           )}
         </div>
         
-        <div className="bg-theme-bg p-2 flex justify-between items-center border-t border-theme-border">
+        <div className={`p-2 flex justify-between items-center border-t ${isClassic ? 'bg-black/10 border-black/30' : 'bg-theme-bg border-theme-border'}`}>
           <button onClick={handleAddItem} className="text-[10px] text-theme-cyan hover:opacity-80 font-medium transition-colors">
             + Add Cost Item
           </button>

@@ -27,9 +27,114 @@
 
   --shadow-glow-cyan: 0 0 10px rgba(59, 130, 246, 0.3);
   --shadow-glow-magenta: 0 0 10px rgba(236, 72, 153, 0.3);
+  --shadow-card: 0 10px 30px rgba(0,0,0,.45);
 
   --grad-space: radial-gradient(1200px circle at 50% 20%, #1e293b 0%, #0f172a 100%);
   --font-brand: 'Inter';
+
+  /* ==========================================================================
+     Semantic chrome tokens (defaults map to base tokens)
+     ========================================================================== */
+
+  /* Header bar */
+  --header-bg-1: var(--surface-2);
+  --header-bg-2: var(--surface-1);
+  --header-border: var(--border);
+  --header-text: var(--text);
+
+  /* Common titlebar presets (overridable per-theme) */
+  --bar-red-bg-1: var(--magenta);
+  --bar-red-bg-2: var(--magenta);
+  --bar-red-text: var(--text);
+  --bar-red-border: var(--border);
+
+  --bar-yellow-bg-1: var(--warning);
+  --bar-yellow-bg-2: var(--warning);
+  --bar-yellow-text: var(--bg-deep);
+  --bar-yellow-border: var(--border);
+
+  --bar-blue-bg-1: var(--cyan);
+  --bar-blue-bg-2: var(--cyan);
+  --bar-blue-text: var(--bg-deep);
+  --bar-blue-border: var(--border);
+
+  --bar-brown-bg-1: var(--surface-2);
+  --bar-brown-bg-2: var(--surface-1);
+  --bar-brown-text: var(--text);
+  --bar-brown-border: var(--border);
+
+  --bar-dark-bg-1: var(--bg-deep);
+  --bar-dark-bg-2: var(--bg-deep);
+  --bar-dark-text: var(--text);
+  --bar-dark-border: var(--border);
+
+  /* Brown-style module panels (sidebar / memo) */
+  --panel-bg-1: var(--surface-1);
+  --panel-bg-2: var(--surface-1);
+  --panel-border: var(--border);
+  --panel-inset-hi: 255 255 255;
+  --panel-inset-lo: 0 0 0;
+  --panel-title-bg-1: var(--surface-2);
+  --panel-title-bg-2: var(--surface-1);
+  --panel-title-text: var(--text);
+
+  /* Dark “screen” panels (map / charts) */
+  --screen-bg-1: var(--bg-deep);
+  --screen-bg-2: var(--bg-deep);
+  --screen-border: var(--border);
+  --screen-inset-hi: 255 255 255;
+  --screen-inset-lo: 0 0 0;
+  --screen-title-bg-1: var(--surface-2);
+  --screen-title-bg-2: var(--surface-1);
+  --screen-title-text: var(--text);
+
+  /* KPI blocks (big + tiles) */
+  --kpi-bg-1: var(--surface-1);
+  --kpi-bg-2: var(--surface-2);
+  --kpi-border: var(--border);
+  --kpi-title-bg-1: var(--surface-2);
+  --kpi-title-bg-2: var(--surface-1);
+  --kpi-title-text: var(--text);
+  --kpi-value-text: var(--text);
+
+  /* KPI variants (fallback to base KPI tokens) */
+  --kpi-main-bg-1: var(--kpi-bg-1);
+  --kpi-main-bg-2: var(--kpi-bg-2);
+  --kpi-main-border: var(--kpi-border);
+  --kpi-main-title-bg-1: var(--kpi-title-bg-1);
+  --kpi-main-title-bg-2: var(--kpi-title-bg-2);
+  --kpi-main-title-text: var(--kpi-title-text);
+  --kpi-main-value-text: var(--kpi-value-text);
+
+  --kpi-tile-bg-1: var(--kpi-bg-1);
+  --kpi-tile-bg-2: var(--kpi-bg-2);
+  --kpi-tile-border: var(--kpi-border);
+  --kpi-tile-title-bg-1: var(--kpi-title-bg-1);
+  --kpi-tile-title-bg-2: var(--kpi-title-bg-2);
+  --kpi-tile-title-text: var(--kpi-title-text);
+  --kpi-tile-value-text: var(--kpi-value-text);
+
+  /* Buttons (embossed) */
+  --btn-primary-bg-1: var(--cyan);
+  --btn-primary-bg-2: var(--cyan);
+  --btn-primary-border: var(--cyan);
+  --btn-primary-text: var(--bg-deep);
+
+  --btn-secondary-bg-1: var(--surface-2);
+  --btn-secondary-bg-2: var(--surface-1);
+  --btn-secondary-border: var(--border);
+  --btn-secondary-text: var(--text);
+
+  /* Radii */
+  --radius-panel: 18px;
+  --radius-kpi: 18px;
+
+  /* Light inset surfaces (used by Scenario page Classic mode) */
+  --inset-bg-1: 255 255 255;
+  --inset-bg-2: 245 247 250;
+  --inset-border: var(--border);
+  --inset-text: var(--text);
+  --inset-muted: var(--muted);
 }
 
 /* ---------- Synthwave ---------- */
@@ -52,6 +157,7 @@
 
   --shadow-glow-cyan: 0 0 18px rgba(158,211,240,.45), 0 0 48px rgba(158,211,240,.25);
   --shadow-glow-magenta: 0 0 18px rgba(229,102,218,.45), 0 0 48px rgba(229,102,218,.25);
+  --shadow-card: 0 10px 30px rgba(0,0,0,.55);
 
   --grad-space: radial-gradient(1200px circle at 50% 20%, #541963 0%, #1B0E2B 45%, #0E061A 100%);
   --font-brand: 'Orbitron';
@@ -77,9 +183,147 @@
 
   --shadow-glow-cyan: 0 0 14px rgba(45, 212, 191, 0.35), 0 0 40px rgba(45, 212, 191, 0.15);
   --shadow-glow-magenta: 0 0 14px rgba(249, 115, 22, 0.35), 0 0 40px rgba(249, 115, 22, 0.15);
+  --shadow-card: 0 10px 30px rgba(0,0,0,.45);
 
   --grad-space: radial-gradient(1200px circle at 50% 20%, #1e3a30 0%, #1a2332 50%, #121c28 100%);
   --font-brand: 'Inter';
+}
+
+/* ---------- Mario (Slopcast Classic) ---------- */
+[data-theme='mario'] {
+  /* Light canvas behind the modules */
+  --bg-deep: 238 232 224;        /* #EEE8E0 */
+  --bg-space: 250 247 242;       /* #FAF7F2 */
+
+  /* Core surfaces (most UI is dark modules) */
+  --surface-1: 82 40 12;         /* #52280C */
+  --surface-2: 108 52 16;        /* #6C3410 */
+  --border: 176 108 42;          /* #B06C2A */
+
+  /* Accents */
+  --cyan: 18 112 255;            /* #1270FF (classic blue) */
+  --magenta: 220 0 0;            /* #DC0000 (classic red) */
+  --violet: 255 122 0;           /* orange pop */
+  --purple: 58 26 7;             /* deep brown */
+  --lav: 255 213 0;              /* #FFD500 (gold) */
+
+  /* Text */
+  --text: 255 255 255;           /* white on modules */
+  --muted: 242 220 178;          /* warm cream */
+
+  /* States */
+  --success: 56 150 36;          /* green KPI fill */
+  --warning: 255 213 0;          /* yellow title bars */
+  --danger: 220 0 0;             /* red title bars */
+
+  /* Shadows (no neon in classic theme) */
+  --shadow-glow-cyan: 0 0 0 rgba(0,0,0,0);
+  --shadow-glow-magenta: 0 0 0 rgba(0,0,0,0);
+  --shadow-card: 0 6px 12px rgba(0,0,0,0.35);
+
+  --grad-space: radial-gradient(1200px circle at 45% -10%, #ffffff 0%, #f3efe9 42%, #e7e0d6 100%);
+  --font-brand: 'Inter';
+
+  /* Header chrome (blue) */
+  --header-bg-1: 18 112 255;     /* #1270FF */
+  --header-bg-2: 8 56 158;       /* #08389E */
+  --header-border: 3 18 54;      /* #031236 */
+  --header-text: 255 255 255;
+
+  /* Titlebar presets (match screenshot) */
+  --bar-red-bg-1: 220 0 0;       /* #DC0000 */
+  --bar-red-bg-2: 150 0 0;       /* #960000 */
+  --bar-red-text: 255 255 255;
+  --bar-red-border: 58 0 0;      /* #3A0000 */
+
+  --bar-yellow-bg-1: 255 213 0;  /* #FFD500 */
+  --bar-yellow-bg-2: 216 160 0;  /* #D8A000 */
+  --bar-yellow-text: 34 24 10;   /* #22180A */
+  --bar-yellow-border: 120 70 0; /* #784600 */
+
+  --bar-blue-bg-1: 23 105 235;   /* #1769EB */
+  --bar-blue-bg-2: 8 56 158;     /* #08389E */
+  --bar-blue-text: 255 255 255;
+  --bar-blue-border: 3 18 54;
+
+  --bar-brown-bg-1: 108 52 16;   /* #6C3410 */
+  --bar-brown-bg-2: 58 26 7;     /* #3A1A07 */
+  --bar-brown-text: 255 255 255;
+  --bar-brown-border: 44 20 6;   /* #2C1406 */
+
+  --bar-dark-bg-1: 24 24 24;     /* #181818 */
+  --bar-dark-bg-2: 10 10 10;     /* #0A0A0A */
+  --bar-dark-text: 255 255 255;
+  --bar-dark-border: 60 60 60;   /* #3C3C3C */
+
+  /* Module panels (brown/orange frames) */
+  --panel-bg-1: 96 46 14;        /* #602E0E */
+  --panel-bg-2: 63 28 8;         /* #3F1C08 */
+  --panel-border: 191 122 45;    /* #BF7A2D */
+  --panel-inset-hi: 255 210 155;
+  --panel-inset-lo: 0 0 0;
+  --panel-title-bg-1: var(--bar-brown-bg-1);
+  --panel-title-bg-2: var(--bar-brown-bg-2);
+  --panel-title-text: 255 255 255;
+
+  /* Dark “screens” (map / charts) */
+  --screen-bg-1: 26 26 26;       /* #1A1A1A */
+  --screen-bg-2: 10 10 10;       /* #0A0A0A */
+  --screen-border: 76 76 76;     /* #4C4C4C */
+  --screen-inset-hi: 255 255 255;
+  --screen-inset-lo: 0 0 0;
+  --screen-title-bg-1: var(--bar-brown-bg-1);
+  --screen-title-bg-2: var(--bar-brown-bg-2);
+  --screen-title-text: 255 255 255;
+
+  /* KPI styling */
+  --kpi-bg-1: 56 150 36;
+  --kpi-bg-2: 34 120 22;
+  --kpi-border: 140 85 30;
+  --kpi-title-bg-1: var(--bar-yellow-bg-1);
+  --kpi-title-bg-2: var(--bar-yellow-bg-2);
+  --kpi-title-text: var(--bar-yellow-text);
+  --kpi-value-text: 255 255 255;
+
+  /* KPI main (big NPV card) */
+  --kpi-main-bg-1: 56 150 36;
+  --kpi-main-bg-2: 34 120 22;
+  --kpi-main-border: 140 85 30;
+  --kpi-main-title-bg-1: var(--bar-red-bg-1);
+  --kpi-main-title-bg-2: var(--bar-red-bg-2);
+  --kpi-main-title-text: var(--bar-red-text);
+  --kpi-main-value-text: 255 255 255;
+
+  /* KPI tiles (smaller blocks) */
+  --kpi-tile-bg-1: 56 150 36;
+  --kpi-tile-bg-2: 34 120 22;
+  --kpi-tile-border: 140 85 30;
+  --kpi-tile-title-bg-1: var(--bar-yellow-bg-1);
+  --kpi-tile-title-bg-2: var(--bar-yellow-bg-2);
+  --kpi-tile-title-text: var(--bar-yellow-text);
+  --kpi-tile-value-text: 255 255 255;
+
+  /* Buttons */
+  --btn-primary-bg-1: var(--bar-yellow-bg-1);
+  --btn-primary-bg-2: var(--bar-yellow-bg-2);
+  --btn-primary-border: var(--bar-red-bg-2);  /* red outline like screenshot */
+  --btn-primary-text: var(--bar-yellow-text);
+
+  --btn-secondary-bg-1: 90 44 14;
+  --btn-secondary-bg-2: 63 28 8;
+  --btn-secondary-border: 160 100 40;
+  --btn-secondary-text: 255 255 255;
+
+  /* Tighter corners like the classic UI */
+  --radius-panel: 8px;
+  --radius-kpi: 8px;
+
+  /* Light inset surfaces (cream UI for controls/tables) */
+  --inset-bg-1: 255 251 242;      /* #FFFBF2 */
+  --inset-bg-2: 248 240 225;      /* #F8F0E1 */
+  --inset-border: 191 122 45;     /* #BF7A2D */
+  --inset-text: 34 24 10;         /* #22180A */
+  --inset-muted: 82 40 12;        /* #52280C */
 }
 
 /* ==========================================================================
@@ -110,6 +354,254 @@ body {
 
 .theme-transition {
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==========================================================================
+   Slopcast “chrome” primitives (.sc-*)
+   Rendered via semantic tokens above; overridden per-theme.
+   ========================================================================== */
+
+.sc-header {
+  background: linear-gradient(to bottom, rgb(var(--header-bg-1)), rgb(var(--header-bg-2)));
+  border-bottom: 1px solid rgb(var(--header-border) / 0.9);
+  color: rgb(var(--header-text));
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.06),
+    0 10px 20px rgba(0,0,0,0.22);
+}
+
+.sc-panel,
+.sc-screen,
+.sc-kpi {
+  position: relative;
+  overflow: hidden;
+}
+
+.sc-panel {
+  border-radius: var(--radius-panel);
+  border: 1px solid rgb(var(--panel-border) / 0.85);
+  background: linear-gradient(to bottom, rgb(var(--panel-bg-1)), rgb(var(--panel-bg-2)));
+  box-shadow: var(--shadow-card);
+}
+
+.sc-panel::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  pointer-events: none;
+  border-radius: calc(var(--radius-panel) - 2px);
+  box-shadow:
+    inset 0 1px 0 rgb(var(--panel-inset-hi) / 0.22),
+    inset 0 -1px 0 rgb(var(--panel-inset-lo) / 0.25);
+}
+
+.sc-panelTitlebar {
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--_panel-title-bg-1, var(--panel-title-bg-1))),
+    rgb(var(--_panel-title-bg-2, var(--panel-title-bg-2)))
+  );
+  color: rgb(var(--_panel-title-text, var(--panel-title-text)));
+  border-bottom: 1px solid rgb(var(--_panel-title-border, var(--panel-border)) / 0.90);
+}
+
+.sc-screen {
+  border-radius: var(--radius-panel);
+  border: 1px solid rgb(var(--screen-border) / 0.9);
+  background: linear-gradient(to bottom, rgb(var(--screen-bg-1)), rgb(var(--screen-bg-2)));
+  box-shadow: var(--shadow-card);
+}
+
+.sc-screen::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  pointer-events: none;
+  border-radius: calc(var(--radius-panel) - 2px);
+  box-shadow:
+    inset 0 1px 0 rgb(var(--screen-inset-hi) / 0.10),
+    inset 0 -1px 0 rgb(var(--screen-inset-lo) / 0.35);
+}
+
+.sc-screenTitlebar {
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--_screen-title-bg-1, var(--screen-title-bg-1))),
+    rgb(var(--_screen-title-bg-2, var(--screen-title-bg-2)))
+  );
+  color: rgb(var(--_screen-title-text, var(--screen-title-text)));
+  border-bottom: 1px solid rgb(var(--_screen-title-border, var(--screen-border)) / 0.90);
+}
+
+/* Titlebar variants (work for both panels + screens) */
+.sc-titlebar--red {
+  --_panel-title-bg-1: var(--bar-red-bg-1);
+  --_panel-title-bg-2: var(--bar-red-bg-2);
+  --_panel-title-text: var(--bar-red-text);
+  --_panel-title-border: var(--bar-red-border);
+  --_screen-title-bg-1: var(--bar-red-bg-1);
+  --_screen-title-bg-2: var(--bar-red-bg-2);
+  --_screen-title-text: var(--bar-red-text);
+  --_screen-title-border: var(--bar-red-border);
+}
+.sc-titlebar--yellow {
+  --_panel-title-bg-1: var(--bar-yellow-bg-1);
+  --_panel-title-bg-2: var(--bar-yellow-bg-2);
+  --_panel-title-text: var(--bar-yellow-text);
+  --_panel-title-border: var(--bar-yellow-border);
+  --_screen-title-bg-1: var(--bar-yellow-bg-1);
+  --_screen-title-bg-2: var(--bar-yellow-bg-2);
+  --_screen-title-text: var(--bar-yellow-text);
+  --_screen-title-border: var(--bar-yellow-border);
+}
+.sc-titlebar--blue {
+  --_panel-title-bg-1: var(--bar-blue-bg-1);
+  --_panel-title-bg-2: var(--bar-blue-bg-2);
+  --_panel-title-text: var(--bar-blue-text);
+  --_panel-title-border: var(--bar-blue-border);
+  --_screen-title-bg-1: var(--bar-blue-bg-1);
+  --_screen-title-bg-2: var(--bar-blue-bg-2);
+  --_screen-title-text: var(--bar-blue-text);
+  --_screen-title-border: var(--bar-blue-border);
+}
+.sc-titlebar--brown {
+  --_panel-title-bg-1: var(--bar-brown-bg-1);
+  --_panel-title-bg-2: var(--bar-brown-bg-2);
+  --_panel-title-text: var(--bar-brown-text);
+  --_panel-title-border: var(--bar-brown-border);
+  --_screen-title-bg-1: var(--bar-brown-bg-1);
+  --_screen-title-bg-2: var(--bar-brown-bg-2);
+  --_screen-title-text: var(--bar-brown-text);
+  --_screen-title-border: var(--bar-brown-border);
+}
+.sc-titlebar--dark {
+  --_panel-title-bg-1: var(--bar-dark-bg-1);
+  --_panel-title-bg-2: var(--bar-dark-bg-2);
+  --_panel-title-text: var(--bar-dark-text);
+  --_panel-title-border: var(--bar-dark-border);
+  --_screen-title-bg-1: var(--bar-dark-bg-1);
+  --_screen-title-bg-2: var(--bar-dark-bg-2);
+  --_screen-title-text: var(--bar-dark-text);
+  --_screen-title-border: var(--bar-dark-border);
+}
+
+/* KPI blocks */
+.sc-kpi {
+  border-radius: var(--radius-kpi);
+  border: 1px solid rgb(var(--_kpi-border, var(--kpi-border)) / 1);
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--_kpi-bg-1, var(--kpi-bg-1))),
+    rgb(var(--_kpi-bg-2, var(--kpi-bg-2)))
+  );
+  box-shadow: var(--shadow-card);
+}
+
+.sc-kpi::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  pointer-events: none;
+  border-radius: calc(var(--radius-kpi) - 2px);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    inset 0 -1px 0 rgb(0 0 0 / 0.25);
+}
+
+.sc-kpiTitlebar {
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--_kpi-title-bg-1, var(--kpi-title-bg-1))),
+    rgb(var(--_kpi-title-bg-2, var(--kpi-title-bg-2)))
+  );
+  color: rgb(var(--_kpi-title-text, var(--kpi-title-text)));
+  border-bottom: 1px solid rgb(var(--_kpi-border, var(--kpi-border)) / 1);
+}
+
+.sc-kpiValue {
+  color: rgb(var(--_kpi-value-text, var(--kpi-value-text)));
+}
+
+.sc-kpi--main {
+  --_kpi-bg-1: var(--kpi-main-bg-1);
+  --_kpi-bg-2: var(--kpi-main-bg-2);
+  --_kpi-border: var(--kpi-main-border);
+  --_kpi-title-bg-1: var(--kpi-main-title-bg-1);
+  --_kpi-title-bg-2: var(--kpi-main-title-bg-2);
+  --_kpi-title-text: var(--kpi-main-title-text);
+  --_kpi-value-text: var(--kpi-main-value-text);
+}
+
+.sc-kpi--tile {
+  --_kpi-bg-1: var(--kpi-tile-bg-1);
+  --_kpi-bg-2: var(--kpi-tile-bg-2);
+  --_kpi-border: var(--kpi-tile-border);
+  --_kpi-title-bg-1: var(--kpi-tile-title-bg-1);
+  --_kpi-title-bg-2: var(--kpi-tile-title-bg-2);
+  --_kpi-title-text: var(--kpi-tile-title-text);
+  --_kpi-value-text: var(--kpi-tile-value-text);
+}
+
+.sc-kpi--dangerBody {
+  --_kpi-bg-1: var(--danger);
+  --_kpi-bg-2: var(--danger);
+  --_kpi-border: var(--bar-red-border);
+  --_kpi-value-text: 255 255 255;
+}
+
+/* Buttons */
+.sc-btnPrimary {
+  background: linear-gradient(to bottom, rgb(var(--btn-primary-bg-1)), rgb(var(--btn-primary-bg-2)));
+  border: 1px solid rgb(var(--btn-primary-border) / 1);
+  color: rgb(var(--btn-primary-text));
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.15),
+    0 10px 18px rgba(0,0,0,0.25);
+}
+.sc-btnPrimary:hover { filter: brightness(1.05); }
+.sc-btnPrimary:active { transform: translateY(1px); }
+
+.sc-btnSecondary {
+  background: linear-gradient(to bottom, rgb(var(--btn-secondary-bg-1)), rgb(var(--btn-secondary-bg-2)));
+  border: 1px solid rgb(var(--btn-secondary-border) / 0.95);
+  color: rgb(var(--btn-secondary-text));
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.10),
+    0 10px 18px rgba(0,0,0,0.20);
+}
+.sc-btnSecondary:hover { filter: brightness(1.04); }
+.sc-btnSecondary:active { transform: translateY(1px); }
+
+/* ==========================================================================
+   Light inset primitives (cream/white surfaces for Classic controls/tables)
+   ========================================================================== */
+
+.sc-insetLight {
+  background: linear-gradient(to bottom, rgb(var(--inset-bg-1)), rgb(var(--inset-bg-2)));
+  border: 1px solid rgb(var(--inset-border) / 0.65);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.75),
+    inset 0 -1px 0 rgb(0 0 0 / 0.10);
+  color: rgb(var(--inset-text));
+}
+
+.sc-insetText { color: rgb(var(--inset-text)); }
+.sc-insetMuted { color: rgb(var(--inset-muted)); }
+
+.sc-inputClassic,
+.sc-selectClassic {
+  background: rgb(var(--inset-bg-1));
+  border: 1px solid rgb(var(--inset-border) / 0.75);
+  color: rgb(var(--inset-text));
+}
+
+.sc-inputClassic::placeholder { color: rgb(var(--inset-muted) / 0.65); }
+
+.sc-inputClassic:focus,
+.sc-selectClassic:focus {
+  outline: none;
+  border-color: rgb(var(--bar-red-bg-1) / 0.95);
+  box-shadow: 0 0 0 2px rgb(var(--bar-red-bg-1) / 0.18);
 }
 
 .glow-cyan        { box-shadow: var(--shadow-glow-cyan); }
