@@ -15,7 +15,7 @@ const Charts: React.FC<ChartsProps> = ({ data, themeId }) => {
   return (
     <div className={`space-y-6 h-full flex flex-col justify-between ${isClassic ? '' : 'p-2'}`}>
       {/* Production Forecast */}
-      <div className={isClassic ? 'sc-screen theme-transition flex-1' : 'rounded-xl border p-5 flex-1 transition-all bg-transparent border-theme-border/40'}>
+      <div className={isClassic ? 'sc-screen theme-transition flex-1' : 'rounded-inner border p-5 flex-1 transition-all bg-transparent border-theme-border/40'}>
         {isClassic ? (
           <div className="sc-screenTitlebar sc-titlebar--red px-4 py-2">
             <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-white">
@@ -70,7 +70,7 @@ const Charts: React.FC<ChartsProps> = ({ data, themeId }) => {
       </div>
 
       {/* Cash Flow */}
-      <div className={isClassic ? 'sc-screen theme-transition flex-1' : 'rounded-xl border p-5 flex-1 transition-all bg-transparent border-theme-border/40'}>
+      <div className={isClassic ? 'sc-screen theme-transition flex-1' : 'rounded-inner border p-5 flex-1 transition-all bg-transparent border-theme-border/40'}>
         {isClassic ? (
           <div className="sc-screenTitlebar sc-titlebar--red px-4 py-2">
             <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-white">

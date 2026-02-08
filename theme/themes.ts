@@ -190,7 +190,7 @@ const mario: ThemeMeta = {
 
 export const THEMES: ThemeMeta[] = [slate, synthwave, tropical, mario];
 
-export const DEFAULT_THEME: ThemeId = 'synthwave';
+export const DEFAULT_THEME: ThemeId = 'slate';
 
 export function getTheme(id: ThemeId): ThemeMeta {
   return THEMES.find(t => t.id === id) ?? THEMES[0];

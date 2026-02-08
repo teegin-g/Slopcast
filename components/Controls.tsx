@@ -29,7 +29,7 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
         isClassic
           ? `sc-panel theme-transition mb-4 ${isOpen ? 'ring-2 ring-theme-warning/30' : ''}`
           : `
-            border rounded-xl overflow-hidden theme-transition mb-4 shadow-sm
+            border rounded-panel overflow-hidden theme-transition mb-4 shadow-sm
             ${isOpen 
               ? 'bg-theme-surface1 border-theme-magenta shadow-glow-magenta' 
               : 'bg-theme-surface1/40 border-theme-border'}
@@ -40,7 +40,7 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
         onClick={() => onToggle(id)}
         className={
           isClassic
-            ? `w-full flex items-center justify-between px-5 py-4 text-left transition-all sc-panelTitlebar sc-titlebar--brown ${
+            ? `w-full flex items-center justify-between px-5 py-4 text-left transition-all sc-panelTitlebar sc-titlebar--neutral ${
                 isOpen ? 'text-white' : 'text-white/90'
               }`
             : `w-full flex items-center justify-between px-5 py-4 text-left transition-all ${isOpen ? 'text-theme-cyan' : 'text-theme-muted'}`
@@ -94,9 +94,9 @@ const Controls: React.FC<ControlsProps> = ({ group, onUpdateGroup }) => {
               </h2>
             </div>
           </div>
-          <div className="p-4 grid grid-cols-2 gap-4">
-            <div className="border border-black/30 rounded-md overflow-hidden bg-black/10">
-              <div className="sc-panelTitlebar sc-titlebar--brown px-3 py-2">
+            <div className="p-4 grid grid-cols-2 gap-4">
+              <div className="border border-black/30 rounded-md overflow-hidden bg-black/10">
+              <div className="sc-panelTitlebar sc-titlebar--neutral px-3 py-2">
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">WELL COUNT</span>
               </div>
               <div className="px-3 py-3">
@@ -104,7 +104,7 @@ const Controls: React.FC<ControlsProps> = ({ group, onUpdateGroup }) => {
               </div>
             </div>
             <div className="border border-black/30 rounded-md overflow-hidden bg-black/10">
-              <div className="sc-panelTitlebar sc-titlebar--brown px-3 py-2">
+              <div className="sc-panelTitlebar sc-titlebar--neutral px-3 py-2">
                 <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">TOTAL CAPEX</span>
               </div>
               <div className="px-3 py-3">
@@ -117,17 +117,17 @@ const Controls: React.FC<ControlsProps> = ({ group, onUpdateGroup }) => {
           </div>
         </div>
       ) : (
-        <div className="rounded-2xl border p-5 mb-8 shadow-card theme-transition bg-theme-surface1 border-theme-border/60">
+        <div className="rounded-panel border p-5 mb-8 shadow-card theme-transition bg-theme-surface1 border-theme-border/60">
           <div className="flex items-center space-x-3 mb-4">
               <div className="w-4 h-4 rounded-full border border-white/10" style={{ backgroundColor: group.color, boxShadow: theme.features.glowEffects ? `0 0 12px ${group.color}44` : 'none' }}></div>
               <h2 className={`font-black text-sm uppercase tracking-[0.1em] text-theme-text ${theme.features.brandFont ? 'brand-font' : ''}`}>{group.name}</h2>
           </div>
           <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 rounded-xl border theme-transition bg-theme-bg border-theme-border/40">
+              <div className="p-3 rounded-inner border theme-transition bg-theme-bg border-theme-border/40">
                   <span className={labelClass}>WELL COUNT</span>
                   <span className="text-theme-text text-lg font-black tracking-tight">{group.wellIds.size}</span>
               </div>
-              <div className="p-3 rounded-xl border theme-transition bg-theme-bg border-theme-border/40">
+              <div className="p-3 rounded-inner border theme-transition bg-theme-bg border-theme-border/40">
                   <span className={labelClass}>TOTAL CAPEX</span>
                   <span className="text-lg font-black tracking-tight text-theme-cyan">
                       ${group.metrics ? (group.metrics.totalCapex / 1e6).toFixed(1) : 0}M

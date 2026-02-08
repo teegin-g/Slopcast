@@ -71,7 +71,7 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
   const yLabels = data.map(d => d[0].yValue);
 
   return (
-    <div className={isClassic ? 'sc-panel theme-transition' : 'overflow-hidden rounded-lg border transition-all bg-theme-bg border-theme-border shadow-xl'}>
+    <div className={isClassic ? 'sc-panel theme-transition' : 'overflow-hidden rounded-panel border theme-transition bg-theme-surface1/60 border-theme-border shadow-card'}>
         <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--red p-4 flex justify-between items-center' : 'p-4 border-b flex justify-between items-center transition-all bg-theme-surface1 border-theme-border'}>
             <h3 className={`text-xs font-bold uppercase tracking-widest text-theme-magenta ${theme.features.brandFont ? 'brand-font' : ''}`}>
                 Portfolio NPV Sensitivity <span className="text-theme-muted ml-2">(MM)</span>

@@ -53,7 +53,7 @@ const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({ groups }) => {
   }));
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-6">
       
       {/* Header */}
       <div className="flex justify-between items-end mb-6">
@@ -64,7 +64,7 @@ const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({ groups }) => {
       </div>
 
       {/* 1. Comparison League Table */}
-      <div className={isClassic ? 'sc-panel theme-transition overflow-hidden' : 'bg-theme-bg/50 rounded-xl border border-theme-border overflow-hidden shadow-xl'}>
+      <div className={isClassic ? 'sc-panel theme-transition overflow-hidden' : 'bg-theme-surface1/60 rounded-panel border border-theme-border overflow-hidden shadow-card'}>
           <div className="overflow-x-auto">
               <table className="w-full text-left text-sm text-theme-muted">
                   <thead className="bg-theme-surface1 text-xs uppercase font-bold text-theme-muted tracking-wider">
@@ -113,7 +113,7 @@ const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({ groups }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* 2. Cumulative Cash Flow Overlay */}
-          <div className={isClassic ? 'sc-panel theme-transition p-6' : 'bg-theme-bg/40 rounded-xl border border-theme-border p-6 shadow-lg'}>
+          <div className={isClassic ? 'sc-panel theme-transition p-6' : 'bg-theme-surface1/60 rounded-panel border border-theme-border p-6 shadow-card'}>
               <h3 className="text-theme-muted text-xs font-bold uppercase tracking-widest mb-6">Cumulative Cash Flow Overlay</h3>
               <div className="h-[350px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -153,7 +153,7 @@ const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({ groups }) => {
           </div>
 
           {/* 3. Efficiency Chart (NPV vs CAPEX) */}
-          <div className={isClassic ? 'sc-panel theme-transition p-6' : 'bg-theme-bg/40 rounded-xl border border-theme-border p-6 shadow-lg'}>
+          <div className={isClassic ? 'sc-panel theme-transition p-6' : 'bg-theme-surface1/60 rounded-panel border border-theme-border p-6 shadow-card'}>
               <h3 className="text-theme-muted text-xs font-bold uppercase tracking-widest mb-6">Capital Efficiency (NPV vs Capex)</h3>
               <div className="h-[350px] w-full">
                   <ResponsiveContainer width="100%" height="100%">

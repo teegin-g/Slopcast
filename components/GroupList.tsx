@@ -103,7 +103,7 @@ const GroupList: React.FC<GroupListProps> = ({
 
             {/* Lasso Data */}
             <div className={`border rounded-md overflow-hidden transition-all border-black/25 ${selectedWellCount > 0 ? 'opacity-100' : 'opacity-85'}`}>
-              <div className="sc-panelTitlebar sc-titlebar--brown px-4 py-2 flex items-center justify-between">
+              <div className="sc-panelTitlebar sc-titlebar--neutral px-4 py-2 flex items-center justify-between">
                 <span className="text-[10px] font-black uppercase tracking-[0.25em] text-white">LASSO DATA</span>
                 <span className="text-[10px] font-black px-2 py-0.5 rounded bg-theme-cyan text-white border border-black/30">
                   {selectedWellCount} Wells
@@ -152,7 +152,7 @@ const GroupList: React.FC<GroupListProps> = ({
                           key={group.id}
                           onClick={() => onActivateGroup(group.id)}
                           className={`
-                              relative p-3 rounded-lg border cursor-pointer transition-all duration-200 group
+                              relative p-3 rounded-inner border cursor-pointer transition-all duration-200 group
                               ${isActive 
                                   ? 'bg-theme-surface2 border-theme-magenta glow-magenta scale-[1.01]' 
                                   : 'bg-theme-surface1/60 border-theme-border hover:bg-theme-surface1 hover:border-theme-lavender hover:scale-[1.01]'}
@@ -194,7 +194,7 @@ const GroupList: React.FC<GroupListProps> = ({
                           )}
                           
                           {isActive && (
-                              <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-lg transition-all bg-theme-magenta glow-magenta"></div>
+                              <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-inner transition-all bg-theme-magenta glow-magenta"></div>
                           )}
                       </div>
                   );
@@ -202,7 +202,7 @@ const GroupList: React.FC<GroupListProps> = ({
           </div>
 
           {/* Action Bar */}
-          <div className={`p-4 rounded-lg border mt-6 backdrop-blur transition-all ${selectedWellCount > 0 ? 'opacity-100 translate-y-0' : 'opacity-70 translate-y-2 grayscale'} bg-theme-surface1/80 border-theme-magenta`}>
+          <div className={`p-4 rounded-panel border mt-6 backdrop-blur theme-transition ${selectedWellCount > 0 ? 'opacity-100 translate-y-0' : 'opacity-70 translate-y-2 grayscale'} bg-theme-surface1/80 border-theme-magenta`}>
               <div className="flex justify-between items-center text-xs mb-3">
                   <span className={`font-bold uppercase tracking-wider text-[10px] text-theme-cyan ${theme.features.brandFont ? 'brand-font' : ''}`}>
                       Lasso Data
@@ -216,14 +216,14 @@ const GroupList: React.FC<GroupListProps> = ({
                   <button 
                       onClick={onAssignWells}
                       disabled={selectedWellCount === 0}
-                      className={`w-full px-3 py-2 rounded font-bold uppercase tracking-wide text-[10px] transition-all shadow-lg ${selectedWellCount > 0 ? 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan' : 'bg-theme-surface2 text-theme-muted cursor-not-allowed'}`}
+                      className={`w-full px-3 py-2 rounded-inner font-bold uppercase tracking-wide text-[10px] transition-all shadow-lg ${selectedWellCount > 0 ? 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan' : 'bg-theme-surface2 text-theme-muted cursor-not-allowed'}`}
                   >
                       Assign to Active Group
                   </button>
                   <button 
                       onClick={onCreateGroupFromSelection}
                       disabled={selectedWellCount === 0}
-                      className={`w-full px-3 py-2 rounded font-bold uppercase tracking-wide text-[10px] transition-all border ${selectedWellCount > 0 ? 'bg-theme-surface2 text-theme-magenta border-theme-magenta hover:bg-theme-surface1' : 'bg-theme-surface2 text-theme-muted cursor-not-allowed border-theme-border'}`}
+                      className={`w-full px-3 py-2 rounded-inner font-bold uppercase tracking-wide text-[10px] transition-all border ${selectedWellCount > 0 ? 'bg-theme-surface2 text-theme-magenta border-theme-magenta hover:bg-theme-surface1' : 'bg-theme-surface2 text-theme-muted cursor-not-allowed border-theme-border'}`}
                   >
                       Build New Scenario
                   </button>

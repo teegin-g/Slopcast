@@ -53,7 +53,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ title, isOpen, onClick, c
   }
 
   return (
-    <div className={`border rounded-xl overflow-hidden transition-all duration-300 mb-3 ${isOpen ? 'bg-theme-surface1 border-theme-magenta shadow-glow-magenta' : 'bg-theme-surface1/40 border-theme-border'}`}>
+    <div className={`border rounded-panel overflow-hidden transition-all duration-300 mb-3 ${isOpen ? 'bg-theme-surface1 border-theme-magenta shadow-glow-magenta' : 'bg-theme-surface1/40 border-theme-border'}`}>
       <button onClick={onClick} className={`w-full flex items-center justify-between px-5 py-4 text-left transition-all ${isOpen ? 'text-theme-cyan' : 'text-theme-muted'}`}>
         <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${useBrandFont ? 'brand-font' : ''}`}>{title}</span>
         <span className={`transform transition-transform opacity-30 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
@@ -189,11 +189,11 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
     : `text-[9px] font-black text-theme-muted block mb-2 uppercase tracking-[0.2em] ${theme.features.brandFont ? 'brand-font' : ''}`;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-700">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       
       {/* LEFT: Scenario Management */}
       <div className="lg:col-span-3 space-y-6">
-          <div className={isClassic ? 'sc-panel theme-transition overflow-hidden' : 'rounded-2xl border p-6 shadow-card transition-all bg-theme-surface1 border-theme-border'}>
+          <div className={isClassic ? 'sc-panel theme-transition overflow-hidden' : 'rounded-panel border p-6 shadow-card transition-all bg-theme-surface1 border-theme-border'}>
               {isClassic ? (
                 <>
                   <div className="sc-panelTitlebar sc-titlebar--red px-5 py-4 flex justify-between items-center">
@@ -243,7 +243,7 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
                           <div 
                             key={s.id} 
                             onClick={() => { setActiveScenarioId(s.id); setEditingScenario(true); }}
-                            className={`group p-4 rounded-xl border cursor-pointer transition-all ${s.id === activeScenarioId ? 'bg-theme-surface2 border-theme-magenta shadow-glow-magenta' : 'bg-theme-bg border-theme-border hover:border-theme-cyan hover:scale-[1.02]'}`}
+	                            className={`group p-4 rounded-inner border cursor-pointer transition-all ${s.id === activeScenarioId ? 'bg-theme-surface2 border-theme-magenta shadow-glow-magenta' : 'bg-theme-bg border-theme-border hover:border-theme-cyan hover:scale-[1.02]'}`}
                           >
                               <div className="flex items-center justify-between mb-3">
                                   <div className="flex items-center space-x-3">
@@ -266,8 +266,8 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
           </div>
 
           {activeScenario && editingScenario && (
-              <div className="animate-in slide-in-from-left-6 duration-500">
-                   <div className={isClassic ? 'sc-panel theme-transition overflow-hidden rounded-b-none' : 'rounded-t-2xl border border-b-0 p-6 theme-transition bg-theme-surface1 border-theme-border'}>
+	              <div className="theme-transition">
+	                   <div className={isClassic ? 'sc-panel theme-transition overflow-hidden rounded-b-none' : 'rounded-t-panel border border-b-0 p-6 theme-transition bg-theme-surface1 border-theme-border'}>
                        {isClassic ? (
                          <>
                            <div className="sc-panelTitlebar sc-titlebar--red px-5 py-4 flex justify-between items-center">
@@ -305,7 +305,7 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
                        )}
                    </div>
 
-                   <div className={isClassic ? 'sc-panel theme-transition p-2 space-y-1 rounded-t-none' : 'rounded-b-2xl border p-2 space-y-1 theme-transition shadow-card bg-theme-bg border-theme-border'}>
+	                   <div className={isClassic ? 'sc-panel theme-transition p-2 space-y-1 rounded-t-none' : 'rounded-b-panel border p-2 space-y-1 theme-transition shadow-card bg-theme-bg border-theme-border'}>
                        <AccordionItem title="Economic Anchors" isOpen={openSection === 'PRICING'} onClick={() => setOpenSection('PRICING')} useBrandFont={theme.features.brandFont}>
                            <div className="grid grid-cols-2 gap-4">
                                <div><label className={labelClass}>OIL PRICE</label><input type="number" value={activeScenario.pricing.oilPrice} onChange={e => updatePricing(activeScenario.id, 'oilPrice', parseFloat(e.target.value))} className={inputClass} /></div>
@@ -352,10 +352,10 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
           )}
       </div>
 
-      <div className="lg:col-span-9 space-y-8">
+      <div className="lg:col-span-9 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {scenarioResults.map((res) => (
-                  <div key={res.scenario.id} className={isClassic ? 'sc-panel theme-transition overflow-hidden group' : 'rounded-2xl border p-6 relative overflow-hidden theme-transition shadow-card group bg-theme-surface1/80 border-theme-border hover:border-theme-cyan'}>
+	                  <div key={res.scenario.id} className={isClassic ? 'sc-panel theme-transition overflow-hidden group' : 'rounded-panel border p-6 relative overflow-hidden theme-transition shadow-card group bg-theme-surface1/80 border-theme-border hover:border-theme-cyan'}>
                       <div className="absolute top-0 left-0 w-1.5 h-full opacity-60" style={{ backgroundColor: res.scenario.color }}></div>
                       <div className="absolute top-0 right-0 w-32 h-32 blur-[50px] opacity-10 pointer-events-none" style={{ backgroundColor: res.scenario.color }}></div>
                       
@@ -390,8 +390,8 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
               ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className={isClassic ? 'sc-panel theme-transition overflow-hidden' : 'rounded-2xl border p-8 shadow-card theme-transition bg-theme-surface1/60 border-theme-border'}>
+	          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+	                <div className={isClassic ? 'sc-panel theme-transition overflow-hidden' : 'rounded-panel border p-8 shadow-card theme-transition bg-theme-surface1/60 border-theme-border'}>
                     {isClassic ? (
                       <div className="sc-panelTitlebar sc-titlebar--red px-5 py-4">
                         <h3 className={`text-[10px] font-black uppercase tracking-[0.4em] text-white ${theme.features.brandFont ? 'brand-font' : ''}`}>

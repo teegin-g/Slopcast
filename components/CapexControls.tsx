@@ -85,7 +85,7 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
           <div className="space-y-4">
               <div 
                 onClick={() => setIsEditing(true)}
-                className={`group cursor-pointer rounded-lg border p-4 transition-all relative ${
+                className={`group cursor-pointer rounded-inner border p-4 transition-all relative ${
                   isClassic ? 'bg-black/10 border-black/30 hover:border-theme-warning' : 'bg-theme-bg/50 border-theme-border hover:border-theme-cyan'
                 }`}
               >
@@ -145,7 +145,7 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
 
   // --- Render: Edit View (Expanded) ---
   return (
-    <div className="space-y-3 animate-in fade-in zoom-in-95 duration-200">
+    <div className="space-y-3">
       <div className="flex justify-between items-center mb-2">
           <h4 className="text-xs font-bold text-theme-text">Detailed Line Items</h4>
           <button 
@@ -161,7 +161,7 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
       </div>
 
       {/* Grid Table */}
-      <div className={`border rounded-lg overflow-hidden ${isClassic ? 'border-black/30 bg-black/10' : 'border-theme-border bg-theme-bg'}`}>
+      <div className={`border rounded-inner overflow-hidden ${isClassic ? 'border-black/30 bg-black/10' : 'border-theme-border bg-theme-bg'}`}>
         <div className={`grid grid-cols-12 gap-0 text-[10px] font-bold text-theme-muted p-2 border-b ${isClassic ? 'bg-black/10 border-black/30' : 'bg-theme-bg border-theme-border'}`}>
           <div className="col-span-4">ITEM</div>
           <div className="col-span-3">CATEGORY</div>

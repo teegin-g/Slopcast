@@ -43,6 +43,11 @@
   --header-text: var(--text);
 
   /* Common titlebar presets (overridable per-theme) */
+  --bar-neutral-bg-1: var(--surface-2);
+  --bar-neutral-bg-2: var(--surface-1);
+  --bar-neutral-text: var(--text);
+  --bar-neutral-border: var(--border);
+
   --bar-red-bg-1: var(--magenta);
   --bar-red-bg-2: var(--magenta);
   --bar-red-text: var(--text);
@@ -192,24 +197,24 @@
 /* ---------- Mario (Slopcast Classic) ---------- */
 [data-theme='mario'] {
   /* Light canvas behind the modules */
-  --bg-deep: 238 232 224;        /* #EEE8E0 */
-  --bg-space: 250 247 242;       /* #FAF7F2 */
+  --bg-deep: 243 239 233;        /* #F3EFE9 */
+  --bg-space: 251 249 246;       /* #FBF9F6 */
 
   /* Core surfaces (most UI is dark modules) */
-  --surface-1: 82 40 12;         /* #52280C */
-  --surface-2: 108 52 16;        /* #6C3410 */
-  --border: 176 108 42;          /* #B06C2A */
+  --surface-1: 15 29 48;         /* #0F1D30 (navy) */
+  --surface-2: 21 41 68;         /* #152944 (navy lift) */
+  --border: 201 177 139;         /* #C9B18B (sand) */
 
   /* Accents */
   --cyan: 18 112 255;            /* #1270FF (classic blue) */
   --magenta: 220 0 0;            /* #DC0000 (classic red) */
   --violet: 255 122 0;           /* orange pop */
-  --purple: 58 26 7;             /* deep brown */
+  --purple: 15 29 48;            /* navy (avoid dominant brown) */
   --lav: 255 213 0;              /* #FFD500 (gold) */
 
   /* Text */
   --text: 255 255 255;           /* white on modules */
-  --muted: 242 220 178;          /* warm cream */
+  --muted: 233 223 205;          /* warm sand */
 
   /* States */
   --success: 56 150 36;          /* green KPI fill */
@@ -246,24 +251,31 @@
   --bar-blue-text: 255 255 255;
   --bar-blue-border: 3 18 54;
 
-  --bar-brown-bg-1: 108 52 16;   /* #6C3410 */
-  --bar-brown-bg-2: 58 26 7;     /* #3A1A07 */
-  --bar-brown-text: 255 255 255;
-  --bar-brown-border: 44 20 6;   /* #2C1406 */
+  /* Neutral module chrome (replaces old "brown" dominance). */
+  --bar-neutral-bg-1: 21 41 68;  /* #152944 */
+  --bar-neutral-bg-2: 15 29 48;  /* #0F1D30 */
+  --bar-neutral-text: 255 255 255;
+  --bar-neutral-border: 7 18 33; /* #071221 */
+
+  /* Back-compat: anything still using --bar-brown maps to neutral. */
+  --bar-brown-bg-1: var(--bar-neutral-bg-1);
+  --bar-brown-bg-2: var(--bar-neutral-bg-2);
+  --bar-brown-text: var(--bar-neutral-text);
+  --bar-brown-border: var(--bar-neutral-border);
 
   --bar-dark-bg-1: 24 24 24;     /* #181818 */
   --bar-dark-bg-2: 10 10 10;     /* #0A0A0A */
   --bar-dark-text: 255 255 255;
   --bar-dark-border: 60 60 60;   /* #3C3C3C */
 
-  /* Module panels (brown/orange frames) */
-  --panel-bg-1: 96 46 14;        /* #602E0E */
-  --panel-bg-2: 63 28 8;         /* #3F1C08 */
-  --panel-border: 191 122 45;    /* #BF7A2D */
+  /* Module panels */
+  --panel-bg-1: var(--surface-2);
+  --panel-bg-2: var(--surface-1);
+  --panel-border: var(--border);
   --panel-inset-hi: 255 210 155;
   --panel-inset-lo: 0 0 0;
-  --panel-title-bg-1: var(--bar-brown-bg-1);
-  --panel-title-bg-2: var(--bar-brown-bg-2);
+  --panel-title-bg-1: var(--bar-neutral-bg-1);
+  --panel-title-bg-2: var(--bar-neutral-bg-2);
   --panel-title-text: 255 255 255;
 
   /* Dark “screens” (map / charts) */
@@ -272,14 +284,14 @@
   --screen-border: 76 76 76;     /* #4C4C4C */
   --screen-inset-hi: 255 255 255;
   --screen-inset-lo: 0 0 0;
-  --screen-title-bg-1: var(--bar-brown-bg-1);
-  --screen-title-bg-2: var(--bar-brown-bg-2);
+  --screen-title-bg-1: var(--bar-neutral-bg-1);
+  --screen-title-bg-2: var(--bar-neutral-bg-2);
   --screen-title-text: 255 255 255;
 
   /* KPI styling */
   --kpi-bg-1: 56 150 36;
   --kpi-bg-2: 34 120 22;
-  --kpi-border: 140 85 30;
+  --kpi-border: var(--border);
   --kpi-title-bg-1: var(--bar-yellow-bg-1);
   --kpi-title-bg-2: var(--bar-yellow-bg-2);
   --kpi-title-text: var(--bar-yellow-text);
@@ -288,7 +300,7 @@
   /* KPI main (big NPV card) */
   --kpi-main-bg-1: 56 150 36;
   --kpi-main-bg-2: 34 120 22;
-  --kpi-main-border: 140 85 30;
+  --kpi-main-border: var(--border);
   --kpi-main-title-bg-1: var(--bar-red-bg-1);
   --kpi-main-title-bg-2: var(--bar-red-bg-2);
   --kpi-main-title-text: var(--bar-red-text);
@@ -297,7 +309,7 @@
   /* KPI tiles (smaller blocks) */
   --kpi-tile-bg-1: 56 150 36;
   --kpi-tile-bg-2: 34 120 22;
-  --kpi-tile-border: 140 85 30;
+  --kpi-tile-border: var(--border);
   --kpi-tile-title-bg-1: var(--bar-yellow-bg-1);
   --kpi-tile-title-bg-2: var(--bar-yellow-bg-2);
   --kpi-tile-title-text: var(--bar-yellow-text);
@@ -309,9 +321,9 @@
   --btn-primary-border: var(--bar-red-bg-2);  /* red outline like screenshot */
   --btn-primary-text: var(--bar-yellow-text);
 
-  --btn-secondary-bg-1: 90 44 14;
-  --btn-secondary-bg-2: 63 28 8;
-  --btn-secondary-border: 160 100 40;
+  --btn-secondary-bg-1: 21 41 68;
+  --btn-secondary-bg-2: 15 29 48;
+  --btn-secondary-border: var(--border);
   --btn-secondary-text: 255 255 255;
 
   /* Tighter corners like the classic UI */
@@ -321,9 +333,9 @@
   /* Light inset surfaces (cream UI for controls/tables) */
   --inset-bg-1: 255 251 242;      /* #FFFBF2 */
   --inset-bg-2: 248 240 225;      /* #F8F0E1 */
-  --inset-border: 191 122 45;     /* #BF7A2D */
-  --inset-text: 34 24 10;         /* #22180A */
-  --inset-muted: 82 40 12;        /* #52280C */
+  --inset-border: var(--border);
+  --inset-text: 20 30 42;         /* slate ink */
+  --inset-muted: 71 85 105;       /* muted slate */
 }
 
 /* ==========================================================================
@@ -354,6 +366,15 @@ body {
 
 .theme-transition {
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hide scrollbars but keep scrolling (used with Tailwind CDN utilities). */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE/Edge legacy */
+  scrollbar-width: none;    /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;            /* Chrome/Safari */
 }
 
 /* ==========================================================================
@@ -463,6 +484,16 @@ body {
   --_screen-title-bg-2: var(--bar-blue-bg-2);
   --_screen-title-text: var(--bar-blue-text);
   --_screen-title-border: var(--bar-blue-border);
+}
+.sc-titlebar--neutral {
+  --_panel-title-bg-1: var(--bar-neutral-bg-1);
+  --_panel-title-bg-2: var(--bar-neutral-bg-2);
+  --_panel-title-text: var(--bar-neutral-text);
+  --_panel-title-border: var(--bar-neutral-border);
+  --_screen-title-bg-1: var(--bar-neutral-bg-1);
+  --_screen-title-bg-2: var(--bar-neutral-bg-2);
+  --_screen-title-text: var(--bar-neutral-text);
+  --_screen-title-border: var(--bar-neutral-border);
 }
 .sc-titlebar--brown {
   --_panel-title-bg-1: var(--bar-brown-bg-1);

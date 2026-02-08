@@ -304,11 +304,11 @@ const App: React.FC = () => {
         {viewMode === 'ANALYSIS' ? (
              <ScenarioDashboard groups={processedGroups} wells={MOCK_WELLS} />
         ) : (
-             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in fade-in duration-500">
+             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* LEFT: Inputs */}
                 <aside
                   className={`lg:col-span-3 space-y-6 overflow-y-auto max-h-[calc(100vh-8rem)] scrollbar-hide theme-transition ${
-                    isClassic ? 'p-1' : 'p-4 rounded-xl bg-theme-bg/60 backdrop-blur-sm border border-theme-border'
+                    isClassic ? 'p-1' : 'p-4 rounded-panel bg-theme-bg/60 backdrop-blur-sm border border-theme-border'
                   }`}
                 >
                     <GroupList 
@@ -330,7 +330,7 @@ const App: React.FC = () => {
                     {/* Map */}
                     {isClassic ? (
                       <div className="h-[480px] w-full sc-panel theme-transition">
-                        <div className="sc-panelTitlebar sc-titlebar--brown px-4 py-3 flex justify-between items-center">
+                        <div className="sc-panelTitlebar sc-titlebar--neutral px-4 py-3 flex justify-between items-center">
                           <h2 className="text-[11px] font-black uppercase tracking-[0.25em] text-white flex items-center gap-3">
                             <span className="w-2 h-2 rounded-full bg-white/70"></span>
                             BASIN VISUALIZER
@@ -356,7 +356,7 @@ const App: React.FC = () => {
                         </div>
                       </div>
                     ) : (
-                      <div className="h-[480px] w-full rounded-xl border shadow-card relative overflow-hidden group theme-transition bg-theme-bg border-theme-border">
+                      <div className="h-[480px] w-full rounded-panel border shadow-card relative overflow-hidden group theme-transition bg-theme-bg border-theme-border">
                           {features.glowEffects && (
                             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-theme-cyan via-theme-magenta to-theme-cyan opacity-40"></div>
                           )}
@@ -417,7 +417,7 @@ const App: React.FC = () => {
                         </div>
                       </div>
                     ) : (
-                      <div className="rounded-xl border shadow-card p-6 relative overflow-hidden theme-transition bg-theme-surface1 border-theme-border">
+                      <div className="rounded-panel border shadow-card p-6 relative overflow-hidden theme-transition bg-theme-surface1 border-theme-border">
                           <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full blur-[80px] bg-theme-magenta/20"></div>
 
                           <div className="flex justify-between items-center mb-6 relative z-10">
@@ -475,7 +475,7 @@ const App: React.FC = () => {
                             </div>
                           </div>
                         ) : (
-                          <div className="rounded-2xl border p-8 shadow-card relative overflow-hidden group theme-transition bg-theme-surface1 border-theme-border hover:border-theme-magenta">
+                          <div className="rounded-panel border p-8 shadow-card relative overflow-hidden group theme-transition bg-theme-surface1 border-theme-border hover:border-theme-magenta">
                               <div className="absolute top-0 right-0 w-80 h-80 rounded-full blur-[100px] -mr-24 -mt-24 pointer-events-none transition-opacity duration-700 bg-theme-cyan/15 opacity-60 group-hover:opacity-100"></div>
                               <p className="text-theme-muted text-[10px] font-bold uppercase tracking-[0.4em] mb-2">Portfolio NPV (10%)</p>
                               <div className="flex items-baseline relative z-10">
@@ -514,13 +514,13 @@ const App: React.FC = () => {
                           </div>
                         ) : (
                           <div className="grid grid-cols-2 gap-4">
-                              <div className="rounded-xl border p-6 theme-transition shadow-sm bg-theme-surface1 border-theme-border hover:bg-theme-surface2">
+                              <div className="rounded-inner border p-6 theme-transition shadow-sm bg-theme-surface1 border-theme-border hover:bg-theme-surface2">
                                   <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-3 theme-transition text-theme-muted">Total Capex</p>
                                   <p className="text-3xl font-black text-theme-text theme-transition">
                                       ${(aggregateMetrics.totalCapex / 1e6).toFixed(1)}<span className="text-lg text-theme-muted font-normal ml-1">MM</span>
                                   </p>
                               </div>
-                              <div className="rounded-xl border p-6 theme-transition shadow-sm bg-theme-surface1 border-theme-border hover:bg-theme-surface2">
+                              <div className="rounded-inner border p-6 theme-transition shadow-sm bg-theme-surface1 border-theme-border hover:bg-theme-surface2">
                                   <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-3 theme-transition text-theme-muted">Portfolio EUR</p>
                                   <p className="text-3xl font-black text-theme-text theme-transition">
                                       {(aggregateMetrics.eur / 1e3).toFixed(0)}<span className="text-lg text-theme-muted font-normal ml-1">MBOE</span>
@@ -556,13 +556,13 @@ const App: React.FC = () => {
                           </div>
                         ) : (
                           <div className="grid grid-cols-2 gap-4">
-                              <div className="rounded-xl border p-6 theme-transition shadow-sm bg-theme-surface1 border-theme-border hover:bg-theme-surface2">
+                              <div className="rounded-inner border p-6 theme-transition shadow-sm bg-theme-surface1 border-theme-border hover:bg-theme-surface2">
                                   <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-3 theme-transition text-theme-muted">Payout</p>
                                   <p className="text-3xl font-black text-theme-text theme-transition">
                                       {aggregateMetrics.payoutMonths > 0 ? aggregateMetrics.payoutMonths : '-'}<span className="text-lg text-theme-muted font-normal ml-1">MO</span>
                                   </p>
                               </div>
-                              <div className="rounded-xl border p-6 theme-transition shadow-sm bg-theme-surface1 border-theme-border hover:bg-theme-surface2">
+                              <div className="rounded-inner border p-6 theme-transition shadow-sm bg-theme-surface1 border-theme-border hover:bg-theme-surface2">
                                   <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-3 theme-transition text-theme-muted">Wells</p>
                                   <p className="text-3xl font-black text-theme-text theme-transition">
                                       {aggregateMetrics.wellCount}<span className="text-lg text-theme-muted font-normal ml-1">UNIT</span>
@@ -577,7 +577,7 @@ const App: React.FC = () => {
                       className={
                         isClassic
                           ? 'flex-1 min-h-[320px] sc-panel theme-transition p-3'
-                          : 'flex-1 min-h-[320px] rounded-xl border p-1 theme-transition bg-theme-surface1/50 border-theme-border shadow-card'
+                          : 'flex-1 min-h-[320px] rounded-panel border p-1 theme-transition bg-theme-surface1/50 border-theme-border shadow-card'
                       }
                     >
                       <Charts data={aggregateFlow} themeId={themeId} />
