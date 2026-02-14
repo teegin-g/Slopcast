@@ -1727,6 +1727,80 @@ body {
   animation: swScanLine 10s linear infinite;
 }
 
+/* ── Sun rays rotation ── */
+@keyframes swSpin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ── Sun ray individual pulse/flash ── */
+@keyframes swRayPulse {
+  0%, 100% { opacity: 0.22; }
+  25%      { opacity: 0.55; }
+  50%      { opacity: 0.18; }
+  75%      { opacity: 0.48; }
+}
+
+[data-theme='synthwave'] .sw-sun-rays {
+  transform-origin: 960px 440px;
+  animation: swSpin 60s linear infinite;
+}
+
+[data-theme='synthwave'] .sw-sun-ray {
+  animation: swRayPulse 4s ease-in-out infinite;
+}
+[data-theme='synthwave'] .sw-sun-ray:nth-child(2n) {
+  animation-delay: -1s;
+  animation-duration: 5s;
+}
+[data-theme='synthwave'] .sw-sun-ray:nth-child(3n) {
+  animation-delay: -2.2s;
+  animation-duration: 3.5s;
+}
+[data-theme='synthwave'] .sw-sun-ray:nth-child(5n) {
+  animation-delay: -0.6s;
+  animation-duration: 6s;
+}
+
+/* ── Sun inner pulse ring ── */
+@keyframes swSunRingPulse {
+  0%, 100% { r: 95;  opacity: 0.0; }
+  50%      { r: 160; opacity: 0.35; }
+}
+
+[data-theme='synthwave'] .sw-sun-pulse-ring {
+  transform-origin: 960px 440px;
+  animation: swSunRingPulse 3.5s ease-in-out infinite;
+}
+
+/* ── Foreground beam sweep ── */
+@keyframes swBeamSweep {
+  0%, 100% { opacity: 0.0; }
+  15%      { opacity: 0.32; }
+  50%      { opacity: 0.14; }
+  85%      { opacity: 0.28; }
+}
+
+[data-theme='synthwave'] .sw-fg-beam {
+  animation: swBeamSweep 6s ease-in-out infinite;
+}
+[data-theme='synthwave'] .sw-fg-beam:nth-child(2n) {
+  animation-delay: -1.5s;
+  animation-duration: 7s;
+}
+[data-theme='synthwave'] .sw-fg-beam:nth-child(3n) {
+  animation-delay: -3s;
+  animation-duration: 5s;
+}
+[data-theme='synthwave'] .sw-fg-beam:nth-child(5n) {
+  animation-delay: -4.2s;
+  animation-duration: 8s;
+}
+[data-theme='synthwave'] .sw-fg-beam:nth-child(7n) {
+  animation-delay: -0.8s;
+  animation-duration: 4.5s;
+}
+
 /* ── Reduced-motion preference ── */
 @media (prefers-reduced-motion: reduce) {
   [data-theme='synthwave'] .sw-grid-v,
@@ -1738,7 +1812,11 @@ body {
   [data-theme='synthwave'] .sw-sun-glow,
   [data-theme='synthwave'] .sw-shooting-star,
   [data-theme='synthwave'] .sw-mountain-edge,
-  [data-theme='synthwave'] .sw-mountain-contour {
+  [data-theme='synthwave'] .sw-mountain-contour,
+  [data-theme='synthwave'] .sw-sun-rays,
+  [data-theme='synthwave'] .sw-sun-ray,
+  [data-theme='synthwave'] .sw-sun-pulse-ring,
+  [data-theme='synthwave'] .sw-fg-beam {
     animation: none !important;
   }
 }

@@ -10,6 +10,7 @@ import ScenarioDashboard from '../components/ScenarioDashboard';
 import { useTheme } from '../theme/ThemeProvider';
 import SynthwaveBackground from '../components/SynthwaveBackground';
 import MoonlightBackground from '../components/MoonlightBackground';
+import TropicalBackground from '../components/TropicalBackground';
 import { useAuth } from '../auth/AuthProvider';
 import { aggregateEconomics, calculateEconomics } from '../utils/economics';
 
@@ -1239,6 +1240,7 @@ const SlopcastPage: React.FC = () => {
     <div className={`min-h-screen bg-transparent theme-transition ${atmosphereClass} ${fxClass}`}>
       {isSynthwave && <SynthwaveBackground />}
       {isNocturne && <MoonlightBackground />}
+      {isTropical && <TropicalBackground />}
       
       {/* App Header */}
       <header

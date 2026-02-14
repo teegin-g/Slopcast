@@ -157,6 +157,23 @@ export default function SynthwaveBackground() {
             <stop offset="50%"  stopColor="#00e5ff" stopOpacity="0.38" />
             <stop offset="100%" stopColor="#00e5ff" stopOpacity="0.08" />
           </linearGradient>
+
+          {/* ── Foreground beam gradients ── */}
+          <linearGradient id="sw-fgBeamMagenta" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%"   stopColor="#ff3cac" stopOpacity="0.38" />
+            <stop offset="40%"  stopColor="#ff3cac" stopOpacity="0.12" />
+            <stop offset="100%" stopColor="#ff3cac" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="sw-fgBeamCyan" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%"   stopColor="#00e5ff" stopOpacity="0.32" />
+            <stop offset="40%"  stopColor="#00e5ff" stopOpacity="0.10" />
+            <stop offset="100%" stopColor="#00e5ff" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="sw-fgBeamViolet" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%"   stopColor="#c840e9" stopOpacity="0.34" />
+            <stop offset="40%"  stopColor="#c840e9" stopOpacity="0.10" />
+            <stop offset="100%" stopColor="#c840e9" stopOpacity="0" />
+          </linearGradient>
         </defs>
 
         {/* ════════════ BASE SKY ════════════ */}
@@ -249,6 +266,43 @@ export default function SynthwaveBackground() {
 
         {/* ════════════ SUN GLOW (behind sun) ════════════ */}
         <rect className="sw-sun-glow" width="1920" height="1080" fill="url(#sw-sunGlow)" />
+
+        {/* ════════════ SUN ROTATING RAYS ════════════ */}
+        <g className="sw-sun-rays" filter="url(#sw-glow)">
+          {/* 16 radial beams from sun center, rotating as a group */}
+          {[...Array(16)].map((_, i) => {
+            const angle = (i * 360) / 16;
+            const len = 220 + (i % 3) * 40;
+            const w = 2.5 - (i % 2) * 0.8;
+            return (
+              <line
+                key={`ray-${i}`}
+                className="sw-sun-ray"
+                x1="960"
+                y1="440"
+                x2={960 + Math.cos((angle * Math.PI) / 180) * len}
+                y2={440 + Math.sin((angle * Math.PI) / 180) * len}
+                stroke={i % 2 === 0 ? '#ff3cac' : '#c840e9'}
+                strokeOpacity="0.35"
+                strokeWidth={w}
+                strokeLinecap="round"
+              />
+            );
+          })}
+        </g>
+
+        {/* ════════════ SUN PULSE RING ════════════ */}
+        <circle
+          className="sw-sun-pulse-ring"
+          cx="960"
+          cy="440"
+          r="95"
+          fill="none"
+          stroke="#ff3cac"
+          strokeOpacity="0.25"
+          strokeWidth="2"
+          filter="url(#sw-glow)"
+        />
 
         {/* ════════════ SUN ════════════ */}
         <g className="sw-sun" filter="url(#sw-sunFilter)">
@@ -356,6 +410,23 @@ export default function SynthwaveBackground() {
           <line x1="0" y1="994"  x2="1920" y2="994" />
           <line x1="0" y1="1035" x2="1920" y2="1035" />
           <line x1="0" y1="1080" x2="1920" y2="1080" />
+        </g>
+
+        {/* ════════════ FOREGROUND BEAMS ════════════ */}
+        <g className="sw-fg-beams" filter="url(#sw-glow)">
+          {/* Vertical light pillars rising from the terrain/horizon */}
+          <rect className="sw-fg-beam" x="120"  y="500" width="4"   height="580" fill="url(#sw-fgBeamMagenta)" />
+          <rect className="sw-fg-beam" x="285"  y="460" width="3"   height="620" fill="url(#sw-fgBeamCyan)" />
+          <rect className="sw-fg-beam" x="430"  y="520" width="5"   height="560" fill="url(#sw-fgBeamViolet)" />
+          <rect className="sw-fg-beam" x="580"  y="480" width="3.5" height="600" fill="url(#sw-fgBeamMagenta)" />
+          <rect className="sw-fg-beam" x="720"  y="500" width="4"   height="580" fill="url(#sw-fgBeamCyan)" />
+          <rect className="sw-fg-beam" x="860"  y="450" width="3"   height="630" fill="url(#sw-fgBeamViolet)" />
+          <rect className="sw-fg-beam" x="1060" y="450" width="3"   height="630" fill="url(#sw-fgBeamViolet)" />
+          <rect className="sw-fg-beam" x="1200" y="500" width="4"   height="580" fill="url(#sw-fgBeamCyan)" />
+          <rect className="sw-fg-beam" x="1340" y="480" width="3.5" height="600" fill="url(#sw-fgBeamMagenta)" />
+          <rect className="sw-fg-beam" x="1490" y="520" width="5"   height="560" fill="url(#sw-fgBeamViolet)" />
+          <rect className="sw-fg-beam" x="1635" y="460" width="3"   height="620" fill="url(#sw-fgBeamCyan)" />
+          <rect className="sw-fg-beam" x="1800" y="500" width="4"   height="580" fill="url(#sw-fgBeamMagenta)" />
         </g>
 
         {/* ════════════ ATMOSPHERIC LAYERS ════════════ */}
