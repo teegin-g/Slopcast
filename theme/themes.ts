@@ -127,7 +127,7 @@ const tropical: ThemeMeta = {
   appSubtitle: 'Island Economics',
   chartPalette: {
     oil: '#2dd4bf',      // teal-400
-    cash: '#f97316',     // orange-500 (sunset coral)
+    cash: '#b9ff3b',     // neon lime (replaces orange accents)
     lav: '#c084fc',      // purple-400
     grid: 'rgba(45, 212, 191, 0.15)',
     text: '#94a3b8',
@@ -137,11 +137,11 @@ const tropical: ThemeMeta = {
   mapPalette: {
     gridColor: '#2dd4bf',
     gridOpacity: 0.15,
-    selectedStroke: '#f97316',
-    glowColor: '#2dd4bf',
+    selectedStroke: '#b9ff3b',
+    glowColor: '#b9ff3b',
     unassignedFill: '#5eead4',
-    lassoFill: 'rgba(249, 115, 22, 0.12)',
-    lassoStroke: '#f97316',
+    lassoFill: 'rgba(185, 255, 59, 0.12)',
+    lassoStroke: '#b9ff3b',
     lassoDash: '6, 3',
   },
   features: {

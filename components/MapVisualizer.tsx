@@ -40,7 +40,7 @@ function buildPermianBasemapUrl(width: number, height: number): string {
   return `https://staticmap.openstreetmap.de/staticmap.php?${params.toString()}`;
 }
 
-function buildOfflineUsFallbackMap(width: number, height: number): string {
+function buildOfflineUsFallbackMap(width: number, height: number, accentHex = '#f59e0b'): string {
   const mapWidth = Math.max(640, Math.min(1280, Math.round(width || 1024)));
   const mapHeight = Math.max(400, Math.min(900, Math.round(height || 560)));
 
@@ -102,8 +102,9 @@ function buildOfflineUsFallbackMap(width: number, height: number): string {
     ${latLines}
   </g>
   <polygon points="${outlinePoints}" fill="url(#land)" stroke="rgba(193,220,255,0.55)" stroke-width="2" />
-  <circle cx="${permian[0]}" cy="${permian[1]}" r="${permianGlowRadius}" fill="rgba(235,127,53,0.24)" />
-  <circle cx="${permian[0]}" cy="${permian[1]}" r="${permianCoreRadius}" fill="#f59e0b" stroke="#fef3c7" stroke-width="2" />
+  <circle cx="${permian[0]}" cy="${permian[1]}" r="${permianGlowRadius}" fill="${accentHex}" fill-opacity="0.16" />
+  <circle cx="${permian[0]}" cy="${permian[1]}" r="${permianCoreRadius + 5}" fill="none" stroke="${accentHex}" stroke-opacity="0.38" stroke-width="2" />
+  <circle cx="${permian[0]}" cy="${permian[1]}" r="${permianCoreRadius}" fill="${accentHex}" stroke="rgba(255,255,255,0.65)" stroke-width="2" />
   <text x="${permian[0] + 10}" y="${permian[1] - 10}" fill="rgba(244,220,182,0.9)" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="0.08em">
     PERMIAN BASIN
   </text>
@@ -132,7 +133,7 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
   const [lassoPoints, setLassoPoints] = useState<[number, number][]>([]);
   const [basemapLoadError, setBasemapLoadError] = useState(false);
   const isClassic = themeId === 'mario';
-  
+
   const lassoPointsRef = useRef<[number, number][]>([]);
 
   const themeMeta = getTheme(themeId);
@@ -142,8 +143,8 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
     return buildPermianBasemapUrl(dimensions.width, dimensions.height);
   }, [dimensions.width, dimensions.height]);
   const fallbackBasemapUrl = useMemo(() => {
-    return buildOfflineUsFallbackMap(dimensions.width, dimensions.height);
-  }, [dimensions.width, dimensions.height]);
+    return buildOfflineUsFallbackMap(dimensions.width, dimensions.height, mp.glowColor);
+  }, [dimensions.width, dimensions.height, mp.glowColor]);
 
   const getWellColor = (wellId: string): string => {
     for (const group of groups) {
@@ -194,18 +195,18 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
 
     // Grid
     mapG.selectAll(".grid-v")
-        .data(d3.range(0, width, 100))
-        .enter().append("line")
-        .attr("x1", d => d).attr("x2", d => d)
-        .attr("y1", 0).attr("y2", height)
-        .attr("stroke", mp.gridColor).attr("stroke-width", 1).attr("opacity", mp.gridOpacity);
+      .data(d3.range(0, width, 100))
+      .enter().append("line")
+      .attr("x1", d => d).attr("x2", d => d)
+      .attr("y1", 0).attr("y2", height)
+      .attr("stroke", mp.gridColor).attr("stroke-width", 1).attr("opacity", mp.gridOpacity);
 
     mapG.selectAll(".grid-h")
-        .data(d3.range(0, height, 100))
-        .enter().append("line")
-        .attr("x1", 0).attr("x2", width)
-        .attr("y1", d => d).attr("y2", d => d)
-        .attr("stroke", mp.gridColor).attr("stroke-width", 1).attr("opacity", mp.gridOpacity);
+      .data(d3.range(0, height, 100))
+      .enter().append("line")
+      .attr("x1", 0).attr("x2", width)
+      .attr("y1", d => d).attr("y2", d => d)
+      .attr("stroke", mp.gridColor).attr("stroke-width", 1).attr("opacity", mp.gridOpacity);
 
     // Laterals
     mapG.selectAll("line.lateral")
@@ -241,57 +242,57 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
       .attr("cursor", d => (isDimmedWell(d.id) ? "default" : "pointer"))
       .on("click", (event, d) => {
         if (!event.defaultPrevented && isVisibleWell(d.id)) {
-             onToggleWell(d.id);
+          onToggleWell(d.id);
         }
       })
-      .on("mouseover", function(event, d) {
-         if (isDimmedWell(d.id)) return;
-         d3.select(this).attr("r", 8).attr("fill-opacity", 1);
+      .on("mouseover", function (event, d) {
+        if (isDimmedWell(d.id)) return;
+        d3.select(this).attr("r", 8).attr("fill-opacity", 1);
       })
-      .on("mouseout", function(event, d) {
-         if (isDimmedWell(d.id)) return;
-         d3.select(this)
-            .attr("r", 5)
-            .attr("fill-opacity", selectedWellIds.has(d.id) ? 1 : 0.6);
+      .on("mouseout", function (event, d) {
+        if (isDimmedWell(d.id)) return;
+        d3.select(this)
+          .attr("r", 5)
+          .attr("fill-opacity", selectedWellIds.has(d.id) ? 1 : 0.6);
       });
 
     // Lasso
     svg.on(".drag", null);
     const drag = d3.drag<SVGSVGElement, unknown>()
-        .filter((event) => isLassoMode || event.shiftKey)
-        .on("start", () => {
-            setLassoPoints([]);
-            lassoPointsRef.current = [];
-        })
-        .on("drag", (event) => {
-            const [x, y] = d3.pointer(event, svgRef.current);
-            const newPoint: [number, number] = [x, y];
-            setLassoPoints(prev => [...prev, newPoint]);
-            lassoPointsRef.current.push(newPoint);
-        })
-        .on("end", () => {
-            const currentPoints = lassoPointsRef.current;
-            if (currentPoints.length > 2) {
-                const selected: string[] = [];
-                wells.forEach(w => {
-                    if (!isVisibleWell(w.id)) return;
-                    const px = xScale(w.lng);
-                    const py = yScale(w.lat);
-                    if (d3.polygonContains(currentPoints, [px, py])) {
-                        selected.push(w.id);
-                    }
-                });
-                if (selected.length > 0) onSelectWells(selected);
+      .filter((event) => isLassoMode || event.shiftKey)
+      .on("start", () => {
+        setLassoPoints([]);
+        lassoPointsRef.current = [];
+      })
+      .on("drag", (event) => {
+        const [x, y] = d3.pointer(event, svgRef.current);
+        const newPoint: [number, number] = [x, y];
+        setLassoPoints(prev => [...prev, newPoint]);
+        lassoPointsRef.current.push(newPoint);
+      })
+      .on("end", () => {
+        const currentPoints = lassoPointsRef.current;
+        if (currentPoints.length > 2) {
+          const selected: string[] = [];
+          wells.forEach(w => {
+            if (!isVisibleWell(w.id)) return;
+            const px = xScale(w.lng);
+            const py = yScale(w.lat);
+            if (d3.polygonContains(currentPoints, [px, py])) {
+              selected.push(w.id);
             }
-            setLassoPoints([]);
-            lassoPointsRef.current = [];
-            if (isLassoMode) setIsLassoMode(false);
-        });
+          });
+          if (selected.length > 0) onSelectWells(selected);
+        }
+        setLassoPoints([]);
+        lassoPointsRef.current = [];
+        if (isLassoMode) setIsLassoMode(false);
+      });
 
     svg.call(drag);
     svg.style("cursor", isLassoMode ? "crosshair" : "default");
 
-  }, [wells, selectedWellIds, visibleWellIds, dimmedWellIds, groups, dimensions, isLassoMode, onToggleWell, onSelectWells, themeId]); 
+  }, [wells, selectedWellIds, visibleWellIds, dimmedWellIds, groups, dimensions, isLassoMode, onToggleWell, onSelectWells, themeId]);
 
   return (
     <div ref={containerRef} className="w-full h-full min-h-[400px] overflow-hidden relative select-none">
@@ -310,19 +311,18 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
           />
         )}
         <div
-          className={`absolute inset-0 ${
-            isClassic
+          className={`absolute inset-0 ${isClassic
               ? 'bg-[linear-gradient(180deg,rgba(10,18,30,0.46)_0%,rgba(7,14,24,0.72)_100%)]'
               : 'bg-[linear-gradient(180deg,rgba(9,16,28,0.50)_0%,rgba(3,8,16,0.74)_100%)]'
-          }`}
+            }`}
         />
       </div>
-      
+
       {/* HUD Info */}
       {!isClassic && (
         <div className="absolute top-4 left-4 z-20 pointer-events-none select-none">
           <p className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded backdrop-blur transition-all bg-theme-bg/80 text-theme-cyan border border-theme-border">
-              {visibleWellIds.size} Visible / {selectedWellIds.size} Selected
+            {visibleWellIds.size} Visible / {selectedWellIds.size} Selected
           </p>
         </div>
       )}
@@ -338,18 +338,18 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
 
       {/* Lasso Button */}
       <div className="absolute top-4 right-4 z-20">
-          <button 
-            onClick={() => setIsLassoMode(!isLassoMode)}
-            className={`
+        <button
+          onClick={() => setIsLassoMode(!isLassoMode)}
+          className={`
                 flex items-center space-x-2 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide transition-all
                 ${isClassic ? 'rounded-md border border-black/40 shadow-card' : 'rounded shadow-lg'}
-                ${isLassoMode 
-                    ? (isClassic ? 'bg-theme-magenta text-white' : 'bg-theme-magenta text-white glow-magenta')
-                    : (isClassic ? 'bg-theme-cyan text-white' : 'bg-theme-surface2 text-theme-cyan hover:bg-theme-surface1')}
+                ${isLassoMode
+              ? (isClassic ? 'bg-theme-magenta text-white' : 'bg-theme-magenta text-white glow-magenta')
+              : (isClassic ? 'bg-theme-cyan text-white' : 'bg-theme-surface2 text-theme-cyan hover:bg-theme-surface1')}
             `}
-          >
-             <span>{isLassoMode ? 'LASSO ENGAGED' : 'LASSO'}</span>
-          </button>
+        >
+          <span>{isLassoMode ? 'LASSO ENGAGED' : 'LASSO'}</span>
+        </button>
       </div>
 
       <div className="absolute bottom-3 left-3 z-20 pointer-events-none">
@@ -359,27 +359,27 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
       </div>
 
       <svg ref={svgRef} className="relative z-10" width="100%" height="100%">
-          <defs>
-            <filter id="neon-glow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
-              <feOffset dx="0" dy="0" result="offsetblur" />
-              <feFlood floodColor={mp.glowColor} result="color" />
-              <feComposite in="color" in2="offsetblur" operator="in" result="glow" />
-              <feMerge>
-                <feMergeNode in="glow" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-          {lassoPoints.length > 0 && (
-              <polygon 
-                points={lassoPoints.map(p => p.join(",")).join(" ")}
-                fill={mp.lassoFill}
-                stroke={mp.lassoStroke}
-                strokeWidth={2}
-                strokeDasharray={mp.lassoDash}
-              />
-          )}
+        <defs>
+          <filter id="neon-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
+            <feOffset dx="0" dy="0" result="offsetblur" />
+            <feFlood floodColor={mp.glowColor} result="color" />
+            <feComposite in="color" in2="offsetblur" operator="in" result="glow" />
+            <feMerge>
+              <feMergeNode in="glow" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        {lassoPoints.length > 0 && (
+          <polygon
+            points={lassoPoints.map(p => p.join(",")).join(" ")}
+            fill={mp.lassoFill}
+            stroke={mp.lassoStroke}
+            strokeWidth={2}
+            strokeDasharray={mp.lassoDash}
+          />
+        )}
       </svg>
     </div>
   );

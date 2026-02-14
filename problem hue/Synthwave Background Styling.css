@@ -1,0 +1,45 @@
+/* ─── Synthwave Background ─── */
+
+.appRoot {
+  position: relative;
+  min-height: 100vh;
+  background: #020010;
+  overflow: hidden;
+}
+
+/* Background SVG layer */
+.appRoot::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: url("/assets/synthwave-bg.svg") center / cover no-repeat;
+  opacity: 0.80;
+  filter: blur(0.3px);
+  transform: translateZ(0);
+  will-change: opacity;
+  z-index: -2;
+
+  /* Optional: subtle breathing pulse on the background */
+  animation: bgPulse 8s ease-in-out infinite;
+}
+
+/* Darkening overlay — tuned so panels stay readable */
+.appRoot::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 120% 100% at 50% 40%,
+      rgba(0, 0, 0, 0.25) 0%,
+      rgba(0, 0, 0, 0.50) 55%,
+      rgba(0, 0, 0, 0.75) 100%
+    );
+  z-index: -1;
+}
+
+/* Breathing animation — remove if you prefer static */
+@keyframes bgPulse {
+  0%, 100% { opacity: 0.78; }
+  50%      { opacity: 0.85; }
+}

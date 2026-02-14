@@ -8,6 +8,8 @@ import GroupList from '../components/GroupList';
 import MapVisualizer from '../components/MapVisualizer';
 import ScenarioDashboard from '../components/ScenarioDashboard';
 import { useTheme } from '../theme/ThemeProvider';
+import SynthwaveBackground from '../components/SynthwaveBackground';
+import MoonlightBackground from '../components/MoonlightBackground';
 import { useAuth } from '../auth/AuthProvider';
 import { aggregateEconomics, calculateEconomics } from '../utils/economics';
 
@@ -988,14 +990,20 @@ const SlopcastPage: React.FC = () => {
                     className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
                       aggregateMetrics.wellCount === 0
                         ? 'bg-theme-surface2 text-theme-muted cursor-not-allowed'
-                        : 'bg-theme-magenta text-white hover:shadow-glow-magenta'
+                        : isTropical
+                          ? 'bg-theme-magenta/80 text-theme-bg border border-theme-border hover:bg-theme-magenta/90'
+                          : 'bg-theme-magenta text-white hover:shadow-glow-magenta'
                     }`}
                   >
                     Run Economics
                   </button>
                   <button
                     onClick={handleSaveScenario}
-                    className="px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all bg-theme-magenta text-white hover:shadow-glow-magenta"
+                    className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
+                      isTropical
+                        ? 'bg-theme-magenta/80 text-theme-bg border border-theme-border hover:bg-theme-magenta/90'
+                        : 'bg-theme-magenta text-white hover:shadow-glow-magenta'
+                    }`}
                   >
                     Save Scenario
                   </button>
@@ -1229,7 +1237,8 @@ const SlopcastPage: React.FC = () => {
 
   return (
     <div className={`min-h-screen bg-transparent theme-transition ${atmosphereClass} ${fxClass}`}>
-      {isSynthwave && <div className="retro-grid" />}
+      {isSynthwave && <SynthwaveBackground />}
+      {isNocturne && <MoonlightBackground />}
       
       {/* App Header */}
       <header
@@ -1253,8 +1262,10 @@ const SlopcastPage: React.FC = () => {
         {isTropical && (
           <>
             <div className={`tropical-breeze ${fxClass}`} />
+            <div className={`tropical-canopy ${fxClass}`} />
             <div className={`tropical-horizon ${fxClass}`} />
             <div className={`tropical-ridges ${fxClass}`} />
+            <div className={`tropical-palms ${fxClass}`} />
           </>
         )}
         <div className="relative z-10 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-3 md:gap-4 items-start md:items-center">
