@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { DEFAULT_CAPEX, DEFAULT_COMMODITY_PRICING, DEFAULT_OPEX, DEFAULT_OWNERSHIP, DEFAULT_TYPE_CURVE, GROUP_COLORS, MOCK_WELLS } from '../constants';
 import { Scenario, ScheduleParams, Well, WellGroup } from '../types';
 import Charts from '../components/Charts';
@@ -14,6 +14,7 @@ import { aggregateEconomics, calculateEconomics } from '../utils/economics';
 type ViewMode = 'DASHBOARD' | 'ANALYSIS'; 
 type MobileSection = 'SETUP' | 'WORKSPACE' | 'KPIS';
 type OpsTab = 'SELECTION_ACTIONS' | 'KEY_DRIVERS';
+type FxMode = 'cinematic' | 'max';
 
 type DriverModifier = {
   oilPriceDelta?: number;
@@ -84,6 +85,8 @@ const DEFAULT_SCHEDULE: ScheduleParams = {
 };
 
 const SAVED_SCENARIOS_STORAGE_KEY = 'slopcast-saved-scenarios';
+const FX_QUERY_KEY = 'fx';
+const FX_STORAGE_KEY_PREFIX = 'slopcast-fx-';
 
 const csvCell = (value: string | number) => {
   const raw = String(value);
@@ -95,12 +98,53 @@ const csvCell = (value: string | number) => {
 
 const SlopcastPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { session } = useAuth();
   // --- Theme (from provider) ---
   const { themeId, theme, themes, setThemeId } = useTheme();
   const { features } = theme;
   const isClassic = themeId === 'mario';
   const isNocturne = themeId === 'league';
+  const isSynthwave = themeId === 'synthwave';
+  const isTropical = themeId === 'tropical';
+  const isFxTheme = isSynthwave || isTropical;
+
+  const fxMode = useMemo<FxMode>(() => {
+    if (!isFxTheme) return 'cinematic';
+    const fromQuery = new URLSearchParams(location.search).get(FX_QUERY_KEY);
+    if (fromQuery === 'cinematic' || fromQuery === 'max') return fromQuery;
+    if (fromQuery === 'clear') return 'cinematic';
+    try {
+      const stored = localStorage.getItem(`${FX_STORAGE_KEY_PREFIX}${themeId}`);
+      if (stored === 'cinematic' || stored === 'max') return stored;
+    } catch {
+      // no-op
+    }
+    return 'cinematic';
+  }, [isFxTheme, location.search, themeId]);
+
+  useEffect(() => {
+    if (!isFxTheme) return;
+    const fromQuery = new URLSearchParams(location.search).get(FX_QUERY_KEY);
+    if (fromQuery === 'clear') {
+      try {
+        localStorage.removeItem(`${FX_STORAGE_KEY_PREFIX}${themeId}`);
+      } catch {
+        // no-op
+      }
+      return;
+    }
+    if (fromQuery !== 'cinematic' && fromQuery !== 'max') return;
+    try {
+      localStorage.setItem(`${FX_STORAGE_KEY_PREFIX}${themeId}`, fromQuery);
+    } catch {
+      // no-op
+    }
+  }, [isFxTheme, location.search, themeId]);
+
+  const fxClass = isFxTheme ? `fx-${fxMode}` : '';
+  const atmosphereClass = isNocturne ? 'nocturne-atmo' : isSynthwave ? 'synth-atmo' : isTropical ? 'tropical-atmo' : '';
+  const headerAtmosphereClass = isNocturne ? 'nocturne-header' : isSynthwave ? 'synth-header' : isTropical ? 'tropical-header' : '';
 
   // --- State ---
   const [viewMode, setViewMode] = useState<ViewMode>('DASHBOARD');
@@ -1184,18 +1228,33 @@ const SlopcastPage: React.FC = () => {
   );
 
   return (
-    <div className={`min-h-screen bg-transparent theme-transition ${isNocturne ? 'nocturne-atmo' : ''}`}>
+    <div className={`min-h-screen bg-transparent theme-transition ${atmosphereClass} ${fxClass}`}>
+      {isSynthwave && <div className="retro-grid" />}
       
       {/* App Header */}
       <header
         className={`px-3 md:px-6 py-3 sticky top-0 z-50 theme-transition ${
           isClassic ? 'sc-header' : 'backdrop-blur-md border-b shadow-sm bg-theme-surface1/80 border-theme-border'
-        } ${isNocturne ? 'nocturne-header' : ''}`}
+        } ${headerAtmosphereClass} ${fxClass}`}
       >
         {isNocturne && (
           <>
             <div className="nocturne-bands" />
             <div className="nocturne-ridges" />
+          </>
+        )}
+        {isSynthwave && (
+          <>
+            <div className={`synth-bands ${fxClass}`} />
+            <div className={`synth-horizon ${fxClass}`} />
+            <div className={`synth-ridges ${fxClass}`} />
+          </>
+        )}
+        {isTropical && (
+          <>
+            <div className={`tropical-breeze ${fxClass}`} />
+            <div className={`tropical-horizon ${fxClass}`} />
+            <div className={`tropical-ridges ${fxClass}`} />
           </>
         )}
         <div className="relative z-10 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-3 md:gap-4 items-start md:items-center">
@@ -1235,7 +1294,7 @@ const SlopcastPage: React.FC = () => {
                       {theme.appName}
                   </h1>
                   <span className={`text-[8px] md:text-[10px] uppercase font-bold tracking-[0.2em] theme-transition ${
-                    isClassic ? 'text-theme-warning' : isNocturne ? 'text-theme-warning' : 'text-theme-magenta'
+                    isClassic ? 'text-theme-warning' : isNocturne || isTropical ? 'text-theme-warning' : 'text-theme-magenta'
                   }`}>
                     {theme.appSubtitle}
                   </span>
@@ -1258,7 +1317,7 @@ const SlopcastPage: React.FC = () => {
             {/* Navigation Tabs */}
             <div className={isClassic ? 'flex items-center gap-2 flex-wrap' : 'flex items-center gap-1 p-1 rounded-panel border theme-transition bg-theme-bg border-theme-border flex-wrap'}>
                 <button
-                  onClick={() => navigate('/')}
+                  onClick={() => navigate('/hub')}
                   className={
                     isClassic
                       ? 'px-3 md:px-4 py-2 rounded-md text-[9px] md:text-[10px] font-black uppercase tracking-widest theme-transition border-2 shadow-card bg-black/15 text-white/90 border-black/25 hover:bg-black/20'
@@ -1280,7 +1339,11 @@ const SlopcastPage: React.FC = () => {
                             viewMode === 'DASHBOARD'
                               ? isNocturne
                                 ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan border border-theme-warning/45'
-                                : 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
+                                : isSynthwave
+                                  ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan ring-1 ring-theme-magenta/60'
+                                  : isTropical
+                                    ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan ring-1 ring-theme-warning/60'
+                                    : 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
                               : 'text-theme-muted hover:text-theme-text'
                           }`
                     }
@@ -1300,7 +1363,11 @@ const SlopcastPage: React.FC = () => {
                             viewMode === 'ANALYSIS'
                               ? isNocturne
                                 ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan border border-theme-warning/45'
-                                : 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
+                                : isSynthwave
+                                  ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan ring-1 ring-theme-magenta/60'
+                                  : isTropical
+                                    ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan ring-1 ring-theme-warning/60'
+                                    : 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
                               : 'text-theme-muted hover:text-theme-text'
                           }`
                     }
@@ -1339,7 +1406,11 @@ const SlopcastPage: React.FC = () => {
                           themeId === t.id
                             ? isNocturne
                               ? 'bg-theme-cyan text-theme-bg scale-110 shadow-glow-cyan ring-1 ring-theme-warning/60'
-                              : 'bg-theme-cyan text-theme-bg scale-110 shadow-glow-cyan'
+                              : isSynthwave
+                                ? 'bg-theme-cyan text-theme-bg scale-110 shadow-glow-cyan ring-1 ring-theme-magenta/65'
+                                : isTropical
+                                  ? 'bg-theme-cyan text-theme-bg scale-110 shadow-glow-cyan ring-1 ring-theme-warning/65'
+                                  : 'bg-theme-cyan text-theme-bg scale-110 shadow-glow-cyan'
                             : 'text-theme-muted hover:text-theme-text'
                         }`
                   }
@@ -1565,7 +1636,7 @@ const SlopcastPage: React.FC = () => {
                 <section className={`lg:col-span-5 lg:h-full lg:min-h-0 flex flex-col space-y-6 ${mobileSection !== 'WORKSPACE' ? 'hidden lg:flex' : ''}`}>
                     {/* Map */}
                     {isClassic ? (
-                      <div className="h-[480px] w-full sc-panel theme-transition">
+                      <div className="h-[480px] w-full shrink-0 sc-panel theme-transition">
                         <div className="sc-panelTitlebar sc-titlebar--neutral px-4 py-3 flex justify-between items-center">
                           <h2 className="text-[11px] font-black uppercase tracking-[0.25em] text-white flex items-center gap-3">
                             <span className="w-2 h-2 rounded-full bg-white/70"></span>
@@ -1594,7 +1665,7 @@ const SlopcastPage: React.FC = () => {
                         </div>
                       </div>
                     ) : (
-                      <div className="h-[480px] w-full rounded-panel border shadow-card relative overflow-hidden group theme-transition bg-theme-bg border-theme-border">
+                      <div className="h-[480px] w-full shrink-0 rounded-panel border shadow-card relative overflow-hidden group theme-transition bg-theme-bg border-theme-border">
                           {features.glowEffects && (
                             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-theme-cyan via-theme-magenta to-theme-cyan opacity-40"></div>
                           )}

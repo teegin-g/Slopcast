@@ -184,6 +184,9 @@
   --ambient-right-alpha: 0.34;
   --ambient-orb-left-alpha: 0.20;
   --ambient-orb-right-alpha: 0.20;
+  --synth-sun: 255 184 107;
+  --synth-grid-cyan: 158 211 240;
+  --synth-ridge-dark: 8 3 18;
 }
 
 /* ---------- Tropical / Tommy Bahama ---------- */
@@ -219,6 +222,11 @@
   --ambient-right-alpha: 0.28;
   --ambient-orb-left-alpha: 0.15;
   --ambient-orb-right-alpha: 0.14;
+  --tropical-sun: 255 197 124;
+  --tropical-horizon-coral: 249 115 22;
+  --tropical-lagoon: 45 212 191;
+  --tropical-ridge-dark: 9 23 31;
+  --tropical-palm-shadow: 16 42 44;
 }
 
 /* ---------- Nocturne (Moonlit Alpine) ---------- */
@@ -458,6 +466,285 @@ body {
   isolation: isolate;
 }
 
+.synth-atmo,
+.tropical-atmo {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+[data-theme='synthwave'] .synth-atmo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(68px 68px at 52% 10%, rgb(var(--synth-sun) / 0.78) 0%, rgb(var(--synth-sun) / 0) 72%),
+    linear-gradient(180deg, rgb(var(--magenta) / 0.20) 0%, rgb(var(--violet) / 0.10) 35%, transparent 58%),
+    linear-gradient(180deg, transparent 58%, rgb(var(--synth-grid-cyan) / 0.14) 69%, transparent 78%);
+  opacity: 0.76;
+  z-index: 0;
+}
+
+[data-theme='synthwave'] .synth-atmo.fx-max::before {
+  background:
+    radial-gradient(72px 72px at 52% 10%, rgb(var(--synth-sun) / 0.9) 0%, rgb(var(--synth-sun) / 0) 74%),
+    linear-gradient(180deg, rgb(var(--magenta) / 0.28) 0%, rgb(var(--violet) / 0.18) 34%, transparent 58%),
+    linear-gradient(180deg, transparent 52%, rgb(var(--magenta) / 0.26) 63%, transparent 78%),
+    linear-gradient(180deg, transparent 58%, rgb(var(--synth-grid-cyan) / 0.24) 69%, transparent 80%);
+  opacity: 0.98;
+  filter: saturate(1.35) contrast(1.08);
+}
+
+.synth-header {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+[data-theme='synthwave'] .synth-header {
+  border-bottom-color: rgb(var(--border) / 0.95);
+  box-shadow:
+    inset 0 -1px 0 rgb(var(--cyan) / 0.35),
+    0 12px 30px rgba(0, 0, 0, 0.42);
+}
+
+[data-theme='synthwave'] .synth-header.fx-max {
+  box-shadow:
+    inset 0 -1px 0 rgb(var(--magenta) / 0.52),
+    0 16px 36px rgba(0, 0, 0, 0.54);
+}
+
+.synth-bands,
+.synth-horizon,
+.synth-ridges,
+.tropical-breeze,
+.tropical-horizon,
+.tropical-ridges {
+  position: absolute;
+  pointer-events: none;
+}
+
+[data-theme='synthwave'] .synth-bands {
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      178deg,
+      rgb(var(--cyan) / 0.20) 0,
+      rgb(var(--cyan) / 0.20) 1px,
+      transparent 1px,
+      transparent 13px
+    ),
+    repeating-linear-gradient(
+      3deg,
+      rgb(var(--magenta) / 0.14) 0,
+      rgb(var(--magenta) / 0.14) 1px,
+      transparent 1px,
+      transparent 19px
+    );
+  mix-blend-mode: screen;
+  opacity: 0.34;
+}
+
+[data-theme='synthwave'] .synth-bands.fx-max {
+  background:
+    repeating-linear-gradient(
+      178deg,
+      rgb(var(--cyan) / 0.30) 0,
+      rgb(var(--cyan) / 0.30) 1px,
+      transparent 1px,
+      transparent 9px
+    ),
+    repeating-linear-gradient(
+      3deg,
+      rgb(var(--magenta) / 0.22) 0,
+      rgb(var(--magenta) / 0.22) 1px,
+      transparent 1px,
+      transparent 14px
+    );
+  opacity: 0.74;
+}
+
+[data-theme='synthwave'] .synth-horizon {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4.4rem;
+  background:
+    linear-gradient(
+      180deg,
+      rgb(var(--synth-sun) / 0) 0%,
+      rgb(var(--synth-sun) / 0.20) 48%,
+      rgb(var(--synth-sun) / 0.40) 62%,
+      rgb(var(--synth-sun) / 0.02) 100%
+    ),
+    linear-gradient(90deg, rgb(var(--magenta) / 0.26) 0%, rgb(var(--cyan) / 0.28) 50%, rgb(var(--magenta) / 0.24) 100%);
+  opacity: 0.75;
+}
+
+[data-theme='synthwave'] .synth-horizon.fx-max {
+  height: 6.8rem;
+  background:
+    linear-gradient(
+      180deg,
+      rgb(var(--synth-sun) / 0) 0%,
+      rgb(var(--synth-sun) / 0.24) 42%,
+      rgb(var(--synth-sun) / 0.54) 62%,
+      rgb(var(--magenta) / 0.22) 80%,
+      rgb(var(--magenta) / 0) 100%
+    ),
+    linear-gradient(90deg, rgb(var(--magenta) / 0.38) 0%, rgb(var(--cyan) / 0.46) 50%, rgb(var(--magenta) / 0.36) 100%);
+  opacity: 0.98;
+}
+
+[data-theme='synthwave'] .synth-ridges {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6rem;
+  background:
+    linear-gradient(166deg, rgb(var(--synth-ridge-dark) / 0.96) 14%, rgb(var(--synth-ridge-dark) / 0.28) 62%, rgb(var(--synth-ridge-dark) / 0) 100%),
+    linear-gradient(16deg, rgb(var(--synth-ridge-dark) / 0.86) 20%, rgb(var(--synth-ridge-dark) / 0.06) 74%, rgb(var(--synth-ridge-dark) / 0) 100%);
+  opacity: 0.84;
+}
+
+[data-theme='synthwave'] .synth-ridges.fx-max {
+  height: 8.5rem;
+  opacity: 1;
+}
+
+[data-theme='tropical'] .tropical-atmo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(86px 86px at 56% 10%, rgb(var(--tropical-sun) / 0.64) 0%, rgb(var(--tropical-sun) / 0) 72%),
+    linear-gradient(
+      180deg,
+      rgb(var(--tropical-lagoon) / 0.24) 0%,
+      rgb(var(--tropical-lagoon) / 0.08) 42%,
+      rgb(var(--tropical-horizon-coral) / 0.18) 62%,
+      transparent 82%
+    );
+  opacity: 0.74;
+  z-index: 0;
+}
+
+[data-theme='tropical'] .tropical-atmo.fx-max::before {
+  background:
+    radial-gradient(98px 98px at 56% 10%, rgb(var(--tropical-sun) / 0.78) 0%, rgb(var(--tropical-sun) / 0) 74%),
+    linear-gradient(
+      180deg,
+      rgb(var(--tropical-lagoon) / 0.34) 0%,
+      rgb(var(--tropical-lagoon) / 0.14) 36%,
+      rgb(var(--tropical-horizon-coral) / 0.26) 56%,
+      rgb(var(--tropical-horizon-coral) / 0.08) 74%,
+      transparent 88%
+    );
+  opacity: 0.96;
+  filter: saturate(1.24) contrast(1.06);
+}
+
+.tropical-header {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+[data-theme='tropical'] .tropical-header {
+  border-bottom-color: rgb(var(--border) / 0.9);
+  box-shadow:
+    inset 0 -1px 0 rgb(var(--warning) / 0.25),
+    0 10px 24px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme='tropical'] .tropical-header.fx-max {
+  box-shadow:
+    inset 0 -1px 0 rgb(var(--tropical-horizon-coral) / 0.42),
+    0 14px 30px rgba(0, 0, 0, 0.38);
+}
+
+[data-theme='tropical'] .tropical-breeze {
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      176deg,
+      rgb(var(--tropical-lagoon) / 0.14) 0,
+      rgb(var(--tropical-lagoon) / 0.14) 1px,
+      transparent 1px,
+      transparent 16px
+    );
+  opacity: 0.24;
+}
+
+[data-theme='tropical'] .tropical-breeze.fx-max {
+  background:
+    repeating-linear-gradient(
+      176deg,
+      rgb(var(--tropical-lagoon) / 0.22) 0,
+      rgb(var(--tropical-lagoon) / 0.22) 1px,
+      transparent 1px,
+      transparent 11px
+    ),
+    repeating-linear-gradient(
+      4deg,
+      rgb(var(--warning) / 0.16) 0,
+      rgb(var(--warning) / 0.16) 1px,
+      transparent 1px,
+      transparent 17px
+    );
+  opacity: 0.58;
+}
+
+[data-theme='tropical'] .tropical-horizon {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4.6rem;
+  background:
+    linear-gradient(
+      180deg,
+      rgb(var(--tropical-horizon-coral) / 0) 0%,
+      rgb(var(--tropical-horizon-coral) / 0.2) 46%,
+      rgb(var(--tropical-horizon-coral) / 0.36) 62%,
+      rgb(var(--tropical-horizon-coral) / 0.08) 100%
+    ),
+    linear-gradient(90deg, rgb(var(--warning) / 0.28) 0%, rgb(var(--tropical-horizon-coral) / 0.34) 50%, rgb(var(--warning) / 0.28) 100%);
+  opacity: 0.7;
+}
+
+[data-theme='tropical'] .tropical-horizon.fx-max {
+  height: 6.8rem;
+  background:
+    linear-gradient(
+      180deg,
+      rgb(var(--tropical-horizon-coral) / 0) 0%,
+      rgb(var(--tropical-horizon-coral) / 0.24) 40%,
+      rgb(var(--tropical-horizon-coral) / 0.54) 62%,
+      rgb(var(--warning) / 0.2) 84%,
+      rgb(var(--warning) / 0) 100%
+    ),
+    linear-gradient(90deg, rgb(var(--warning) / 0.36) 0%, rgb(var(--tropical-horizon-coral) / 0.44) 50%, rgb(var(--warning) / 0.36) 100%);
+  opacity: 0.98;
+}
+
+[data-theme='tropical'] .tropical-ridges {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5.8rem;
+  background:
+    linear-gradient(162deg, rgb(var(--tropical-ridge-dark) / 0.92) 20%, rgb(var(--tropical-ridge-dark) / 0.2) 64%, rgb(var(--tropical-ridge-dark) / 0) 100%),
+    linear-gradient(28deg, rgb(var(--tropical-palm-shadow) / 0.8) 18%, rgb(var(--tropical-palm-shadow) / 0.08) 74%, rgb(var(--tropical-palm-shadow) / 0) 100%);
+  opacity: 0.8;
+}
+
+[data-theme='tropical'] .tropical-ridges.fx-max {
+  height: 8rem;
+  opacity: 0.98;
+}
+
 [data-theme='league'] .nocturne-atmo::before {
   content: '';
   position: absolute;
@@ -557,6 +844,58 @@ body {
   [data-theme='league'] .nocturne-ridges {
     height: 3.75rem;
     opacity: 0.72;
+  }
+
+  [data-theme='synthwave'] .synth-bands {
+    opacity: 0.25;
+  }
+
+  [data-theme='synthwave'] .synth-bands.fx-max {
+    opacity: 0.52;
+  }
+
+  [data-theme='synthwave'] .synth-horizon {
+    height: 3.2rem;
+  }
+
+  [data-theme='synthwave'] .synth-horizon.fx-max {
+    height: 4.2rem;
+  }
+
+  [data-theme='synthwave'] .synth-ridges {
+    height: 4.6rem;
+    opacity: 0.66;
+  }
+
+  [data-theme='synthwave'] .synth-ridges.fx-max {
+    height: 5.6rem;
+    opacity: 0.82;
+  }
+
+  [data-theme='tropical'] .tropical-breeze {
+    opacity: 0.2;
+  }
+
+  [data-theme='tropical'] .tropical-breeze.fx-max {
+    opacity: 0.46;
+  }
+
+  [data-theme='tropical'] .tropical-horizon {
+    height: 3.5rem;
+  }
+
+  [data-theme='tropical'] .tropical-horizon.fx-max {
+    height: 4.4rem;
+  }
+
+  [data-theme='tropical'] .tropical-ridges {
+    height: 4.5rem;
+    opacity: 0.64;
+  }
+
+  [data-theme='tropical'] .tropical-ridges.fx-max {
+    height: 5.4rem;
+    opacity: 0.8;
   }
 }
 
@@ -965,6 +1304,36 @@ body {
   pointer-events: none;
   background: linear-gradient(90deg, rgb(var(--cyan)) 0%, rgb(var(--warning)) 46%, rgb(var(--success)) 100%);
   opacity: 0.62;
+}
+
+/* Synthwave accent strip on core chrome surfaces */
+[data-theme='synthwave'] .sc-panel::after,
+[data-theme='synthwave'] .sc-screen::after,
+[data-theme='synthwave'] .sc-kpi::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgb(var(--magenta)) 0%, rgb(var(--cyan)) 52%, rgb(var(--lav)) 100%);
+  opacity: 0.68;
+}
+
+/* Tropical accent strip on core chrome surfaces */
+[data-theme='tropical'] .sc-panel::after,
+[data-theme='tropical'] .sc-screen::after,
+[data-theme='tropical'] .sc-kpi::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgb(var(--cyan)) 0%, rgb(var(--warning)) 45%, rgb(var(--magenta)) 100%);
+  opacity: 0.64;
 }
 
 /* ---------- Gradient helpers ---------- */

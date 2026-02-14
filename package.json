@@ -9,7 +9,13 @@
     "preview": "vite preview",
     "start": "node server.js",
     "ui:audit": "node scripts/ui-audit.mjs",
-    "ui:shots": "node scripts/ui-snapshots.mjs"
+    "ui:shots": "node scripts/ui-snapshots.mjs",
+    "theme:fx:url:cinematic": "node scripts/theme-fx-toggle.mjs cinematic",
+    "theme:fx:url:max": "node scripts/theme-fx-toggle.mjs max",
+    "theme:fx:url:clear": "node scripts/theme-fx-toggle.mjs clear",
+    "theme:fx:cinematic": "node scripts/theme-fx-toggle.mjs cinematic --open",
+    "theme:fx:max": "node scripts/theme-fx-toggle.mjs max --open",
+    "theme:fx:clear": "node scripts/theme-fx-toggle.mjs clear --open"
   },
   "dependencies": {
     "@google/genai": "^1.38.0",

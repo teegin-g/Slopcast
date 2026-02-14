@@ -77,7 +77,7 @@ const HubPage: React.FC = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/');
+    navigate('/hub');
   };
 
   const activityItems = [

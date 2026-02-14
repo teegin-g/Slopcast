@@ -9,7 +9,8 @@ import SlopcastPage from './pages/SlopcastPage';
 const App: React.FC = () => {
   return (
     <Routes>
-      <Route path="/" element={<HubPage />} />
+      <Route path="/" element={<Navigate to="/slopcast" replace />} />
+      <Route path="/hub" element={<HubPage />} />
       <Route path="/auth" element={<AuthPage />} />
       <Route
         path="/slopcast"
@@ -19,7 +20,7 @@ const App: React.FC = () => {
           </ProtectedRoute>
         )}
       />
-      <Route path="/home" element={<Navigate to="/" replace />} />
+      <Route path="/home" element={<Navigate to="/hub" replace />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );

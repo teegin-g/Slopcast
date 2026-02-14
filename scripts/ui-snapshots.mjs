@@ -14,6 +14,9 @@ const { chromium } = await import('playwright');
 
 const baseURL = (process.env.UI_BASE_URL || 'http://127.0.0.1:3000/').replace(/\/?$/, '/');
 const outDir = process.env.UI_OUT_DIR || path.join('artifacts', 'ui', 'latest');
+const fxMode = (process.env.UI_FX_MODE === 'cinematic' || process.env.UI_FX_MODE === 'max')
+  ? process.env.UI_FX_MODE
+  : null;
 
 const THEMES = [
   { id: 'slate', title: 'Slate' },
@@ -61,6 +64,7 @@ async function main() {
   const runMeta = {
     baseURL,
     outDir,
+    fxMode,
     startedAt: new Date().toISOString(),
     themes: THEMES,
     views: VIEWS,
@@ -77,10 +81,14 @@ async function main() {
       });
 
       // Force default state for each viewport run.
-      await context.addInitScript(({ themeId, session, storageKey }) => {
+      await context.addInitScript(({ themeId, session, storageKey, mode }) => {
         localStorage.setItem('slopcast-theme', themeId);
         localStorage.setItem(storageKey, JSON.stringify(session));
-      }, { themeId: THEMES[0].id, session: DEFAULT_AUTH_SESSION, storageKey: 'slopcast-auth-session' });
+        if (mode === 'cinematic' || mode === 'max') {
+          localStorage.setItem('slopcast-fx-synthwave', mode);
+          localStorage.setItem('slopcast-fx-tropical', mode);
+        }
+      }, { themeId: THEMES[0].id, session: DEFAULT_AUTH_SESSION, storageKey: 'slopcast-auth-session', mode: fxMode });
 
       const page = await context.newPage();
       await page.goto(baseURL, { waitUntil: 'domcontentloaded' });
