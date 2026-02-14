@@ -6,13 +6,24 @@ import { ThemeId, getTheme } from '../theme/themes';
 interface MapVisualizerProps {
   wells: Well[];
   selectedWellIds: Set<string>;
+  visibleWellIds: Set<string>;
+  dimmedWellIds: Set<string>;
   groups: WellGroup[];
   onToggleWell: (id: string) => void;
   onSelectWells: (ids: string[]) => void;
   themeId: ThemeId;
 }
 
-const MapVisualizer: React.FC<MapVisualizerProps> = ({ wells, selectedWellIds, groups, onToggleWell, onSelectWells, themeId }) => {
+const MapVisualizer: React.FC<MapVisualizerProps> = ({
+  wells,
+  selectedWellIds,
+  visibleWellIds,
+  dimmedWellIds,
+  groups,
+  onToggleWell,
+  onSelectWells,
+  themeId
+}) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -33,6 +44,9 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({ wells, selectedWellIds, g
     }
     return mp.unassignedFill;
   };
+
+  const isDimmedWell = (wellId: string) => dimmedWellIds.has(wellId);
+  const isVisibleWell = (wellId: string) => visibleWellIds.has(wellId);
 
   useEffect(() => {
     const handleResize = () => {
@@ -92,11 +106,11 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({ wells, selectedWellIds, g
       .attr("y2", d => yScale(d.lat) + 5)
       .attr("stroke", d => getWellColor(d.id))
       .attr("stroke-width", 2)
-      .attr("opacity", 0.4)
+      .attr("opacity", d => (isDimmedWell(d.id) ? 0.08 : 0.4))
       .attr("pointer-events", "none");
 
     // Wells
-    const wellNodes = mapG.selectAll("circle")
+    mapG.selectAll("circle")
       .data(wells)
       .enter()
       .append("circle")
@@ -104,20 +118,25 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({ wells, selectedWellIds, g
       .attr("cy", d => yScale(d.lat))
       .attr("r", 5)
       .attr("fill", d => getWellColor(d.id))
-      .attr("stroke", d => selectedWellIds.has(d.id) ? mp.selectedStroke : "none")
-      .attr("stroke-width", d => selectedWellIds.has(d.id) ? 3 : 0)
-      .attr("fill-opacity", d => selectedWellIds.has(d.id) ? 1 : 0.6)
-      .attr("filter", d => selectedWellIds.has(d.id) && themeMeta.features.glowEffects ? "url(#neon-glow)" : "none")
-      .attr("cursor", "pointer") 
+      .attr("stroke", d => (selectedWellIds.has(d.id) && !isDimmedWell(d.id)) ? mp.selectedStroke : "none")
+      .attr("stroke-width", d => (selectedWellIds.has(d.id) && !isDimmedWell(d.id)) ? 3 : 0)
+      .attr("fill-opacity", d => {
+        if (isDimmedWell(d.id)) return 0.12;
+        return selectedWellIds.has(d.id) ? 1 : 0.6;
+      })
+      .attr("filter", d => (selectedWellIds.has(d.id) && !isDimmedWell(d.id) && themeMeta.features.glowEffects) ? "url(#neon-glow)" : "none")
+      .attr("cursor", d => (isDimmedWell(d.id) ? "default" : "pointer"))
       .on("click", (event, d) => {
-        if (!event.defaultPrevented) {
+        if (!event.defaultPrevented && isVisibleWell(d.id)) {
              onToggleWell(d.id);
         }
       })
-      .on("mouseover", function() {
+      .on("mouseover", function(event, d) {
+         if (isDimmedWell(d.id)) return;
          d3.select(this).attr("r", 8).attr("fill-opacity", 1);
       })
       .on("mouseout", function(event, d) {
+         if (isDimmedWell(d.id)) return;
          d3.select(this)
             .attr("r", 5)
             .attr("fill-opacity", selectedWellIds.has(d.id) ? 1 : 0.6);
@@ -142,6 +161,7 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({ wells, selectedWellIds, g
             if (currentPoints.length > 2) {
                 const selected: string[] = [];
                 wells.forEach(w => {
+                    if (!isVisibleWell(w.id)) return;
                     const px = xScale(w.lng);
                     const py = yScale(w.lat);
                     if (d3.polygonContains(currentPoints, [px, py])) {
@@ -158,7 +178,7 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({ wells, selectedWellIds, g
     svg.call(drag);
     svg.style("cursor", isLassoMode ? "crosshair" : "default");
 
-  }, [wells, selectedWellIds, groups, dimensions, isLassoMode, onToggleWell, onSelectWells, themeId]); 
+  }, [wells, selectedWellIds, visibleWellIds, dimmedWellIds, groups, dimensions, isLassoMode, onToggleWell, onSelectWells, themeId]); 
 
   return (
     <div ref={containerRef} className="w-full h-full min-h-[400px] overflow-hidden relative select-none">
@@ -167,7 +187,7 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({ wells, selectedWellIds, g
       {!isClassic && (
         <div className="absolute top-4 left-4 z-10 pointer-events-none select-none">
           <p className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded backdrop-blur transition-all bg-theme-bg/80 text-theme-cyan border border-theme-border">
-              {selectedWellIds.size} Wells Selected
+              {visibleWellIds.size} Visible / {selectedWellIds.size} Selected
           </p>
         </div>
       )}

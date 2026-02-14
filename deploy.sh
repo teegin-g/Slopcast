@@ -8,6 +8,43 @@ MODE="prod"
 BUILD_ONLY=0
 SKIP_INSTALL=0
 
+kill_listeners_on_port() {
+  local port="$1"
+
+  if [[ -z "$port" ]]; then
+    return 0
+  fi
+
+  if ! command -v lsof >/dev/null 2>&1; then
+    echo "Warning: lsof not found; can't free port $port automatically."
+    return 0
+  fi
+
+  local pids=""
+  pids="$(lsof -nP -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null | sort -u || true)"
+
+  if [[ -z "$pids" ]]; then
+    return 0
+  fi
+
+  echo "Port $port is in use. Terminating listener process(es): $pids"
+  # shellcheck disable=SC2086
+  kill -TERM $pids 2>/dev/null || true
+
+  local still=""
+  for _ in {1..20}; do
+    sleep 0.1
+    still="$(lsof -nP -iTCP:"$port" -sTCP:LISTEN -t 2>/dev/null | sort -u || true)"
+    [[ -z "$still" ]] && break
+  done
+
+  if [[ -n "$still" ]]; then
+    echo "Port $port still busy. Forcing termination: $still"
+    # shellcheck disable=SC2086
+    kill -KILL $still 2>/dev/null || true
+  fi
+}
+
 open_url() {
   local url="$1"
   if command -v open >/dev/null 2>&1; then
@@ -100,6 +137,7 @@ fi
 
 echo "Starting production server..."
 PORT="${PORT:-8000}"
+kill_listeners_on_port "$PORT"
 PROD_URL="http://localhost:${PORT}"
 (sleep 1; open_url "$PROD_URL") &
 npm run start

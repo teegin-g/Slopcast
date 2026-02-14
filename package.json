@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server.js",
-    "ui:audit": "node scripts/ui-audit.mjs"
+    "ui:audit": "node scripts/ui-audit.mjs",
+    "ui:shots": "node scripts/ui-snapshots.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.38.0",
@@ -17,11 +18,14 @@
     "express": "^4.22.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "react-router-dom": "^7.13.0",
     "recharts": "^3.7.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0"
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^22.14.0",
+    "playwright": "^1.58.2"
   }
 }

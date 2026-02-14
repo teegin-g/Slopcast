@@ -38,3 +38,8 @@ ENV/
 # Jupyter Notebook
 .ipynb_checkpoints
 *.ipynb_checkpoints/
+
+# UI inspection artifacts
+artifacts/
+playwright-report/
+test-results/

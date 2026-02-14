@@ -1,11 +1,102 @@
 
-import { Well, TypeCurveParams, CapexAssumptions, PricingAssumptions, MonthlyCashFlow, DealMetrics, WellGroup, Scenario, SensitivityVariable, SensitivityMatrixResult, ScheduleParams } from '../types';
+import { Well, TypeCurveParams, CapexAssumptions, CommodityPricingAssumptions, MonthlyCashFlow, DealMetrics, WellGroup, Scenario, SensitivityVariable, SensitivityMatrixResult, ScheduleParams, OpexAssumptions, OwnershipAssumptions, JvAgreement } from '../types';
+
+const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+
+const getOpexSegmentForAgeMonth = (opex: OpexAssumptions, ageMonth: number) => {
+  const segments = [...(opex.segments || [])].sort((a, b) => a.startMonth - b.startMonth);
+  return segments.find(seg => ageMonth >= seg.startMonth && ageMonth <= seg.endMonth) || null;
+};
+
+type OwnershipFactors = {
+  netRevenueFactor: number[];
+  netCostFactor: number[];
+};
+
+const computeAgreementPayoutMonth = (
+  agreement: JvAgreement,
+  ownership: OwnershipAssumptions,
+  grossRevenue: number[],
+  grossOpex: number[],
+  grossCapex: number[]
+) => {
+  const months = grossRevenue.length;
+  const startIdx = Math.max(0, Math.floor((agreement.startMonth || 1) - 1));
+  const baseNri = clamp01(ownership.baseNri);
+  const baseCost = clamp01(ownership.baseCostInterest);
+
+  const conveyRev = clamp01(agreement.prePayout.conveyRevenuePctOfBase);
+  const conveyCost = clamp01(agreement.prePayout.conveyCostPctOfBase);
+
+  const partnerRevFactor = baseNri * conveyRev;
+  const partnerCostFactor = baseCost * conveyCost;
+
+  let cumulative = 0;
+  for (let i = startIdx; i < months; i++) {
+    const partnerNet =
+      (grossRevenue[i] * partnerRevFactor) -
+      ((grossOpex[i] + grossCapex[i]) * partnerCostFactor);
+    cumulative += partnerNet;
+    if (cumulative >= 0) return i + 1; // calendar month (1-based)
+  }
+  return null;
+};
+
+const computeOwnershipFactors = (
+  ownership: OwnershipAssumptions,
+  grossRevenue: number[],
+  grossOpex: number[],
+  grossCapex: number[]
+): OwnershipFactors => {
+  const months = grossRevenue.length;
+  const baseNri = clamp01(ownership.baseNri);
+  const baseCost = clamp01(ownership.baseCostInterest);
+
+  const payoutMonthsByAgreementId = new Map<string, number | null>();
+  (ownership.agreements || []).forEach(agreement => {
+    payoutMonthsByAgreementId.set(
+      agreement.id,
+      computeAgreementPayoutMonth(agreement, ownership, grossRevenue, grossOpex, grossCapex)
+    );
+  });
+
+  const netRevenueFactor: number[] = new Array(months).fill(0);
+  const netCostFactor: number[] = new Array(months).fill(0);
+
+  for (let i = 0; i < months; i++) {
+    let conveyedRevPct = 0;
+    let conveyedCostPct = 0;
+
+    for (const agreement of ownership.agreements || []) {
+      const startIdx = Math.max(0, Math.floor((agreement.startMonth || 1) - 1));
+      if (i < startIdx) continue;
+
+      const payoutMonth = payoutMonthsByAgreementId.get(agreement.id) ?? null;
+      const postStartsIdx = payoutMonth == null ? null : payoutMonth; // start post in month AFTER payoutMonth (1-based) => idx = payoutMonth
+      const usePost = postStartsIdx != null && i >= postStartsIdx;
+      const terms = usePost ? agreement.postPayout : agreement.prePayout;
+
+      conveyedRevPct += clamp01(terms.conveyRevenuePctOfBase);
+      conveyedCostPct += clamp01(terms.conveyCostPctOfBase);
+    }
+
+    conveyedRevPct = clamp01(conveyedRevPct);
+    conveyedCostPct = clamp01(conveyedCostPct);
+
+    netRevenueFactor[i] = baseNri * (1 - conveyedRevPct);
+    netCostFactor[i] = baseCost * (1 - conveyedCostPct);
+  }
+
+  return { netRevenueFactor, netCostFactor };
+};
 
 export const calculateEconomics = (
   selectedWells: Well[],
   tc: TypeCurveParams,
   capex: CapexAssumptions,
-  pricing: PricingAssumptions,
+  pricing: CommodityPricingAssumptions,
+  opex: OpexAssumptions,
+  ownership: OwnershipAssumptions,
   scalars: { capex: number; production: number } = { capex: 1, production: 1 },
   scheduleOverride?: ScheduleParams 
 ): { flow: MonthlyCashFlow[], metrics: DealMetrics } => {
@@ -71,22 +162,13 @@ export const calculateEconomics = (
       return { well, startMonthOffset: startMonth };
   });
 
-  // --- 3. Generate Cash Flows ---
-  const aggregatedFlow: MonthlyCashFlow[] = [];
-  for(let t = 1; t <= monthsToProject + 24; t++) { 
-    aggregatedFlow.push({
-        month: t,
-        date: `Month ${t}`,
-        oilProduction: 0,
-        revenue: 0,
-        capex: 0,
-        opex: 0,
-        netCashFlow: 0,
-        cumulativeCashFlow: 0
-    });
-  }
+  // --- 3. Generate Gross Cash Flows (then apply Ownership/JV netting) ---
+  const oilProduction: number[] = new Array(monthsToProject).fill(0);
+  const gasProduction: number[] = new Array(monthsToProject).fill(0);
+  const grossRevenue: number[] = new Array(monthsToProject).fill(0);
+  const grossOpex: number[] = new Array(monthsToProject).fill(0);
+  const grossCapex: number[] = new Array(monthsToProject).fill(0);
 
-  let totalCapex = 0;
   let totalOil = 0;
   
   const Di_monthly = 1 - Math.pow(1 - (tc.di / 100), 1/12);
@@ -106,19 +188,17 @@ export const calculateEconomics = (
       
       const wellTotalCapex = rawWellCapex * scalars.capex; 
 
-      totalCapex += wellTotalCapex;
-
       const prodStartMonthIdx = Math.floor(startMonthOffset) + 1;
       const capexMonthIdx = Math.floor(startMonthOffset); 
 
-      if (aggregatedFlow[capexMonthIdx]) {
-          aggregatedFlow[capexMonthIdx].capex += wellTotalCapex;
+      if (capexMonthIdx >= 0 && capexMonthIdx < monthsToProject) {
+          grossCapex[capexMonthIdx] += wellTotalCapex;
       }
 
       for (let t = 1; t <= monthsToProject; t++) {
           const calendarMonthIdx = prodStartMonthIdx + t - 1;
           
-          if (calendarMonthIdx < aggregatedFlow.length) {
+          if (calendarMonthIdx >= 0 && calendarMonthIdx < monthsToProject) {
               let q_t = 0;
               if (b === 0) {
                   q_t = qi_monthly * Math.exp(-Di_monthly * t);
@@ -126,48 +206,67 @@ export const calculateEconomics = (
                   q_t = qi_monthly / Math.pow(1 + b * Di_monthly * t, 1/b);
               }
 
-              // Simple Revenue: (Oil * RealizedPrice) * NRI
-              // Note: Assuming gas is 0 for this simple calculation or included in BOE/Price approximation
-              // If we want gas revenue, we need Gas type curve. 
-              // For now, prompt implies Oil focus, so we use q_t as BOE or Oil.
-              
-              const revenue = q_t * realizedOil * pricing.nri;
-              const opex = pricing.loePerMonth; 
+              const gas_t = q_t * (tc.gorMcfPerBbl || 0);
 
-              aggregatedFlow[calendarMonthIdx].oilProduction += q_t;
-              aggregatedFlow[calendarMonthIdx].revenue += revenue;
-              aggregatedFlow[calendarMonthIdx].opex += opex;
+              const revenueGross = (q_t * realizedOil) + (gas_t * realizedGas);
+              const seg = getOpexSegmentForAgeMonth(opex, t);
+              const fixed = seg ? seg.fixedPerWellPerMonth : 0;
+              const varOil = seg ? seg.variableOilPerBbl : 0;
+              const varGas = seg ? seg.variableGasPerMcf : 0;
+              const opexGross = fixed + (q_t * varOil) + (gas_t * varGas);
+
+              oilProduction[calendarMonthIdx] += q_t;
+              gasProduction[calendarMonthIdx] += gas_t;
+              grossRevenue[calendarMonthIdx] += revenueGross;
+              grossOpex[calendarMonthIdx] += opexGross;
               
               totalOil += q_t;
           }
       }
   });
 
-  // --- 4. Final Metrics ---
+  const { netRevenueFactor, netCostFactor } = computeOwnershipFactors(ownership, grossRevenue, grossOpex, grossCapex);
+
+  // --- 4. Final Metrics (Net of Ownership/JVs) ---
   let cumulativeCash = 0;
-  let npv = 0; 
+  let npv = 0;
   let payoutMonth = 0;
   let payoutFound = false;
+  let totalNetCapex = 0;
 
-  const finalFlow = aggregatedFlow.slice(0, monthsToProject); 
+  const finalFlow: MonthlyCashFlow[] = [];
+  for (let i = 0; i < monthsToProject; i++) {
+    const revenue = grossRevenue[i] * netRevenueFactor[i];
+    const opexNet = grossOpex[i] * netCostFactor[i];
+    const capexNet = grossCapex[i] * netCostFactor[i];
+    const netCashFlow = revenue - opexNet - capexNet;
 
-  finalFlow.forEach(f => {
-      f.netCashFlow = f.revenue - f.opex - f.capex;
-      cumulativeCash += f.netCashFlow;
-      f.cumulativeCashFlow = cumulativeCash;
+    totalNetCapex += capexNet;
+    cumulativeCash += netCashFlow;
+    npv += netCashFlow / Math.pow(1 + monthlyDiscountRate, i + 1);
 
-      npv += f.netCashFlow / Math.pow(1 + monthlyDiscountRate, f.month);
+    if (!payoutFound && cumulativeCash >= 0) {
+      payoutMonth = i + 1;
+      payoutFound = true;
+    }
 
-      if (!payoutFound && cumulativeCash >= 0) {
-          payoutMonth = f.month;
-          payoutFound = true;
-      }
-  });
+    finalFlow.push({
+      month: i + 1,
+      date: `Month ${i + 1}`,
+      oilProduction: oilProduction[i],
+      gasProduction: gasProduction[i],
+      revenue,
+      capex: capexNet,
+      opex: opexNet,
+      netCashFlow,
+      cumulativeCashFlow: cumulativeCash,
+    });
+  }
 
   return {
     flow: finalFlow,
     metrics: {
-      totalCapex,
+      totalCapex: totalNetCapex,
       eur: totalOil,
       npv10: npv,
       irr: 0,
@@ -188,6 +287,7 @@ export const aggregateEconomics = (groups: WellGroup[]): { flow: MonthlyCashFlow
             month: t,
             date: `Month ${t}`,
             oilProduction: 0,
+            gasProduction: 0,
             revenue: 0,
             capex: 0,
             opex: 0,
@@ -212,6 +312,7 @@ export const aggregateEconomics = (groups: WellGroup[]): { flow: MonthlyCashFlow
         group.flow.forEach((f, i) => {
             if (aggregatedFlow[i]) {
                 aggregatedFlow[i].oilProduction += f.oilProduction;
+                aggregatedFlow[i].gasProduction += f.gasProduction;
                 aggregatedFlow[i].revenue += f.revenue;
                 aggregatedFlow[i].capex += f.capex;
                 aggregatedFlow[i].opex += f.opex;
@@ -251,6 +352,7 @@ export const aggregateEconomics = (groups: WellGroup[]): { flow: MonthlyCashFlow
 export const generateSensitivityMatrix = (
     baseGroups: WellGroup[],
     wells: Well[],
+    basePricing: CommodityPricingAssumptions,
     xVar: SensitivityVariable,
     xSteps: number[],
     yVar: SensitivityVariable,
@@ -259,11 +361,10 @@ export const generateSensitivityMatrix = (
 
     // Helper to get parameters for a step
     const getParamsForStep = (
-        group: WellGroup, 
         variable: SensitivityVariable, 
         value: number, 
         currentScalars: { capex: number, production: number },
-        currentPricing: PricingAssumptions,
+        currentPricing: CommodityPricingAssumptions,
         currentSchedule: ScheduleParams
     ) => {
         const newScalars = { ...currentScalars };
@@ -298,7 +399,7 @@ export const generateSensitivityMatrix = (
                 
                 // Start with base defaults
                 let scalars = { capex: 1, production: 1 };
-                let pricing = { ...group.pricing };
+                let pricing = { ...basePricing };
                 
                 // Construct default schedule from group legacy or simple default
                 let schedule: ScheduleParams = {
@@ -309,18 +410,18 @@ export const generateSensitivityMatrix = (
                 };
 
                 // Apply Y modification
-                const r1 = getParamsForStep(group, yVar, yVal, scalars, pricing, schedule);
+                const r1 = getParamsForStep(yVar, yVal, scalars, pricing, schedule);
                 scalars = r1.newScalars;
                 pricing = r1.newPricing;
                 schedule = r1.newSchedule;
 
                 // Apply X modification
-                const r2 = getParamsForStep(group, xVar, xVal, scalars, pricing, schedule);
+                const r2 = getParamsForStep(xVar, xVal, scalars, pricing, schedule);
                 scalars = r2.newScalars;
                 pricing = r2.newPricing;
                 schedule = r2.newSchedule;
 
-                const { metrics } = calculateEconomics(groupWells, group.typeCurve, group.capex, pricing, scalars, schedule);
+                const { metrics } = calculateEconomics(groupWells, group.typeCurve, group.capex, pricing, group.opex, group.ownership, scalars, schedule);
                 portfolioNpv += metrics.npv10;
             }
 

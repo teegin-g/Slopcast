@@ -7,6 +7,7 @@ export interface Well {
   lateralLength: number; // in feet
   status: 'PRODUCING' | 'DUC' | 'PERMIT';
   operator: string;
+  formation: string;
 }
 
 export interface TypeCurveParams {
@@ -14,6 +15,7 @@ export interface TypeCurveParams {
   b: number; // b-factor
   di: number; // Nominal initial decline rate (annual %)
   terminalDecline: number; // Terminal decline (annual %)
+  gorMcfPerBbl: number; // Gas-Oil Ratio (mcf/bbl) used to derive gas volumes
 }
 
 export type CapexCategory = 'DRILLING' | 'COMPLETION' | 'FACILITIES' | 'EQUIPMENT' | 'OTHER';
@@ -36,19 +38,51 @@ export interface CapexAssumptions {
   items: CapexItem[];
 }
 
-export interface PricingAssumptions {
+export interface CommodityPricingAssumptions {
   oilPrice: number; // $/bbl
   gasPrice: number; // $/mcf
   oilDifferential: number; // $/bbl deduction
   gasDifferential: number; // $/mcf deduction
-  nri: number; // Net Revenue Interest (decimal)
-  loePerMonth: number; // Lease Operating Expense ($/mo)
+}
+
+export interface OpexSegment {
+  id: string;
+  label: string;
+  startMonth: number; // Well-age month (1 = first producing month)
+  endMonth: number; // Well-age month (inclusive)
+  fixedPerWellPerMonth: number; // $/well/month
+  variableOilPerBbl: number; // $/bbl
+  variableGasPerMcf: number; // $/mcf
+}
+
+export interface OpexAssumptions {
+  segments: OpexSegment[];
+}
+
+export interface JvAgreementTerms {
+  conveyRevenuePctOfBase: number; // 0..1 (fraction of base NRI conveyed)
+  conveyCostPctOfBase: number; // 0..1 (fraction of base cost interest conveyed)
+}
+
+export interface JvAgreement {
+  id: string;
+  name: string;
+  startMonth: number; // Calendar month (1..N)
+  prePayout: JvAgreementTerms;
+  postPayout: JvAgreementTerms;
+}
+
+export interface OwnershipAssumptions {
+  baseNri: number; // 0..1
+  baseCostInterest: number; // 0..1
+  agreements: JvAgreement[];
 }
 
 export interface MonthlyCashFlow {
   month: number;
   date: string;
   oilProduction: number;
+  gasProduction: number;
   revenue: number;
   capex: number;
   opex: number;
@@ -72,7 +106,8 @@ export interface WellGroup {
   wellIds: Set<string>;
   typeCurve: TypeCurveParams;
   capex: CapexAssumptions;
-  pricing: PricingAssumptions;
+  opex: OpexAssumptions;
+  ownership: OwnershipAssumptions;
   // Computed for display
   metrics?: DealMetrics;
   flow?: MonthlyCashFlow[];
@@ -93,7 +128,7 @@ export interface Scenario {
   color: string;
   isBaseCase: boolean;
   // Overrides / Scalars
-  pricing: PricingAssumptions; 
+  pricing: CommodityPricingAssumptions; 
   schedule: ScheduleParams; 
   capexScalar: number; 
   productionScalar: number; 

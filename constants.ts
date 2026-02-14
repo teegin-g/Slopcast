@@ -1,11 +1,14 @@
 
-import { Well, TypeCurveParams, CapexAssumptions, CapexItem, PricingAssumptions } from './types';
+import { Well, TypeCurveParams, CapexAssumptions, CapexItem, CommodityPricingAssumptions, OpexAssumptions, OwnershipAssumptions } from './types';
 
 // Generate some mock wells in a basin-like cluster
 const generateWells = (count: number): Well[] => {
   const wells: Well[] = [];
   const centerLat = 31.9;
   const centerLng = -102.3;
+  const operators = ['Strata Ops LLC', 'Blue Mesa Energy', 'Atlas Peak Resources'];
+  const formations = ['Wolfcamp A', 'Wolfcamp B', 'Bone Spring'];
+  const statuses: Array<Well['status']> = ['PRODUCING', 'DUC', 'PERMIT'];
   
   for (let i = 0; i < count; i++) {
     wells.push({
@@ -14,8 +17,9 @@ const generateWells = (count: number): Well[] => {
       lat: centerLat + (Math.random() - 0.5) * 0.15,
       lng: centerLng + (Math.random() - 0.5) * 0.2,
       lateralLength: Math.random() > 0.5 ? 10000 : 7500,
-      status: Math.random() > 0.7 ? 'DUC' : 'PERMIT',
-      operator: 'Strata Ops LLC',
+      status: statuses[i % statuses.length],
+      operator: operators[i % operators.length],
+      formation: formations[i % formations.length],
     });
   }
   return wells;
@@ -28,6 +32,7 @@ export const DEFAULT_TYPE_CURVE: TypeCurveParams = {
   b: 1.2,
   di: 65, // 65% initial decline
   terminalDecline: 8,
+  gorMcfPerBbl: 0,
 };
 
 const DEFAULT_CAPEX_ITEMS: CapexItem[] = [
@@ -50,13 +55,31 @@ export const DEFAULT_CAPEX: CapexAssumptions = {
   items: DEFAULT_CAPEX_ITEMS,
 };
 
-export const DEFAULT_PRICING: PricingAssumptions = {
+export const DEFAULT_COMMODITY_PRICING: CommodityPricingAssumptions = {
   oilPrice: 75.00,
   gasPrice: 3.25,
   oilDifferential: 2.50,
   gasDifferential: 0.35,
-  nri: 0.75, // 75% NRI
-  loePerMonth: 8500,
+};
+
+export const DEFAULT_OPEX: OpexAssumptions = {
+  segments: [
+    {
+      id: 'o-1',
+      label: 'Base LOE',
+      startMonth: 1,
+      endMonth: 120,
+      fixedPerWellPerMonth: 8500,
+      variableOilPerBbl: 0,
+      variableGasPerMcf: 0,
+    },
+  ],
+};
+
+export const DEFAULT_OWNERSHIP: OwnershipAssumptions = {
+  baseNri: 0.75,
+  baseCostInterest: 1.0,
+  agreements: [],
 };
 
 export const GROUP_COLORS = [

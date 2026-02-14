@@ -73,16 +73,16 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
   return (
     <div className={isClassic ? 'sc-panel theme-transition' : 'overflow-hidden rounded-panel border theme-transition bg-theme-surface1/60 border-theme-border shadow-card'}>
         <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--red p-4 flex justify-between items-center' : 'p-4 border-b flex justify-between items-center transition-all bg-theme-surface1 border-theme-border'}>
-            <h3 className={`text-xs font-bold uppercase tracking-widest text-theme-magenta ${theme.features.brandFont ? 'brand-font' : ''}`}>
-                Portfolio NPV Sensitivity <span className="text-theme-muted ml-2">(MM)</span>
+            <h3 className={`text-xs font-bold uppercase tracking-widest ${isClassic ? 'text-white' : 'text-theme-magenta'} ${theme.features.brandFont ? 'brand-font' : ''}`}>
+                Portfolio NPV Sensitivity <span className={`${isClassic ? 'text-theme-warning/90' : 'text-theme-muted'} ml-2`}>(MM)</span>
             </h3>
         </div>
         
         <div className={isClassic ? 'p-4' : 'p-6 overflow-x-auto flex flex-col items-center'}>
           {isClassic && (
-            <div className="sc-insetLight rounded-lg p-4 overflow-x-auto flex flex-col items-center">
+            <div className="rounded-inner p-4 overflow-x-auto flex flex-col items-center bg-black/10 border border-black/25">
               <div className="relative">
-                  <div className={`absolute -left-12 top-1/2 transform -translate-y-1/2 -rotate-90 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap text-center w-32 sc-insetMuted ${theme.features.brandFont ? 'brand-font' : ''}`}>
+                  <div className={`absolute -left-10 sm:-left-12 top-1/2 transform -translate-y-1/2 -rotate-90 text-[9px] sm:text-[10px] font-black uppercase tracking-widest whitespace-nowrap text-center w-28 sm:w-32 text-theme-warning ${theme.features.brandFont ? 'brand-font' : ''}`}>
                       {formatAxisLabel(yVar)}
                   </div>
   
@@ -91,7 +91,7 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
                           <tr>
                               <th className="p-2"></th>
                               {xLabels.map((x, i) => (
-                                  <th key={i} className="p-2 text-[10px] font-mono font-black border-b sc-insetText" style={{ borderColor: 'rgb(var(--inset-border) / 0.55)' }}>
+                                  <th key={i} className="p-2 text-[10px] font-mono font-black border-b text-white" style={{ borderColor: 'rgb(var(--border) / 0.45)' }}>
                                       {formatValue(xVar, x)}
                                   </th>
                               ))}
@@ -100,16 +100,16 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
                       <tbody>
                           {data.map((row, rowIdx) => (
                               <tr key={rowIdx}>
-                                  <th className="p-2 text-[10px] font-mono font-black border-r text-right sc-insetText" style={{ borderColor: 'rgb(var(--inset-border) / 0.55)' }}>
+                                  <th className="p-2 text-[10px] font-mono font-black border-r text-right text-white" style={{ borderColor: 'rgb(var(--border) / 0.45)' }}>
                                       {formatValue(yVar, yLabels[rowIdx])}
                                   </th>
                                   {row.map((cell, colIdx) => (
                                       <td 
                                           key={colIdx} 
-                                          className="p-3 text-[11px] font-mono text-center border transition-all hover:scale-110 cursor-default"
-                                          style={{ backgroundColor: getColor(cell.npv), borderColor: 'rgb(var(--inset-border) / 0.25)' }}
+                                          className="p-3 text-[11px] font-mono text-center border transition-all cursor-default hover:brightness-110 hover:relative hover:z-10"
+                                          style={{ backgroundColor: getColor(cell.npv), borderColor: 'rgb(var(--border) / 0.25)' }}
                                       >
-                                          <span className="sc-insetText">
+                                          <span className="text-white">
                                               {(cell.npv / 1e6).toFixed(1)}
                                           </span>
                                       </td>
@@ -119,7 +119,7 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
                       </tbody>
                   </table>
                   
-                  <div className={`text-center mt-4 text-[10px] font-bold uppercase tracking-widest sc-insetMuted ${theme.features.brandFont ? 'brand-font' : ''}`}>
+                  <div className={`text-center mt-4 text-[10px] font-black uppercase tracking-widest text-theme-warning ${theme.features.brandFont ? 'brand-font' : ''}`}>
                       {formatAxisLabel(xVar)}
                   </div>
               </div>
@@ -128,7 +128,7 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
 
           {!isClassic && (
             <div className="relative">
-                <div className={`absolute -left-12 top-1/2 transform -translate-y-1/2 -rotate-90 text-[10px] font-bold uppercase tracking-widest whitespace-nowrap text-center w-32 transition-all text-theme-lavender ${theme.features.brandFont ? 'brand-font' : ''}`}>
+                <div className={`absolute -left-10 sm:-left-12 top-1/2 transform -translate-y-1/2 -rotate-90 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest whitespace-nowrap text-center w-28 sm:w-32 transition-all text-theme-lavender ${theme.features.brandFont ? 'brand-font' : ''}`}>
                     {formatAxisLabel(yVar)}
                 </div>
 
@@ -152,7 +152,7 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
                                 {row.map((cell, colIdx) => (
                                     <td 
                                         key={colIdx} 
-                                        className="p-3 text-[11px] font-mono text-center border transition-all hover:scale-110 cursor-default border-theme-border/20"
+                                        className="p-3 text-[11px] font-mono text-center border transition-all cursor-default border-theme-border/20 hover:brightness-110 hover:relative hover:z-10"
                                         style={{ backgroundColor: getColor(cell.npv) }}
                                     >
                                         <span className="text-theme-text">

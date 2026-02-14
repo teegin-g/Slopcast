@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { WellGroup, TypeCurveParams, CapexAssumptions, PricingAssumptions } from '../types';
+import { OpexAssumptions, OwnershipAssumptions, WellGroup, TypeCurveParams, CapexAssumptions } from '../types';
 import CapexControls from './CapexControls';
+import OpexControls from './OpexControls';
+import OwnershipControls from './OwnershipControls';
 import { useTheme } from '../theme/ThemeProvider';
 
 interface ControlsProps {
@@ -8,7 +10,7 @@ interface ControlsProps {
   onUpdateGroup: (updatedGroup: WellGroup) => void;
 }
 
-type SectionKey = 'TYPE_CURVE' | 'CAPEX' | 'PRICING';
+type SectionKey = 'TYPE_CURVE' | 'CAPEX' | 'OPEX' | 'OWNERSHIP';
 
 interface AccordionSectionProps {
   id: SectionKey;
@@ -40,7 +42,7 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
         onClick={() => onToggle(id)}
         className={
           isClassic
-            ? `w-full flex items-center justify-between px-5 py-4 text-left transition-all sc-panelTitlebar sc-titlebar--neutral ${
+            ? `w-full flex items-center justify-between px-5 py-4 text-left transition-all sc-panelTitlebar sc-titlebar--red ${
                 isOpen ? 'text-white' : 'text-white/90'
               }`
             : `w-full flex items-center justify-between px-5 py-4 text-left transition-all ${isOpen ? 'text-theme-cyan' : 'text-theme-muted'}`
@@ -72,13 +74,25 @@ const Controls: React.FC<ControlsProps> = ({ group, onUpdateGroup }) => {
     onUpdateGroup({ ...group, capex: updatedCapex });
   };
   
-  const handlePricingChange = (key: keyof PricingAssumptions, val: string) => {
-    onUpdateGroup({ ...group, pricing: { ...group.pricing, [key]: parseFloat(val) || 0 } });
+  const handleOpexChange = (updated: OpexAssumptions) => {
+    onUpdateGroup({ ...group, opex: updated });
   };
 
-  const inputClass = 'w-full bg-theme-bg border rounded-lg px-3 py-2 text-xs text-theme-text outline-none focus:ring-1 theme-transition border-theme-border focus:border-theme-cyan focus:ring-theme-cyan/30';
-  const labelClass = 'text-[9px] font-black uppercase tracking-[0.2em] mb-2 block text-theme-muted';
-  const badgeClass = 'text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border bg-theme-bg border-theme-border text-theme-cyan';
+  const handleOwnershipChange = (updated: OwnershipAssumptions) => {
+    onUpdateGroup({ ...group, ownership: updated });
+  };
+
+  const inputClass = isClassic
+    ? 'w-full rounded-md px-3 py-2 text-xs font-black sc-inputNavy'
+    : 'w-full bg-theme-bg border rounded-lg px-3 py-2 text-xs text-theme-text outline-none focus:ring-1 theme-transition border-theme-border focus:border-theme-cyan focus:ring-theme-cyan/30';
+
+  const labelClass = isClassic
+    ? 'text-[9px] font-black uppercase tracking-[0.2em] mb-2 block text-theme-warning'
+    : 'text-[9px] font-black uppercase tracking-[0.2em] mb-2 block text-theme-muted';
+
+  const badgeClass = isClassic
+    ? 'text-[9px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded border border-black/30 bg-theme-cyan text-white'
+    : 'text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border bg-theme-bg border-theme-border text-theme-cyan';
 
   return (
     <div className="space-y-4 pb-12">
@@ -151,16 +165,48 @@ const Controls: React.FC<ControlsProps> = ({ group, onUpdateGroup }) => {
                 <div className="flex justify-between items-center mb-2">
                     <label className={labelClass}>Hyperbolic B-Factor</label>
                 </div>
-                <input type="range" min="0" max="2" step="0.1" value={group.typeCurve.b} onChange={e => handleTcChange('b', e.target.value)} className="w-full h-1.5 bg-theme-bg border border-theme-border rounded-lg appearance-none cursor-pointer accent-theme-cyan" />
-                <div className="flex justify-between mt-1 text-[9px] font-mono text-theme-muted"><span>0.0</span><span>{group.typeCurve.b}</span><span>2.0</span></div>
+                <input
+                  type="range"
+                  min="0"
+                  max="2"
+                  step="0.1"
+                  value={group.typeCurve.b}
+                  onChange={e => handleTcChange('b', e.target.value)}
+                  className={
+                    isClassic
+                      ? 'w-full h-1.5 sc-rangeNavy appearance-none cursor-pointer'
+                      : 'w-full h-1.5 bg-theme-bg border border-theme-border rounded-lg appearance-none cursor-pointer accent-theme-cyan'
+                  }
+                />
+                <div className={`flex justify-between mt-1 text-[9px] font-mono ${isClassic ? 'text-white/75' : 'text-theme-muted'}`}>
+                  <span>0.0</span>
+                  <span className={isClassic ? 'text-theme-warning font-black' : ''}>{group.typeCurve.b}</span>
+                  <span>2.0</span>
+                </div>
             </div>
 
             <div>
                 <label className={labelClass}>Effective Decline (%)</label>
                 <div className="flex items-center space-x-4">
-                    <input type="range" min="20" max="95" value={group.typeCurve.di} onChange={e => handleTcChange('di', e.target.value)} className="flex-1 h-1.5 bg-theme-bg border border-theme-border rounded-lg appearance-none cursor-pointer accent-theme-magenta" />
-                    <span className="text-xs font-black text-theme-text w-10 text-right">{group.typeCurve.di}%</span>
+                    <input
+                      type="range"
+                      min="20"
+                      max="95"
+                      value={group.typeCurve.di}
+                      onChange={e => handleTcChange('di', e.target.value)}
+                      className={
+                        isClassic
+                          ? 'flex-1 h-1.5 sc-rangeNavy appearance-none cursor-pointer'
+                          : 'flex-1 h-1.5 bg-theme-bg border border-theme-border rounded-lg appearance-none cursor-pointer accent-theme-magenta'
+                      }
+                    />
+                    <span className={`text-xs font-black w-10 text-right ${isClassic ? 'text-theme-warning' : 'text-theme-text'}`}>{group.typeCurve.di}%</span>
                 </div>
+            </div>
+
+            <div>
+                <label className={labelClass}>GOR (MCF/BBL)</label>
+                <input type="number" step="0.1" value={group.typeCurve.gorMcfPerBbl} onChange={e => handleTcChange('gorMcfPerBbl', e.target.value)} className={inputClass} />
             </div>
         </div>
       </AccordionSection>
@@ -169,24 +215,12 @@ const Controls: React.FC<ControlsProps> = ({ group, onUpdateGroup }) => {
          <CapexControls capex={group.capex} onChange={handleCapexChange} />
       </AccordionSection>
 
-      <AccordionSection id="PRICING" title="Economic Anchors" isOpen={activeSection === 'PRICING'} onToggle={setActiveSection}>
-        <div className="grid grid-cols-1 gap-5">
-             <div>
-                <label className={labelClass}>WTI Benchmark ($)</label>
-                <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-theme-muted text-xs">$</span>
-                    <input type="number" value={group.pricing.oilPrice} onChange={e => handlePricingChange('oilPrice', e.target.value)} className={`${inputClass} pl-7`} />
-                </div>
-            </div>
-             <div>
-                <label className={labelClass}>Revenue Interest (%)</label>
-                <input type="number" step="0.1" value={(group.pricing.nri * 100).toFixed(1)} onChange={e => handlePricingChange('nri', (parseFloat(e.target.value)/100).toString())} className={inputClass} />
-            </div>
-             <div>
-                <label className={labelClass}>Operating Expense ($/MO)</label>
-                <input type="number" value={group.pricing.loePerMonth} onChange={e => handlePricingChange('loePerMonth', e.target.value)} className={inputClass} />
-            </div>
-        </div>
+      <AccordionSection id="OPEX" title="LOE / Operating Expenses" isOpen={activeSection === 'OPEX'} onToggle={setActiveSection}>
+        <OpexControls opex={group.opex} onChange={handleOpexChange} />
+      </AccordionSection>
+
+      <AccordionSection id="OWNERSHIP" title="Ownership / Revenue Interest" isOpen={activeSection === 'OWNERSHIP'} onToggle={setActiveSection}>
+        <OwnershipControls ownership={group.ownership} onChange={handleOwnershipChange} />
       </AccordionSection>
     </div>
   );

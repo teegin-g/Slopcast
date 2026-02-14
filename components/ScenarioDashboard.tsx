@@ -5,13 +5,15 @@ import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Line
 import SensitivityMatrix from './SensitivityMatrix';
 import { generateSensitivityMatrix } from '../utils/economics';
 import { useTheme } from '../theme/ThemeProvider';
+import { DEFAULT_COMMODITY_PRICING } from '../constants';
 
 interface ScenarioDashboardProps {
   groups: WellGroup[]; 
   wells: Well[];
+  scenarios: Scenario[];
+  setScenarios: React.Dispatch<React.SetStateAction<Scenario[]>>;
 }
 
-const DEFAULT_PRICING = { oilPrice: 75, gasPrice: 3.25, oilDifferential: 2.50, gasDifferential: 0.35, nri: 0.75, loePerMonth: 8500 };
 const DEFAULT_SCHEDULE: ScheduleParams = { 
     annualRigs: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 
     drillDurationDays: 18, 
@@ -43,7 +45,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ title, isOpen, onClick, c
         </button>
         {isOpen && (
           <div className="p-4">
-            <div className="sc-insetLight rounded-lg p-4">
+            <div className="sc-insetDark rounded-lg p-4">
               {children}
             </div>
           </div>
@@ -63,43 +65,10 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ title, isOpen, onClick, c
   );
 };
 
-const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) => {
+const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, scenarios, setScenarios }) => {
   const { theme } = useTheme();
   const { chartPalette } = theme;
   const isClassic = theme.id === 'mario';
-
-  const [scenarios, setScenarios] = useState<Scenario[]>([
-    {
-        id: 's-base',
-        name: 'BASE CASE',
-        color: '#9ED3F0',
-        isBaseCase: true,
-        pricing: { ...DEFAULT_PRICING },
-        schedule: { ...DEFAULT_SCHEDULE },
-        capexScalar: 1.0,
-        productionScalar: 1.0
-    },
-    {
-        id: 's-upside',
-        name: 'BULL SCENARIO',
-        color: '#E566DA',
-        isBaseCase: false,
-        pricing: { ...DEFAULT_PRICING, oilPrice: 85 },
-        schedule: { ...DEFAULT_SCHEDULE },
-        capexScalar: 1.0,
-        productionScalar: 1.0
-    },
-    {
-        id: 's-fast',
-        name: 'RAMP PROGRAM',
-        color: '#2DFFB1',
-        isBaseCase: false,
-        pricing: { ...DEFAULT_PRICING },
-        schedule: { ...DEFAULT_SCHEDULE, annualRigs: [1, 2, 3, 4, 4, 4, 4, 4, 4, 4] },
-        capexScalar: 1.0,
-        productionScalar: 1.0
-    }
-  ]);
 
   const [activeScenarioId, setActiveScenarioId] = useState<string>('s-base');
   const [editingScenario, setEditingScenario] = useState<boolean>(false);
@@ -113,22 +82,38 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
         let scenarioNpv = 0;
         let scenarioCapex = 0;
         let scenarioEur = 0;
+        let scenarioRevenue = 0;
+        let scenarioOpex = 0;
         const cumulativeFlows = new Array(120).fill(0);
 
         groups.forEach(group => {
             const groupWells = wells.filter(w => group.wellIds.has(w.id));
-            const runPricing = scenario.isBaseCase ? group.pricing : scenario.pricing;
-            const { flow, metrics } = calculateEconomics(groupWells, group.typeCurve, group.capex, runPricing, { capex: scenario.capexScalar, production: scenario.productionScalar }, scenario.schedule);
+            const { flow, metrics } = calculateEconomics(
+              groupWells,
+              group.typeCurve,
+              group.capex,
+              scenario.pricing,
+              group.opex,
+              group.ownership,
+              { capex: scenario.capexScalar, production: scenario.productionScalar },
+              scenario.schedule
+            );
             scenarioNpv += metrics.npv10;
             scenarioCapex += metrics.totalCapex;
             scenarioEur += metrics.eur;
             flow.forEach((f, i) => { if(i < 120) cumulativeFlows[i] += f.netCashFlow; });
+            flow.forEach((f) => { scenarioRevenue += f.revenue; scenarioOpex += f.opex; });
         });
 
         let runningCum = 0;
         return {
             scenario,
-            metrics: { npv10: scenarioNpv, totalCapex: scenarioCapex, eur: scenarioEur, roi: scenarioCapex > 0 ? (scenarioEur * scenario.pricing.oilPrice * scenario.pricing.nri) / scenarioCapex : 0 },
+            metrics: {
+              npv10: scenarioNpv,
+              totalCapex: scenarioCapex,
+              eur: scenarioEur,
+              roi: scenarioCapex > 0 ? (scenarioRevenue - scenarioOpex) / scenarioCapex : 0,
+            },
             flow: cumulativeFlows.map(cf => { runningCum += cf; return runningCum; })
         };
     }).sort((a,b) => b.metrics.npv10 - a.metrics.npv10);
@@ -152,11 +137,23 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
         if(v === 'RIG_COUNT') return [1, 2, 3, 4, 6];
         return [1,2,3,4,5];
       };
-      return generateSensitivityMatrix(groups, wells, sensX, getSteps(sensX), sensY, getSteps(sensY).reverse());
-  }, [groups, wells, sensX, sensY]);
+      const base = scenarios.find(s => s.id === activeScenarioId) || scenarios.find(s => s.isBaseCase) || scenarios[0];
+      const basePricing = base?.pricing || DEFAULT_COMMODITY_PRICING;
+      return generateSensitivityMatrix(groups, wells, basePricing, sensX, getSteps(sensX), sensY, getSteps(sensY).reverse());
+  }, [activeScenarioId, groups, scenarios, wells, sensX, sensY]);
 
   const handleAddScenario = () => {
-      const newScen: Scenario = { id: `s-${Date.now()}`, name: 'NEW CASE', color: '#DBA1DD', isBaseCase: false, pricing: { ...DEFAULT_PRICING }, schedule: { ...DEFAULT_SCHEDULE }, capexScalar: 1.0, productionScalar: 1.0 };
+      const base = scenarios.find(s => s.isBaseCase) || scenarios[0];
+      const newScen: Scenario = {
+        id: `s-${Date.now()}`,
+        name: 'NEW CASE',
+        color: '#DBA1DD',
+        isBaseCase: false,
+        pricing: { ...(base?.pricing || DEFAULT_COMMODITY_PRICING) },
+        schedule: { ...(base?.schedule || DEFAULT_SCHEDULE) },
+        capexScalar: 1.0,
+        productionScalar: 1.0
+      };
       setScenarios([...scenarios, newScen]);
       setActiveScenarioId(newScen.id);
       setEditingScenario(true);
@@ -182,10 +179,10 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
 
   const activeScenario = scenarios.find(s => s.id === activeScenarioId);
   const inputClass = isClassic
-    ? 'w-full rounded-lg px-3 py-2 text-xs font-black sc-inputClassic'
+    ? 'w-full rounded-lg px-3 py-2 text-xs font-black sc-inputNavy'
     : 'w-full bg-theme-bg border rounded-lg px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition border-theme-border';
   const labelClass = isClassic
-    ? `text-[9px] font-black block mb-2 uppercase tracking-[0.2em] sc-insetMuted ${theme.features.brandFont ? 'brand-font' : ''}`
+    ? `text-[9px] font-black block mb-2 uppercase tracking-[0.2em] text-theme-warning ${theme.features.brandFont ? 'brand-font' : ''}`
     : `text-[9px] font-black text-theme-muted block mb-2 uppercase tracking-[0.2em] ${theme.features.brandFont ? 'brand-font' : ''}`;
 
   return (
@@ -203,25 +200,25 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
                     </button>
                   </div>
                   <div className="p-4">
-                    <div className="sc-insetLight rounded-lg p-3 space-y-3">
+                    <div className="sc-insetDark rounded-lg p-3 space-y-3">
                       {scenarios.map(s => (
                         <div
                           key={s.id}
                           onClick={() => { setActiveScenarioId(s.id); setEditingScenario(true); }}
                           className={`group p-3 rounded-lg border cursor-pointer transition-all ${
-                            s.id === activeScenarioId ? 'border-[rgb(var(--bar-red-border))] bg-white/70' : 'border-[rgb(var(--inset-border)/0.55)] bg-white/45 hover:bg-white/70'
+                            s.id === activeScenarioId ? 'border-theme-warning bg-black/25' : 'border-black/25 bg-black/10 hover:bg-black/20'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-3">
+                            <div className="flex items-center space-x-3 min-w-0">
                               <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 10px ${s.color}66` }}></div>
-                              <span className={`font-black text-[11px] uppercase tracking-[0.1em] sc-insetText ${theme.features.brandFont ? 'brand-font' : ''}`}>{s.name}</span>
+                              <span className={`font-black text-[11px] uppercase tracking-[0.1em] truncate text-white ${theme.features.brandFont ? 'brand-font' : ''}`}>{s.name}</span>
                             </div>
                             <div className="w-1.5 h-1.5 rounded-full bg-black/20 group-hover:bg-black/40 animate-pulse"></div>
                           </div>
-                          <div className="flex justify-between text-[10px] font-mono tracking-tight sc-insetMuted">
+                          <div className="flex justify-between text-[10px] font-mono tracking-tight text-white/75">
                             <span>OIL: ${s.pricing.oilPrice}</span>
-                            <span className="font-black uppercase sc-insetText">
+                            <span className="font-black uppercase text-theme-warning">
                               {Math.max(...s.schedule.annualRigs)} RIGS
                             </span>
                           </div>
@@ -274,7 +271,7 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
                              <h3 className={`text-[10px] font-black uppercase tracking-[0.3em] text-white ${theme.features.brandFont ? 'brand-font' : ''}`}>EDIT SELECTED MODEL</h3>
                            </div>
                            <div className="p-4">
-                             <div className="sc-insetLight rounded-lg p-4">
+                             <div className="sc-insetDark rounded-lg p-4">
                                <div className="mb-4">
                                    <label className={labelClass}>MODEL NAME</label>
                                    <input type="text" value={activeScenario.name} onChange={e => updateScenario(activeScenario.id, { name: e.target.value.toUpperCase() })} className={inputClass} />
@@ -282,7 +279,7 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
                                <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className={labelClass}>INDICATOR</label>
-                                        <input type="color" value={activeScenario.color} onChange={e => updateScenario(activeScenario.id, { color: e.target.value })} className="w-full h-10 rounded-lg cursor-pointer sc-inputClassic" />
+                                        <input type="color" value={activeScenario.color} onChange={e => updateScenario(activeScenario.id, { color: e.target.value })} className="w-full h-10 rounded-lg cursor-pointer sc-inputNavy" />
                                     </div>
                                </div>
                              </div>
@@ -306,12 +303,12 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
                    </div>
 
 	                   <div className={isClassic ? 'sc-panel theme-transition p-2 space-y-1 rounded-t-none' : 'rounded-b-panel border p-2 space-y-1 theme-transition shadow-card bg-theme-bg border-theme-border'}>
-                       <AccordionItem title="Economic Anchors" isOpen={openSection === 'PRICING'} onClick={() => setOpenSection('PRICING')} useBrandFont={theme.features.brandFont}>
+                       <AccordionItem title="Pricing" isOpen={openSection === 'PRICING'} onClick={() => setOpenSection('PRICING')} useBrandFont={theme.features.brandFont}>
                            <div className="grid grid-cols-2 gap-4">
                                <div><label className={labelClass}>OIL PRICE</label><input type="number" value={activeScenario.pricing.oilPrice} onChange={e => updatePricing(activeScenario.id, 'oilPrice', parseFloat(e.target.value))} className={inputClass} /></div>
                                <div><label className={labelClass}>GAS PRICE</label><input type="number" value={activeScenario.pricing.gasPrice} onChange={e => updatePricing(activeScenario.id, 'gasPrice', parseFloat(e.target.value))} className={inputClass} /></div>
                                <div><label className={labelClass}>OIL DIFF</label><input type="number" value={activeScenario.pricing.oilDifferential} onChange={e => updatePricing(activeScenario.id, 'oilDifferential', parseFloat(e.target.value))} className={inputClass} /></div>
-                               <div><label className={labelClass}>LOE ($/MO)</label><input type="number" value={activeScenario.pricing.loePerMonth} onChange={e => updatePricing(activeScenario.id, 'loePerMonth', parseFloat(e.target.value))} className={inputClass} /></div>
+                               <div><label className={labelClass}>GAS DIFF</label><input type="number" value={activeScenario.pricing.gasDifferential} onChange={e => updatePricing(activeScenario.id, 'gasDifferential', parseFloat(e.target.value))} className={inputClass} /></div>
                            </div>
                        </AccordionItem>
 
@@ -327,7 +324,17 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
                                        {activeScenario.schedule.annualRigs.slice(0,5).map((count, idx) => (
                                            <div key={idx} className="text-center">
                                                <span className="text-[9px] text-theme-muted font-black block mb-1">Y{idx+1}</span>
-                                               <input type="number" min="0" value={count} onChange={e => updateAnnualRig(activeScenario.id, idx, parseFloat(e.target.value))} className="w-full bg-theme-surface1 border border-theme-border text-center text-[11px] font-black rounded-lg py-1.5 text-theme-cyan focus:border-theme-magenta outline-none transition-colors" />
+                                               <input
+                                                 type="number"
+                                                 min="0"
+                                                 value={count}
+                                                 onChange={e => updateAnnualRig(activeScenario.id, idx, parseFloat(e.target.value))}
+                                                 className={
+                                                   isClassic
+                                                     ? 'w-full sc-inputNavy text-center text-[11px] font-black rounded-lg py-1.5'
+                                                     : 'w-full bg-theme-surface1 border border-theme-border text-center text-[11px] font-black rounded-lg py-1.5 text-theme-cyan focus:border-theme-magenta outline-none transition-colors'
+                                                 }
+                                               />
                                            </div>
                                        ))}
                                    </div>
@@ -339,11 +346,35 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
                            <div className="space-y-6">
                                <div>
                                    <div className="flex justify-between mb-2"><label className={labelClass}>CAPEX MULTIPLIER</label><span className="text-[10px] font-black text-theme-cyan">{(activeScenario.capexScalar * 100).toFixed(0)}%</span></div>
-                                   <input type="range" min="0.5" max="2.0" step="0.05" value={activeScenario.capexScalar} onChange={e => updateScenario(activeScenario.id, { capexScalar: parseFloat(e.target.value) })} className="w-full h-1.5 bg-theme-surface1 border border-theme-border rounded-lg appearance-none cursor-pointer accent-theme-cyan" />
+                                   <input
+                                     type="range"
+                                     min="0.5"
+                                     max="2.0"
+                                     step="0.05"
+                                     value={activeScenario.capexScalar}
+                                     onChange={e => updateScenario(activeScenario.id, { capexScalar: parseFloat(e.target.value) })}
+                                     className={
+                                       isClassic
+                                         ? 'w-full h-1.5 sc-rangeNavy appearance-none cursor-pointer'
+                                         : 'w-full h-1.5 bg-theme-surface1 border border-theme-border rounded-lg appearance-none cursor-pointer accent-theme-cyan'
+                                     }
+                                   />
                                </div>
                                <div>
                                    <div className="flex justify-between mb-2"><label className={labelClass}>RECOVERY MULTIPLIER</label><span className="text-[10px] font-black text-theme-magenta">{(activeScenario.productionScalar * 100).toFixed(0)}%</span></div>
-                                   <input type="range" min="0.5" max="1.5" step="0.05" value={activeScenario.productionScalar} onChange={e => updateScenario(activeScenario.id, { productionScalar: parseFloat(e.target.value) })} className="w-full h-1.5 bg-theme-surface1 border border-theme-border rounded-lg appearance-none cursor-pointer accent-theme-magenta" />
+                                   <input
+                                     type="range"
+                                     min="0.5"
+                                     max="1.5"
+                                     step="0.05"
+                                     value={activeScenario.productionScalar}
+                                     onChange={e => updateScenario(activeScenario.id, { productionScalar: parseFloat(e.target.value) })}
+                                     className={
+                                       isClassic
+                                         ? 'w-full h-1.5 sc-rangeNavy appearance-none cursor-pointer'
+                                         : 'w-full h-1.5 bg-theme-surface1 border border-theme-border rounded-lg appearance-none cursor-pointer accent-theme-magenta'
+                                     }
+                                   />
                                </div>
                            </div>
                        </AccordionItem>
@@ -361,8 +392,8 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
                       
                       {isClassic ? (
                         <>
-                          <div className="sc-panelTitlebar sc-titlebar--red px-5 py-3">
-                            <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] text-white ${theme.features.brandFont ? 'brand-font' : ''}`}>{res.scenario.name}</h4>
+                          <div className="sc-panelTitlebar sc-titlebar--red px-5 py-3 flex items-center min-w-0">
+                            <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] text-white truncate ${theme.features.brandFont ? 'brand-font' : ''}`}>{res.scenario.name}</h4>
                           </div>
                           <div className="p-5">
                             <div className="text-3xl font-black tracking-tight theme-transition text-theme-text">
@@ -376,7 +407,7 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
                         </>
                       ) : (
                         <>
-                          <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] mb-4 ml-2 transition-all text-theme-cyan group-hover:text-theme-magenta ${theme.features.brandFont ? 'brand-font' : ''}`}>{res.scenario.name}</h4>
+                          <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] mb-4 ml-2 transition-all text-theme-cyan group-hover:text-theme-magenta truncate ${theme.features.brandFont ? 'brand-font' : ''}`}>{res.scenario.name}</h4>
                           <div className="ml-2">
                               <div className="text-3xl font-black tracking-tight theme-transition text-theme-text">${(res.metrics.npv10 / 1e6).toFixed(1)}M <span className="text-[10px] text-theme-muted font-black tracking-[0.1em] ml-1">NPV10</span></div>
                               <div className="flex justify-between mt-6 text-[10px] text-theme-muted font-bold tracking-widest border-t border-white/5 pt-3">
@@ -426,16 +457,16 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells }) 
 
                 <div className="space-y-6">
                     {isClassic ? (
-                      <div className="sc-insetLight rounded-lg p-3 flex items-center space-x-4 justify-end">
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] sc-insetMuted">Primary Variable</span>
-                        <select value={sensY} onChange={(e) => setSensY(e.target.value as SensitivityVariable)} className="sc-selectClassic text-[10px] font-black rounded-lg px-3 py-1.5 outline-none transition-all cursor-pointer">
+                      <div className="sc-insetDark rounded-lg p-3 flex items-center space-x-4 justify-end">
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-theme-warning">Primary Variable</span>
+                        <select value={sensY} onChange={(e) => setSensY(e.target.value as SensitivityVariable)} className="sc-selectNavy text-[10px] font-black rounded-lg px-3 py-1.5 outline-none transition-all cursor-pointer">
                             <option value="CAPEX_SCALAR">CAPEX SCALAR</option>
                             <option value="EUR_SCALAR">RECOVERY SCALAR</option>
                             <option value="OIL_PRICE">OIL BENCHMARK</option>
                             <option value="RIG_COUNT">FLEET SIZE</option>
                         </select>
-                        <span className="text-[10px] font-black sc-insetMuted opacity-60">VS</span>
-                        <select value={sensX} onChange={(e) => setSensX(e.target.value as SensitivityVariable)} className="sc-selectClassic text-[10px] font-black rounded-lg px-3 py-1.5 outline-none transition-all cursor-pointer">
+                        <span className="text-[10px] font-black text-white/60 opacity-60">VS</span>
+                        <select value={sensX} onChange={(e) => setSensX(e.target.value as SensitivityVariable)} className="sc-selectNavy text-[10px] font-black rounded-lg px-3 py-1.5 outline-none transition-all cursor-pointer">
                             <option value="OIL_PRICE">OIL BENCHMARK</option>
                             <option value="CAPEX_SCALAR">CAPEX SCALAR</option>
                             <option value="EUR_SCALAR">RECOVERY SCALAR</option>

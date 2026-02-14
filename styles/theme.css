@@ -29,8 +29,17 @@
   --shadow-glow-magenta: 0 0 10px rgba(236, 72, 153, 0.3);
   --shadow-card: 0 10px 30px rgba(0,0,0,.45);
 
-  --grad-space: radial-gradient(1200px circle at 50% 20%, #1e293b 0%, #0f172a 100%);
+  --grad-space:
+    radial-gradient(1200px circle at 10% -20%, rgba(59, 130, 246, 0.26) 0%, rgba(59, 130, 246, 0) 58%),
+    radial-gradient(980px circle at 92% -8%, rgba(99, 102, 241, 0.20) 0%, rgba(99, 102, 241, 0) 54%),
+    linear-gradient(160deg, #19273d 0%, #0f172a 58%, #0a1323 100%);
   --font-brand: 'Inter';
+  --ambient-left: 59 130 246;
+  --ambient-right: 71 85 105;
+  --ambient-left-alpha: 0.26;
+  --ambient-right-alpha: 0.16;
+  --ambient-orb-left-alpha: 0.12;
+  --ambient-orb-right-alpha: 0.14;
 
   /* ==========================================================================
      Semantic chrome tokens (defaults map to base tokens)
@@ -164,8 +173,17 @@
   --shadow-glow-magenta: 0 0 18px rgba(229,102,218,.45), 0 0 48px rgba(229,102,218,.25);
   --shadow-card: 0 10px 30px rgba(0,0,0,.55);
 
-  --grad-space: radial-gradient(1200px circle at 50% 20%, #541963 0%, #1B0E2B 45%, #0E061A 100%);
+  --grad-space:
+    radial-gradient(1000px circle at 14% -20%, rgba(229, 102, 218, 0.54) 0%, rgba(229, 102, 218, 0) 56%),
+    radial-gradient(1080px circle at 92% -10%, rgba(158, 211, 240, 0.38) 0%, rgba(158, 211, 240, 0) 58%),
+    linear-gradient(168deg, #1a0a2d 0%, #120722 50%, #090312 100%);
   --font-brand: 'Orbitron';
+  --ambient-left: 229 102 218;
+  --ambient-right: 158 211 240;
+  --ambient-left-alpha: 0.42;
+  --ambient-right-alpha: 0.34;
+  --ambient-orb-left-alpha: 0.20;
+  --ambient-orb-right-alpha: 0.20;
 }
 
 /* ---------- Tropical / Tommy Bahama ---------- */
@@ -190,8 +208,82 @@
   --shadow-glow-magenta: 0 0 14px rgba(249, 115, 22, 0.35), 0 0 40px rgba(249, 115, 22, 0.15);
   --shadow-card: 0 10px 30px rgba(0,0,0,.45);
 
-  --grad-space: radial-gradient(1200px circle at 50% 20%, #1e3a30 0%, #1a2332 50%, #121c28 100%);
+  --grad-space:
+    radial-gradient(1040px circle at 12% -18%, rgba(45, 212, 191, 0.34) 0%, rgba(45, 212, 191, 0) 58%),
+    radial-gradient(980px circle at 92% -10%, rgba(249, 115, 22, 0.30) 0%, rgba(249, 115, 22, 0) 56%),
+    linear-gradient(162deg, #1b3140 0%, #142636 52%, #0f1c2b 100%);
   --font-brand: 'Inter';
+  --ambient-left: 45 212 191;
+  --ambient-right: 249 115 22;
+  --ambient-left-alpha: 0.32;
+  --ambient-right-alpha: 0.28;
+  --ambient-orb-left-alpha: 0.15;
+  --ambient-orb-right-alpha: 0.14;
+}
+
+/* ---------- Nocturne (Moonlit Alpine) ---------- */
+[data-theme='league'] {
+  --bg-deep: 3 8 16;           /* #030810 */
+  --bg-space: 8 16 32;         /* #081020 */
+  --surface-1: 14 26 48;       /* #0E1A30 */
+  --surface-2: 24 38 66;       /* #182642 */
+  --border: 76 104 145;        /* #4C6891 */
+  --cyan: 103 195 238;         /* #67C3EE */
+  --magenta: 220 129 96;       /* #DC8160 */
+  --violet: 95 136 184;        /* #5F88B8 */
+  --purple: 10 18 34;          /* #0A1222 */
+  --lav: 168 191 225;          /* #A8BFE1 */
+  --text: 236 242 252;         /* #ECF2FC */
+  --muted: 144 162 191;        /* #90A2BF */
+  --success: 116 176 145;      /* #74B091 */
+  --warning: 233 176 103;      /* #E9B067 */
+  --danger: 206 103 87;        /* #CE6757 */
+
+  --shadow-glow-cyan: 0 0 14px rgba(103, 195, 238, 0.24), 0 0 32px rgba(103, 195, 238, 0.10);
+  --shadow-glow-magenta: 0 0 12px rgba(220, 129, 96, 0.20), 0 0 28px rgba(220, 129, 96, 0.08);
+  --shadow-card: 0 14px 32px rgba(0, 0, 0, 0.52);
+
+  --grad-space:
+    radial-gradient(1060px circle at 14% -22%, rgba(103, 195, 238, 0.30) 0%, rgba(103, 195, 238, 0) 58%),
+    radial-gradient(900px circle at 88% -8%, rgba(233, 176, 103, 0.23) 0%, rgba(233, 176, 103, 0) 56%),
+    linear-gradient(170deg, #0b1830 0%, #071020 52%, #030810 100%);
+  --font-brand: 'Inter';
+  --ambient-left: 103 195 238;
+  --ambient-right: 233 176 103;
+  --ambient-left-alpha: 0.30;
+  --ambient-right-alpha: 0.24;
+  --ambient-orb-left-alpha: 0.12;
+  --ambient-orb-right-alpha: 0.12;
+  --nocturne-moon: 242 208 156;
+  --nocturne-horizon-amber: 229 142 75;
+  --nocturne-aurora-cyan: 88 166 222;
+  --nocturne-ridge-dark: 4 8 16;
+
+  /* Semantic chrome tweaks for cinematic contrast */
+  --header-bg-1: 34 62 98;       /* #223E62 */
+  --header-bg-2: 12 23 40;       /* #0C1728 */
+  --header-border: 3 9 18;       /* #030912 */
+  --header-text: 241 246 255;
+
+  --bar-neutral-bg-1: 31 52 82;  /* #1F3452 */
+  --bar-neutral-bg-2: 15 27 46;  /* #0F1B2E */
+  --bar-neutral-text: 241 246 255;
+  --bar-neutral-border: 6 15 29; /* #060F1D */
+
+  --bar-blue-bg-1: 103 195 238;
+  --bar-blue-bg-2: 71 148 194;
+  --bar-blue-text: 8 17 33;
+  --bar-blue-border: 21 54 85;
+
+  --bar-yellow-bg-1: 233 176 103;
+  --bar-yellow-bg-2: 190 131 69;
+  --bar-yellow-text: 34 22 8;
+  --bar-yellow-border: 96 61 22;
+
+  --btn-primary-bg-1: var(--cyan);
+  --btn-primary-bg-2: 71 148 194;
+  --btn-primary-border: 31 76 119;
+  --btn-primary-text: 8 17 33;
 }
 
 /* ---------- Mario (Slopcast Classic) ---------- */
@@ -226,8 +318,17 @@
   --shadow-glow-magenta: 0 0 0 rgba(0,0,0,0);
   --shadow-card: 0 6px 12px rgba(0,0,0,0.35);
 
-  --grad-space: radial-gradient(1200px circle at 45% -10%, #ffffff 0%, #f3efe9 42%, #e7e0d6 100%);
+  --grad-space:
+    radial-gradient(900px circle at 10% -16%, rgba(18, 112, 255, 0.18) 0%, rgba(18, 112, 255, 0) 56%),
+    radial-gradient(840px circle at 90% -18%, rgba(220, 0, 0, 0.14) 0%, rgba(220, 0, 0, 0) 54%),
+    linear-gradient(180deg, #fff6e1 0%, #f3efe9 56%, #e4dccf 100%);
   --font-brand: 'Inter';
+  --ambient-left: 18 112 255;
+  --ambient-right: 220 0 0;
+  --ambient-left-alpha: 0.18;
+  --ambient-right-alpha: 0.14;
+  --ambient-orb-left-alpha: 0.10;
+  --ambient-orb-right-alpha: 0.10;
 
   /* Header chrome (blue) */
   --header-bg-1: 18 112 255;     /* #1270FF */
@@ -349,6 +450,155 @@ body {
   margin: 0;
   transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: 100vh;
+}
+
+.nocturne-atmo {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+[data-theme='league'] .nocturne-atmo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(44px 44px at 53% 7%, rgb(var(--nocturne-moon) / 0.82) 0%, rgb(var(--nocturne-moon) / 0) 72%),
+    linear-gradient(
+      180deg,
+      rgb(var(--nocturne-horizon-amber) / 0.00) 56%,
+      rgb(var(--nocturne-horizon-amber) / 0.30) 61%,
+      rgb(var(--nocturne-horizon-amber) / 0.00) 68%
+    ),
+    linear-gradient(
+      180deg,
+      rgb(var(--nocturne-aurora-cyan) / 0.16) 0%,
+      rgb(var(--nocturne-aurora-cyan) / 0.06) 34%,
+      transparent 58%
+    );
+  opacity: 0.82;
+  z-index: 0;
+}
+
+.nocturne-header {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+[data-theme='league'] .nocturne-header {
+  border-bottom-color: rgb(var(--border) / 0.92);
+  box-shadow:
+    inset 0 -1px 0 rgb(var(--warning) / 0.24),
+    0 10px 28px rgba(0, 0, 0, 0.34);
+}
+
+.nocturne-bands,
+.nocturne-ridges {
+  position: absolute;
+  pointer-events: none;
+}
+
+[data-theme='league'] .nocturne-bands {
+  inset: 0;
+  background:
+    radial-gradient(62px 62px at 54% 15%, rgb(var(--nocturne-moon) / 0.58) 0%, rgb(var(--nocturne-moon) / 0) 76%),
+    repeating-linear-gradient(
+      176deg,
+      rgb(var(--nocturne-aurora-cyan) / 0.24) 0,
+      rgb(var(--nocturne-aurora-cyan) / 0.24) 1px,
+      transparent 1px,
+      transparent 12px
+    ),
+    linear-gradient(
+      180deg,
+      rgb(var(--nocturne-aurora-cyan) / 0.22) 0%,
+      rgb(var(--nocturne-aurora-cyan) / 0.10) 36%,
+      rgb(var(--nocturne-horizon-amber) / 0.22) 72%,
+      rgb(var(--nocturne-horizon-amber) / 0) 100%
+    );
+  mix-blend-mode: screen;
+  opacity: 0.36;
+}
+
+[data-theme='league'] .nocturne-ridges {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5.25rem;
+  background:
+    linear-gradient(161deg, rgb(var(--nocturne-ridge-dark) / 0.92) 12%, rgb(var(--nocturne-ridge-dark) / 0.2) 62%, rgb(var(--nocturne-ridge-dark) / 0) 100%),
+    linear-gradient(22deg, rgb(var(--nocturne-ridge-dark) / 0.84) 20%, rgb(var(--nocturne-ridge-dark) / 0.04) 70%, rgb(var(--nocturne-ridge-dark) / 0) 100%);
+  opacity: 0.86;
+}
+
+@media (max-width: 900px) {
+  [data-theme='league'] .nocturne-bands {
+    opacity: 0.28;
+    background:
+      radial-gradient(50px 50px at 62% 16%, rgb(var(--nocturne-moon) / 0.46) 0%, rgb(var(--nocturne-moon) / 0) 74%),
+      repeating-linear-gradient(
+        176deg,
+        rgb(var(--nocturne-aurora-cyan) / 0.18) 0,
+        rgb(var(--nocturne-aurora-cyan) / 0.18) 1px,
+        transparent 1px,
+        transparent 14px
+      ),
+      linear-gradient(
+        180deg,
+        rgb(var(--nocturne-aurora-cyan) / 0.18) 0%,
+        rgb(var(--nocturne-aurora-cyan) / 0.06) 40%,
+        rgb(var(--nocturne-horizon-amber) / 0.20) 76%,
+        rgb(var(--nocturne-horizon-amber) / 0) 100%
+      );
+  }
+
+  [data-theme='league'] .nocturne-ridges {
+    height: 3.75rem;
+    opacity: 0.72;
+  }
+}
+
+.sc-pageAmbient {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      1050px 450px at 5% -10%,
+      rgb(var(--ambient-left) / var(--ambient-left-alpha)) 0%,
+      transparent 68%
+    ),
+    radial-gradient(
+      940px 420px at 95% 0%,
+      rgb(var(--ambient-right) / var(--ambient-right-alpha)) 0%,
+      transparent 68%
+    );
+}
+
+.sc-pageAmbientOrbLeft {
+  position: absolute;
+  left: -4rem;
+  top: 5rem;
+  height: 14rem;
+  width: 14rem;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: rgb(var(--ambient-left) / var(--ambient-orb-left-alpha));
+  filter: blur(54px);
+}
+
+.sc-pageAmbientOrbRight {
+  position: absolute;
+  right: -4rem;
+  top: 0.75rem;
+  height: 17rem;
+  width: 17rem;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: rgb(var(--ambient-right) / var(--ambient-orb-right-alpha));
+  filter: blur(60px);
 }
 
 /* ---------- Utility helper classes (variable-driven) ---------- */
@@ -591,6 +841,11 @@ body {
 }
 .sc-btnPrimary:hover { filter: brightness(1.05); }
 .sc-btnPrimary:active { transform: translateY(1px); }
+.sc-btnPrimary:focus { outline: none; }
+.sc-btnPrimary:focus-visible {
+  outline: 2px solid rgb(var(--bar-red-bg-1) / 0.55);
+  outline-offset: 2px;
+}
 
 .sc-btnSecondary {
   background: linear-gradient(to bottom, rgb(var(--btn-secondary-bg-1)), rgb(var(--btn-secondary-bg-2)));
@@ -602,6 +857,11 @@ body {
 }
 .sc-btnSecondary:hover { filter: brightness(1.04); }
 .sc-btnSecondary:active { transform: translateY(1px); }
+.sc-btnSecondary:focus { outline: none; }
+.sc-btnSecondary:focus-visible {
+  outline: 2px solid rgb(var(--bar-red-bg-1) / 0.55);
+  outline-offset: 2px;
+}
 
 /* ==========================================================================
    Light inset primitives (cream/white surfaces for Classic controls/tables)
@@ -635,6 +895,50 @@ body {
   box-shadow: 0 0 0 2px rgb(var(--bar-red-bg-1) / 0.18);
 }
 
+/* ==========================================================================
+   Dark (navy) inset primitives (Classic module fields)
+   ========================================================================== */
+
+.sc-insetDark {
+  background: linear-gradient(to bottom, rgb(var(--surface-2)), rgb(var(--surface-1)));
+  border: 1px solid rgb(var(--border) / 0.65);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    inset 0 -1px 0 rgb(0 0 0 / 0.45);
+  color: rgb(var(--text));
+}
+
+.sc-inputNavy,
+.sc-selectNavy {
+  background: linear-gradient(to bottom, rgb(var(--surface-2)), rgb(var(--surface-1)));
+  border: 1px solid rgb(var(--border) / 0.75);
+  color: rgb(var(--text));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    inset 0 -1px 0 rgb(0 0 0 / 0.45);
+}
+
+.sc-inputNavy::placeholder { color: rgb(var(--muted) / 0.70); }
+
+.sc-inputNavy:focus,
+.sc-selectNavy:focus {
+  outline: none;
+  border-color: rgb(var(--bar-red-bg-1) / 0.95);
+  box-shadow: 0 0 0 2px rgb(var(--bar-red-bg-1) / 0.18);
+}
+
+/* Range input helper (track + accent). Use with explicit height in markup. */
+.sc-rangeNavy {
+  accent-color: rgb(var(--lav));
+  background: rgb(var(--surface-1));
+  border: 1px solid rgb(var(--border) / 0.65);
+  border-radius: 9999px;
+}
+.sc-rangeNavy:focus { outline: none; }
+.sc-rangeNavy:focus-visible {
+  box-shadow: 0 0 0 2px rgb(var(--bar-red-bg-1) / 0.18);
+}
+
 .glow-cyan        { box-shadow: var(--shadow-glow-cyan); }
 .glow-magenta     { box-shadow: var(--shadow-glow-magenta); }
 .glow-cyan-hover:hover    { box-shadow: var(--shadow-glow-cyan); }
@@ -646,6 +950,21 @@ body {
 .neon-border-magenta {
   border: 1px solid rgb(var(--magenta) / 0.35);
   box-shadow: var(--shadow-glow-magenta);
+}
+
+/* Nocturne accent strip on core chrome surfaces */
+[data-theme='league'] .sc-panel::after,
+[data-theme='league'] .sc-screen::after,
+[data-theme='league'] .sc-kpi::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgb(var(--cyan)) 0%, rgb(var(--warning)) 46%, rgb(var(--success)) 100%);
+  opacity: 0.62;
 }
 
 /* ---------- Gradient helpers ---------- */

@@ -1,0 +1,12 @@
+# Slopcast: Codex CLI config snippet
+#
+# Merge the parts you want into `~/.codex/config.toml`.
+
+[projects."/ABSOLUTE/PATH/TO/Slopcast"]
+trust_level = "trusted"
+
+# Optional (recommended if you use the Playwright MCP workflow from AGENTS.md):
+[mcp_servers.playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@latest"]
+

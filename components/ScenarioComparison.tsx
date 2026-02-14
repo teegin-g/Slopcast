@@ -15,7 +15,9 @@ const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({ groups }) => {
   // Prepare data for table
   const tableData = groups.map(g => {
     const m = g.metrics || { npv10: 0, totalCapex: 0, eur: 0, payoutMonths: 0, wellCount: 0 };
-    const roi = m.totalCapex > 0 ? (m.eur * g.pricing.oilPrice * g.pricing.nri) / m.totalCapex : 0;
+    const totalRevenue = g.flow?.reduce((sum, f) => sum + f.revenue, 0) || 0;
+    const totalOpex = g.flow?.reduce((sum, f) => sum + f.opex, 0) || 0;
+    const roi = m.totalCapex > 0 ? (totalRevenue - totalOpex) / m.totalCapex : 0;
     
     return {
       id: g.id,
@@ -27,7 +29,8 @@ const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({ groups }) => {
       eur: m.eur,
       roi: roi,
       payout: m.payoutMonths,
-      oilPrice: g.pricing.oilPrice
+      baseNri: g.ownership.baseNri,
+      baseCostInterest: g.ownership.baseCostInterest,
     };
   }).sort((a, b) => b.npv - a.npv);
 
@@ -75,7 +78,7 @@ const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({ groups }) => {
                           <th className="px-6 py-4 text-right text-theme-success">NPV (10%)</th>
                           <th className="px-6 py-4 text-right">ROI (Cash)</th>
                           <th className="px-6 py-4 text-right">Payout</th>
-                          <th className="px-6 py-4 text-right">Pricing Assumption</th>
+                          <th className="px-6 py-4 text-right">Ownership</th>
                       </tr>
                   </thead>
                   <tbody className="divide-y divide-theme-border/30">
@@ -100,7 +103,7 @@ const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({ groups }) => {
                               </td>
                               <td className="px-6 py-4 text-right font-mono text-xs">
                                   <span className="bg-theme-surface1 px-2 py-1 rounded text-theme-muted border border-theme-border">
-                                    Oil: ${row.oilPrice}
+                                    NRI: {(row.baseNri * 100).toFixed(1)}% • CI: {(row.baseCostInterest * 100).toFixed(1)}%
                                   </span>
                               </td>
                           </tr>

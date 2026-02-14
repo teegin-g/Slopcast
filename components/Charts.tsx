@@ -74,13 +74,13 @@ const Charts: React.FC<ChartsProps> = ({ data, themeId }) => {
         {isClassic ? (
           <div className="sc-screenTitlebar sc-titlebar--red px-4 py-2">
             <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-white">
-              CUMULATIVE RECOVERY (%)
+              CUMULATIVE CASH FLOW (USD)
             </h4>
           </div>
         ) : (
           <h4 className="font-black text-[10px] uppercase tracking-[0.3em] mb-6 flex items-center transition-all text-theme-magenta">
             <span className="w-1 h-1 rounded-full bg-theme-magenta mr-2"></span>
-            Cumulative Recovery (USD)
+            Cumulative Cash Flow (USD)
           </h4>
         )}
         <div className={isClassic ? 'p-4' : ''}>

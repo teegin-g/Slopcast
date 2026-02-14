@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { DealMetrics, TypeCurveParams, PricingAssumptions } from "../types";
+import { CommodityPricingAssumptions, DealMetrics, OwnershipAssumptions, TypeCurveParams } from "../types";
 
 function getAiClient(): GoogleGenAI | null {
   const apiKey =
@@ -22,7 +22,8 @@ function getAiClient(): GoogleGenAI | null {
 export const generateDealAnalysis = async (
   metrics: DealMetrics,
   tc: TypeCurveParams,
-  pricing: PricingAssumptions,
+  pricing: CommodityPricingAssumptions,
+  ownership: OwnershipAssumptions,
   selectedWellCount: number
 ): Promise<string> => {
   
@@ -40,12 +41,12 @@ export const generateDealAnalysis = async (
     - Total CAPEX: $${(metrics.totalCapex / 1e6).toFixed(1)} MM
     - Estimated Ultimate Recovery (EUR): ${(metrics.eur / 1e3).toFixed(0)} MBOE
     - NPV10: $${(metrics.npv10 / 1e6).toFixed(1)} MM
-    - ROI (Cash on Cash): ${(metrics.eur * pricing.oilPrice * pricing.nri / metrics.totalCapex).toFixed(2)}x (Approx)
+    - ROI (Cash on Cash): ${metrics.totalCapex > 0 ? ((metrics.eur * (pricing.oilPrice - (pricing.oilDifferential || 0)) * ownership.baseNri) / metrics.totalCapex).toFixed(2) : '0.00'}x (Approx)
     - Payout: ${metrics.payoutMonths} Months
 
     **Assumptions Used:**
     - Oil Price: $${pricing.oilPrice}/bbl
-    - NRI: ${(pricing.nri * 100).toFixed(1)}%
+    - Base NRI: ${(ownership.baseNri * 100).toFixed(1)}%
     - IP Rate: ${tc.qi} bopd
     - Initial Decline: ${tc.di}%
     

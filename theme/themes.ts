@@ -4,7 +4,7 @@
 // the rest of the UI will pick it up automatically.
 // ---------------------------------------------------------------------------
 
-export type ThemeId = 'slate' | 'synthwave' | 'tropical' | 'mario';
+export type ThemeId = 'slate' | 'synthwave' | 'tropical' | 'league' | 'mario';
 
 /** Per-theme chart series colors (Recharts / D3). */
 export interface ChartPalette {
@@ -151,6 +151,39 @@ const tropical: ThemeMeta = {
   },
 };
 
+const league: ThemeMeta = {
+  id: 'league',
+  label: 'Nocturne',
+  icon: '🌙',
+  description: 'Moonlit alpine palette',
+  appName: 'SLOPCAST',
+  appSubtitle: 'Night Operations',
+  chartPalette: {
+    oil: '#e9b067',
+    cash: '#67c3ee',
+    lav: '#8ba6d3',
+    grid: 'rgba(89, 115, 157, 0.28)',
+    text: '#9aaecf',
+    surface: '#0b1424',
+    border: 'rgba(95, 125, 170, 0.42)',
+  },
+  mapPalette: {
+    gridColor: '#2f476d',
+    gridOpacity: 0.36,
+    selectedStroke: '#f4d2a4',
+    glowColor: '#67c3ee',
+    unassignedFill: '#44638f',
+    lassoFill: 'rgba(233, 176, 103, 0.15)',
+    lassoStroke: '#e9b067',
+    lassoDash: '5, 3',
+  },
+  features: {
+    retroGrid: false,
+    brandFont: false,
+    glowEffects: true,
+  },
+};
+
 const mario: ThemeMeta = {
   id: 'mario',
   label: 'Classic',
@@ -188,7 +221,7 @@ const mario: ThemeMeta = {
 // Exports
 // ---------------------------------------------------------------------------
 
-export const THEMES: ThemeMeta[] = [slate, synthwave, tropical, mario];
+export const THEMES: ThemeMeta[] = [slate, synthwave, tropical, league, mario];
 
 export const DEFAULT_THEME: ThemeId = 'slate';
 
