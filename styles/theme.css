@@ -360,6 +360,92 @@
   --btn-primary-text: 8 17 33;
 }
 
+/* ---------- Stormwatch (Dusk Front) ---------- */
+[data-theme='stormwatch'] {
+  --bg-deep: 7 11 22;
+  /* #070B16 */
+  --bg-space: 16 26 44;
+  /* #101A2C */
+  --surface-1: 20 33 56;
+  /* #142138 */
+  --surface-2: 33 52 82;
+  /* #213452 */
+  --border: 82 107 148;
+  /* #526B94 */
+  --cyan: 155 196 255;
+  /* #9BC4FF */
+  --magenta: 242 166 90;
+  /* #F2A65A */
+  --violet: 116 145 191;
+  /* #7491BF */
+  --purple: 12 18 33;
+  /* #0C1221 */
+  --lav: 199 216 255;
+  /* #C7D8FF */
+  --text: 233 240 255;
+  /* #E9F0FF */
+  --muted: 159 177 211;
+  /* #9FB1D3 */
+  --success: 108 194 151;
+  /* #6CC297 */
+  --warning: 247 195 107;
+  /* #F7C36B */
+  --danger: 216 107 91;
+  /* #D86B5B */
+
+  --shadow-glow-cyan: 0 0 16px rgba(155, 196, 255, 0.28), 0 0 40px rgba(155, 196, 255, 0.12);
+  --shadow-glow-magenta: 0 0 12px rgba(242, 166, 90, 0.26), 0 0 32px rgba(242, 166, 90, 0.10);
+  --shadow-card: 0 14px 32px rgba(0, 0, 0, 0.56);
+
+  --grad-space:
+    radial-gradient(1080px circle at 10% -20%, rgba(144, 173, 219, 0.30) 0%, rgba(144, 173, 219, 0) 58%),
+    radial-gradient(980px circle at 90% -12%, rgba(247, 166, 102, 0.24) 0%, rgba(247, 166, 102, 0) 56%),
+    linear-gradient(170deg, #1a2842 0%, #101a2d 54%, #070b16 100%);
+  --font-brand: 'Inter';
+  --ambient-left: 126 161 216;
+  --ambient-right: 247 166 102;
+  --ambient-left-alpha: 0.32;
+  --ambient-right-alpha: 0.24;
+  --ambient-orb-left-alpha: 0.14;
+  --ambient-orb-right-alpha: 0.12;
+  --storm-cloud: 44 62 92;
+  --storm-rain: 142 173 219;
+  --storm-lamp: 252 214 140;
+  --storm-horizon-ember: 247 166 102;
+  --storm-ridge-dark: 5 9 18;
+
+  --header-bg-1: 44 63 94;
+  /* #2C3F5E */
+  --header-bg-2: 19 30 48;
+  /* #131E30 */
+  --header-border: 6 11 21;
+  /* #060B15 */
+  --header-text: 242 246 255;
+
+  --bar-neutral-bg-1: 36 55 86;
+  /* #243756 */
+  --bar-neutral-bg-2: 18 31 50;
+  /* #121F32 */
+  --bar-neutral-text: 242 246 255;
+  --bar-neutral-border: 8 16 31;
+  /* #08101F */
+
+  --bar-blue-bg-1: 155 196 255;
+  --bar-blue-bg-2: 108 147 205;
+  --bar-blue-text: 11 18 33;
+  --bar-blue-border: 30 60 103;
+
+  --bar-yellow-bg-1: 247 195 107;
+  --bar-yellow-bg-2: 192 140 73;
+  --bar-yellow-text: 38 24 9;
+  --bar-yellow-border: 96 61 24;
+
+  --btn-primary-bg-1: var(--cyan);
+  --btn-primary-bg-2: 108 147 205;
+  --btn-primary-border: 33 74 124;
+  --btn-primary-text: 11 18 33;
+}
+
 /* ---------- Mario (Slopcast Classic) ---------- */
 [data-theme='mario'] {
   /* Light canvas behind the modules */
@@ -963,6 +1049,136 @@ body {
   opacity: 0.86;
 }
 
+[data-theme='stormwatch'] .theme-atmo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(52px 52px at 16% 66%, rgb(var(--storm-lamp) / 0.58) 0%, rgb(var(--storm-lamp) / 0) 74%),
+    radial-gradient(580px 220px at 18% 72%, rgb(var(--storm-horizon-ember) / 0.26) 0%, rgb(var(--storm-horizon-ember) / 0) 78%),
+    linear-gradient(180deg,
+      rgb(var(--storm-rain) / 0.14) 0%,
+      rgb(var(--storm-rain) / 0.08) 30%,
+      transparent 58%),
+    linear-gradient(180deg,
+      transparent 56%,
+      rgb(var(--storm-horizon-ember) / 0.18) 62%,
+      transparent 72%);
+  opacity: 0.82;
+  z-index: 0;
+}
+
+[data-theme='stormwatch'] .theme-atmo.fx-max::before {
+  background:
+    radial-gradient(62px 62px at 16% 66%, rgb(var(--storm-lamp) / 0.68) 0%, rgb(var(--storm-lamp) / 0) 76%),
+    radial-gradient(720px 250px at 18% 72%, rgb(var(--storm-horizon-ember) / 0.34) 0%, rgb(var(--storm-horizon-ember) / 0) 80%),
+    linear-gradient(180deg,
+      rgb(var(--storm-rain) / 0.22) 0%,
+      rgb(var(--storm-rain) / 0.10) 34%,
+      transparent 62%),
+    linear-gradient(180deg,
+      transparent 52%,
+      rgb(var(--storm-horizon-ember) / 0.28) 60%,
+      rgb(var(--storm-horizon-ember) / 0.08) 74%,
+      transparent 84%);
+  opacity: 0.96;
+}
+
+[data-theme='stormwatch'] .theme-atmo-header {
+  border-bottom-color: rgb(var(--border) / 0.9);
+  box-shadow:
+    inset 0 -1px 0 rgb(var(--warning) / 0.22),
+    0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme='stormwatch'] .theme-atmo-header.fx-max {
+  box-shadow:
+    inset 0 -1px 0 rgb(var(--storm-horizon-ember) / 0.42),
+    0 16px 36px rgba(0, 0, 0, 0.48);
+}
+
+[data-theme='stormwatch'] .theme-atmo-bands {
+  inset: 0;
+  background:
+    repeating-linear-gradient(166deg,
+      rgb(var(--storm-rain) / 0.24) 0,
+      rgb(var(--storm-rain) / 0.24) 1px,
+      transparent 1px,
+      transparent 11px),
+    linear-gradient(180deg,
+      rgb(var(--storm-cloud) / 0.20) 0%,
+      rgb(var(--storm-cloud) / 0.08) 38%,
+      rgb(var(--storm-horizon-ember) / 0.16) 72%,
+      transparent 100%);
+  mix-blend-mode: screen;
+  opacity: 0.3;
+}
+
+[data-theme='stormwatch'] .theme-atmo-bands.fx-max {
+  background:
+    repeating-linear-gradient(166deg,
+      rgb(var(--storm-rain) / 0.34) 0,
+      rgb(var(--storm-rain) / 0.34) 1px,
+      transparent 1px,
+      transparent 8px),
+    repeating-linear-gradient(14deg,
+      rgb(var(--storm-rain) / 0.18) 0,
+      rgb(var(--storm-rain) / 0.18) 1px,
+      transparent 1px,
+      transparent 14px),
+    linear-gradient(180deg,
+      rgb(var(--storm-cloud) / 0.28) 0%,
+      rgb(var(--storm-cloud) / 0.10) 36%,
+      rgb(var(--storm-horizon-ember) / 0.22) 72%,
+      transparent 100%);
+  opacity: 0.62;
+}
+
+[data-theme='stormwatch'] .theme-atmo-horizon {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4.5rem;
+  background:
+    linear-gradient(180deg,
+      rgb(var(--storm-horizon-ember) / 0) 0%,
+      rgb(var(--storm-horizon-ember) / 0.22) 48%,
+      rgb(var(--storm-horizon-ember) / 0.42) 66%,
+      rgb(var(--storm-horizon-ember) / 0.04) 100%),
+    linear-gradient(90deg, rgb(var(--storm-rain) / 0.20) 0%, rgb(var(--storm-horizon-ember) / 0.28) 40%, rgb(var(--storm-rain) / 0.24) 100%);
+  opacity: 0.74;
+}
+
+[data-theme='stormwatch'] .theme-atmo-horizon.fx-max {
+  height: 6.4rem;
+  background:
+    linear-gradient(180deg,
+      rgb(var(--storm-horizon-ember) / 0) 0%,
+      rgb(var(--storm-horizon-ember) / 0.26) 38%,
+      rgb(var(--storm-horizon-ember) / 0.54) 62%,
+      rgb(var(--storm-rain) / 0.16) 82%,
+      rgb(var(--storm-rain) / 0) 100%),
+    linear-gradient(90deg, rgb(var(--storm-rain) / 0.30) 0%, rgb(var(--storm-horizon-ember) / 0.36) 42%, rgb(var(--storm-rain) / 0.34) 100%);
+  opacity: 0.96;
+}
+
+[data-theme='stormwatch'] .theme-atmo-ridges {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5.9rem;
+  background:
+    linear-gradient(164deg, rgb(var(--storm-ridge-dark) / 0.93) 18%, rgb(var(--storm-ridge-dark) / 0.24) 63%, rgb(var(--storm-ridge-dark) / 0) 100%),
+    linear-gradient(24deg, rgb(var(--storm-ridge-dark) / 0.84) 20%, rgb(var(--storm-ridge-dark) / 0.08) 72%, rgb(var(--storm-ridge-dark) / 0) 100%);
+  opacity: 0.88;
+}
+
+[data-theme='stormwatch'] .theme-atmo-ridges.fx-max {
+  height: 7.8rem;
+  opacity: 1;
+}
+
 [data-theme='mario'] .theme-atmo::before {
   content: '';
   position: absolute;
@@ -1186,6 +1402,34 @@ body {
   [data-theme='tropical'] .theme-atmo-palms.fx-max {
     height: 5.8rem;
     opacity: 0.76;
+  }
+
+  [data-theme='stormwatch'] .theme-atmo-bands {
+    opacity: 0.22;
+  }
+
+  [data-theme='stormwatch'] .theme-atmo-bands.fx-max {
+    opacity: 0.48;
+  }
+
+  [data-theme='stormwatch'] .theme-atmo-horizon {
+    height: 3.3rem;
+    opacity: 0.62;
+  }
+
+  [data-theme='stormwatch'] .theme-atmo-horizon.fx-max {
+    height: 4.4rem;
+    opacity: 0.82;
+  }
+
+  [data-theme='stormwatch'] .theme-atmo-ridges {
+    height: 4.4rem;
+    opacity: 0.72;
+  }
+
+  [data-theme='stormwatch'] .theme-atmo-ridges.fx-max {
+    height: 5.6rem;
+    opacity: 0.92;
   }
 
   [data-theme='mario'] .theme-atmo-bands {

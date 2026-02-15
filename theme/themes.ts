@@ -68,6 +68,7 @@ const SynthwaveBackground = React.lazy(() => import('../components/SynthwaveBack
 const MoonlightBackground = React.lazy(() => import('../components/MoonlightBackground'));
 const TropicalBackground = React.lazy(() => import('../components/TropicalBackground'));
 const MarioOverworldBackground = React.lazy(() => import('../components/MarioOverworldBackground'));
+const StormDuskBackground = React.lazy(() => import('../components/StormDuskBackground'));
 
 // ---------------------------------------------------------------------------
 // Theme definitions
@@ -219,6 +220,44 @@ const league: ThemeMeta = {
   atmosphericOverlays: ['theme-atmo-bands', 'theme-atmo-ridges'],
 };
 
+const stormwatch: ThemeMeta = {
+  id: 'stormwatch',
+  label: 'Stormwatch',
+  icon: '⛈️',
+  description: 'Moody dusk storm atmosphere',
+  appName: 'SLOPCAST',
+  appSubtitle: 'Storm Signal',
+  chartPalette: {
+    oil: '#f2a65a',
+    cash: '#9bc4ff',
+    lav: '#c7d8ff',
+    grid: 'rgba(116, 144, 191, 0.26)',
+    text: '#9fb1d3',
+    surface: '#101a2d',
+    border: 'rgba(90, 115, 154, 0.46)',
+  },
+  mapPalette: {
+    gridColor: '#36547f',
+    gridOpacity: 0.34,
+    selectedStroke: '#ffd9a0',
+    glowColor: '#9bc4ff',
+    unassignedFill: '#4e6e9f',
+    lassoFill: 'rgba(242, 166, 90, 0.14)',
+    lassoStroke: '#f2a65a',
+    lassoDash: '6, 3',
+  },
+  features: {
+    retroGrid: false,
+    brandFont: false,
+    glowEffects: true,
+  },
+  BackgroundComponent: StormDuskBackground,
+  atmosphereClass: 'theme-atmo',
+  headerAtmosphereClass: 'theme-atmo-header',
+  atmosphericOverlays: ['theme-atmo-bands', 'theme-atmo-horizon', 'theme-atmo-ridges'],
+  fxTheme: true,
+};
+
 const mario: ThemeMeta = {
   id: 'mario',
   label: 'Classic',
@@ -261,7 +300,7 @@ const mario: ThemeMeta = {
 // Exports
 // ---------------------------------------------------------------------------
 
-export const THEMES: ThemeMeta[] = [slate, synthwave, tropical, league, mario];
+export const THEMES: ThemeMeta[] = [slate, synthwave, tropical, league, stormwatch, mario];
 
 export const DEFAULT_THEME: ThemeId = 'slate';
 
