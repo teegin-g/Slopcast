@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(grep:*)",
+      "Bash(xargs:*)",
+      "Bash(mkdir:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(touch:*)",
+      "Bash(chmod:*)",
+      "Bash(git:*)",
+      "Bash(.venv/bin/python:*)",
+      "Bash(python:*)",
+      "Bash(python3:*)",
+      "Bash(pip:*)",
+      "Bash(pip3:*)",
+      "Bash(npm:*)",
+      "Bash(node:*)",
+      "Bash(docker:*)",
+      "Bash(curl:*)",
+      "Bash(lsof:*)",
+      "Bash(/Users/teegingroves/Programming/Wildcat/scripts/ralph/ralph.sh --tool claude 20)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(./scripts/ralph/ralph.sh --tool claude 12)",
+      "Bash(npx playwright --version)",
+      "Bash(npx playwright install chromium)"
+    ]
+  }
+}

@@ -167,6 +167,9 @@ export default function TropicalBackground() {
     const birds = BIRDS.map(b => ({ ...b }));
     const shootingStars: { x: number; y: number; vx: number; vy: number; life: number; decay: number; len: number }[] = [];
 
+    // ── Scanline pattern (pre-rendered) ──────────────────────────────
+    let scanlinePattern: CanvasPattern | null = null;
+
     function resize() {
       const dpr = window.devicePixelRatio || 1;
       W = window.innerWidth * dpr;
@@ -178,9 +181,6 @@ export default function TropicalBackground() {
     }
     resize();
     window.addEventListener('resize', resize);
-
-    // ── Scanline pattern (pre-rendered) ──────────────────────────────
-    let scanlinePattern: CanvasPattern | null = null;
     function getScanlinePattern() {
       if (!scanlinePattern) {
         const pc = document.createElement('canvas');
