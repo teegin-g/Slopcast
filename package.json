@@ -10,6 +10,7 @@
     "start": "node server.js",
     "ui:audit": "node scripts/ui-audit.mjs",
     "ui:shots": "node scripts/ui-snapshots.mjs",
+    "ui:verify": "node scripts/ui-verify-flow.mjs",
     "theme:fx:url:cinematic": "node scripts/theme-fx-toggle.mjs cinematic",
     "theme:fx:url:max": "node scripts/theme-fx-toggle.mjs max",
     "theme:fx:url:clear": "node scripts/theme-fx-toggle.mjs clear",

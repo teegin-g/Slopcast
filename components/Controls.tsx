@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { OpexAssumptions, OwnershipAssumptions, WellGroup, TypeCurveParams, CapexAssumptions } from '../types';
 import CapexControls from './CapexControls';
 import OpexControls from './OpexControls';
@@ -8,6 +8,9 @@ import { useTheme } from '../theme/ThemeProvider';
 interface ControlsProps {
   group: WellGroup;
   onUpdateGroup: (updatedGroup: WellGroup) => void;
+  onMarkDirty?: () => void;
+  openSectionKey?: SectionKey | null;
+  onOpenSectionHandled?: () => void;
 }
 
 type SectionKey = 'TYPE_CURVE' | 'CAPEX' | 'OPEX' | 'OWNERSHIP';
@@ -61,26 +64,56 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
   );
 };
 
-const Controls: React.FC<ControlsProps> = ({ group, onUpdateGroup }) => {
+const Controls: React.FC<ControlsProps> = ({
+  group,
+  onUpdateGroup,
+  onMarkDirty,
+  openSectionKey,
+  onOpenSectionHandled,
+}) => {
   const [activeSection, setActiveSection] = useState<SectionKey>('TYPE_CURVE');
+  const [capexEditSignal, setCapexEditSignal] = useState(0);
   const { theme } = useTheme();
   const isClassic = theme.id === 'mario';
 
+  useEffect(() => {
+    if (!openSectionKey) return;
+    setActiveSection(openSectionKey);
+    if (onOpenSectionHandled) onOpenSectionHandled();
+  }, [onOpenSectionHandled, openSectionKey]);
+
   const handleTcChange = (key: keyof TypeCurveParams, val: string) => {
     onUpdateGroup({ ...group, typeCurve: { ...group.typeCurve, [key]: parseFloat(val) || 0 } });
+    if (onMarkDirty) onMarkDirty();
   };
 
   const handleCapexChange = (updatedCapex: CapexAssumptions) => {
     onUpdateGroup({ ...group, capex: updatedCapex });
+    if (onMarkDirty) onMarkDirty();
   };
   
   const handleOpexChange = (updated: OpexAssumptions) => {
     onUpdateGroup({ ...group, opex: updated });
+    if (onMarkDirty) onMarkDirty();
   };
 
   const handleOwnershipChange = (updated: OwnershipAssumptions) => {
     onUpdateGroup({ ...group, ownership: updated });
+    if (onMarkDirty) onMarkDirty();
   };
+
+  const capexSummary = useMemo(() => {
+    const total = group.capex.items.reduce((sum, item) => {
+      const itemCost = item.basis === 'PER_FOOT' ? item.value * 10000 : item.value;
+      return sum + itemCost;
+    }, 0);
+    const wells = Math.max(1, group.wellIds.size);
+    return {
+      total,
+      perWell: total / wells,
+      itemCount: group.capex.items.length,
+    };
+  }, [group.capex.items, group.wellIds.size]);
 
   const inputClass = isClassic
     ? 'w-full rounded-md px-3 py-2 text-xs font-black sc-inputNavy'
@@ -151,6 +184,54 @@ const Controls: React.FC<ControlsProps> = ({ group, onUpdateGroup }) => {
         </div>
       )}
 
+      <div
+        className={
+          isClassic
+            ? 'sc-panel theme-transition mb-4'
+            : 'rounded-panel border p-4 mb-4 shadow-card theme-transition bg-theme-surface1/80 border-theme-border'
+        }
+      >
+        <div className="flex items-center justify-between mb-3">
+          <h3 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
+            CAPEX Snapshot
+          </h3>
+          <button
+            onClick={() => {
+              setActiveSection('CAPEX');
+              setCapexEditSignal(prev => prev + 1);
+            }}
+            className={
+              isClassic
+                ? 'sc-btnPrimary px-3 py-1.5 rounded-md text-[9px] font-black uppercase tracking-[0.16em]'
+                : 'px-3 py-1.5 rounded-inner text-[9px] font-black uppercase tracking-[0.16em] bg-theme-magenta text-white hover:shadow-glow-magenta transition-all'
+            }
+          >
+            Edit CAPEX
+          </button>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          <div className={isClassic ? 'rounded-md border border-black/30 bg-black/10 p-2' : 'rounded-inner border border-theme-border bg-theme-bg p-2'}>
+            <p className={labelClass}>Total</p>
+            <p className={isClassic ? 'text-white text-base font-black' : 'text-theme-text text-base font-black'}>
+              ${(capexSummary.total / 1e6).toFixed(2)}M
+            </p>
+          </div>
+          <div className={isClassic ? 'rounded-md border border-black/30 bg-black/10 p-2' : 'rounded-inner border border-theme-border bg-theme-bg p-2'}>
+            <p className={labelClass}>Per Well</p>
+            <p className={isClassic ? 'text-white text-base font-black' : 'text-theme-text text-base font-black'}>
+              ${(capexSummary.perWell / 1e6).toFixed(2)}M
+            </p>
+          </div>
+          <div className={isClassic ? 'rounded-md border border-black/30 bg-black/10 p-2' : 'rounded-inner border border-theme-border bg-theme-bg p-2'}>
+            <p className={labelClass}>Line Items</p>
+            <p className={isClassic ? 'text-white text-base font-black' : 'text-theme-text text-base font-black'}>
+              {capexSummary.itemCount}
+            </p>
+          </div>
+        </div>
+      </div>
+
       <AccordionSection id="TYPE_CURVE" title="Decline Profile" isOpen={activeSection === 'TYPE_CURVE'} onToggle={setActiveSection}>
         <div className="space-y-6">
             <div>
@@ -212,7 +293,7 @@ const Controls: React.FC<ControlsProps> = ({ group, onUpdateGroup }) => {
       </AccordionSection>
 
       <AccordionSection id="CAPEX" title="CAPEX Logic" isOpen={activeSection === 'CAPEX'} onToggle={setActiveSection}>
-         <CapexControls capex={group.capex} onChange={handleCapexChange} />
+         <CapexControls capex={group.capex} onChange={handleCapexChange} focusEditSignal={capexEditSignal} />
       </AccordionSection>
 
       <AccordionSection id="OPEX" title="LOE / Operating Expenses" isOpen={activeSection === 'OPEX'} onToggle={setActiveSection}>

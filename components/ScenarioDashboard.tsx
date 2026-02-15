@@ -6,6 +6,7 @@ import SensitivityMatrix from './SensitivityMatrix';
 import { generateSensitivityMatrix } from '../utils/economics';
 import { useTheme } from '../theme/ThemeProvider';
 import { DEFAULT_COMMODITY_PRICING } from '../constants';
+import { useStableChartContainer } from './slopcast/hooks/useStableChartContainer';
 
 interface ScenarioDashboardProps {
   groups: WellGroup[]; 
@@ -128,6 +129,7 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, sc
       }
       return data;
   }, [scenarioResults]);
+  const overlayChart = useStableChartContainer([theme.id, scenarios.length, cfChartData.length]);
 
   const sensitivityData = useMemo(() => {
       const getSteps = (v: SensitivityVariable) => {
@@ -186,10 +188,10 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, sc
     : `text-[9px] font-black text-theme-muted block mb-2 uppercase tracking-[0.2em] ${theme.features.brandFont ? 'brand-font' : ''}`;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
       
       {/* LEFT: Scenario Management */}
-      <div className="lg:col-span-3 space-y-6">
+      <div className="xl:col-span-3 space-y-6">
           <div className={isClassic ? 'sc-panel theme-transition overflow-hidden' : 'rounded-panel border p-6 shadow-card transition-all bg-theme-surface1 border-theme-border'}>
               {isClassic ? (
                 <>
@@ -383,8 +385,8 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, sc
           )}
       </div>
 
-      <div className="lg:col-span-9 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="xl:col-span-9 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
               {scenarioResults.map((res) => (
 	                  <div key={res.scenario.id} className={isClassic ? 'sc-panel theme-transition overflow-hidden group' : 'rounded-panel border p-6 relative overflow-hidden theme-transition shadow-card group bg-theme-surface1/80 border-theme-border hover:border-theme-cyan'}>
                       <div className="absolute top-0 left-0 w-1.5 h-full opacity-60" style={{ backgroundColor: res.scenario.color }}></div>
@@ -421,7 +423,7 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, sc
               ))}
           </div>
 
-	          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+	          <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">
 	                <div className={isClassic ? 'sc-panel theme-transition overflow-hidden' : 'rounded-panel border p-8 shadow-card theme-transition bg-theme-surface1/60 border-theme-border'}>
                     {isClassic ? (
                       <div className="sc-panelTitlebar sc-titlebar--red px-5 py-4">
@@ -437,20 +439,24 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, sc
                     )}
 
                     <div className={isClassic ? 'p-5' : ''}>
-                      <div className="h-[320px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={cfChartData}>
-                                <CartesianGrid strokeDasharray="6 6" stroke={chartPalette.grid} vertical={false} />
-                                <XAxis dataKey="month" stroke={chartPalette.text} fontSize={9} tickFormatter={(v) => v % 12 === 0 ? `Y${v/12}` : ''} axisLine={false} tickLine={false} />
-                                <YAxis stroke={chartPalette.text} fontSize={9} tickFormatter={(v) => `$${(v/1e6).toFixed(0)}M`} axisLine={false} tickLine={false} />
-                                <Tooltip 
-                                  contentStyle={{ backgroundColor: chartPalette.surface, borderRadius: '12px', borderColor: chartPalette.border, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)' }} 
-                                  formatter={(val: number) => [`$${(val/1e6).toFixed(2)}MM`, '']} 
-                                />
-                                <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '20px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em' }} iconType="circle" />
-                                {scenarios.map(s => <Line key={s.id} type="monotone" dataKey={s.id} name={s.name} stroke={s.color} strokeWidth={4} dot={false} animationDuration={2000} />)}
-                            </LineChart>
-                        </ResponsiveContainer>
+                      <div className="h-[320px] w-full" ref={overlayChart.containerRef}>
+                        {overlayChart.ready ? (
+                          <ResponsiveContainer width={overlayChart.width} height={overlayChart.height}>
+                              <LineChart data={cfChartData}>
+                                  <CartesianGrid strokeDasharray="6 6" stroke={chartPalette.grid} vertical={false} />
+                                  <XAxis dataKey="month" stroke={chartPalette.text} fontSize={9} tickFormatter={(v) => v % 12 === 0 ? `Y${v/12}` : ''} axisLine={false} tickLine={false} />
+                                  <YAxis stroke={chartPalette.text} fontSize={9} tickFormatter={(v) => `$${(v/1e6).toFixed(0)}M`} axisLine={false} tickLine={false} />
+                                  <Tooltip 
+                                    contentStyle={{ backgroundColor: chartPalette.surface, borderRadius: '12px', borderColor: chartPalette.border, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)' }} 
+                                    formatter={(val: number) => [`$${(val/1e6).toFixed(2)}MM`, '']} 
+                                  />
+                                  <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '20px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em' }} iconType="circle" />
+                                  {scenarios.map(s => <Line key={s.id} type="monotone" dataKey={s.id} name={s.name} stroke={s.color} strokeWidth={4} dot={false} animationDuration={2000} />)}
+                              </LineChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className={`h-full w-full rounded-inner ${isClassic ? 'bg-black/20' : 'bg-theme-bg/40 animate-pulse'}`} />
+                        )}
                       </div>
                     </div>
                 </div>

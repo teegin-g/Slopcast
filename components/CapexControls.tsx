@@ -1,11 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { CapexAssumptions, CapexItem, CostBasis, CapexCategory } from '../types';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useTheme } from '../theme/ThemeProvider';
+import { useStableChartContainer } from './slopcast/hooks/useStableChartContainer';
 
 interface CapexControlsProps {
   capex: CapexAssumptions;
   onChange: (updated: CapexAssumptions) => void;
+  focusEditSignal?: number;
 }
 
 const CATEGORIES: CapexCategory[] = ['DRILLING', 'COMPLETION', 'FACILITIES', 'EQUIPMENT', 'OTHER'];
@@ -22,10 +24,15 @@ const CATEGORY_COLORS: Record<CapexCategory, string> = {
   'OTHER': '#64748b'
 };
 
-const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
+const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange, focusEditSignal = 0 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const { theme } = useTheme();
   const isClassic = theme.id === 'mario';
+  const { containerRef, ready, width, height } = useStableChartContainer([theme.id, capex.items.length, focusEditSignal]);
+
+  useEffect(() => {
+    if (focusEditSignal > 0) setIsEditing(true);
+  }, [focusEditSignal]);
 
   const handleUpdateItem = (id: string, field: keyof CapexItem, value: any) => {
     const newItems = capex.items.map(item => {
@@ -94,30 +101,34 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
                       <p className="text-xl font-bold text-theme-text">${(totalCost / 1e6).toFixed(1)}MM</p>
                   </div>
 
-                  <div className="h-48 w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                              <Pie
-                                data={categoryData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={80}
-                                paddingAngle={5}
-                                dataKey="value"
-                                stroke="none"
-                              >
-                                {categoryData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[entry.name]} />
-                                ))}
-                              </Pie>
-                              <Tooltip 
-                                contentStyle={{ backgroundColor: theme.chartPalette.surface, borderColor: theme.chartPalette.border, color: 'rgb(var(--text))', fontSize: '10px' }}
-                                formatter={(value: number) => [`$${(value/1e6).toFixed(2)}MM`, '']}
-                                itemStyle={{ padding: 0 }}
-                              />
-                          </PieChart>
-                      </ResponsiveContainer>
+                  <div className="h-48 w-full" ref={containerRef}>
+                      {ready ? (
+                        <ResponsiveContainer width={width} height={height}>
+                            <PieChart>
+                                <Pie
+                                  data={categoryData}
+                                  cx="50%"
+                                  cy="50%"
+                                  innerRadius={60}
+                                  outerRadius={80}
+                                  paddingAngle={5}
+                                  dataKey="value"
+                                  stroke="none"
+                                >
+                                  {categoryData.map((entry, index) => (
+                                      <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[entry.name]} />
+                                  ))}
+                                </Pie>
+                                <Tooltip 
+                                  contentStyle={{ backgroundColor: theme.chartPalette.surface, borderColor: theme.chartPalette.border, color: 'rgb(var(--text))', fontSize: '10px' }}
+                                  formatter={(value: number) => [`$${(value/1e6).toFixed(2)}MM`, '']}
+                                  itemStyle={{ padding: 0 }}
+                                />
+                            </PieChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className={`h-full w-full rounded-inner ${isClassic ? 'bg-black/20' : 'bg-theme-bg/40 animate-pulse'}`} />
+                      )}
                   </div>
                   
                   <div className="text-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity absolute bottom-2 w-full left-0">

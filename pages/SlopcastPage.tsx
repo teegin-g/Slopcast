@@ -7,6 +7,11 @@ import Controls from '../components/Controls';
 import GroupList from '../components/GroupList';
 import MapVisualizer from '../components/MapVisualizer';
 import ScenarioDashboard from '../components/ScenarioDashboard';
+import KpiGrid from '../components/slopcast/KpiGrid';
+import OperationsConsole from '../components/slopcast/OperationsConsole';
+import PageHeader from '../components/slopcast/PageHeader';
+import WorkflowStepper, { DesignStep, StepStatus, WorkflowStep } from '../components/slopcast/WorkflowStepper';
+import { useViewportLayout } from '../components/slopcast/hooks/useViewportLayout';
 import { useTheme } from '../theme/ThemeProvider';
 import { useAuth } from '../auth/AuthProvider';
 import { aggregateEconomics, calculateEconomics } from '../utils/economics';
@@ -15,6 +20,7 @@ type ViewMode = 'DASHBOARD' | 'ANALYSIS';
 type MobileSection = 'SETUP' | 'WORKSPACE' | 'KPIS';
 type OpsTab = 'SELECTION_ACTIONS' | 'KEY_DRIVERS';
 type FxMode = 'cinematic' | 'max';
+type ControlsSection = 'TYPE_CURVE' | 'CAPEX' | 'OPEX' | 'OWNERSHIP';
 
 type DriverModifier = {
   oilPriceDelta?: number;
@@ -149,6 +155,10 @@ const SlopcastPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('DASHBOARD');
   const [mobileSection, setMobileSection] = useState<MobileSection>('WORKSPACE');
   const [opsTab, setOpsTab] = useState<OpsTab>('SELECTION_ACTIONS');
+  const viewportLayout = useViewportLayout();
+  const [controlsOpenSection, setControlsOpenSection] = useState<ControlsSection | null>(null);
+  const [economicsInputVersion, setEconomicsInputVersion] = useState(1);
+  const [lastRunVersion, setLastRunVersion] = useState(0);
 
   const [groups, setGroups] = useState<WellGroup[]>([
     {
@@ -263,9 +273,15 @@ const SlopcastPage: React.FC = () => {
 
   // --- Handlers ---
   const activeGroup = processedGroups.find(g => g.id === activeGroupId) || processedGroups[0];
+  const markEconomicsDirty = () => setEconomicsInputVersion(prev => prev + 1);
+  const handleSetScenarios: React.Dispatch<React.SetStateAction<Scenario[]>> = (next) => {
+    setScenarios(next);
+    markEconomicsDirty();
+  };
 
   const handleUpdateGroup = (updatedGroup: WellGroup) => {
     setGroups(prev => prev.map(g => g.id === updatedGroup.id ? updatedGroup : g));
+    markEconomicsDirty();
   };
 
   const handleAddGroup = () => {
@@ -283,6 +299,7 @@ const SlopcastPage: React.FC = () => {
     };
     setGroups([...groups, newGroup]);
     setActiveGroupId(newId);
+    markEconomicsDirty();
   };
 
   const handleCloneGroup = (groupId: string) => {
@@ -305,6 +322,7 @@ const SlopcastPage: React.FC = () => {
     };
     setGroups([...groups, newGroup]);
     setActiveGroupId(newId);
+    markEconomicsDirty();
   };
 
   const handleAssignWellsToActive = () => {
@@ -321,6 +339,7 @@ const SlopcastPage: React.FC = () => {
       });
     });
     setSelectedWellIds(new Set());
+    markEconomicsDirty();
   };
 
   const handleCreateGroupFromSelection = () => {
@@ -347,6 +366,7 @@ const SlopcastPage: React.FC = () => {
     });
     setActiveGroupId(newId);
     setSelectedWellIds(new Set());
+    markEconomicsDirty();
   };
 
   const handleToggleWell = (id: string) => {
@@ -357,6 +377,7 @@ const SlopcastPage: React.FC = () => {
       else next.add(id);
       return next;
     });
+    markEconomicsDirty();
   };
 
   const handleSelectWells = (ids: string[]) => {
@@ -367,6 +388,7 @@ const SlopcastPage: React.FC = () => {
           });
           return next;
       });
+      markEconomicsDirty();
   };
 
   const handleSelectAll = () => {
@@ -388,10 +410,12 @@ const SlopcastPage: React.FC = () => {
         return next;
       });
     }
+    markEconomicsDirty();
   };
 
   const handleClearSelection = () => {
     setSelectedWellIds(new Set());
+    markEconomicsDirty();
   };
 
   const handleResetFilters = () => {
@@ -460,7 +484,7 @@ const SlopcastPage: React.FC = () => {
     const warnings: string[] = [];
     if (aggregateMetrics.wellCount === 0) warnings.push('No wells assigned to a scenario yet.');
     if (filteredWells.length === 0) warnings.push('Current filters exclude all wells.');
-    if (selectedVisibleCount === 0) warnings.push('No visible wells are currently selected in the basin map.');
+    if (selectedVisibleCount === 0) warnings.push('Step 2 incomplete: no visible wells are currently selected in the basin map.');
     const baseScenario = scenarios.find(s => s.isBaseCase) || scenarios[0];
     const basePricing = baseScenario?.pricing || DEFAULT_COMMODITY_PRICING;
     if (basePricing.oilPrice <= 0 || basePricing.gasPrice < 0) warnings.push('Scenario pricing inputs are incomplete or invalid.');
@@ -594,6 +618,7 @@ const SlopcastPage: React.FC = () => {
 
   const handleRunEconomics = () => {
     setLastEconomicsRunAt(new Date().toISOString());
+    setLastRunVersion(economicsInputVersion);
     setActionMessage('Economics refreshed.');
   };
 
@@ -697,523 +722,86 @@ const SlopcastPage: React.FC = () => {
     if (viewMode === 'DASHBOARD') setMobileSection('WORKSPACE');
   }, [viewMode]);
 
+  const setupComplete = !!activeGroup && activeGroup.capex.items.length > 0 && activeGroup.typeCurve.qi > 0;
+  const selectionComplete = activeGroup.wellIds.size > 0 || selectedVisibleCount > 0;
+  const hasRun = !!lastEconomicsRunAt;
+  const needsRerun = economicsInputVersion > lastRunVersion;
+  const runComplete = hasRun && !needsRerun;
+  const activeStep: DesignStep = !setupComplete
+    ? 'SETUP'
+    : !selectionComplete
+      ? 'SELECT'
+      : !runComplete
+        ? 'RUN'
+        : 'REVIEW';
+
+  const orderedSteps: DesignStep[] = ['SETUP', 'SELECT', 'RUN', 'REVIEW'];
+  const stepStatusMap: Record<DesignStep, StepStatus> = {
+    SETUP: setupComplete ? 'COMPLETE' : (activeStep === 'SETUP' ? 'ACTIVE' : 'NOT_STARTED'),
+    SELECT: selectionComplete ? 'COMPLETE' : (activeStep === 'SELECT' ? 'ACTIVE' : 'NOT_STARTED'),
+    RUN: runComplete ? 'COMPLETE' : (needsRerun && hasRun ? 'STALE' : (activeStep === 'RUN' ? 'ACTIVE' : 'NOT_STARTED')),
+    REVIEW: runComplete ? (activeStep === 'REVIEW' ? 'ACTIVE' : 'COMPLETE') : 'NOT_STARTED',
+  };
+  const workflowSteps: WorkflowStep[] = orderedSteps.map(step => ({
+    id: step,
+    label: step === 'SETUP' ? 'Setup' : step === 'SELECT' ? 'Select Wells' : step === 'RUN' ? 'Run' : 'Review',
+    status: stepStatusMap[step],
+  }));
+  const stepGuidance = activeStep === 'SETUP'
+    ? 'Step 1: complete setup inputs (CAPEX, decline, ownership).'
+    : activeStep === 'SELECT'
+      ? 'Step 2: select wells and assign them to the active group.'
+      : activeStep === 'RUN'
+        ? 'Step 3: run economics to refresh portfolio outputs.'
+        : 'Step 4: review KPIs, drivers, and rankings.';
+  const canUseSecondaryActions = runComplete;
+
+  useEffect(() => {
+    if (viewMode !== 'DASHBOARD') return;
+    if (activeStep !== 'SETUP') return;
+    if (activeGroup.capex.items.length > 0) return;
+    setControlsOpenSection('CAPEX');
+    if (viewportLayout === 'mobile') setMobileSection('SETUP');
+  }, [activeGroup.capex.items.length, activeStep, viewMode, viewportLayout]);
+
   const operationsPanel = (
-    <>
-      {isClassic ? (
-        <div className="sc-panel theme-transition">
-          <div className="sc-panelTitlebar sc-titlebar--red px-4 py-3 flex flex-wrap justify-between items-center gap-2">
-            <h3 className="text-xs font-black uppercase tracking-[0.2em] flex items-center gap-3 text-white">
-              <span className="text-sm leading-none">{theme.icon}</span> OPERATIONS CONSOLE
-            </h3>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setOpsTab('SELECTION_ACTIONS')}
-                className={`px-3 py-1.5 rounded-md text-[9px] font-black uppercase tracking-[0.18em] border transition-colors ${
-                  opsTab === 'SELECTION_ACTIONS'
-                    ? 'bg-theme-warning text-black border-black/20'
-                    : 'bg-black/20 text-white border-black/30'
-                }`}
-              >
-                Selection
-              </button>
-              <button
-                onClick={() => setOpsTab('KEY_DRIVERS')}
-                className={`px-3 py-1.5 rounded-md text-[9px] font-black uppercase tracking-[0.18em] border transition-colors ${
-                  opsTab === 'KEY_DRIVERS'
-                    ? 'bg-theme-warning text-black border-black/20'
-                    : 'bg-black/20 text-white border-black/30'
-                }`}
-              >
-                Drivers
-              </button>
-            </div>
-          </div>
-          <div className="p-4 space-y-4">
-            {opsTab === 'SELECTION_ACTIONS' ? (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-md border border-black/25 bg-black/10 px-3 py-2">
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-theme-warning">Selected Wells</p>
-                    <p className="text-white text-xl font-black">{selectedVisibleCount}</p>
-                    <p className="text-[9px] text-white/60 uppercase tracking-[0.16em]">of {filteredWells.length} visible</p>
-                  </div>
-                  <div className="rounded-md border border-black/25 bg-black/10 px-3 py-2">
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-theme-warning">Active Group</p>
-                    <p className="text-white text-sm font-black truncate">{activeGroup.name}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={handleAssignWellsToActive}
-                    disabled={selectedVisibleCount === 0}
-                    className={`sc-btnSecondary px-3 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${
-                      selectedVisibleCount === 0 ? 'opacity-60 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    Assign
-                  </button>
-                  <button
-                    onClick={handleCreateGroupFromSelection}
-                    disabled={selectedVisibleCount === 0}
-                    className={`sc-btnSecondary px-3 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${
-                      selectedVisibleCount === 0 ? 'opacity-60 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    Create Group
-                  </button>
-                  <button
-                    onClick={handleSelectAll}
-                    className="sc-btnSecondary px-3 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all"
-                  >
-                    Select All
-                  </button>
-                  <button
-                    onClick={handleClearSelection}
-                    disabled={selectedVisibleCount === 0}
-                    className={`sc-btnSecondary px-3 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${
-                      selectedVisibleCount === 0 ? 'opacity-60 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    Clear
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={handleRunEconomics}
-                    disabled={aggregateMetrics.wellCount === 0}
-                    className={`sc-btnPrimary px-3 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${
-                      aggregateMetrics.wellCount === 0 ? 'opacity-60 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    Run Economics
-                  </button>
-                  <button
-                    onClick={handleSaveScenario}
-                    className="sc-btnPrimary px-3 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all"
-                  >
-                    Save Scenario
-                  </button>
-                  <button
-                    onClick={handleExportCsv}
-                    className="sc-btnPrimary px-3 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all"
-                  >
-                    Export CSV
-                  </button>
-                  <button
-                    onClick={handleExportPdf}
-                    className="sc-btnPrimary px-3 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all"
-                  >
-                    Export PDF
-                  </button>
-                </div>
-
-                <div className="rounded-md border border-black/25 bg-black/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-white/85">
-                  {lastEconomicsRunAt
-                    ? `Last run: ${new Date(lastEconomicsRunAt).toLocaleString()}`
-                    : 'Last run: not yet triggered'}
-                  {actionMessage && <span className="ml-2 text-theme-warning">{actionMessage}</span>}
-                </div>
-
-                <div className="rounded-md border border-black/25 bg-black/10 px-3 py-2 space-y-1">
-                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-theme-warning">Validation</p>
-                  {validationWarnings.length > 0 ? (
-                    validationWarnings.map(warning => (
-                      <p key={warning} className="text-[10px] text-white/85">{warning}</p>
-                    ))
-                  ) : (
-                    <p className="text-[10px] text-white/85">All checks passed.</p>
-                  )}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {keyDriverInsights.topDrivers.map(driver => (
-                    <div key={driver.id} className="rounded-md border border-black/25 bg-black/10 px-3 py-2">
-                      <p className="text-[9px] font-black uppercase tracking-[0.2em] text-theme-warning">{driver.label}</p>
-                      <p className={`text-sm font-black ${driver.dominantDelta >= 0 ? 'text-theme-cyan' : 'text-white'}`}>
-                        {(driver.dominantDelta / 1e6).toFixed(1)} MM
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="rounded-md border border-black/25 bg-black/10 px-3 py-2">
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-theme-warning">Biggest Upside</p>
-                    <p className="text-[10px] text-white/85">{keyDriverInsights.biggestPositive?.label || 'n/a'}</p>
-                    <p className="text-sm font-black text-theme-cyan">
-                      {keyDriverInsights.biggestPositive ? `${(keyDriverInsights.biggestPositive.deltaNpv / 1e6).toFixed(1)} MM` : '-'}
-                    </p>
-                  </div>
-                  <div className="rounded-md border border-black/25 bg-black/10 px-3 py-2">
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-theme-warning">Biggest Downside</p>
-                    <p className="text-[10px] text-white/85">{keyDriverInsights.biggestNegative?.label || 'n/a'}</p>
-                    <p className="text-sm font-black text-white">
-                      {keyDriverInsights.biggestNegative ? `${(keyDriverInsights.biggestNegative.deltaNpv / 1e6).toFixed(1)} MM` : '-'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="rounded-md border border-black/25 bg-black/10 px-3 py-2">
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-theme-warning">Breakeven Oil</p>
-                    <p className="text-xl font-black text-white">
-                      {breakevenOilPrice !== null ? `$${breakevenOilPrice.toFixed(1)}` : 'Out of range'}
-                    </p>
-                  </div>
-                  <div className="rounded-md border border-black/25 bg-black/10 px-3 py-2">
-                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-theme-warning">Payout Highlights</p>
-                    <p className="text-[10px] text-white/85">
-                      Portfolio: {aggregateMetrics.payoutMonths > 0 ? `${aggregateMetrics.payoutMonths} mo` : '-'}
-                    </p>
-                    <p className="text-[10px] text-white/85">
-                      Fastest: {fastestPayoutScenarioName}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rounded-md border border-black/25 bg-black/10 overflow-hidden">
-                  <div className="px-3 py-2 border-b border-black/25 text-[9px] font-black uppercase tracking-[0.2em] text-theme-warning">
-                    Scenario Rank (NPV / ROI)
-                  </div>
-                  <div className="max-h-36 overflow-y-auto">
-                    {scenarioRankings.map((row, idx) => (
-                      <div key={row.id} className="px-3 py-2 text-[10px] border-b border-black/15 flex items-center justify-between">
-                        <span className="text-white/90 font-black">{idx + 1}. {row.name}</span>
-                        <span className="text-white/85">NPV {(row.npv10 / 1e6).toFixed(1)} | ROI {row.roi.toFixed(2)}x</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div className="rounded-panel border shadow-card p-6 relative overflow-hidden theme-transition bg-theme-surface1 border-theme-border">
-          <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full blur-[80px] bg-theme-magenta/20"></div>
-          <div className="relative z-10 space-y-5">
-            <div className="flex flex-wrap justify-between items-center gap-3">
-              <h3 className="text-xs font-bold uppercase tracking-[0.2em] flex items-center gap-3 text-theme-magenta">
-                <span className="text-lg leading-none">{theme.icon}</span> Operations Console
-              </h3>
-              <div className="flex items-center gap-2 p-1 rounded-inner border bg-theme-bg/70 border-theme-border">
-                <button
-                  onClick={() => setOpsTab('SELECTION_ACTIONS')}
-                  className={`px-3 py-1.5 rounded-inner text-[9px] font-black uppercase tracking-[0.16em] transition-all ${
-                    opsTab === 'SELECTION_ACTIONS'
-                      ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
-                      : 'text-theme-muted'
-                  }`}
-                >
-                  Selection
-                </button>
-                <button
-                  onClick={() => setOpsTab('KEY_DRIVERS')}
-                  className={`px-3 py-1.5 rounded-inner text-[9px] font-black uppercase tracking-[0.16em] transition-all ${
-                    opsTab === 'KEY_DRIVERS'
-                      ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
-                      : 'text-theme-muted'
-                  }`}
-                >
-                  Key Drivers
-                </button>
-              </div>
-            </div>
-
-            {opsTab === 'SELECTION_ACTIONS' ? (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-inner border p-3 bg-theme-bg border-theme-border">
-                    <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Selected Wells</p>
-                    <p className="text-2xl font-black text-theme-text">{selectedVisibleCount}</p>
-                    <p className="text-[9px] text-theme-muted uppercase tracking-[0.16em]">of {filteredWells.length} visible</p>
-                  </div>
-                  <div className="rounded-inner border p-3 bg-theme-bg border-theme-border">
-                    <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Active Group</p>
-                    <p className="text-sm font-black text-theme-text truncate">{activeGroup.name}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={handleAssignWellsToActive}
-                    disabled={selectedVisibleCount === 0}
-                    className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
-                      selectedVisibleCount === 0
-                        ? 'bg-theme-surface2 text-theme-muted cursor-not-allowed'
-                        : 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan'
-                    }`}
-                  >
-                    Assign
-                  </button>
-                  <button
-                    onClick={handleCreateGroupFromSelection}
-                    disabled={selectedVisibleCount === 0}
-                    className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
-                      selectedVisibleCount === 0
-                        ? 'bg-theme-surface2 text-theme-muted cursor-not-allowed'
-                        : 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan'
-                    }`}
-                  >
-                    Create Group
-                  </button>
-                  <button
-                    onClick={handleSelectAll}
-                    className="px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all bg-theme-surface2 text-theme-text border border-theme-border hover:border-theme-cyan"
-                  >
-                    Select All
-                  </button>
-                  <button
-                    onClick={handleClearSelection}
-                    disabled={selectedVisibleCount === 0}
-                    className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all border ${
-                      selectedVisibleCount === 0
-                        ? 'bg-theme-surface2 text-theme-muted cursor-not-allowed border-theme-border'
-                        : 'bg-theme-surface2 text-theme-text border-theme-border hover:border-theme-cyan'
-                    }`}
-                  >
-                    Clear
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={handleRunEconomics}
-                    disabled={aggregateMetrics.wellCount === 0}
-                    className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
-                      aggregateMetrics.wellCount === 0
-                        ? 'bg-theme-surface2 text-theme-muted cursor-not-allowed'
-                        : 'bg-theme-magenta text-white hover:shadow-glow-magenta'
-                    }`}
-                  >
-                    Run Economics
-                  </button>
-                  <button
-                    onClick={handleSaveScenario}
-                    className="px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all bg-theme-magenta text-white hover:shadow-glow-magenta"
-                  >
-                    Save Scenario
-                  </button>
-                  <button
-                    onClick={handleExportCsv}
-                    className="px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all border border-theme-border bg-theme-bg text-theme-text hover:border-theme-cyan"
-                  >
-                    Export CSV
-                  </button>
-                  <button
-                    onClick={handleExportPdf}
-                    className="px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all border border-theme-border bg-theme-bg text-theme-text hover:border-theme-cyan"
-                  >
-                    Export PDF
-                  </button>
-                </div>
-
-                <div className="rounded-inner border px-3 py-2 text-[10px] bg-theme-bg border-theme-border text-theme-muted">
-                  {lastEconomicsRunAt
-                    ? `Last run: ${new Date(lastEconomicsRunAt).toLocaleString()}`
-                    : 'Last run: not yet triggered'}
-                  {actionMessage && <span className="ml-2 text-theme-cyan">{actionMessage}</span>}
-                </div>
-
-                <div className="rounded-inner border p-3 bg-theme-bg border-theme-border space-y-1">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Validation</p>
-                  {validationWarnings.length > 0 ? (
-                    validationWarnings.map(warning => (
-                      <p key={warning} className="text-[10px] text-theme-muted">{warning}</p>
-                    ))
-                  ) : (
-                    <p className="text-[10px] text-theme-muted">All checks passed.</p>
-                  )}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {keyDriverInsights.topDrivers.map(driver => (
-                    <div key={driver.id} className="rounded-inner border p-3 bg-theme-bg border-theme-border">
-                      <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">{driver.label}</p>
-                      <p className={`text-lg font-black ${driver.dominantDelta >= 0 ? 'text-theme-cyan' : 'text-theme-magenta'}`}>
-                        {(driver.dominantDelta / 1e6).toFixed(1)} MM
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="rounded-inner border p-3 bg-theme-bg border-theme-border">
-                    <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Biggest Upside</p>
-                    <p className="text-[10px] text-theme-muted">{keyDriverInsights.biggestPositive?.label || 'n/a'}</p>
-                    <p className="text-lg font-black text-theme-cyan">
-                      {keyDriverInsights.biggestPositive ? `${(keyDriverInsights.biggestPositive.deltaNpv / 1e6).toFixed(1)} MM` : '-'}
-                    </p>
-                  </div>
-                  <div className="rounded-inner border p-3 bg-theme-bg border-theme-border">
-                    <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Biggest Downside</p>
-                    <p className="text-[10px] text-theme-muted">{keyDriverInsights.biggestNegative?.label || 'n/a'}</p>
-                    <p className="text-lg font-black text-theme-magenta">
-                      {keyDriverInsights.biggestNegative ? `${(keyDriverInsights.biggestNegative.deltaNpv / 1e6).toFixed(1)} MM` : '-'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="rounded-inner border p-3 bg-theme-bg border-theme-border">
-                    <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Breakeven Oil</p>
-                    <p className="text-2xl font-black text-theme-text">
-                      {breakevenOilPrice !== null ? `$${breakevenOilPrice.toFixed(1)}` : 'Out of range'}
-                    </p>
-                  </div>
-                  <div className="rounded-inner border p-3 bg-theme-bg border-theme-border">
-                    <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Payout Highlights</p>
-                    <p className="text-[10px] text-theme-muted">
-                      Portfolio: {aggregateMetrics.payoutMonths > 0 ? `${aggregateMetrics.payoutMonths} mo` : '-'}
-                    </p>
-                    <p className="text-[10px] text-theme-muted">
-                      Fastest: {fastestPayoutScenarioName}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rounded-inner border overflow-hidden bg-theme-bg border-theme-border">
-                  <div className="px-3 py-2 border-b text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender border-theme-border">
-                    Scenario Rank (NPV / ROI)
-                  </div>
-                  <div className="max-h-40 overflow-y-auto">
-                    {scenarioRankings.map((row, idx) => (
-                      <div key={row.id} className="px-3 py-2 text-[10px] border-b border-theme-border/30 flex items-center justify-between text-theme-muted">
-                        <span className="font-semibold text-theme-text">{idx + 1}. {row.name}</span>
-                        <span>NPV {(row.npv10 / 1e6).toFixed(1)} | ROI {row.roi.toFixed(2)}x</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-    </>
+    <OperationsConsole
+      isClassic={isClassic}
+      opsTab={opsTab}
+      onOpsTabChange={setOpsTab}
+      selectedVisibleCount={selectedVisibleCount}
+      filteredVisibleCount={filteredWells.length}
+      activeGroupName={activeGroup.name}
+      onAssign={handleAssignWellsToActive}
+      onCreateGroup={handleCreateGroupFromSelection}
+      onSelectAll={handleSelectAll}
+      onClear={handleClearSelection}
+      onRunEconomics={handleRunEconomics}
+      onSaveScenario={handleSaveScenario}
+      onExportCsv={handleExportCsv}
+      onExportPdf={handleExportPdf}
+      canAssign={selectedVisibleCount > 0}
+      canClear={selectedVisibleCount > 0}
+      canRun={aggregateMetrics.wellCount > 0}
+      canUseSecondaryActions={canUseSecondaryActions}
+      lastEconomicsRunAt={lastEconomicsRunAt}
+      actionMessage={actionMessage}
+      validationWarnings={validationWarnings}
+      stepGuidance={stepGuidance}
+      needsRerun={needsRerun}
+      topDrivers={keyDriverInsights.topDrivers}
+      biggestPositive={keyDriverInsights.biggestPositive}
+      biggestNegative={keyDriverInsights.biggestNegative}
+      breakevenOilPrice={breakevenOilPrice}
+      payoutMonths={aggregateMetrics.payoutMonths}
+      fastestPayoutScenarioName={fastestPayoutScenarioName}
+      scenarioRankings={scenarioRankings}
+    />
   );
 
   const economicsPanel = (
     <>
-      <div className="space-y-4">
-        {isClassic ? (
-          <div className="sc-kpi sc-kpi--main theme-transition">
-            <div className="sc-kpiTitlebar px-4 py-2">
-              <p className="text-[10px] font-black uppercase tracking-[0.25em]">
-                PORTFOLIO NPV (10%)
-              </p>
-            </div>
-            <div className="px-6 py-6 flex items-baseline">
-              <span className="sc-kpiValue text-5xl sm:text-6xl xl:text-7xl font-black tracking-tighter leading-none">
-                ${(aggregateMetrics.npv10 / 1e6).toFixed(1)}
-              </span>
-              <span className="sc-kpiValue text-2xl font-black ml-3">MM</span>
-            </div>
-          </div>
-        ) : (
-          <div className="rounded-panel border p-8 shadow-card relative overflow-hidden group theme-transition bg-theme-surface1 border-theme-border hover:border-theme-magenta">
-            <div className="absolute top-0 right-0 w-80 h-80 rounded-full blur-[100px] -mr-24 -mt-24 pointer-events-none transition-opacity duration-700 bg-theme-cyan/15 opacity-60 group-hover:opacity-100"></div>
-            <p className="text-theme-muted text-[10px] font-bold uppercase tracking-[0.4em] mb-2">Portfolio NPV (10%)</p>
-            <div className="flex items-baseline relative z-10">
-              <span className={`text-5xl sm:text-6xl xl:text-7xl font-black tracking-tighter leading-none theme-transition text-theme-cyan ${features.glowEffects ? 'filter drop-shadow-[0_0_15px_rgba(158,211,240,0.5)]' : ''}`}>
-                ${(aggregateMetrics.npv10 / 1e6).toFixed(1)}
-              </span>
-              <span className="text-2xl font-black ml-3 theme-transition text-theme-lavender italic">MM</span>
-            </div>
-          </div>
-        )}
-
-        {isClassic ? (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="sc-kpi sc-kpi--tile theme-transition">
-              <div className="sc-kpiTitlebar px-3 py-1.5">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em]">TOTAL CAPEX</p>
-              </div>
-              <div className="px-4 py-4">
-                <p className="sc-kpiValue text-3xl font-black tracking-tight">
-                  ${(aggregateMetrics.totalCapex / 1e6).toFixed(1)}
-                  <span className="text-lg font-black ml-1 opacity-90">M</span>
-                </p>
-              </div>
-            </div>
-            <div className="sc-kpi sc-kpi--tile theme-transition">
-              <div className="sc-kpiTitlebar px-3 py-1.5">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em]">PORTFOLIO EUR</p>
-              </div>
-              <div className="px-4 py-4">
-                <p className="sc-kpiValue text-3xl font-black tracking-tight">
-                  {(aggregateMetrics.eur / 1e3).toFixed(0)}
-                  <span className="text-lg font-black ml-1 opacity-90">MBOE</span>
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-inner border p-6 theme-transition shadow-sm bg-theme-surface1 border-theme-border hover:bg-theme-surface2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-3 theme-transition text-theme-muted">Total Capex</p>
-              <p className="text-3xl font-black text-theme-text theme-transition">
-                ${(aggregateMetrics.totalCapex / 1e6).toFixed(1)}<span className="text-lg text-theme-muted font-normal ml-1">MM</span>
-              </p>
-            </div>
-            <div className="rounded-inner border p-6 theme-transition shadow-sm bg-theme-surface1 border-theme-border hover:bg-theme-surface2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-3 theme-transition text-theme-muted">Portfolio EUR</p>
-              <p className="text-3xl font-black text-theme-text theme-transition">
-                {(aggregateMetrics.eur / 1e3).toFixed(0)}<span className="text-lg text-theme-muted font-normal ml-1">MBOE</span>
-              </p>
-            </div>
-          </div>
-        )}
-
-        {isClassic ? (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="sc-kpi sc-kpi--tile theme-transition">
-              <div className="sc-kpiTitlebar px-3 py-1.5">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em]">PAYOUT</p>
-              </div>
-              <div className="px-4 py-4">
-                <p className="sc-kpiValue text-3xl font-black tracking-tight">
-                  {aggregateMetrics.payoutMonths > 0 ? aggregateMetrics.payoutMonths : '-'}
-                  <span className="text-lg font-black ml-1 opacity-90">MO</span>
-                </p>
-              </div>
-            </div>
-            <div className="sc-kpi sc-kpi--tile sc-kpi--dangerBody theme-transition">
-              <div className="sc-kpiTitlebar px-3 py-1.5">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em]">WELLS</p>
-              </div>
-              <div className="px-4 py-4">
-                <p className="sc-kpiValue text-3xl font-black tracking-tight">
-                  {aggregateMetrics.wellCount}
-                  <span className="text-lg font-black ml-1 opacity-90">UNIT</span>
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-inner border p-6 theme-transition shadow-sm bg-theme-surface1 border-theme-border hover:bg-theme-surface2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-3 theme-transition text-theme-muted">Payout</p>
-              <p className="text-3xl font-black text-theme-text theme-transition">
-                {aggregateMetrics.payoutMonths > 0 ? aggregateMetrics.payoutMonths : '-'}<span className="text-lg text-theme-muted font-normal ml-1">MO</span>
-              </p>
-            </div>
-            <div className="rounded-inner border p-6 theme-transition shadow-sm bg-theme-surface1 border-theme-border hover:bg-theme-surface2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-3 theme-transition text-theme-muted">Wells</p>
-              <p className="text-3xl font-black text-theme-text theme-transition">
-                {aggregateMetrics.wellCount}<span className="text-lg text-theme-muted font-normal ml-1">UNIT</span>
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-
+      <KpiGrid isClassic={isClassic} metrics={aggregateMetrics} />
       <div
         className={
           isClassic
@@ -1234,163 +822,20 @@ const SlopcastPage: React.FC = () => {
         </Suspense>
       )}
       
-      {/* App Header */}
-      <header
-        className={`px-3 md:px-6 py-3 sticky top-0 z-50 theme-transition ${
-          isClassic ? 'sc-header' : 'backdrop-blur-md border-b shadow-sm bg-theme-surface1/80 border-theme-border'
-        } ${headerAtmosphereClass} ${fxClass}`}
-      >
-        {atmosphericOverlays.map(cls => (
-          <div key={cls} className={`${cls} ${fxClass}`} />
-        ))}
-        <div className="relative z-10 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-3 md:gap-4 items-start md:items-center">
-          <div className="min-w-0 flex flex-col md:flex-row md:items-center gap-3 md:gap-10">
-            <div className="flex items-center gap-3 md:gap-4 min-w-0">
-                <div
-                  className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center theme-transition overflow-hidden shrink-0 ${
-                    isClassic ? 'rounded-full border border-black/30 shadow-card bg-theme-magenta' : 'rounded-panel bg-theme-surface2 border border-theme-border'
-                  }`}
-                >
-                    {isClassic ? (
-                      <span className="text-white font-black text-lg md:text-xl leading-none">SL</span>
-                    ) : (
-                      <img 
-                        src="sandbox:/mnt/data/slopcast_logo_transparent.png" 
-                        alt="SC" 
-                        className="w-full h-full object-contain" 
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                          const parent = (e.target as HTMLImageElement).parentElement;
-                          if (parent && !parent.querySelector('.brand-fallback')) {
-                            const span = document.createElement('span');
-                            span.innerText = theme.appName.substring(0, 2);
-                            span.className = 'text-theme-cyan brand-title text-xl brand-fallback';
-                            parent.appendChild(span);
-                          }
-                        }}
-                      />
-                    )}
-                </div>
-                <div className={`flex flex-col pr-2 md:pr-8 min-w-0 ${isClassic ? 'md:border-r md:border-black/20' : 'md:border-r md:border-white/5'}`}>
-                  <h1
-                    className={`text-base md:text-xl leading-tight theme-transition tracking-tight ${
-                      isClassic ? 'text-white font-black uppercase' : `text-theme-cyan ${features.brandFont ? 'brand-title' : 'font-bold'}`
-                    }`}
-                  >
-                      {theme.appName}
-                  </h1>
-                  <span className={`text-[8px] md:text-[10px] uppercase font-bold tracking-[0.2em] theme-transition ${
-                    isClassic ? 'text-theme-warning' : 'text-theme-magenta'
-                  }`}>
-                    {theme.appSubtitle}
-                  </span>
-                </div>
-
-                {!isClassic && features.brandFont && (
-                   <div className="hidden xl:block h-10 overflow-hidden rounded-panel border border-theme-border/20 shrink-0">
-                      <img 
-                        src="sandbox:/mnt/data/slopcast_logo_banner.png" 
-                        alt="" 
-                        className="h-full w-auto opacity-80"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                   </div>
-                )}
-            </div>
-            
-            {/* Navigation Tabs */}
-            <div className={isClassic ? 'flex items-center gap-2 flex-wrap' : 'flex items-center gap-1 p-1 rounded-panel border theme-transition bg-theme-bg border-theme-border flex-wrap'}>
-                <button
-                  onClick={() => navigate('/hub')}
-                  className={
-                    isClassic
-                      ? 'px-3 md:px-4 py-2 rounded-md text-[9px] md:text-[10px] font-black uppercase tracking-widest theme-transition border-2 shadow-card bg-black/15 text-white/90 border-black/25 hover:bg-black/20'
-                      : 'px-3 md:px-4 py-2 rounded-inner text-[9px] md:text-[10px] font-bold uppercase tracking-widest theme-transition text-theme-muted hover:text-theme-text'
-                  }
-                >
-                  HUB
-                </button>
-                <button 
-                    onClick={() => setViewMode('DASHBOARD')}
-                    className={
-                      isClassic
-                        ? `px-3 md:px-5 py-2 rounded-md text-[9px] md:text-[10px] font-black uppercase tracking-widest theme-transition border-2 shadow-card ${
-                            viewMode === 'DASHBOARD'
-                              ? 'bg-theme-cyan text-white border-theme-magenta'
-                              : 'bg-black/15 text-white/90 border-black/25 hover:bg-black/20'
-                          }`
-                        : `px-3 md:px-5 py-2 rounded-inner text-[9px] md:text-[10px] font-bold uppercase tracking-widest theme-transition ${
-                            viewMode === 'DASHBOARD'
-                              ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
-                              : 'text-theme-muted hover:text-theme-text'
-                          }`
-                    }
-                >
-                    DESIGN
-                </button>
-                <button 
-                    onClick={() => setViewMode('ANALYSIS')}
-                    className={
-                      isClassic
-                        ? `px-3 md:px-5 py-2 rounded-md text-[9px] md:text-[10px] font-black uppercase tracking-widest theme-transition border-2 shadow-card ${
-                            viewMode === 'ANALYSIS'
-                              ? 'bg-theme-cyan text-white border-theme-magenta'
-                              : 'bg-black/15 text-white/90 border-black/25 hover:bg-black/20'
-                          }`
-                        : `px-3 md:px-5 py-2 rounded-inner text-[9px] md:text-[10px] font-bold uppercase tracking-widest theme-transition ${
-                            viewMode === 'ANALYSIS'
-                              ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
-                              : 'text-theme-muted hover:text-theme-text'
-                          }`
-                    }
-                >
-                    SCENARIOS
-                </button>
-            </div>
-          </div>
-
-          <div className="min-w-0 flex items-center justify-between md:justify-end gap-3">
-          <div
-            className={`hidden lg:flex items-center gap-2 px-3 py-1.5 border text-[10px] uppercase tracking-[0.18em] font-black theme-transition ${
-              isClassic
-                ? 'rounded-md border-black/25 bg-black/25 text-theme-warning'
-                : 'rounded-panel border-theme-border bg-theme-bg/70 text-theme-muted'
-            }`}
-          >
-            <span>Operator</span>
-            <span className={isClassic ? 'text-white' : 'text-theme-cyan'}>
-              {session?.user.displayName || 'Demo User'}
-            </span>
-          </div>
-
-          {/* Theme Switcher – data-driven from THEMES registry */}
-          <div className={`flex items-center rounded-full p-1 border theme-transition shrink-0 ${isClassic ? 'bg-black/25 border-black/30' : 'bg-theme-bg border-theme-border'}`}>
-              {themes.map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => setThemeId(t.id)}
-                  className={
-                    isClassic
-                      ? `w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center theme-transition ${
-                          themeId === t.id ? 'bg-theme-warning text-black scale-110 shadow-card' : 'text-white/80 hover:text-white'
-                        }`
-                      : `w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center theme-transition ${
-                          themeId === t.id
-                            ? 'bg-theme-cyan text-theme-bg scale-110 shadow-glow-cyan'
-                            : 'text-theme-muted hover:text-theme-text'
-                        }`
-                  }
-                  title={t.label}
-                >
-                  <span className="text-xs">{t.icon}</span>
-                </button>
-              ))}
-          </div>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        isClassic={isClassic}
+        theme={theme}
+        themes={themes}
+        themeId={themeId}
+        setThemeId={setThemeId}
+        viewMode={viewMode}
+        onSetViewMode={setViewMode}
+        onNavigateHub={() => navigate('/hub')}
+        sessionDisplayName={session?.user.displayName || 'Demo User'}
+        atmosphericOverlays={atmosphericOverlays}
+        headerAtmosphereClass={headerAtmosphereClass}
+        fxClass={fxClass}
+      />
 
       <main className="p-4 md:p-6 max-w-[1920px] mx-auto w-full">
         
@@ -1399,10 +844,16 @@ const SlopcastPage: React.FC = () => {
                groups={processedGroups}
                wells={MOCK_WELLS}
                scenarios={scenarios}
-               setScenarios={setScenarios}
+               setScenarios={handleSetScenarios}
              />
         ) : (
              <>
+               <div className="hidden lg:block">
+                 <WorkflowStepper isClassic={isClassic} steps={workflowSteps} />
+               </div>
+               <div className="lg:hidden sticky top-[78px] z-30 mb-3">
+                 <WorkflowStepper isClassic={isClassic} steps={workflowSteps} compact />
+               </div>
                <div
                  className={`lg:hidden mb-4 border p-2 theme-transition ${
                    isClassic ? 'sc-panel' : 'rounded-panel bg-theme-surface1/60 border-theme-border shadow-card backdrop-blur-sm'
@@ -1466,10 +917,10 @@ const SlopcastPage: React.FC = () => {
                  </div>
                </div>
 
-               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-[calc(100vh-8rem)] lg:min-h-0">
+               <div className={`grid grid-cols-1 lg:grid-cols-12 gap-6 ${viewportLayout === 'desktop' ? 'xl:min-h-[calc(100vh-9rem)] xl:auto-rows-fr' : ''}`}>
                 {/* LEFT: Inputs */}
                 <aside
-                  className={`lg:col-span-3 lg:h-full lg:min-h-0 lg:overflow-y-auto scrollbar-hide space-y-6 pb-4 theme-transition ${
+                  className={`xl:col-span-3 lg:col-span-4 lg:min-h-0 xl:overflow-y-auto scrollbar-hide space-y-6 pb-4 theme-transition ${
                     isClassic ? 'p-1' : 'p-4 rounded-panel bg-theme-bg/60 backdrop-blur-sm border border-theme-border'
                   } ${mobileSection !== 'SETUP' ? 'hidden lg:block' : ''}`}
                 >
@@ -1597,14 +1048,20 @@ const SlopcastPage: React.FC = () => {
                       </div>
                     )}
                     {!isClassic && <hr className="border-theme-border opacity-30" />}
-                    <Controls group={activeGroup} onUpdateGroup={handleUpdateGroup} />
+                    <Controls
+                      group={activeGroup}
+                      onUpdateGroup={handleUpdateGroup}
+                      onMarkDirty={markEconomicsDirty}
+                      openSectionKey={controlsOpenSection}
+                      onOpenSectionHandled={() => setControlsOpenSection(null)}
+                    />
                 </aside>
 
                 {/* MIDDLE: Visuals */}
-                <section className={`lg:col-span-5 lg:h-full lg:min-h-0 flex flex-col space-y-6 ${mobileSection !== 'WORKSPACE' ? 'hidden lg:flex' : ''}`}>
+                <section className={`xl:col-span-5 lg:col-span-8 lg:min-h-0 flex flex-col space-y-6 ${mobileSection !== 'WORKSPACE' ? 'hidden lg:flex' : ''}`}>
                     {/* Map */}
                     {isClassic ? (
-                      <div className="h-[480px] w-full shrink-0 sc-panel theme-transition">
+                      <div className="w-full shrink-0 min-h-[360px] h-[min(54vh,520px)] sc-panel theme-transition">
                         <div className="sc-panelTitlebar sc-titlebar--neutral px-4 py-3 flex justify-between items-center">
                           <h2 className="text-[11px] font-black uppercase tracking-[0.25em] text-white flex items-center gap-3">
                             <span className="w-2 h-2 rounded-full bg-white/70"></span>
@@ -1633,7 +1090,7 @@ const SlopcastPage: React.FC = () => {
                         </div>
                       </div>
                     ) : (
-                      <div className="h-[480px] w-full shrink-0 rounded-panel border shadow-card relative overflow-hidden group theme-transition bg-theme-bg border-theme-border">
+                      <div className="w-full shrink-0 min-h-[360px] h-[min(54vh,520px)] rounded-panel border shadow-card relative overflow-hidden group theme-transition bg-theme-bg border-theme-border">
                           {features.glowEffects && (
                             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-theme-cyan via-theme-magenta to-theme-cyan opacity-40"></div>
                           )}
@@ -1668,7 +1125,7 @@ const SlopcastPage: React.FC = () => {
                 </section>
 
                 {/* RIGHT: Selection / Actions */}
-                <section className={`lg:col-span-4 lg:h-full lg:min-h-0 lg:overflow-y-auto scrollbar-hide flex flex-col space-y-8 pb-4 ${mobileSection !== 'KPIS' ? 'hidden lg:flex' : ''}`}>
+                <section className={`xl:col-span-4 lg:col-span-12 lg:min-h-0 xl:overflow-y-auto scrollbar-hide flex flex-col space-y-8 pb-4 ${mobileSection !== 'KPIS' ? 'hidden lg:flex' : ''}`}>
                   {operationsPanel}
                 </section>
                </div>
