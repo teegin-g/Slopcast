@@ -25,7 +25,9 @@
       "Bash(npx tsc --noEmit)",
       "Bash(./scripts/ralph/ralph.sh --tool claude 12)",
       "Bash(npx playwright --version)",
-      "Bash(npx playwright install chromium)"
+      "Bash(npx playwright install chromium)",
+      "Bash(npx vite build)",
+      "Bash(npx:*)"
     ]
   }
 }

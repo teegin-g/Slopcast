@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DEFAULT_CAPEX, DEFAULT_COMMODITY_PRICING, DEFAULT_OPEX, DEFAULT_OWNERSHIP, DEFAULT_TYPE_CURVE, GROUP_COLORS, MOCK_WELLS } from '../constants';
 import { Scenario, ScheduleParams, Well, WellGroup } from '../types';
@@ -8,9 +8,6 @@ import GroupList from '../components/GroupList';
 import MapVisualizer from '../components/MapVisualizer';
 import ScenarioDashboard from '../components/ScenarioDashboard';
 import { useTheme } from '../theme/ThemeProvider';
-import SynthwaveBackground from '../components/SynthwaveBackground';
-import MoonlightBackground from '../components/MoonlightBackground';
-import TropicalBackground from '../components/TropicalBackground';
 import { useAuth } from '../auth/AuthProvider';
 import { aggregateEconomics, calculateEconomics } from '../utils/economics';
 
@@ -107,10 +104,7 @@ const SlopcastPage: React.FC = () => {
   const { themeId, theme, themes, setThemeId } = useTheme();
   const { features } = theme;
   const isClassic = themeId === 'mario';
-  const isNocturne = themeId === 'league';
-  const isSynthwave = themeId === 'synthwave';
-  const isTropical = themeId === 'tropical';
-  const isFxTheme = isSynthwave || isTropical;
+  const isFxTheme = !!theme.fxTheme;
 
   const fxMode = useMemo<FxMode>(() => {
     if (!isFxTheme) return 'cinematic';
@@ -146,8 +140,10 @@ const SlopcastPage: React.FC = () => {
   }, [isFxTheme, location.search, themeId]);
 
   const fxClass = isFxTheme ? `fx-${fxMode}` : '';
-  const atmosphereClass = isNocturne ? 'nocturne-atmo' : isSynthwave ? 'synth-atmo' : isTropical ? 'tropical-atmo' : '';
-  const headerAtmosphereClass = isNocturne ? 'nocturne-header' : isSynthwave ? 'synth-header' : isTropical ? 'tropical-header' : '';
+  const atmosphereClass = theme.atmosphereClass || '';
+  const headerAtmosphereClass = theme.headerAtmosphereClass || '';
+  const BackgroundComponent = theme.BackgroundComponent;
+  const atmosphericOverlays = theme.atmosphericOverlays || [];
 
   // --- State ---
   const [viewMode, setViewMode] = useState<ViewMode>('DASHBOARD');
@@ -991,20 +987,14 @@ const SlopcastPage: React.FC = () => {
                     className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
                       aggregateMetrics.wellCount === 0
                         ? 'bg-theme-surface2 text-theme-muted cursor-not-allowed'
-                        : isTropical
-                          ? 'bg-theme-magenta/80 text-theme-bg border border-theme-border hover:bg-theme-magenta/90'
-                          : 'bg-theme-magenta text-white hover:shadow-glow-magenta'
+                        : 'bg-theme-magenta text-white hover:shadow-glow-magenta'
                     }`}
                   >
                     Run Economics
                   </button>
                   <button
                     onClick={handleSaveScenario}
-                    className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
-                      isTropical
-                        ? 'bg-theme-magenta/80 text-theme-bg border border-theme-border hover:bg-theme-magenta/90'
-                        : 'bg-theme-magenta text-white hover:shadow-glow-magenta'
-                    }`}
+                    className="px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all bg-theme-magenta text-white hover:shadow-glow-magenta"
                   >
                     Save Scenario
                   </button>
@@ -1238,9 +1228,11 @@ const SlopcastPage: React.FC = () => {
 
   return (
     <div className={`min-h-screen bg-transparent theme-transition ${atmosphereClass} ${fxClass}`}>
-      {isSynthwave && <SynthwaveBackground />}
-      {isNocturne && <MoonlightBackground />}
-      {isTropical && <TropicalBackground />}
+      {BackgroundComponent && (
+        <Suspense fallback={null}>
+          <BackgroundComponent />
+        </Suspense>
+      )}
       
       {/* App Header */}
       <header
@@ -1248,28 +1240,9 @@ const SlopcastPage: React.FC = () => {
           isClassic ? 'sc-header' : 'backdrop-blur-md border-b shadow-sm bg-theme-surface1/80 border-theme-border'
         } ${headerAtmosphereClass} ${fxClass}`}
       >
-        {isNocturne && (
-          <>
-            <div className="nocturne-bands" />
-            <div className="nocturne-ridges" />
-          </>
-        )}
-        {isSynthwave && (
-          <>
-            <div className={`synth-bands ${fxClass}`} />
-            <div className={`synth-horizon ${fxClass}`} />
-            <div className={`synth-ridges ${fxClass}`} />
-          </>
-        )}
-        {isTropical && (
-          <>
-            <div className={`tropical-breeze ${fxClass}`} />
-            <div className={`tropical-canopy ${fxClass}`} />
-            <div className={`tropical-horizon ${fxClass}`} />
-            <div className={`tropical-ridges ${fxClass}`} />
-            <div className={`tropical-palms ${fxClass}`} />
-          </>
-        )}
+        {atmosphericOverlays.map(cls => (
+          <div key={cls} className={`${cls} ${fxClass}`} />
+        ))}
         <div className="relative z-10 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-3 md:gap-4 items-start md:items-center">
           <div className="min-w-0 flex flex-col md:flex-row md:items-center gap-3 md:gap-10">
             <div className="flex items-center gap-3 md:gap-4 min-w-0">
@@ -1307,7 +1280,7 @@ const SlopcastPage: React.FC = () => {
                       {theme.appName}
                   </h1>
                   <span className={`text-[8px] md:text-[10px] uppercase font-bold tracking-[0.2em] theme-transition ${
-                    isClassic ? 'text-theme-warning' : isNocturne || isTropical ? 'text-theme-warning' : 'text-theme-magenta'
+                    isClassic ? 'text-theme-warning' : 'text-theme-magenta'
                   }`}>
                     {theme.appSubtitle}
                   </span>
@@ -1350,13 +1323,7 @@ const SlopcastPage: React.FC = () => {
                           }`
                         : `px-3 md:px-5 py-2 rounded-inner text-[9px] md:text-[10px] font-bold uppercase tracking-widest theme-transition ${
                             viewMode === 'DASHBOARD'
-                              ? isNocturne
-                                ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan border border-theme-warning/45'
-                                : isSynthwave
-                                  ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan ring-1 ring-theme-magenta/60'
-                                  : isTropical
-                                    ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan ring-1 ring-theme-warning/60'
-                                    : 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
+                              ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
                               : 'text-theme-muted hover:text-theme-text'
                           }`
                     }
@@ -1374,13 +1341,7 @@ const SlopcastPage: React.FC = () => {
                           }`
                         : `px-3 md:px-5 py-2 rounded-inner text-[9px] md:text-[10px] font-bold uppercase tracking-widest theme-transition ${
                             viewMode === 'ANALYSIS'
-                              ? isNocturne
-                                ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan border border-theme-warning/45'
-                                : isSynthwave
-                                  ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan ring-1 ring-theme-magenta/60'
-                                  : isTropical
-                                    ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan ring-1 ring-theme-warning/60'
-                                    : 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
+                              ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
                               : 'text-theme-muted hover:text-theme-text'
                           }`
                     }
@@ -1417,13 +1378,7 @@ const SlopcastPage: React.FC = () => {
                         }`
                       : `w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center theme-transition ${
                           themeId === t.id
-                            ? isNocturne
-                              ? 'bg-theme-cyan text-theme-bg scale-110 shadow-glow-cyan ring-1 ring-theme-warning/60'
-                              : isSynthwave
-                                ? 'bg-theme-cyan text-theme-bg scale-110 shadow-glow-cyan ring-1 ring-theme-magenta/65'
-                                : isTropical
-                                  ? 'bg-theme-cyan text-theme-bg scale-110 shadow-glow-cyan ring-1 ring-theme-warning/65'
-                                  : 'bg-theme-cyan text-theme-bg scale-110 shadow-glow-cyan'
+                            ? 'bg-theme-cyan text-theme-bg scale-110 shadow-glow-cyan'
                             : 'text-theme-muted hover:text-theme-text'
                         }`
                   }

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Animated Backgrounds"
+  short_description: "Generate animated canvas backgrounds for web UIs"
+  default_prompt: "Use $animated-backgrounds to create a cool, self-contained animated HTML canvas background themed to my app."

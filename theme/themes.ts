@@ -4,7 +4,9 @@
 // the rest of the UI will pick it up automatically.
 // ---------------------------------------------------------------------------
 
-export type ThemeId = 'slate' | 'synthwave' | 'tropical' | 'league' | 'mario';
+import React from 'react';
+
+export type ThemeId = string;
 
 /** Per-theme chart series colors (Recharts / D3). */
 export interface ChartPalette {
@@ -46,7 +48,25 @@ export interface ThemeMeta {
   chartPalette: ChartPalette;
   mapPalette: MapPalette;
   features: ThemeFeatures;
+  /** Optional animated background component for this theme */
+  BackgroundComponent?: React.ComponentType;
+  /** CSS class names for atmospheric overlay divs rendered in the header */
+  atmosphericOverlays?: string[];
+  /** CSS class applied to the header for atmospheric effects */
+  headerAtmosphereClass?: string;
+  /** CSS class applied to the page wrapper for atmospheric effects */
+  atmosphereClass?: string;
+  /** Whether this theme supports fx modes (cinematic/max) */
+  fxTheme?: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// Lazy-loaded background components
+// ---------------------------------------------------------------------------
+
+const SynthwaveBackground = React.lazy(() => import('../components/SynthwaveBackground'));
+const MoonlightBackground = React.lazy(() => import('../components/MoonlightBackground'));
+const TropicalBackground = React.lazy(() => import('../components/TropicalBackground'));
 
 // ---------------------------------------------------------------------------
 // Theme definitions
@@ -116,6 +136,11 @@ const synthwave: ThemeMeta = {
     brandFont: true,
     glowEffects: true,
   },
+  BackgroundComponent: SynthwaveBackground,
+  atmosphereClass: 'theme-atmo',
+  headerAtmosphereClass: 'theme-atmo-header',
+  atmosphericOverlays: ['theme-atmo-bands', 'theme-atmo-horizon', 'theme-atmo-ridges'],
+  fxTheme: true,
 };
 
 const tropical: ThemeMeta = {
@@ -149,6 +174,11 @@ const tropical: ThemeMeta = {
     brandFont: false,
     glowEffects: true,
   },
+  BackgroundComponent: TropicalBackground,
+  atmosphereClass: 'theme-atmo',
+  headerAtmosphereClass: 'theme-atmo-header',
+  atmosphericOverlays: ['theme-atmo-bands', 'theme-atmo-canopy', 'theme-atmo-horizon', 'theme-atmo-ridges', 'theme-atmo-palms'],
+  fxTheme: true,
 };
 
 const league: ThemeMeta = {
@@ -182,6 +212,10 @@ const league: ThemeMeta = {
     brandFont: false,
     glowEffects: true,
   },
+  BackgroundComponent: MoonlightBackground,
+  atmosphereClass: 'theme-atmo',
+  headerAtmosphereClass: 'theme-atmo-header',
+  atmosphericOverlays: ['theme-atmo-bands', 'theme-atmo-ridges'],
 };
 
 const mario: ThemeMeta = {
