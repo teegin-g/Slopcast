@@ -52,6 +52,7 @@ export interface OperationsConsoleProps {
   fastestPayoutScenarioName: string;
   scenarioRankings: ScenarioRanking[];
   showSelectionActions?: boolean;
+  compactEconomics?: boolean;
 }
 
 const buttonTone = (isClassic: boolean, active: boolean) => {
@@ -98,18 +99,24 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
   fastestPayoutScenarioName,
   scenarioRankings,
   showSelectionActions = true,
+  compactEconomics = false,
 }) => {
   const [showSecondaryActions, setShowSecondaryActions] = useState(false);
+  const [showValidationDetails, setShowValidationDetails] = useState(false);
+
+  const showDriverPane = !compactEconomics && opsTab === 'KEY_DRIVERS';
+  const showSelectionSummary = showSelectionActions || !compactEconomics;
 
   return (
     <div
       className={
         isClassic
           ? 'sc-panel theme-transition'
-          : 'rounded-panel border shadow-card p-6 relative overflow-hidden theme-transition bg-theme-surface1 border-theme-border'
+          : 'rounded-panel border shadow-card p-4 md:p-6 relative overflow-hidden theme-transition bg-theme-surface1 border-theme-border'
       }
     >
-      {!isClassic && <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full blur-[80px] bg-theme-magenta/20"></div>}
+      {!isClassic && <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full blur-[80px] bg-theme-magenta/20" />}
+
       <div className="relative z-10 space-y-4">
         <div className="flex flex-wrap justify-between items-center gap-3">
           <h3
@@ -119,42 +126,48 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
                 : 'text-xs font-bold uppercase tracking-[0.2em] flex items-center gap-3 text-theme-magenta'
             }
           >
-            <span className="text-lg leading-none">{isClassic ? '🧱' : '🏢'}</span> Operations Console
+            <span className="text-lg leading-none">{isClassic ? '🧱' : '🏢'}</span>
+            {compactEconomics ? 'Run Panel' : 'Operations Console'}
           </h3>
-          <div className={isClassic ? 'flex items-center gap-2 px-4 pt-4' : 'flex items-center gap-2 p-1 rounded-inner border bg-theme-bg/70 border-theme-border'}>
-            <button
-              onClick={() => onOpsTabChange('SELECTION_ACTIONS')}
-              className={`px-3 py-1.5 rounded-inner text-[9px] font-black uppercase tracking-[0.16em] transition-all border ${buttonTone(isClassic, opsTab === 'SELECTION_ACTIONS')}`}
-            >
-              {showSelectionActions ? 'Selection' : 'Run Panel'}
-            </button>
-            <button
-              onClick={() => onOpsTabChange('KEY_DRIVERS')}
-              className={`px-3 py-1.5 rounded-inner text-[9px] font-black uppercase tracking-[0.16em] transition-all border ${buttonTone(isClassic, opsTab === 'KEY_DRIVERS')}`}
-            >
-              Key Drivers
-            </button>
-          </div>
+
+          {!compactEconomics && (
+            <div className={isClassic ? 'flex items-center gap-2 px-4 pt-4' : 'flex items-center gap-2 p-1 rounded-inner border bg-theme-bg/70 border-theme-border'}>
+              <button
+                onClick={() => onOpsTabChange('SELECTION_ACTIONS')}
+                className={`px-3 py-1.5 rounded-inner text-[9px] font-black uppercase tracking-[0.16em] transition-all border ${buttonTone(isClassic, opsTab === 'SELECTION_ACTIONS')}`}
+              >
+                {showSelectionActions ? 'Selection' : 'Run Panel'}
+              </button>
+              <button
+                onClick={() => onOpsTabChange('KEY_DRIVERS')}
+                className={`px-3 py-1.5 rounded-inner text-[9px] font-black uppercase tracking-[0.16em] transition-all border ${buttonTone(isClassic, opsTab === 'KEY_DRIVERS')}`}
+              >
+                Key Drivers
+              </button>
+            </div>
+          )}
         </div>
 
         <div className={isClassic ? 'p-4 space-y-4' : 'space-y-4'}>
-          {opsTab === 'SELECTION_ACTIONS' ? (
+          {!showDriverPane ? (
             <>
               <div className="rounded-inner border px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] bg-theme-bg border-theme-border text-theme-muted">
                 {stepGuidance}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-inner border p-3 bg-theme-bg border-theme-border">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Selected Wells</p>
-                  <p className="text-2xl font-black text-theme-text">{selectedVisibleCount}</p>
-                  <p className="text-[9px] text-theme-muted uppercase tracking-[0.16em]">of {filteredVisibleCount} visible</p>
+              {showSelectionSummary && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-inner border p-3 bg-theme-bg border-theme-border">
+                    <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Selected Wells</p>
+                    <p className="text-2xl font-black text-theme-text">{selectedVisibleCount}</p>
+                    <p className="text-[9px] text-theme-muted uppercase tracking-[0.16em]">of {filteredVisibleCount} visible</p>
+                  </div>
+                  <div className="rounded-inner border p-3 bg-theme-bg border-theme-border">
+                    <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Active Group</p>
+                    <p className="text-sm font-black text-theme-text truncate">{activeGroupName}</p>
+                  </div>
                 </div>
-                <div className="rounded-inner border p-3 bg-theme-bg border-theme-border">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Active Group</p>
-                  <p className="text-sm font-black text-theme-text truncate">{activeGroupName}</p>
-                </div>
-              </div>
+              )}
 
               {showSelectionActions && (
                 <div className="grid grid-cols-2 gap-2">
@@ -259,7 +272,7 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
                 )}
               </div>
 
-              <div className="rounded-inner border px-3 py-2 text-[10px] bg-theme-bg border-theme-border text-theme-muted">
+              <div data-testid="economics-run-status" className="rounded-inner border px-3 py-2 text-[10px] bg-theme-bg border-theme-border text-theme-muted">
                 {lastEconomicsRunAt
                   ? `Last run: ${new Date(lastEconomicsRunAt).toLocaleString()}`
                   : 'Last run: not yet triggered'}
@@ -267,14 +280,30 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
                 {actionMessage && <span className="ml-2 text-theme-cyan">{actionMessage}</span>}
               </div>
 
-              <div className="rounded-inner border p-3 bg-theme-bg border-theme-border space-y-1">
-                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Validation</p>
+              <div className="rounded-inner border p-3 bg-theme-bg border-theme-border space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Validation</p>
+                  <button
+                    type="button"
+                    onClick={() => setShowValidationDetails(prev => !prev)}
+                    className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-cyan"
+                  >
+                    {showValidationDetails ? 'Hide' : 'Details'}
+                  </button>
+                </div>
                 {validationWarnings.length > 0 ? (
-                  validationWarnings.map(warning => (
-                    <p key={warning} className="text-[10px] text-theme-muted">{warning}</p>
-                  ))
+                  <p className="text-[10px] text-theme-muted">
+                    {validationWarnings.length} checks need attention.
+                  </p>
                 ) : (
                   <p className="text-[10px] text-theme-muted">All checks passed.</p>
+                )}
+                {showValidationDetails && validationWarnings.length > 0 && (
+                  <div className="space-y-1">
+                    {validationWarnings.map((warning) => (
+                      <p key={warning} className="text-[10px] text-theme-muted">{warning}</p>
+                    ))}
+                  </div>
                 )}
               </div>
             </>

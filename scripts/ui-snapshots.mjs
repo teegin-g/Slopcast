@@ -3,9 +3,6 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
-// In some sandboxed environments, `os.cpus()` can be empty which breaks
-// Playwright's host platform detection on Apple Silicon (it falls back to x64).
-// Force the correct host platform so Playwright uses the installed arm64 browsers.
 if (process.platform === 'darwin' && process.arch === 'arm64' && !process.env.PLAYWRIGHT_HOST_PLATFORM_OVERRIDE) {
   process.env.PLAYWRIGHT_HOST_PLATFORM_OVERRIDE = 'mac15-arm64';
 }
@@ -33,9 +30,26 @@ const DEFAULT_AUTH_SESSION = {
   },
 };
 
-const DESIGN_WORKSPACES = [
-  { id: 'design-wells', tabName: 'Wells', expectText: 'Basin Visualizer' },
-  { id: 'design-economics', tabName: 'Economics', expectText: 'Economics Readiness' },
+const DESIGN_SHOTS = [
+  { id: 'design-wells', workspaceTab: 'Wells', expectText: 'Basin Visualizer' },
+  {
+    id: 'design-economics-summary',
+    workspaceTab: 'Economics',
+    resultsTabTestId: 'economics-results-tab-summary',
+    expectText: 'Run Summary',
+  },
+  {
+    id: 'design-economics-charts',
+    workspaceTab: 'Economics',
+    resultsTabTestId: 'economics-results-tab-charts',
+    expectText: 'PRODUCTION FORECAST',
+  },
+  {
+    id: 'design-economics-drivers',
+    workspaceTab: 'Economics',
+    resultsTabTestId: 'economics-results-tab-drivers',
+    expectText: 'Scenario Rank',
+  },
 ];
 
 const VIEWS = [
@@ -72,7 +86,7 @@ async function main() {
     startedAt: new Date().toISOString(),
     themes: THEMES,
     views: VIEWS,
-    designWorkspaces: DESIGN_WORKSPACES,
+    designShots: DESIGN_SHOTS,
     viewports: VIEWPORTS,
   };
 
@@ -85,11 +99,11 @@ async function main() {
         hasTouch: viewport.hasTouch,
       });
 
-      // Force default state for each viewport run.
       await context.addInitScript(({ themeId, session, storageKey, mode }) => {
         localStorage.setItem('slopcast-theme', themeId);
         localStorage.setItem(storageKey, JSON.stringify(session));
         localStorage.setItem('slopcast-design-workspace', 'WELLS');
+        localStorage.setItem('slopcast-econ-results-tab', 'SUMMARY');
         if (mode === 'cinematic' || mode === 'max') {
           localStorage.setItem('slopcast-fx-synthwave', mode);
           localStorage.setItem('slopcast-fx-tropical', mode);
@@ -99,8 +113,6 @@ async function main() {
 
       const page = await context.newPage();
       await page.goto(baseURL, { waitUntil: 'domcontentloaded' });
-      // The root route is a "Command Hub". Capture it if present, then navigate into /slopcast
-      // directly (avoids any timing issues around auth-driven CTA labels).
       const hubHeading = page.getByRole('heading', { name: /slopcast command hub/i });
       if (await hubHeading.first().isVisible().catch(() => false)) {
         const hubPath = path.join(outDir, `${viewport.id}__hub.png`);
@@ -108,7 +120,6 @@ async function main() {
       }
       await page.goto(`${baseURL}slopcast`, { waitUntil: 'domcontentloaded' });
 
-      // Wait for the Slopcast chrome to render (theme buttons + nav tabs).
       try {
         await page.getByRole('button', { name: 'DESIGN' }).waitFor({ state: 'visible', timeout: 20_000 });
         await page.getByRole('button', { name: 'SCENARIOS' }).waitFor({ state: 'visible', timeout: 20_000 });
@@ -127,28 +138,33 @@ async function main() {
         await page.waitForTimeout(150);
 
         await click(page.getByRole('button', { name: 'DESIGN' }));
-        await page.getByRole('button', { name: 'Wells' }).waitFor({ timeout: 15_000 });
+        await page.getByRole('button', { name: /^Wells/i }).first().waitFor({ timeout: 15_000 });
 
-        for (const workspace of DESIGN_WORKSPACES) {
-          await click(page.getByRole('button', { name: workspace.tabName }));
-          if (viewport.isMobile && workspace.id === 'design-economics') {
-            await page.getByRole('button', { name: 'Setup' }).first().waitFor({ timeout: 15_000 });
-            const resultsButton = page.getByRole('button', { name: 'Results' });
-            if (await resultsButton.first().isVisible().catch(() => false)) {
-              await click(resultsButton.first());
-              await page.getByRole('button', { name: 'Run Economics' }).first().waitFor({ timeout: 15_000 });
-              await page.waitForTimeout(150);
+        for (const shot of DESIGN_SHOTS) {
+          await click(page.getByRole('button', { name: new RegExp(`^${shot.workspaceTab}`, 'i') }).first());
+
+          if (shot.workspaceTab === 'Economics') {
+            await page.locator('[data-testid="economics-group-bar"]').first().waitFor({ timeout: 15_000 });
+            if (viewport.isMobile) {
+              const resultsButton = page.getByRole('button', { name: 'Results' }).first();
+              if (await resultsButton.isVisible().catch(() => false)) {
+                await click(resultsButton);
+              }
             }
-          } else {
-            await page.getByText(workspace.expectText, { exact: false }).first().waitFor({ timeout: 15_000 });
+            if (shot.resultsTabTestId) {
+              const tabButton = page.locator(`[data-testid="${shot.resultsTabTestId}"]`).first();
+              await tabButton.waitFor({ timeout: 15_000 });
+              await click(tabButton);
+            }
           }
+
+          await page.getByText(shot.expectText, { exact: false }).first().waitFor({ timeout: 15_000 });
           await page.waitForTimeout(200);
-          const fileName = `${viewport.id}__${theme.id}__${workspace.id}.png`;
+          const fileName = `${viewport.id}__${theme.id}__${shot.id}.png`;
           await page.screenshot({ path: path.join(outDir, fileName), fullPage: true });
         }
 
         for (const view of VIEWS) {
-          // Tabs live in the header; this avoids matching random buttons in the page.
           await click(page.getByRole('button', { name: view.tabName }));
           await page.getByText(view.expectText, { exact: false }).first().waitFor({ timeout: 15_000 });
           await page.waitForTimeout(200);

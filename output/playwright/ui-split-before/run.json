@@ -1,0 +1,46 @@
+{
+  "baseURL": "http://127.0.0.1:3000/",
+  "outDir": "output/playwright/ui-split-before",
+  "fxMode": null,
+  "startedAt": "2026-02-15T20:22:51.798Z",
+  "themes": [
+    {
+      "id": "slate",
+      "title": "Slate"
+    },
+    {
+      "id": "mario",
+      "title": "Classic"
+    }
+  ],
+  "views": [
+    {
+      "id": "design",
+      "tabName": "DESIGN",
+      "expectText": "BASIN VISUALIZER"
+    },
+    {
+      "id": "scenarios",
+      "tabName": "SCENARIOS",
+      "expectText": "MODEL STACK"
+    }
+  ],
+  "viewports": [
+    {
+      "id": "desktop",
+      "width": 1440,
+      "height": 900,
+      "isMobile": false,
+      "deviceScaleFactor": 2
+    },
+    {
+      "id": "mobile",
+      "width": 390,
+      "height": 844,
+      "isMobile": true,
+      "hasTouch": true,
+      "deviceScaleFactor": 2
+    }
+  ],
+  "finishedAt": "2026-02-15T20:23:04.771Z"
+}

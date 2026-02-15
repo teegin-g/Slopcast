@@ -1,0 +1,53 @@
+{
+  "baseURL": "http://127.0.0.1:3000/",
+  "outDir": "output/playwright/ui-split-after",
+  "fxMode": null,
+  "startedAt": "2026-02-15T20:32:59.918Z",
+  "themes": [
+    {
+      "id": "slate",
+      "title": "Slate"
+    },
+    {
+      "id": "mario",
+      "title": "Classic"
+    }
+  ],
+  "views": [
+    {
+      "id": "scenarios",
+      "tabName": "SCENARIOS",
+      "expectText": "MODEL STACK"
+    }
+  ],
+  "designWorkspaces": [
+    {
+      "id": "design-wells",
+      "tabName": "Wells",
+      "expectText": "Basin Visualizer"
+    },
+    {
+      "id": "design-economics",
+      "tabName": "Economics",
+      "expectText": "Economics Readiness"
+    }
+  ],
+  "viewports": [
+    {
+      "id": "desktop",
+      "width": 1440,
+      "height": 900,
+      "isMobile": false,
+      "deviceScaleFactor": 2
+    },
+    {
+      "id": "mobile",
+      "width": 390,
+      "height": 844,
+      "isMobile": true,
+      "hasTouch": true,
+      "deviceScaleFactor": 2
+    }
+  ],
+  "finishedAt": "2026-02-15T20:33:17.771Z"
+}

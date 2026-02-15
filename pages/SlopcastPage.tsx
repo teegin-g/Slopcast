@@ -6,6 +6,7 @@ import ScenarioDashboard from '../components/ScenarioDashboard';
 import DesignEconomicsView, { EconomicsMobilePanel } from '../components/slopcast/DesignEconomicsView';
 import DesignWellsView, { WellsMobilePanel } from '../components/slopcast/DesignWellsView';
 import DesignWorkspaceTabs, { DesignWorkspace } from '../components/slopcast/DesignWorkspaceTabs';
+import { EconomicsResultsTab } from '../components/slopcast/EconomicsResultsTabs';
 import PageHeader from '../components/slopcast/PageHeader';
 import { DesignStep, StepStatus, WorkflowStep } from '../components/slopcast/WorkflowStepper';
 import { useViewportLayout } from '../components/slopcast/hooks/useViewportLayout';
@@ -88,6 +89,7 @@ const DEFAULT_SCHEDULE: ScheduleParams = {
 
 const SAVED_SCENARIOS_STORAGE_KEY = 'slopcast-saved-scenarios';
 const DESIGN_WORKSPACE_STORAGE_KEY = 'slopcast-design-workspace';
+const ECONOMICS_RESULTS_TAB_STORAGE_KEY = 'slopcast-econ-results-tab';
 const FX_QUERY_KEY = 'fx';
 const FX_STORAGE_KEY_PREFIX = 'slopcast-fx-';
 
@@ -107,6 +109,16 @@ const readStoredDesignWorkspace = (): DesignWorkspace => {
     // no-op
   }
   return 'WELLS';
+};
+
+const readStoredEconomicsResultsTab = (): EconomicsResultsTab => {
+  try {
+    const raw = localStorage.getItem(ECONOMICS_RESULTS_TAB_STORAGE_KEY);
+    if (raw === 'SUMMARY' || raw === 'CHARTS' || raw === 'DRIVERS') return raw;
+  } catch {
+    // no-op
+  }
+  return 'SUMMARY';
 };
 
 const SlopcastPage: React.FC = () => {
@@ -162,6 +174,7 @@ const SlopcastPage: React.FC = () => {
   const [designWorkspace, setDesignWorkspace] = useState<DesignWorkspace>(readStoredDesignWorkspace);
   const [wellsMobilePanel, setWellsMobilePanel] = useState<WellsMobilePanel>('MAP');
   const [economicsMobilePanel, setEconomicsMobilePanel] = useState<EconomicsMobilePanel>('RESULTS');
+  const [economicsResultsTab, setEconomicsResultsTab] = useState<EconomicsResultsTab>(readStoredEconomicsResultsTab);
   const [opsTab, setOpsTab] = useState<OpsTab>('SELECTION_ACTIONS');
   const viewportLayout = useViewportLayout();
   const [controlsOpenSection, setControlsOpenSection] = useState<ControlsSection | null>(null);
@@ -734,6 +747,14 @@ const SlopcastPage: React.FC = () => {
     }
   }, [designWorkspace]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(ECONOMICS_RESULTS_TAB_STORAGE_KEY, economicsResultsTab);
+    } catch {
+      // no-op
+    }
+  }, [economicsResultsTab]);
+
   const hasGroup = !!activeGroup;
   const hasGroupWells = activeGroup.wellIds.size > 0;
   const hasCapexItems = activeGroup.capex.items.length > 0;
@@ -763,12 +784,12 @@ const SlopcastPage: React.FC = () => {
     status: stepStatusMap[step],
   }));
   const stepGuidance = activeStep === 'SETUP'
-    ? 'Step 1: complete setup inputs (CAPEX, decline, ownership).'
+    ? 'Complete setup inputs (CAPEX, decline, ownership).'
     : activeStep === 'SELECT'
-      ? 'Step 2: select wells and assign them to the active group.'
+      ? 'Assign wells to the active group.'
       : activeStep === 'RUN'
-        ? 'Step 3: run economics to refresh portfolio outputs.'
-        : 'Step 4: review KPIs, drivers, and rankings.';
+        ? (needsRerun ? 'Inputs changed. Run economics to refresh outputs.' : 'Run economics to generate portfolio outputs.')
+        : 'Review KPIs, charts, and drivers.';
   const canUseSecondaryActions = runComplete;
   const canRunEconomics = hasGroup && hasGroupWells && hasCapexItems;
   const wellsNeedsAttention = !setupComplete || !selectionComplete;
@@ -901,6 +922,12 @@ const SlopcastPage: React.FC = () => {
                    workflowSteps={workflowSteps}
                    mobilePanel={economicsMobilePanel}
                    onSetMobilePanel={setEconomicsMobilePanel}
+                   resultsTab={economicsResultsTab}
+                   onSetResultsTab={setEconomicsResultsTab}
+                   groups={processedGroups}
+                   activeGroupId={activeGroupId}
+                   onActivateGroup={setActiveGroupId}
+                   onCloneGroup={handleCloneGroup}
                    activeGroup={activeGroup}
                    onUpdateGroup={handleUpdateGroup}
                    onMarkDirty={markEconomicsDirty}

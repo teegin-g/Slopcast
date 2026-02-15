@@ -106,6 +106,52 @@ async function getOperatorValue(page) {
   });
 }
 
+async function ensureEconomicsGroupSwitch(page, { checkEditingContext }) {
+  await page.locator('[data-testid="economics-group-bar"]').first().waitFor({ state: 'visible', timeout: 15000 });
+  await page.locator('[data-testid="economics-active-group-label"]').first().waitFor({ state: 'visible', timeout: 15000 });
+  if (checkEditingContext) {
+    await page.locator('[data-testid="economics-editing-group"]').first().waitFor({ state: 'visible', timeout: 15000 });
+  }
+
+  const groupSelect = page.locator('[data-testid="economics-group-select"]').first();
+  await groupSelect.waitFor({ state: 'visible', timeout: 15000 });
+
+  const countBefore = await groupSelect.locator('option').count();
+  if (countBefore < 2) {
+    await page.getByRole('button', { name: 'Clone Group' }).first().click();
+    await page.waitForFunction(() => {
+      const select = document.querySelector('[data-testid="economics-group-select"]');
+      return !!select && select.querySelectorAll('option').length > 1;
+    }, null, { timeout: 15000 });
+  }
+
+  const optionValues = await groupSelect.locator('option').evaluateAll((nodes) => nodes.map((node) => node.value));
+  const currentValue = await groupSelect.inputValue();
+  const targetValue = optionValues.find((value) => value !== currentValue);
+  if (!targetValue) {
+    throw new Error('Expected at least two group options in economics group selector');
+  }
+
+  const groupLabelBefore = (await page.locator('[data-testid="economics-active-group-label"]').first().textContent())?.trim() || '';
+  const editingBefore = checkEditingContext
+    ? ((await page.locator('[data-testid="economics-editing-group"]').first().textContent())?.trim() || '')
+    : '';
+  await groupSelect.selectOption(targetValue);
+  await page.waitForTimeout(120);
+
+  const groupLabelAfter = (await page.locator('[data-testid="economics-active-group-label"]').first().textContent())?.trim() || '';
+  if (!groupLabelAfter || groupLabelAfter === groupLabelBefore) {
+    throw new Error(`Group switch did not update group bar label (${groupLabelBefore} -> ${groupLabelAfter})`);
+  }
+
+  if (checkEditingContext) {
+    const editingAfter = (await page.locator('[data-testid="economics-editing-group"]').first().textContent())?.trim() || '';
+    if (!editingAfter || editingAfter === editingBefore) {
+      throw new Error(`Group switch did not update editing context (${editingBefore} -> ${editingAfter})`);
+    }
+  }
+}
+
 const browser = await chromium.launch();
 let failed = false;
 
@@ -129,11 +175,12 @@ try {
         },
       }));
       localStorage.setItem('slopcast-design-workspace', 'WELLS');
+      localStorage.setItem('slopcast-econ-results-tab', 'SUMMARY');
     });
 
     const page = await context.newPage();
     const consoleMessages = [];
-    page.on('console', msg => {
+    page.on('console', (msg) => {
       consoleMessages.push({ type: msg.type(), text: msg.text() });
     });
 
@@ -144,13 +191,11 @@ try {
       await page.getByTitle(theme.title).click();
       await page.waitForFunction((id) => document.documentElement.dataset.theme === id, theme.id);
 
-      // DESIGN workspace tab presence
       await page.getByRole('button', { name: 'DESIGN' }).click();
-      await page.getByRole('button', { name: 'Wells' }).waitFor({ state: 'visible', timeout: 15000 });
-      await page.getByRole('button', { name: 'Economics' }).waitFor({ state: 'visible', timeout: 15000 });
+      await page.getByRole('button', { name: /^Wells/i }).first().waitFor({ state: 'visible', timeout: 15000 });
+      await page.getByRole('button', { name: /^Economics/i }).first().waitFor({ state: 'visible', timeout: 15000 });
 
-      // Wells workspace checks
-      await page.getByRole('button', { name: 'Wells' }).click();
+      await page.getByRole('button', { name: /^Wells/i }).first().click();
       await ensureVisibleText(page, 'Basin Visualizer');
 
       const runInWellsVisible = await page.getByRole('button', { name: 'Run Economics' }).first().isVisible().catch(() => false);
@@ -159,8 +204,7 @@ try {
       }
 
       let operatorChangedValue = null;
-      let selectedCountBefore = await getWellsBadgeCount(page);
-      let selectedCountAfter = selectedCountBefore;
+      let selectedCountAfter = await getWellsBadgeCount(page);
 
       if (!viewport.isMobile) {
         const changeResult = await setNonDefaultOperator(page);
@@ -174,25 +218,27 @@ try {
         }
       }
 
-      // Economics workspace checks
-      await page.getByRole('button', { name: 'Economics' }).click();
+      await page.getByRole('button', { name: /^Economics/i }).first().click();
+      await page.locator('[data-testid="economics-group-bar"]').first().waitFor({ state: 'visible', timeout: 15000 });
 
       if (viewport.isMobile) {
-        await page.getByRole('button', { name: 'Setup' }).first().waitFor({ state: 'visible', timeout: 15000 });
-        const resultsButton = page.getByRole('button', { name: 'Results' }).first();
-        if (await resultsButton.isVisible().catch(() => false)) {
-          await resultsButton.click();
-          await page.waitForTimeout(100);
-        }
-      } else {
-        await ensureVisibleText(page, 'Economics Readiness');
+        await page.getByRole('button', { name: 'Results' }).first().click();
       }
 
       await page.getByRole('button', { name: 'Run Economics' }).first().waitFor({ state: 'visible', timeout: 15000 });
+      await ensureEconomicsGroupSwitch(page, { checkEditingContext: !viewport.isMobile });
+
+      await page.locator('[data-testid="economics-results-tab-summary"]').first().click();
+      await ensureVisibleText(page, 'Run Summary');
+
+      await page.locator('[data-testid="economics-results-tab-charts"]').first().click();
+      await ensureVisibleText(page, 'PRODUCTION FORECAST');
       await checkChartDimensions(page);
 
-      // Back to Wells, validate persistence
-      await page.getByRole('button', { name: 'Wells' }).click();
+      await page.locator('[data-testid="economics-results-tab-drivers"]').first().click();
+      await ensureVisibleText(page, 'Scenario Rank');
+
+      await page.getByRole('button', { name: /^Wells/i }).first().click();
       await ensureVisibleText(page, 'Basin Visualizer');
 
       if (!viewport.isMobile) {
@@ -205,10 +251,8 @@ try {
         if (selectedCountAfter !== selectedCountBack) {
           throw new Error(`Selected well count did not persist (${selectedCountAfter} vs ${selectedCountBack})`);
         }
-
       }
 
-      // SCENARIOS still works
       await page.getByRole('button', { name: 'SCENARIOS' }).click();
       await ensureVisibleText(page, 'Model Stack');
       await checkChartDimensions(page);
@@ -218,7 +262,7 @@ try {
     if (dimWarnings.length > 0) {
       throw new Error(
         `Detected ${dimWarnings.length} dimension warnings on ${viewport.id}:\n` +
-        dimWarnings.map(msg => `- ${msg.text}`).join('\n')
+        dimWarnings.map((msg) => `- ${msg.text}`).join('\n')
       );
     }
 
