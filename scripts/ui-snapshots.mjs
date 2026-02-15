@@ -33,8 +33,12 @@ const DEFAULT_AUTH_SESSION = {
   },
 };
 
+const DESIGN_WORKSPACES = [
+  { id: 'design-wells', tabName: 'Wells', expectText: 'Basin Visualizer' },
+  { id: 'design-economics', tabName: 'Economics', expectText: 'Economics Readiness' },
+];
+
 const VIEWS = [
-  { id: 'design', tabName: 'DESIGN', expectText: 'BASIN VISUALIZER' },
   { id: 'scenarios', tabName: 'SCENARIOS', expectText: 'MODEL STACK' },
 ];
 
@@ -68,6 +72,7 @@ async function main() {
     startedAt: new Date().toISOString(),
     themes: THEMES,
     views: VIEWS,
+    designWorkspaces: DESIGN_WORKSPACES,
     viewports: VIEWPORTS,
   };
 
@@ -84,6 +89,7 @@ async function main() {
       await context.addInitScript(({ themeId, session, storageKey, mode }) => {
         localStorage.setItem('slopcast-theme', themeId);
         localStorage.setItem(storageKey, JSON.stringify(session));
+        localStorage.setItem('slopcast-design-workspace', 'WELLS');
         if (mode === 'cinematic' || mode === 'max') {
           localStorage.setItem('slopcast-fx-synthwave', mode);
           localStorage.setItem('slopcast-fx-tropical', mode);
@@ -119,6 +125,27 @@ async function main() {
         await click(page.getByTitle(theme.title));
         await page.waitForFunction((id) => document.documentElement.dataset.theme === id, theme.id);
         await page.waitForTimeout(150);
+
+        await click(page.getByRole('button', { name: 'DESIGN' }));
+        await page.getByRole('button', { name: 'Wells' }).waitFor({ timeout: 15_000 });
+
+        for (const workspace of DESIGN_WORKSPACES) {
+          await click(page.getByRole('button', { name: workspace.tabName }));
+          if (viewport.isMobile && workspace.id === 'design-economics') {
+            await page.getByRole('button', { name: 'Setup' }).first().waitFor({ timeout: 15_000 });
+            const resultsButton = page.getByRole('button', { name: 'Results' });
+            if (await resultsButton.first().isVisible().catch(() => false)) {
+              await click(resultsButton.first());
+              await page.getByRole('button', { name: 'Run Economics' }).first().waitFor({ timeout: 15_000 });
+              await page.waitForTimeout(150);
+            }
+          } else {
+            await page.getByText(workspace.expectText, { exact: false }).first().waitFor({ timeout: 15_000 });
+          }
+          await page.waitForTimeout(200);
+          const fileName = `${viewport.id}__${theme.id}__${workspace.id}.png`;
+          await page.screenshot({ path: path.join(outDir, fileName), fullPage: true });
+        }
 
         for (const view of VIEWS) {
           // Tabs live in the header; this avoids matching random buttons in the page.

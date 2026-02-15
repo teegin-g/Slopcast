@@ -27,16 +27,16 @@ export interface OperationsConsoleProps {
   selectedVisibleCount: number;
   filteredVisibleCount: number;
   activeGroupName: string;
-  onAssign: () => void;
-  onCreateGroup: () => void;
-  onSelectAll: () => void;
-  onClear: () => void;
+  onAssign?: () => void;
+  onCreateGroup?: () => void;
+  onSelectAll?: () => void;
+  onClear?: () => void;
   onRunEconomics: () => void;
   onSaveScenario: () => void;
   onExportCsv: () => void;
   onExportPdf: () => void;
-  canAssign: boolean;
-  canClear: boolean;
+  canAssign?: boolean;
+  canClear?: boolean;
   canRun: boolean;
   canUseSecondaryActions: boolean;
   lastEconomicsRunAt: string | null;
@@ -51,6 +51,7 @@ export interface OperationsConsoleProps {
   payoutMonths: number;
   fastestPayoutScenarioName: string;
   scenarioRankings: ScenarioRanking[];
+  showSelectionActions?: boolean;
 }
 
 const buttonTone = (isClassic: boolean, active: boolean) => {
@@ -96,6 +97,7 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
   payoutMonths,
   fastestPayoutScenarioName,
   scenarioRankings,
+  showSelectionActions = true,
 }) => {
   const [showSecondaryActions, setShowSecondaryActions] = useState(false);
 
@@ -124,7 +126,7 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
               onClick={() => onOpsTabChange('SELECTION_ACTIONS')}
               className={`px-3 py-1.5 rounded-inner text-[9px] font-black uppercase tracking-[0.16em] transition-all border ${buttonTone(isClassic, opsTab === 'SELECTION_ACTIONS')}`}
             >
-              Selection
+              {showSelectionActions ? 'Selection' : 'Run Panel'}
             </button>
             <button
               onClick={() => onOpsTabChange('KEY_DRIVERS')}
@@ -154,47 +156,49 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={onAssign}
-                  disabled={!canAssign}
-                  className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
-                    canAssign
-                      ? 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan'
-                      : 'bg-theme-surface2 text-theme-muted cursor-not-allowed'
-                  }`}
-                >
-                  Assign
-                </button>
-                <button
-                  onClick={onCreateGroup}
-                  disabled={!canAssign}
-                  className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
-                    canAssign
-                      ? 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan'
-                      : 'bg-theme-surface2 text-theme-muted cursor-not-allowed'
-                  }`}
-                >
-                  Create Group
-                </button>
-                <button
-                  onClick={onSelectAll}
-                  className="px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all bg-theme-surface2 text-theme-text border border-theme-border hover:border-theme-cyan"
-                >
-                  Select All
-                </button>
-                <button
-                  onClick={onClear}
-                  disabled={!canClear}
-                  className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all border ${
-                    canClear
-                      ? 'bg-theme-surface2 text-theme-text border-theme-border hover:border-theme-cyan'
-                      : 'bg-theme-surface2 text-theme-muted cursor-not-allowed border-theme-border'
-                  }`}
-                >
-                  Clear
-                </button>
-              </div>
+              {showSelectionActions && (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={onAssign}
+                    disabled={!canAssign}
+                    className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
+                      canAssign
+                        ? 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan'
+                        : 'bg-theme-surface2 text-theme-muted cursor-not-allowed'
+                    }`}
+                  >
+                    Assign
+                  </button>
+                  <button
+                    onClick={onCreateGroup}
+                    disabled={!canAssign}
+                    className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
+                      canAssign
+                        ? 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan'
+                        : 'bg-theme-surface2 text-theme-muted cursor-not-allowed'
+                    }`}
+                  >
+                    Create Group
+                  </button>
+                  <button
+                    onClick={onSelectAll}
+                    className="px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all bg-theme-surface2 text-theme-text border border-theme-border hover:border-theme-cyan"
+                  >
+                    Select All
+                  </button>
+                  <button
+                    onClick={onClear}
+                    disabled={!canClear}
+                    className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all border ${
+                      canClear
+                        ? 'bg-theme-surface2 text-theme-text border-theme-border hover:border-theme-cyan'
+                        : 'bg-theme-surface2 text-theme-muted cursor-not-allowed border-theme-border'
+                    }`}
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <button

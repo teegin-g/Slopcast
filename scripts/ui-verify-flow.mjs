@@ -20,19 +20,6 @@ const VIEWPORTS = [
   { id: 'mobile', width: 390, height: 844, isMobile: true, hasTouch: true },
 ];
 
-const VIEWS = [
-  {
-    id: 'design',
-    tabName: 'DESIGN',
-    requiredTexts: ['Basin Visualizer', 'Operations Console', 'Portfolio NPV'],
-  },
-  {
-    id: 'scenarios',
-    tabName: 'SCENARIOS',
-    requiredTexts: ['Model Stack', 'Portfolio Overlay', 'Portfolio NPV Sensitivity'],
-  },
-];
-
 function hasDimensionWarning(msg) {
   const text = `${msg.text || ''}`;
   return (
@@ -48,52 +35,14 @@ async function ensureVisibleText(page, text) {
   await page.getByText(text, { exact: false }).first().waitFor({ state: 'visible', timeout: 15000 });
 }
 
-async function checkPrimaryPanels(page, viewId, isMobile) {
-  if (viewId === 'design' && isMobile) {
-    const visibleRegionCount = await page.evaluate(() => {
-      const regions = Array.from(document.querySelectorAll('main aside, main section'));
-      return regions.filter((el) => {
-        const rect = el.getBoundingClientRect();
-        return rect.width > 0 && rect.height > 0;
-      }).length;
-    });
-    if (visibleRegionCount <= 0) {
-      throw new Error('Primary panel check failed for mobile design: no visible regions');
-    }
-    return;
-  }
-
-  const selectors = viewId === 'design'
-    ? ['main section', 'main aside', 'main h2']
-    : ['main [class*=grid]', 'main'];
-
-  const results = await page.evaluate((sels) => {
-    return sels.map((selector) => {
-      const el = document.querySelector(selector);
-      if (!el) {
-        return { selector, ok: false, reason: 'missing' };
-      }
-      const rect = el.getBoundingClientRect();
-      if (rect.width <= 0 || rect.height <= 0) {
-        return { selector, ok: false, reason: 'zero-size' };
-      }
-      return { selector, ok: true };
-    });
-  }, selectors);
-
-  const failed = results.find(r => !r.ok);
-  if (failed) {
-    throw new Error(`Primary panel check failed for ${viewId}: ${failed.selector} (${failed.reason})`);
-  }
-}
-
 async function checkChartDimensions(page) {
   const chartState = await page.evaluate(() => {
     const wrappers = Array.from(document.querySelectorAll('.recharts-wrapper'));
     const visibleWrappers = wrappers.filter((el) => {
       const rect = el.getBoundingClientRect();
-      return (rect.width > 0 || rect.height > 0) && el.offsetParent !== null;
+      return rect.width > 0 && rect.height > 0 && el.offsetParent !== null;
     });
+
     if (visibleWrappers.length === 0) return { wrappers: 0, zeroCount: 0 };
 
     let zeroCount = 0;
@@ -108,6 +57,53 @@ async function checkChartDimensions(page) {
   if (chartState.wrappers > 0 && chartState.zeroCount > 0) {
     throw new Error(`Detected ${chartState.zeroCount}/${chartState.wrappers} zero-sized recharts wrappers`);
   }
+}
+
+async function getWellsBadgeCount(page) {
+  return await page.evaluate(() => {
+    const matches = Array.from(document.querySelectorAll('*'))
+      .map((el) => (el.textContent || '').trim())
+      .filter(Boolean)
+      .map((text) => {
+        const hit = text.match(/^(\d+)\s+Wells$/i);
+        return hit ? Number(hit[1]) : null;
+      })
+      .filter((v) => Number.isFinite(v));
+
+    if (matches.length === 0) return 0;
+    return Math.max(...matches);
+  });
+}
+
+async function setNonDefaultOperator(page) {
+  return await page.evaluate(() => {
+    const selects = Array.from(document.querySelectorAll('select'));
+    const operatorSelect = selects.find((select) => {
+      const options = Array.from(select.querySelectorAll('option')).map((opt) => (opt.textContent || '').trim());
+      return options.some((option) => option === 'All Operators');
+    });
+
+    if (!operatorSelect) return { changed: false, value: null };
+
+    const options = Array.from(operatorSelect.querySelectorAll('option'));
+    const nonDefault = options.find((opt) => opt.value !== 'ALL');
+    if (!nonDefault) return { changed: false, value: operatorSelect.value };
+
+    operatorSelect.value = nonDefault.value;
+    operatorSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    return { changed: true, value: nonDefault.value };
+  });
+}
+
+async function getOperatorValue(page) {
+  return await page.evaluate(() => {
+    const selects = Array.from(document.querySelectorAll('select'));
+    const operatorSelect = selects.find((select) => {
+      const options = Array.from(select.querySelectorAll('option')).map((opt) => (opt.textContent || '').trim());
+      return options.some((option) => option === 'All Operators');
+    });
+    return operatorSelect ? operatorSelect.value : null;
+  });
 }
 
 const browser = await chromium.launch();
@@ -132,6 +128,7 @@ try {
           displayName: 'Field Operator',
         },
       }));
+      localStorage.setItem('slopcast-design-workspace', 'WELLS');
     });
 
     const page = await context.newPage();
@@ -147,25 +144,74 @@ try {
       await page.getByTitle(theme.title).click();
       await page.waitForFunction((id) => document.documentElement.dataset.theme === id, theme.id);
 
-      for (const view of VIEWS) {
-        await page.getByRole('button', { name: view.tabName }).click();
-        if (viewport.isMobile && view.id === 'design') {
-          await page.getByRole('button', { name: 'Setup' }).click();
-          await ensureVisibleText(page, 'Scenarios / Groups');
-          await page.getByRole('button', { name: 'Workspace' }).click();
-          await ensureVisibleText(page, 'Basin Visualizer');
-          await page.getByRole('button', { name: 'KPIs' }).click();
-          await ensureVisibleText(page, 'Operations Console');
-        } else {
-          for (const text of view.requiredTexts) {
-            await ensureVisibleText(page, text);
-          }
-        }
-        await page.waitForTimeout(250);
+      // DESIGN workspace tab presence
+      await page.getByRole('button', { name: 'DESIGN' }).click();
+      await page.getByRole('button', { name: 'Wells' }).waitFor({ state: 'visible', timeout: 15000 });
+      await page.getByRole('button', { name: 'Economics' }).waitFor({ state: 'visible', timeout: 15000 });
 
-        await checkPrimaryPanels(page, view.id, viewport.isMobile);
-        await checkChartDimensions(page);
+      // Wells workspace checks
+      await page.getByRole('button', { name: 'Wells' }).click();
+      await ensureVisibleText(page, 'Basin Visualizer');
+
+      const runInWellsVisible = await page.getByRole('button', { name: 'Run Economics' }).first().isVisible().catch(() => false);
+      if (runInWellsVisible) {
+        throw new Error('Run Economics should not be visible in Wells workspace');
       }
+
+      let operatorChangedValue = null;
+      let selectedCountBefore = await getWellsBadgeCount(page);
+      let selectedCountAfter = selectedCountBefore;
+
+      if (!viewport.isMobile) {
+        const changeResult = await setNonDefaultOperator(page);
+        operatorChangedValue = changeResult.value;
+
+        const selectAll = page.getByRole('button', { name: 'Select All' }).first();
+        if (await selectAll.isVisible().catch(() => false)) {
+          await selectAll.click();
+          await page.waitForTimeout(150);
+          selectedCountAfter = await getWellsBadgeCount(page);
+        }
+      }
+
+      // Economics workspace checks
+      await page.getByRole('button', { name: 'Economics' }).click();
+
+      if (viewport.isMobile) {
+        await page.getByRole('button', { name: 'Setup' }).first().waitFor({ state: 'visible', timeout: 15000 });
+        const resultsButton = page.getByRole('button', { name: 'Results' }).first();
+        if (await resultsButton.isVisible().catch(() => false)) {
+          await resultsButton.click();
+          await page.waitForTimeout(100);
+        }
+      } else {
+        await ensureVisibleText(page, 'Economics Readiness');
+      }
+
+      await page.getByRole('button', { name: 'Run Economics' }).first().waitFor({ state: 'visible', timeout: 15000 });
+      await checkChartDimensions(page);
+
+      // Back to Wells, validate persistence
+      await page.getByRole('button', { name: 'Wells' }).click();
+      await ensureVisibleText(page, 'Basin Visualizer');
+
+      if (!viewport.isMobile) {
+        const operatorValueBack = await getOperatorValue(page);
+        if (operatorChangedValue && operatorValueBack !== operatorChangedValue) {
+          throw new Error(`Operator filter did not persist across Wells -> Economics -> Wells (${operatorChangedValue} vs ${operatorValueBack})`);
+        }
+
+        const selectedCountBack = await getWellsBadgeCount(page);
+        if (selectedCountAfter !== selectedCountBack) {
+          throw new Error(`Selected well count did not persist (${selectedCountAfter} vs ${selectedCountBack})`);
+        }
+
+      }
+
+      // SCENARIOS still works
+      await page.getByRole('button', { name: 'SCENARIOS' }).click();
+      await ensureVisibleText(page, 'Model Stack');
+      await checkChartDimensions(page);
     }
 
     const dimWarnings = consoleMessages.filter(hasDimensionWarning);

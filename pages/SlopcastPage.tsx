@@ -2,22 +2,18 @@ import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DEFAULT_CAPEX, DEFAULT_COMMODITY_PRICING, DEFAULT_OPEX, DEFAULT_OWNERSHIP, DEFAULT_TYPE_CURVE, GROUP_COLORS, MOCK_WELLS } from '../constants';
 import { Scenario, ScheduleParams, Well, WellGroup } from '../types';
-import Charts from '../components/Charts';
-import Controls from '../components/Controls';
-import GroupList from '../components/GroupList';
-import MapVisualizer from '../components/MapVisualizer';
 import ScenarioDashboard from '../components/ScenarioDashboard';
-import KpiGrid from '../components/slopcast/KpiGrid';
-import OperationsConsole from '../components/slopcast/OperationsConsole';
+import DesignEconomicsView, { EconomicsMobilePanel } from '../components/slopcast/DesignEconomicsView';
+import DesignWellsView, { WellsMobilePanel } from '../components/slopcast/DesignWellsView';
+import DesignWorkspaceTabs, { DesignWorkspace } from '../components/slopcast/DesignWorkspaceTabs';
 import PageHeader from '../components/slopcast/PageHeader';
-import WorkflowStepper, { DesignStep, StepStatus, WorkflowStep } from '../components/slopcast/WorkflowStepper';
+import { DesignStep, StepStatus, WorkflowStep } from '../components/slopcast/WorkflowStepper';
 import { useViewportLayout } from '../components/slopcast/hooks/useViewportLayout';
 import { useTheme } from '../theme/ThemeProvider';
 import { useAuth } from '../auth/AuthProvider';
 import { aggregateEconomics, calculateEconomics } from '../utils/economics';
 
 type ViewMode = 'DASHBOARD' | 'ANALYSIS'; 
-type MobileSection = 'SETUP' | 'WORKSPACE' | 'KPIS';
 type OpsTab = 'SELECTION_ACTIONS' | 'KEY_DRIVERS';
 type FxMode = 'cinematic' | 'max';
 type ControlsSection = 'TYPE_CURVE' | 'CAPEX' | 'OPEX' | 'OWNERSHIP';
@@ -91,6 +87,7 @@ const DEFAULT_SCHEDULE: ScheduleParams = {
 };
 
 const SAVED_SCENARIOS_STORAGE_KEY = 'slopcast-saved-scenarios';
+const DESIGN_WORKSPACE_STORAGE_KEY = 'slopcast-design-workspace';
 const FX_QUERY_KEY = 'fx';
 const FX_STORAGE_KEY_PREFIX = 'slopcast-fx-';
 
@@ -102,13 +99,22 @@ const csvCell = (value: string | number) => {
   return raw;
 };
 
+const readStoredDesignWorkspace = (): DesignWorkspace => {
+  try {
+    const raw = localStorage.getItem(DESIGN_WORKSPACE_STORAGE_KEY);
+    if (raw === 'WELLS' || raw === 'ECONOMICS') return raw;
+  } catch {
+    // no-op
+  }
+  return 'WELLS';
+};
+
 const SlopcastPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { session } = useAuth();
   // --- Theme (from provider) ---
   const { themeId, theme, themes, setThemeId } = useTheme();
-  const { features } = theme;
   const isClassic = themeId === 'mario';
   const isFxTheme = !!theme.fxTheme;
 
@@ -153,7 +159,9 @@ const SlopcastPage: React.FC = () => {
 
   // --- State ---
   const [viewMode, setViewMode] = useState<ViewMode>('DASHBOARD');
-  const [mobileSection, setMobileSection] = useState<MobileSection>('WORKSPACE');
+  const [designWorkspace, setDesignWorkspace] = useState<DesignWorkspace>(readStoredDesignWorkspace);
+  const [wellsMobilePanel, setWellsMobilePanel] = useState<WellsMobilePanel>('MAP');
+  const [economicsMobilePanel, setEconomicsMobilePanel] = useState<EconomicsMobilePanel>('RESULTS');
   const [opsTab, setOpsTab] = useState<OpsTab>('SELECTION_ACTIONS');
   const viewportLayout = useViewportLayout();
   const [controlsOpenSection, setControlsOpenSection] = useState<ControlsSection | null>(null);
@@ -719,11 +727,18 @@ const SlopcastPage: React.FC = () => {
   }, [actionMessage]);
 
   useEffect(() => {
-    if (viewMode === 'DASHBOARD') setMobileSection('WORKSPACE');
-  }, [viewMode]);
+    try {
+      localStorage.setItem(DESIGN_WORKSPACE_STORAGE_KEY, designWorkspace);
+    } catch {
+      // no-op
+    }
+  }, [designWorkspace]);
 
-  const setupComplete = !!activeGroup && activeGroup.capex.items.length > 0 && activeGroup.typeCurve.qi > 0;
-  const selectionComplete = activeGroup.wellIds.size > 0 || selectedVisibleCount > 0;
+  const hasGroup = !!activeGroup;
+  const hasGroupWells = activeGroup.wellIds.size > 0;
+  const hasCapexItems = activeGroup.capex.items.length > 0;
+  const setupComplete = hasGroup && hasCapexItems && activeGroup.typeCurve.qi > 0;
+  const selectionComplete = hasGroupWells || selectedVisibleCount > 0;
   const hasRun = !!lastEconomicsRunAt;
   const needsRerun = economicsInputVersion > lastRunVersion;
   const runComplete = hasRun && !needsRerun;
@@ -755,64 +770,50 @@ const SlopcastPage: React.FC = () => {
         ? 'Step 3: run economics to refresh portfolio outputs.'
         : 'Step 4: review KPIs, drivers, and rankings.';
   const canUseSecondaryActions = runComplete;
+  const canRunEconomics = hasGroup && hasGroupWells && hasCapexItems;
+  const wellsNeedsAttention = !setupComplete || !selectionComplete;
+  const economicsNeedsAttention = needsRerun || !runComplete;
 
   useEffect(() => {
     if (viewMode !== 'DASHBOARD') return;
-    if (activeStep !== 'SETUP') return;
-    if (activeGroup.capex.items.length > 0) return;
+    if (designWorkspace !== 'ECONOMICS') return;
+    if (hasCapexItems) return;
     setControlsOpenSection('CAPEX');
-    if (viewportLayout === 'mobile') setMobileSection('SETUP');
-  }, [activeGroup.capex.items.length, activeStep, viewMode, viewportLayout]);
+    if (viewportLayout === 'mobile') setEconomicsMobilePanel('SETUP');
+  }, [designWorkspace, hasCapexItems, viewMode, viewportLayout]);
 
-  const operationsPanel = (
-    <OperationsConsole
-      isClassic={isClassic}
-      opsTab={opsTab}
-      onOpsTabChange={setOpsTab}
-      selectedVisibleCount={selectedVisibleCount}
-      filteredVisibleCount={filteredWells.length}
-      activeGroupName={activeGroup.name}
-      onAssign={handleAssignWellsToActive}
-      onCreateGroup={handleCreateGroupFromSelection}
-      onSelectAll={handleSelectAll}
-      onClear={handleClearSelection}
-      onRunEconomics={handleRunEconomics}
-      onSaveScenario={handleSaveScenario}
-      onExportCsv={handleExportCsv}
-      onExportPdf={handleExportPdf}
-      canAssign={selectedVisibleCount > 0}
-      canClear={selectedVisibleCount > 0}
-      canRun={aggregateMetrics.wellCount > 0}
-      canUseSecondaryActions={canUseSecondaryActions}
-      lastEconomicsRunAt={lastEconomicsRunAt}
-      actionMessage={actionMessage}
-      validationWarnings={validationWarnings}
-      stepGuidance={stepGuidance}
-      needsRerun={needsRerun}
-      topDrivers={keyDriverInsights.topDrivers}
-      biggestPositive={keyDriverInsights.biggestPositive}
-      biggestNegative={keyDriverInsights.biggestNegative}
-      breakevenOilPrice={breakevenOilPrice}
-      payoutMonths={aggregateMetrics.payoutMonths}
-      fastestPayoutScenarioName={fastestPayoutScenarioName}
-      scenarioRankings={scenarioRankings}
-    />
-  );
-
-  const economicsPanel = (
-    <>
-      <KpiGrid isClassic={isClassic} metrics={aggregateMetrics} />
-      <div
-        className={
-          isClassic
-            ? 'flex-1 min-h-[320px] sc-panel theme-transition p-3'
-            : 'flex-1 min-h-[320px] rounded-panel border p-1 theme-transition bg-theme-surface1/50 border-theme-border shadow-card'
-        }
-      >
-        <Charts data={aggregateFlow} themeId={themeId} />
-      </div>
-    </>
-  );
+  const operationsProps = {
+    isClassic,
+    opsTab,
+    onOpsTabChange: setOpsTab,
+    selectedVisibleCount,
+    filteredVisibleCount: filteredWells.length,
+    activeGroupName: activeGroup.name,
+    onAssign: handleAssignWellsToActive,
+    onCreateGroup: handleCreateGroupFromSelection,
+    onSelectAll: handleSelectAll,
+    onClear: handleClearSelection,
+    onRunEconomics: handleRunEconomics,
+    onSaveScenario: handleSaveScenario,
+    onExportCsv: handleExportCsv,
+    onExportPdf: handleExportPdf,
+    canAssign: selectedVisibleCount > 0,
+    canClear: selectedVisibleCount > 0,
+    canRun: canRunEconomics,
+    canUseSecondaryActions,
+    lastEconomicsRunAt,
+    actionMessage,
+    validationWarnings,
+    stepGuidance,
+    needsRerun,
+    topDrivers: keyDriverInsights.topDrivers,
+    biggestPositive: keyDriverInsights.biggestPositive,
+    biggestNegative: keyDriverInsights.biggestNegative,
+    breakevenOilPrice,
+    payoutMonths: aggregateMetrics.payoutMonths,
+    fastestPayoutScenarioName,
+    scenarioRankings,
+  };
 
   return (
     <div className={`min-h-screen bg-transparent theme-transition ${atmosphereClass} ${fxClass}`}>
@@ -848,287 +849,74 @@ const SlopcastPage: React.FC = () => {
              />
         ) : (
              <>
-               <div className="hidden lg:block">
-                 <WorkflowStepper isClassic={isClassic} steps={workflowSteps} />
-               </div>
-               <div className="lg:hidden sticky top-[78px] z-30 mb-3">
-                 <WorkflowStepper isClassic={isClassic} steps={workflowSteps} compact />
-               </div>
-               <div
-                 className={`lg:hidden mb-4 border p-2 theme-transition ${
-                   isClassic ? 'sc-panel' : 'rounded-panel bg-theme-surface1/60 border-theme-border shadow-card backdrop-blur-sm'
-                 }`}
-               >
-                 <div className="grid grid-cols-3 gap-2">
-                   <button
-                     onClick={() => setMobileSection('SETUP')}
-                     className={
-                       isClassic
-                         ? `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
-                             mobileSection === 'SETUP'
-                               ? 'bg-theme-warning text-black border-black/20'
-                               : 'bg-black/15 text-white/90 border-black/25'
-                           }`
-                         : `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border transition-colors ${
-                             mobileSection === 'SETUP'
-                               ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
-                               : 'bg-theme-bg text-theme-muted border-theme-border'
-                           }`
-                     }
-                   >
-                     Setup
-                   </button>
-                   <button
-                     onClick={() => setMobileSection('WORKSPACE')}
-                     className={
-                       isClassic
-                         ? `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
-                             mobileSection === 'WORKSPACE'
-                               ? 'bg-theme-warning text-black border-black/20'
-                               : 'bg-black/15 text-white/90 border-black/25'
-                           }`
-                         : `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border transition-colors ${
-                             mobileSection === 'WORKSPACE'
-                               ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
-                               : 'bg-theme-bg text-theme-muted border-theme-border'
-                           }`
-                     }
-                   >
-                     Workspace
-                   </button>
-                   <button
-                     onClick={() => setMobileSection('KPIS')}
-                     className={
-                       isClassic
-                         ? `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
-                             mobileSection === 'KPIS'
-                               ? 'bg-theme-warning text-black border-black/20'
-                               : 'bg-black/15 text-white/90 border-black/25'
-                           }`
-                         : `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border transition-colors ${
-                             mobileSection === 'KPIS'
-                               ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
-                               : 'bg-theme-bg text-theme-muted border-theme-border'
-                           }`
-                     }
-                   >
-                     KPIs
-                   </button>
-                 </div>
-               </div>
+               <DesignWorkspaceTabs
+                 isClassic={isClassic}
+                 workspace={designWorkspace}
+                 onChange={setDesignWorkspace}
+                 economicsNeedsAttention={economicsNeedsAttention}
+                 wellsNeedsAttention={wellsNeedsAttention}
+               />
 
-               <div className={`grid grid-cols-1 lg:grid-cols-12 gap-6 ${viewportLayout === 'desktop' ? 'xl:min-h-[calc(100vh-9rem)] xl:auto-rows-fr' : ''}`}>
-                {/* LEFT: Inputs */}
-                <aside
-                  className={`xl:col-span-3 lg:col-span-4 lg:min-h-0 xl:overflow-y-auto scrollbar-hide space-y-6 pb-4 theme-transition ${
-                    isClassic ? 'p-1' : 'p-4 rounded-panel bg-theme-bg/60 backdrop-blur-sm border border-theme-border'
-                  } ${mobileSection !== 'SETUP' ? 'hidden lg:block' : ''}`}
-                >
-                    <GroupList 
-                        groups={processedGroups}
-                        activeGroupId={activeGroupId}
-                        selectedWellCount={selectedVisibleCount}
-                        onActivateGroup={setActiveGroupId}
-                        onAddGroup={handleAddGroup}
-                        onCloneGroup={handleCloneGroup}
-                        onAssignWells={handleAssignWellsToActive}
-                        onCreateGroupFromSelection={handleCreateGroupFromSelection}
-                    />
-                    {isClassic ? (
-                      <div className="sc-panel theme-transition">
-                        <div className="sc-panelTitlebar sc-titlebar--neutral px-4 py-3 flex items-center justify-between">
-                          <h3 className="text-[11px] font-black uppercase tracking-[0.25em] text-white">Filters</h3>
-                          <button
-                            onClick={handleResetFilters}
-                            className="text-[10px] font-black uppercase tracking-widest text-white/90 hover:text-white transition-colors"
-                          >
-                            Reset
-                          </button>
-                        </div>
-                        <div className="p-3 space-y-3 bg-black/10">
-                          <div>
-                            <label className="text-[9px] font-black uppercase tracking-[0.2em] mb-1 block text-theme-warning">Operator</label>
-                            <select
-                              value={operatorFilter}
-                              onChange={(e) => setOperatorFilter(e.target.value)}
-                              className="w-full rounded-md px-3 py-2 text-xs font-black sc-inputNavy"
-                            >
-                              <option value="ALL">All Operators</option>
-                              {operatorOptions.map(operator => (
-                                <option key={operator} value={operator}>{operator}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-[9px] font-black uppercase tracking-[0.2em] mb-1 block text-theme-warning">Formation</label>
-                            <select
-                              value={formationFilter}
-                              onChange={(e) => setFormationFilter(e.target.value)}
-                              className="w-full rounded-md px-3 py-2 text-xs font-black sc-inputNavy"
-                            >
-                              <option value="ALL">All Formations</option>
-                              {formationOptions.map(formation => (
-                                <option key={formation} value={formation}>{formation}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-[9px] font-black uppercase tracking-[0.2em] mb-1 block text-theme-warning">Status</label>
-                            <select
-                              value={statusFilter}
-                              onChange={(e) => setStatusFilter(e.target.value as Well['status'] | 'ALL')}
-                              className="w-full rounded-md px-3 py-2 text-xs font-black sc-inputNavy"
-                            >
-                              <option value="ALL">All Statuses</option>
-                              {statusOptions.map(status => (
-                                <option key={status} value={status}>{status}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/80 border border-black/25 rounded-md px-3 py-2">
-                            {filteredWells.length} visible / {MOCK_WELLS.length} total
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="rounded-panel border p-4 shadow-card theme-transition bg-theme-surface1/80 border-theme-border">
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className={`font-semibold text-sm uppercase tracking-wide text-theme-cyan ${theme.features.brandFont ? 'brand-font' : ''}`}>Filters</h3>
-                          <button
-                            onClick={handleResetFilters}
-                            className="text-[10px] px-3 py-1 rounded-inner border font-black uppercase tracking-[0.16em] border-theme-border text-theme-muted hover:text-theme-text"
-                          >
-                            Reset
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-1 gap-3">
-                          <div>
-                            <label className="text-[9px] font-black uppercase tracking-[0.2em] mb-1 block text-theme-muted">Operator</label>
-                            <select
-                              value={operatorFilter}
-                              onChange={(e) => setOperatorFilter(e.target.value)}
-                              className="w-full bg-theme-bg border rounded-inner px-3 py-2 text-xs text-theme-text outline-none border-theme-border"
-                            >
-                              <option value="ALL">All Operators</option>
-                              {operatorOptions.map(operator => (
-                                <option key={operator} value={operator}>{operator}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-[9px] font-black uppercase tracking-[0.2em] mb-1 block text-theme-muted">Formation</label>
-                            <select
-                              value={formationFilter}
-                              onChange={(e) => setFormationFilter(e.target.value)}
-                              className="w-full bg-theme-bg border rounded-inner px-3 py-2 text-xs text-theme-text outline-none border-theme-border"
-                            >
-                              <option value="ALL">All Formations</option>
-                              {formationOptions.map(formation => (
-                                <option key={formation} value={formation}>{formation}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-[9px] font-black uppercase tracking-[0.2em] mb-1 block text-theme-muted">Status</label>
-                            <select
-                              value={statusFilter}
-                              onChange={(e) => setStatusFilter(e.target.value as Well['status'] | 'ALL')}
-                              className="w-full bg-theme-bg border rounded-inner px-3 py-2 text-xs text-theme-text outline-none border-theme-border"
-                            >
-                              <option value="ALL">All Statuses</option>
-                              {statusOptions.map(status => (
-                                <option key={status} value={status}>{status}</option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-                        <div className="mt-3 rounded-inner border px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-theme-muted border-theme-border bg-theme-bg">
-                          {filteredWells.length} visible / {MOCK_WELLS.length} total
-                        </div>
-                      </div>
-                    )}
-                    {!isClassic && <hr className="border-theme-border opacity-30" />}
-                    <Controls
-                      group={activeGroup}
-                      onUpdateGroup={handleUpdateGroup}
-                      onMarkDirty={markEconomicsDirty}
-                      openSectionKey={controlsOpenSection}
-                      onOpenSectionHandled={() => setControlsOpenSection(null)}
-                    />
-                </aside>
-
-                {/* MIDDLE: Visuals */}
-                <section className={`xl:col-span-5 lg:col-span-8 lg:min-h-0 flex flex-col space-y-6 ${mobileSection !== 'WORKSPACE' ? 'hidden lg:flex' : ''}`}>
-                    {/* Map */}
-                    {isClassic ? (
-                      <div className="w-full shrink-0 min-h-[360px] h-[min(54vh,520px)] sc-panel theme-transition">
-                        <div className="sc-panelTitlebar sc-titlebar--neutral px-4 py-3 flex justify-between items-center">
-                          <h2 className="text-[11px] font-black uppercase tracking-[0.25em] text-white flex items-center gap-3">
-                            <span className="w-2 h-2 rounded-full bg-white/70"></span>
-                            BASIN VISUALIZER
-                          </h2>
-                          <button
-                            onClick={handleSelectAll}
-                            className="text-[10px] font-black uppercase tracking-[0.2em] text-white/90 hover:text-white transition-colors"
-                          >
-                            {filteredWells.length > 0 && selectedVisibleCount === filteredWells.length ? 'DESELECT FILTERED' : 'SELECT FILTERED'}
-                          </button>
-                        </div>
-                        <div className="p-3 h-[calc(100%-48px)]">
-                          <div className="sc-screen h-full w-full">
-                            <MapVisualizer 
-                              wells={MOCK_WELLS} 
-                              selectedWellIds={selectedWellIds}
-                              visibleWellIds={visibleWellIds}
-                              dimmedWellIds={dimmedWellIds}
-                              groups={processedGroups}
-                              onToggleWell={handleToggleWell}
-                              onSelectWells={handleSelectWells}
-                              themeId={themeId}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="w-full shrink-0 min-h-[360px] h-[min(54vh,520px)] rounded-panel border shadow-card relative overflow-hidden group theme-transition bg-theme-bg border-theme-border">
-                          {features.glowEffects && (
-                            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-theme-cyan via-theme-magenta to-theme-cyan opacity-40"></div>
-                          )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-theme-bg via-transparent to-transparent pointer-events-none"></div>
-                          <div className="flex justify-between items-center px-4 py-3 relative z-10 bg-black/10 backdrop-blur-sm border-b border-white/5">
-                              <h2 className="text-[11px] font-bold uppercase tracking-[0.3em] flex items-center gap-2 theme-transition text-theme-cyan">
-                                  <span className="w-2 h-2 rounded-full animate-pulse bg-theme-cyan"></span>
-                                  Basin Visualizer
-                              </h2>
-                              <div className="flex space-x-6">
-                                  <button onClick={handleSelectAll} className="text-[10px] font-bold tracking-[0.1em] theme-transition hover:scale-105 text-theme-lavender">
-                                      {filteredWells.length > 0 && selectedVisibleCount === filteredWells.length ? 'DESELECT FILTERED' : 'SELECT FILTERED'}
-                                  </button>
-                              </div>
-                          </div>
-                          <div className="h-[calc(100%-48px)] w-full relative z-0">
-                              <MapVisualizer 
-                                  wells={MOCK_WELLS} 
-                                  selectedWellIds={selectedWellIds}
-                                  visibleWellIds={visibleWellIds}
-                                  dimmedWellIds={dimmedWellIds}
-                                  groups={processedGroups}
-                                  onToggleWell={handleToggleWell}
-                                  onSelectWells={handleSelectWells}
-                                  themeId={themeId}
-                              />
-                          </div>
-                      </div>
-                    )}
-
-                    {economicsPanel}
-                </section>
-
-                {/* RIGHT: Selection / Actions */}
-                <section className={`xl:col-span-4 lg:col-span-12 lg:min-h-0 xl:overflow-y-auto scrollbar-hide flex flex-col space-y-8 pb-4 ${mobileSection !== 'KPIS' ? 'hidden lg:flex' : ''}`}>
-                  {operationsPanel}
-                </section>
-               </div>
+               {designWorkspace === 'WELLS' ? (
+                 <DesignWellsView
+                   isClassic={isClassic}
+                   theme={theme}
+                   themeId={themeId}
+                   viewportLayout={viewportLayout}
+                   mobilePanel={wellsMobilePanel}
+                   onSetMobilePanel={setWellsMobilePanel}
+                   groups={processedGroups}
+                   activeGroupId={activeGroupId}
+                   selectedWellCount={selectedVisibleCount}
+                   onActivateGroup={setActiveGroupId}
+                   onAddGroup={handleAddGroup}
+                   onCloneGroup={handleCloneGroup}
+                   onAssignWells={handleAssignWellsToActive}
+                   onCreateGroupFromSelection={handleCreateGroupFromSelection}
+                   onSelectAll={handleSelectAll}
+                   onClearSelection={handleClearSelection}
+                   operatorFilter={operatorFilter}
+                   formationFilter={formationFilter}
+                   statusFilter={statusFilter}
+                   operatorOptions={operatorOptions}
+                   formationOptions={formationOptions}
+                   statusOptions={statusOptions}
+                   onSetOperatorFilter={setOperatorFilter}
+                   onSetFormationFilter={setFormationFilter}
+                   onSetStatusFilter={(value) => setStatusFilter(value)}
+                   onResetFilters={handleResetFilters}
+                   filteredWellsCount={filteredWells.length}
+                   totalWellCount={MOCK_WELLS.length}
+                   wells={MOCK_WELLS}
+                   selectedWellIds={selectedWellIds}
+                   visibleWellIds={visibleWellIds}
+                   dimmedWellIds={dimmedWellIds}
+                   onToggleWell={handleToggleWell}
+                   onSelectWells={handleSelectWells}
+                 />
+               ) : (
+                 <DesignEconomicsView
+                   isClassic={isClassic}
+                   themeId={themeId}
+                   workflowSteps={workflowSteps}
+                   mobilePanel={economicsMobilePanel}
+                   onSetMobilePanel={setEconomicsMobilePanel}
+                   activeGroup={activeGroup}
+                   onUpdateGroup={handleUpdateGroup}
+                   onMarkDirty={markEconomicsDirty}
+                   controlsOpenSection={controlsOpenSection}
+                   onControlsOpenHandled={() => setControlsOpenSection(null)}
+                   hasGroup={hasGroup}
+                   hasGroupWells={hasGroupWells}
+                   hasCapexItems={hasCapexItems}
+                   hasRun={hasRun}
+                   needsRerun={needsRerun}
+                   onJumpToWells={() => setDesignWorkspace('WELLS')}
+                   aggregateMetrics={aggregateMetrics}
+                   aggregateFlow={aggregateFlow}
+                   operationsProps={operationsProps}
+                 />
+               )}
              </>
         )}
 
