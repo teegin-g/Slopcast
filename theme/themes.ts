@@ -67,6 +67,7 @@ export interface ThemeMeta {
 const SynthwaveBackground = React.lazy(() => import('../components/SynthwaveBackground'));
 const MoonlightBackground = React.lazy(() => import('../components/MoonlightBackground'));
 const TropicalBackground = React.lazy(() => import('../components/TropicalBackground'));
+const MarioOverworldBackground = React.lazy(() => import('../components/MarioOverworldBackground'));
 
 // ---------------------------------------------------------------------------
 // Theme definitions
@@ -249,6 +250,11 @@ const mario: ThemeMeta = {
     brandFont: false,
     glowEffects: false,
   },
+  BackgroundComponent: MarioOverworldBackground,
+  atmosphereClass: 'theme-atmo',
+  headerAtmosphereClass: 'theme-atmo-header',
+  atmosphericOverlays: ['theme-atmo-bands', 'theme-atmo-horizon', 'theme-atmo-ridges'],
+  fxTheme: true,
 };
 
 // ---------------------------------------------------------------------------

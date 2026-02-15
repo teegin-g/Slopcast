@@ -87,6 +87,7 @@ async function main() {
         if (mode === 'cinematic' || mode === 'max') {
           localStorage.setItem('slopcast-fx-synthwave', mode);
           localStorage.setItem('slopcast-fx-tropical', mode);
+          localStorage.setItem('slopcast-fx-mario', mode);
         }
       }, { themeId: THEMES[0].id, session: DEFAULT_AUTH_SESSION, storageKey: 'slopcast-auth-session', mode: fxMode });
 
