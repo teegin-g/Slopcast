@@ -1,5 +1,6 @@
 import React from 'react';
 import { ThemeMeta } from '../../theme/themes';
+import DesignWorkspaceTabs, { DesignWorkspace } from './DesignWorkspaceTabs';
 
 type ViewMode = 'DASHBOARD' | 'ANALYSIS';
 
@@ -11,8 +12,11 @@ interface PageHeaderProps {
   setThemeId: (id: string) => void;
   viewMode: ViewMode;
   onSetViewMode: (mode: ViewMode) => void;
+  designWorkspace: DesignWorkspace;
+  onSetDesignWorkspace: (workspace: DesignWorkspace) => void;
+  economicsNeedsAttention: boolean;
+  wellsNeedsAttention: boolean;
   onNavigateHub: () => void;
-  sessionDisplayName: string;
   atmosphericOverlays: string[];
   headerAtmosphereClass: string;
   fxClass: string;
@@ -26,8 +30,11 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   setThemeId,
   viewMode,
   onSetViewMode,
+  designWorkspace,
+  onSetDesignWorkspace,
+  economicsNeedsAttention,
+  wellsNeedsAttention,
   onNavigateHub,
-  sessionDisplayName,
   atmosphericOverlays,
   headerAtmosphereClass,
   fxClass,
@@ -88,68 +95,72 @@ const PageHeader: React.FC<PageHeaderProps> = ({
             </div>
           </div>
 
-          <div className={isClassic ? 'flex items-center gap-2 flex-wrap' : 'flex items-center gap-1 p-1 rounded-panel border theme-transition bg-theme-bg border-theme-border flex-wrap'}>
-            <button
-              onClick={onNavigateHub}
-              className={
-                isClassic
-                  ? 'px-3 md:px-4 py-2 rounded-md text-[9px] md:text-[10px] font-black uppercase tracking-widest theme-transition border-2 shadow-card bg-black/15 text-white/90 border-black/25 hover:bg-black/20'
-                  : 'px-3 md:px-4 py-2 rounded-inner text-[9px] md:text-[10px] font-bold uppercase tracking-widest theme-transition text-theme-muted hover:text-theme-text'
-              }
-            >
-              HUB
-            </button>
-            <button
-              onClick={() => onSetViewMode('DASHBOARD')}
-              className={
-                isClassic
-                  ? `px-3 md:px-5 py-2 rounded-md text-[9px] md:text-[10px] font-black uppercase tracking-widest theme-transition border-2 shadow-card ${
-                      viewMode === 'DASHBOARD'
-                        ? 'bg-theme-cyan text-white border-theme-magenta'
+          <div className="flex items-center gap-2 w-full min-w-0 flex-nowrap">
+            <div className={isClassic ? 'flex items-center gap-1.5 min-w-0 flex-nowrap' : 'flex items-center gap-1 p-1 rounded-panel border theme-transition bg-theme-bg border-theme-border min-w-0 flex-nowrap'}>
+              <button
+                onClick={onNavigateHub}
+                className={
+                  isClassic
+                    ? 'px-2 md:px-3 lg:px-4 py-1.5 md:py-2 rounded-md text-[8px] md:text-[9px] lg:text-[10px] font-black uppercase tracking-widest theme-transition border-2 shadow-card bg-black/15 text-white/90 border-black/25 hover:bg-black/20 whitespace-nowrap'
+                    : 'px-2 md:px-3 lg:px-4 py-1.5 md:py-2 rounded-inner text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition text-theme-muted hover:text-theme-text whitespace-nowrap'
+                }
+              >
+                HUB
+              </button>
+              <button
+                onClick={() => onSetViewMode('DASHBOARD')}
+                className={
+                  isClassic
+                    ? `px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-md text-[8px] md:text-[9px] lg:text-[10px] font-black uppercase tracking-widest theme-transition border-2 shadow-card whitespace-nowrap ${
+                        viewMode === 'DASHBOARD'
+                          ? 'bg-theme-cyan text-white border-theme-magenta'
                         : 'bg-black/15 text-white/90 border-black/25 hover:bg-black/20'
-                    }`
-                  : `px-3 md:px-5 py-2 rounded-inner text-[9px] md:text-[10px] font-bold uppercase tracking-widest theme-transition ${
-                      viewMode === 'DASHBOARD'
-                        ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
+                      }`
+                    : `px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-inner text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition whitespace-nowrap ${
+                        viewMode === 'DASHBOARD'
+                          ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
                         : 'text-theme-muted hover:text-theme-text'
-                    }`
-              }
-            >
-              DESIGN
-            </button>
-            <button
-              onClick={() => onSetViewMode('ANALYSIS')}
-              className={
-                isClassic
-                  ? `px-3 md:px-5 py-2 rounded-md text-[9px] md:text-[10px] font-black uppercase tracking-widest theme-transition border-2 shadow-card ${
-                      viewMode === 'ANALYSIS'
-                        ? 'bg-theme-cyan text-white border-theme-magenta'
+                      }`
+                }
+              >
+                DESIGN
+              </button>
+              <button
+                onClick={() => onSetViewMode('ANALYSIS')}
+                className={
+                  isClassic
+                    ? `px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-md text-[8px] md:text-[9px] lg:text-[10px] font-black uppercase tracking-widest theme-transition border-2 shadow-card whitespace-nowrap ${
+                        viewMode === 'ANALYSIS'
+                          ? 'bg-theme-cyan text-white border-theme-magenta'
                         : 'bg-black/15 text-white/90 border-black/25 hover:bg-black/20'
-                    }`
-                  : `px-3 md:px-5 py-2 rounded-inner text-[9px] md:text-[10px] font-bold uppercase tracking-widest theme-transition ${
-                      viewMode === 'ANALYSIS'
-                        ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
+                      }`
+                    : `px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-inner text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition whitespace-nowrap ${
+                        viewMode === 'ANALYSIS'
+                          ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
                         : 'text-theme-muted hover:text-theme-text'
-                    }`
-              }
-            >
-              SCENARIOS
-            </button>
+                      }`
+                }
+              >
+                SCENARIOS
+              </button>
+            </div>
+
+            {viewMode === 'DASHBOARD' && (
+              <div className="min-w-0 flex-1">
+                <DesignWorkspaceTabs
+                  isClassic={isClassic}
+                  workspace={designWorkspace}
+                  onChange={onSetDesignWorkspace}
+                  economicsNeedsAttention={economicsNeedsAttention}
+                  wellsNeedsAttention={wellsNeedsAttention}
+                  compact
+                />
+              </div>
+            )}
           </div>
         </div>
 
         <div className="min-w-0 flex items-center justify-between md:justify-end gap-3">
-          <div
-            className={`hidden lg:flex items-center gap-2 px-3 py-1.5 border text-[10px] uppercase tracking-[0.18em] font-black theme-transition ${
-              isClassic
-                ? 'rounded-md border-black/25 bg-black/25 text-theme-warning'
-                : 'rounded-panel border-theme-border bg-theme-bg/70 text-theme-muted'
-            }`}
-          >
-            <span>Operator</span>
-            <span className={isClassic ? 'text-white' : 'text-theme-cyan'}>{sessionDisplayName}</span>
-          </div>
-
           <div className={`flex items-center rounded-full p-1 border theme-transition shrink-0 ${isClassic ? 'bg-black/25 border-black/30' : 'bg-theme-bg border-theme-border'}`}>
             {themes.map(t => (
               <button
@@ -172,6 +183,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
           </div>
         </div>
       </div>
+
     </header>
   );
 };

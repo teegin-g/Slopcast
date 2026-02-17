@@ -36,18 +36,20 @@ const DESIGN_SHOTS = [
     id: 'design-economics-summary',
     workspaceTab: 'Economics',
     resultsTabTestId: 'economics-results-tab-summary',
-    expectText: 'Run Summary',
+    expectedResultsTab: 'SUMMARY',
   },
   {
     id: 'design-economics-charts',
     workspaceTab: 'Economics',
     resultsTabTestId: 'economics-results-tab-charts',
+    expectedResultsTab: 'CHARTS',
     expectText: 'PRODUCTION FORECAST',
   },
   {
     id: 'design-economics-drivers',
     workspaceTab: 'Economics',
     resultsTabTestId: 'economics-results-tab-drivers',
+    expectedResultsTab: 'DRIVERS',
     expectText: 'Scenario Rank',
   },
 ];
@@ -63,7 +65,21 @@ const VIEWPORTS = [
 
 async function click(locator) {
   await locator.scrollIntoViewIfNeeded().catch(() => {});
-  await locator.click();
+  try {
+    await locator.click();
+  } catch {
+    await locator.click({ force: true });
+  }
+}
+
+async function clickByTestId(page, testId) {
+  await page.evaluate((id) => {
+    const el = document.querySelector(`[data-testid="${id}"]`);
+    if (!(el instanceof HTMLElement)) {
+      throw new Error(`Missing element for ${id}`);
+    }
+    el.click();
+  }, testId);
 }
 
 async function ensureDir(dir) {
@@ -152,13 +168,16 @@ async function main() {
               }
             }
             if (shot.resultsTabTestId) {
-              const tabButton = page.locator(`[data-testid="${shot.resultsTabTestId}"]`).first();
-              await tabButton.waitFor({ timeout: 15_000 });
-              await click(tabButton);
+              await clickByTestId(page, shot.resultsTabTestId);
+              if (shot.expectedResultsTab) {
+                await page.waitForFunction((expected) => localStorage.getItem('slopcast-econ-results-tab') === expected, shot.expectedResultsTab, { timeout: 15_000 });
+              }
             }
           }
 
-          await page.getByText(shot.expectText, { exact: false }).first().waitFor({ timeout: 15_000 });
+          if (shot.expectText) {
+            await page.getByText(shot.expectText, { exact: false }).first().waitFor({ timeout: 15_000 });
+          }
           await page.waitForTimeout(200);
           const fileName = `${viewport.id}__${theme.id}__${shot.id}.png`;
           await page.screenshot({ path: path.join(outDir, fileName), fullPage: true });

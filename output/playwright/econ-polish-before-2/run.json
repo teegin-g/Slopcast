@@ -1,0 +1,68 @@
+{
+  "baseURL": "http://127.0.0.1:3000/",
+  "outDir": "/Users/teegingroves/Programming/Slopcast/output/playwright/econ-polish-before-2",
+  "fxMode": null,
+  "startedAt": "2026-02-15T22:04:23.096Z",
+  "themes": [
+    {
+      "id": "slate",
+      "title": "Slate"
+    },
+    {
+      "id": "mario",
+      "title": "Classic"
+    }
+  ],
+  "views": [
+    {
+      "id": "scenarios",
+      "tabName": "SCENARIOS",
+      "expectText": "MODEL STACK"
+    }
+  ],
+  "designShots": [
+    {
+      "id": "design-wells",
+      "workspaceTab": "Wells",
+      "expectText": "Basin Visualizer"
+    },
+    {
+      "id": "design-economics-summary",
+      "workspaceTab": "Economics",
+      "resultsTabTestId": "economics-results-tab-summary",
+      "expectedResultsTab": "SUMMARY"
+    },
+    {
+      "id": "design-economics-charts",
+      "workspaceTab": "Economics",
+      "resultsTabTestId": "economics-results-tab-charts",
+      "expectedResultsTab": "CHARTS",
+      "expectText": "PRODUCTION FORECAST"
+    },
+    {
+      "id": "design-economics-drivers",
+      "workspaceTab": "Economics",
+      "resultsTabTestId": "economics-results-tab-drivers",
+      "expectedResultsTab": "DRIVERS",
+      "expectText": "Scenario Rank"
+    }
+  ],
+  "viewports": [
+    {
+      "id": "desktop",
+      "width": 1440,
+      "height": 900,
+      "isMobile": false,
+      "deviceScaleFactor": 2
+    },
+    {
+      "id": "mobile",
+      "width": 390,
+      "height": 844,
+      "isMobile": true,
+      "hasTouch": true,
+      "deviceScaleFactor": 2
+    }
+  ],
+  "finishedAt": "2026-02-15T22:04:49.667Z"
+}

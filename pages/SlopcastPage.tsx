@@ -5,13 +5,12 @@ import { Scenario, ScheduleParams, Well, WellGroup } from '../types';
 import ScenarioDashboard from '../components/ScenarioDashboard';
 import DesignEconomicsView, { EconomicsMobilePanel } from '../components/slopcast/DesignEconomicsView';
 import DesignWellsView, { WellsMobilePanel } from '../components/slopcast/DesignWellsView';
-import DesignWorkspaceTabs, { DesignWorkspace } from '../components/slopcast/DesignWorkspaceTabs';
+import { DesignWorkspace } from '../components/slopcast/DesignWorkspaceTabs';
 import { EconomicsResultsTab } from '../components/slopcast/EconomicsResultsTabs';
 import PageHeader from '../components/slopcast/PageHeader';
 import { DesignStep, StepStatus, WorkflowStep } from '../components/slopcast/WorkflowStepper';
 import { useViewportLayout } from '../components/slopcast/hooks/useViewportLayout';
 import { useTheme } from '../theme/ThemeProvider';
-import { useAuth } from '../auth/AuthProvider';
 import { aggregateEconomics, calculateEconomics } from '../utils/economics';
 
 type ViewMode = 'DASHBOARD' | 'ANALYSIS'; 
@@ -124,7 +123,6 @@ const readStoredEconomicsResultsTab = (): EconomicsResultsTab => {
 const SlopcastPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { session } = useAuth();
   // --- Theme (from provider) ---
   const { themeId, theme, themes, setThemeId } = useTheme();
   const isClassic = themeId === 'mario';
@@ -852,8 +850,11 @@ const SlopcastPage: React.FC = () => {
         setThemeId={setThemeId}
         viewMode={viewMode}
         onSetViewMode={setViewMode}
+        designWorkspace={designWorkspace}
+        onSetDesignWorkspace={setDesignWorkspace}
+        economicsNeedsAttention={economicsNeedsAttention}
+        wellsNeedsAttention={wellsNeedsAttention}
         onNavigateHub={() => navigate('/hub')}
-        sessionDisplayName={session?.user.displayName || 'Demo User'}
         atmosphericOverlays={atmosphericOverlays}
         headerAtmosphereClass={headerAtmosphereClass}
         fxClass={fxClass}
@@ -870,14 +871,6 @@ const SlopcastPage: React.FC = () => {
              />
         ) : (
              <>
-               <DesignWorkspaceTabs
-                 isClassic={isClassic}
-                 workspace={designWorkspace}
-                 onChange={setDesignWorkspace}
-                 economicsNeedsAttention={economicsNeedsAttention}
-                 wellsNeedsAttention={wellsNeedsAttention}
-               />
-
                {designWorkspace === 'WELLS' ? (
                  <DesignWellsView
                    isClassic={isClassic}
@@ -938,7 +931,6 @@ const SlopcastPage: React.FC = () => {
                    hasCapexItems={hasCapexItems}
                    hasRun={hasRun}
                    needsRerun={needsRerun}
-                   onJumpToWells={() => setDesignWorkspace('WELLS')}
                    aggregateMetrics={aggregateMetrics}
                    aggregateFlow={aggregateFlow}
                    operationsProps={operationsProps}

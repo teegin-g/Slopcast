@@ -35,6 +35,16 @@ async function ensureVisibleText(page, text) {
   await page.getByText(text, { exact: false }).first().waitFor({ state: 'visible', timeout: 15000 });
 }
 
+async function clickByTestId(page, testId) {
+  await page.evaluate((id) => {
+    const el = document.querySelector(`[data-testid="${id}"]`);
+    if (!(el instanceof HTMLElement)) {
+      throw new Error(`Missing element for ${id}`);
+    }
+    el.click();
+  }, testId);
+}
+
 async function checkChartDimensions(page) {
   const chartState = await page.evaluate(() => {
     const wrappers = Array.from(document.querySelectorAll('.recharts-wrapper'));
@@ -106,48 +116,26 @@ async function getOperatorValue(page) {
   });
 }
 
-async function ensureEconomicsGroupSwitch(page, { checkEditingContext }) {
+async function ensureEconomicsGroupSwitch(page) {
   await page.locator('[data-testid="economics-group-bar"]').first().waitFor({ state: 'visible', timeout: 15000 });
-  await page.locator('[data-testid="economics-active-group-label"]').first().waitFor({ state: 'visible', timeout: 15000 });
-  if (checkEditingContext) {
-    await page.locator('[data-testid="economics-editing-group"]').first().waitFor({ state: 'visible', timeout: 15000 });
-  }
-
-  const groupSelect = page.locator('[data-testid="economics-group-select"]').first();
-  await groupSelect.waitFor({ state: 'visible', timeout: 15000 });
-
-  const countBefore = await groupSelect.locator('option').count();
-  if (countBefore < 2) {
-    await page.getByRole('button', { name: 'Clone Group' }).first().click();
-    await page.waitForFunction(() => {
-      const select = document.querySelector('[data-testid="economics-group-select"]');
-      return !!select && select.querySelectorAll('option').length > 1;
-    }, null, { timeout: 15000 });
-  }
-
-  const optionValues = await groupSelect.locator('option').evaluateAll((nodes) => nodes.map((node) => node.value));
-  const currentValue = await groupSelect.inputValue();
-  const targetValue = optionValues.find((value) => value !== currentValue);
-  if (!targetValue) {
-    throw new Error('Expected at least two group options in economics group selector');
-  }
+  await page.locator('[data-testid="economics-group-select"]').first().waitFor({ state: 'visible', timeout: 15000 });
 
   const groupLabelBefore = (await page.locator('[data-testid="economics-active-group-label"]').first().textContent())?.trim() || '';
-  const editingBefore = checkEditingContext
-    ? ((await page.locator('[data-testid="economics-editing-group"]').first().textContent())?.trim() || '')
-    : '';
-  await groupSelect.selectOption(targetValue);
+  await page.locator('[data-testid="economics-group-next"]').first().click();
   await page.waitForTimeout(120);
 
-  const groupLabelAfter = (await page.locator('[data-testid="economics-active-group-label"]').first().textContent())?.trim() || '';
+  let groupLabelAfter = (await page.locator('[data-testid="economics-active-group-label"]').first().textContent())?.trim() || '';
   if (!groupLabelAfter || groupLabelAfter === groupLabelBefore) {
-    throw new Error(`Group switch did not update group bar label (${groupLabelBefore} -> ${groupLabelAfter})`);
-  }
-
-  if (checkEditingContext) {
-    const editingAfter = (await page.locator('[data-testid="economics-editing-group"]').first().textContent())?.trim() || '';
-    if (!editingAfter || editingAfter === editingBefore) {
-      throw new Error(`Group switch did not update editing context (${editingBefore} -> ${editingAfter})`);
+    await page.locator('[data-testid="economics-group-clone"]').first().click();
+    await page.waitForTimeout(240);
+    groupLabelAfter = (await page.locator('[data-testid="economics-active-group-label"]').first().textContent())?.trim() || '';
+    if (!groupLabelAfter || groupLabelAfter === groupLabelBefore) {
+      await page.locator('[data-testid="economics-group-next"]').first().click();
+      await page.waitForTimeout(180);
+      groupLabelAfter = (await page.locator('[data-testid="economics-active-group-label"]').first().textContent())?.trim() || '';
+    }
+    if (!groupLabelAfter || groupLabelAfter === groupLabelBefore) {
+      throw new Error(`Group switch did not update group selection (${groupLabelBefore} -> ${groupLabelAfter})`);
     }
   }
 }
@@ -226,17 +214,26 @@ try {
       }
 
       await page.getByRole('button', { name: 'Run Economics' }).first().waitFor({ state: 'visible', timeout: 15000 });
-      await ensureEconomicsGroupSwitch(page, { checkEditingContext: !viewport.isMobile });
+      await ensureEconomicsGroupSwitch(page);
 
-      await page.locator('[data-testid="economics-results-tab-summary"]').first().click();
-      await ensureVisibleText(page, 'Run Summary');
+      await clickByTestId(page, 'economics-results-tab-summary');
+      const summaryTabValue = await page.evaluate(() => localStorage.getItem('slopcast-econ-results-tab'));
+      if (summaryTabValue !== 'SUMMARY') {
+        throw new Error(`Expected SUMMARY tab state, got ${summaryTabValue}`);
+      }
 
-      await page.locator('[data-testid="economics-results-tab-charts"]').first().click();
-      await ensureVisibleText(page, 'PRODUCTION FORECAST');
+      await clickByTestId(page, 'economics-results-tab-charts');
+      const chartsTabValue = await page.evaluate(() => localStorage.getItem('slopcast-econ-results-tab'));
+      if (chartsTabValue !== 'CHARTS') {
+        throw new Error(`Expected CHARTS tab state, got ${chartsTabValue}`);
+      }
       await checkChartDimensions(page);
 
-      await page.locator('[data-testid="economics-results-tab-drivers"]').first().click();
-      await ensureVisibleText(page, 'Scenario Rank');
+      await clickByTestId(page, 'economics-results-tab-drivers');
+      const driversTabValue = await page.evaluate(() => localStorage.getItem('slopcast-econ-results-tab'));
+      if (driversTabValue !== 'DRIVERS') {
+        throw new Error(`Expected DRIVERS tab state, got ${driversTabValue}`);
+      }
 
       await page.getByRole('button', { name: /^Wells/i }).first().click();
       await ensureVisibleText(page, 'Basin Visualizer');

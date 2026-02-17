@@ -280,32 +280,42 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
                 {actionMessage && <span className="ml-2 text-theme-cyan">{actionMessage}</span>}
               </div>
 
-              <div className="rounded-inner border p-3 bg-theme-bg border-theme-border space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Validation</p>
-                  <button
-                    type="button"
-                    onClick={() => setShowValidationDetails(prev => !prev)}
-                    className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-cyan"
-                  >
-                    {showValidationDetails ? 'Hide' : 'Details'}
-                  </button>
-                </div>
-                {validationWarnings.length > 0 ? (
-                  <p className="text-[10px] text-theme-muted">
-                    {validationWarnings.length} checks need attention.
-                  </p>
-                ) : (
-                  <p className="text-[10px] text-theme-muted">All checks passed.</p>
-                )}
-                {showValidationDetails && validationWarnings.length > 0 && (
-                  <div className="space-y-1">
-                    {validationWarnings.map((warning) => (
-                      <p key={warning} className="text-[10px] text-theme-muted">{warning}</p>
-                    ))}
+              {compactEconomics && !showValidationDetails ? (
+                <button
+                  type="button"
+                  onClick={() => setShowValidationDetails(true)}
+                  className="w-full rounded-inner border px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-theme-cyan bg-theme-bg border-theme-border text-left"
+                >
+                  Show Validation
+                </button>
+              ) : (
+                <div className="rounded-inner border p-3 bg-theme-bg border-theme-border space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Validation</p>
+                    <button
+                      type="button"
+                      onClick={() => setShowValidationDetails(prev => !prev)}
+                      className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-cyan"
+                    >
+                      {showValidationDetails ? 'Hide' : 'Details'}
+                    </button>
                   </div>
-                )}
-              </div>
+                  {validationWarnings.length > 0 ? (
+                    <p className="text-[10px] text-theme-muted">
+                      {validationWarnings.length} checks need attention.
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-theme-muted">All checks passed.</p>
+                  )}
+                  {showValidationDetails && validationWarnings.length > 0 && (
+                    <div className="space-y-1">
+                      {validationWarnings.map((warning) => (
+                        <p key={warning} className="text-[10px] text-theme-muted">{warning}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </>
           ) : (
             <>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Controls from '../Controls';
 import Charts from '../Charts';
 import { ThemeId } from '../../theme/themes';
@@ -35,7 +35,6 @@ interface DesignEconomicsViewProps {
   hasCapexItems: boolean;
   hasRun: boolean;
   needsRerun: boolean;
-  onJumpToWells: () => void;
   aggregateMetrics: {
     npv10: number;
     totalCapex: number;
@@ -73,11 +72,11 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   hasCapexItems,
   hasRun,
   needsRerun,
-  onJumpToWells,
   aggregateMetrics,
   aggregateFlow,
   operationsProps,
 }) => {
+  const [showSetupInsights, setShowSetupInsights] = useState(false);
   const checklist = [
     { id: 'group', label: 'Choose active group', done: hasGroup },
     { id: 'wells', label: 'Assign wells to group', done: hasGroupWells },
@@ -123,9 +122,6 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
         activeGroupId={activeGroupId}
         onActivateGroup={onActivateGroup}
         onCloneActiveGroup={() => onCloneGroup(activeGroupId)}
-        onJumpToWells={onJumpToWells}
-        needsRerun={needsRerun}
-        canRun={operationsProps.canRun}
       />
 
       <div
@@ -175,57 +171,6 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
             mobilePanel !== 'SETUP' ? 'hidden lg:block' : ''
           }`}
         >
-          <div
-            className={
-              isClassic
-                ? 'sc-panel theme-transition'
-                : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
-            }
-          >
-            <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-3' : 'px-4 py-3 border-b border-theme-border/60'}>
-              <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
-                Economics Readiness
-              </h2>
-            </div>
-            <div className="p-4 space-y-3">
-              <p className="text-[10px] text-theme-muted">
-                {activeWorkflowStep?.label || 'Setup'} step is <span className="uppercase font-black text-theme-cyan">{activeWorkflowStep?.status.toLowerCase()}</span>.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
-                {checklist.map((item) => (
-                  <div key={item.id} className="rounded-inner border border-theme-border bg-theme-bg px-3 py-2">
-                    <p className={`text-[9px] font-black uppercase tracking-[0.16em] ${readinessTone(item.done)}`}>
-                      {item.done ? 'Done' : 'Pending'}
-                    </p>
-                    <p className="text-[10px] text-theme-text mt-1">{item.label}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="rounded-inner border border-theme-border bg-theme-bg px-3 py-2">
-                <p className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-lavender">Current blocker</p>
-                <p className="text-[10px] text-theme-muted mt-1">{readinessBlocker}</p>
-              </div>
-            </div>
-          </div>
-
-          <div
-            className={
-              isClassic
-                ? 'sc-panel theme-transition p-4'
-                : 'rounded-panel border shadow-card p-4 theme-transition bg-theme-surface1 border-theme-border'
-            }
-          >
-            <p className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.2em] text-white' : 'text-[10px] font-black uppercase tracking-[0.2em] text-theme-cyan'}>
-              Setup Context
-            </p>
-            <p data-testid="economics-editing-group" className="text-sm font-black text-theme-text mt-2">
-              Editing {activeGroup.name}
-            </p>
-            <p className="text-[10px] text-theme-muted mt-1">
-              {activeGroup.wellIds.size} wells • CAPEX items {activeGroup.capex.items.length}
-            </p>
-          </div>
-
           <Controls
             group={activeGroup}
             onUpdateGroup={onUpdateGroup}
@@ -233,6 +178,50 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
             openSectionKey={controlsOpenSection}
             onOpenSectionHandled={onControlsOpenHandled}
           />
+
+          <div
+            className={
+              isClassic
+                ? 'sc-panel theme-transition'
+                : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
+            }
+          >
+            <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
+              <div className="flex items-center justify-between gap-2">
+                <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
+                  Setup Insights
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setShowSetupInsights(prev => !prev)}
+                  className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-cyan"
+                >
+                  {showSetupInsights ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </div>
+            {showSetupInsights && (
+              <div className="p-4 space-y-3">
+                <p className="text-[10px] text-theme-muted">
+                  {activeWorkflowStep?.label || 'Setup'} step is <span className="uppercase font-black text-theme-cyan">{activeWorkflowStep?.status.toLowerCase()}</span>.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
+                  {checklist.map((item) => (
+                    <div key={item.id} className="rounded-inner border border-theme-border bg-theme-bg px-3 py-2">
+                      <p className={`text-[9px] font-black uppercase tracking-[0.16em] ${readinessTone(item.done)}`}>
+                        {item.done ? 'Done' : 'Pending'}
+                      </p>
+                      <p className="text-[10px] text-theme-text mt-1">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="rounded-inner border border-theme-border bg-theme-bg px-3 py-2">
+                  <p className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-lavender">Current blocker</p>
+                  <p className="text-[10px] text-theme-muted mt-1">{readinessBlocker}</p>
+                </div>
+              </div>
+            )}
+          </div>
         </aside>
 
         <section
@@ -240,12 +229,11 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
             mobilePanel !== 'RESULTS' ? 'hidden lg:block' : ''
           }`}
         >
-          <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />
-
           <EconomicsResultsTabs isClassic={isClassic} tab={resultsTab} onChange={onSetResultsTab} />
 
           {resultsTab === 'SUMMARY' && (
             <>
+              <KpiGrid isClassic={isClassic} metrics={aggregateMetrics} />
               <div
                 className={
                   isClassic
@@ -264,7 +252,6 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                 </p>
                 <p className="text-[10px] text-theme-muted mt-1">{runMetaSummary}</p>
               </div>
-              <KpiGrid isClassic={isClassic} metrics={aggregateMetrics} />
             </>
           )}
 
@@ -335,6 +322,8 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
               </div>
             </div>
           )}
+
+          <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />
         </section>
       </div>
     </>
