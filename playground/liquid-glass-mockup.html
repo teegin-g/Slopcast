@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="en" data-theme="slate">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Slopcast — Liquid Glass Mockup</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3CradialGradient id='g' cx='32' cy='18' r='40'%3E%3Cstop offset='0' stop-color='%23ffffff' stop-opacity='.9'/%3E%3Cstop offset='.45' stop-color='%233b82f6' stop-opacity='.9'/%3E%3Cstop offset='1' stop-color='%230f172a' stop-opacity='1'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='18' fill='url(%23g)'/%3E%3Cpath d='M20 38c0-9 7-16 16-16 7 0 13 5 15 12-3-3-7-5-12-5-9 0-16 7-16 16 0 1 0 2 .2 3C21.2 45.6 20 41.9 20 38z' fill='%23ffffff' fill-opacity='.55'/%3E%3Ctext x='32' y='40' text-anchor='middle' font-family='Inter, system-ui, -apple-system' font-size='22' font-weight='900' fill='%23ffffff'%3ES%3C/text%3E%3C/svg%3E"
+    />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;700;900&family=Permanent+Marker&family=Press+Start+2P&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles/theme.css" />
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              theme: {
+                bg: "rgb(var(--bg-deep) / <alpha-value>)",
+                space: "rgb(var(--bg-space) / <alpha-value>)",
+                surface1: "rgb(var(--surface-1) / <alpha-value>)",
+                surface2: "rgb(var(--surface-2) / <alpha-value>)",
+                border: "rgb(var(--border) / <alpha-value>)",
+                cyan: "rgb(var(--cyan) / <alpha-value>)",
+                magenta: "rgb(var(--magenta) / <alpha-value>)",
+                violet: "rgb(var(--violet) / <alpha-value>)",
+                purple: "rgb(var(--purple) / <alpha-value>)",
+                lavender: "rgb(var(--lav) / <alpha-value>)",
+                text: "rgb(var(--text) / <alpha-value>)",
+                muted: "rgb(var(--muted) / <alpha-value>)",
+                success: "rgb(var(--success) / <alpha-value>)",
+                warning: "rgb(var(--warning) / <alpha-value>)",
+                danger: "rgb(var(--danger) / <alpha-value>)",
+              },
+            },
+            fontFamily: {
+              brand: ["var(--font-brand)", "sans-serif"],
+              script: ['"Permanent Marker"', "cursive"],
+            },
+            boxShadow: {
+              "glow-cyan": "var(--shadow-glow-cyan)",
+              "glow-magenta": "var(--shadow-glow-magenta)",
+              card: "var(--shadow-card)",
+            },
+            borderRadius: {
+              panel: "var(--radius-panel)",
+              inner: "calc(var(--radius-panel) - 6px)",
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      :root {
+        --glass-blur: 26px;
+        --glass-sat: 175%;
+        --glass-bright: 115%;
+        --glass-contrast: 112%;
+        --glass-stroke-a: rgba(255, 255, 255, 0.22);
+        --glass-stroke-b: rgba(255, 255, 255, 0.06);
+        --glass-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+        --glass-inner: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+        --glass-noise-opacity: 0.055;
+        --glass-highlight-opacity: 0.35;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        font-family: var(--font-brand), system-ui, -apple-system, Segoe UI, Roboto, Inter, sans-serif;
+        color: rgb(var(--text));
+        background: var(--grad-space);
+        overflow-x: hidden;
+      }
+
+      .atmo {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      .atmo::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(800px circle at var(--px, 45%) var(--py, 20%), rgba(var(--ambient-left) / 0.22) 0%, rgba(var(--ambient-left) / 0) 58%),
+          radial-gradient(920px circle at calc(var(--px, 45%) + 18%) calc(var(--py, 20%) + 14%), rgba(var(--ambient-right) / 0.18) 0%, rgba(var(--ambient-right) / 0) 62%);
+        filter: blur(0.5px);
+        opacity: 0.9;
+      }
+
+      .atmo::after {
+        content: "";
+        position: absolute;
+        inset: -20%;
+        background:
+          radial-gradient(500px circle at 18% 18%, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0) 60%),
+          radial-gradient(420px circle at 82% 20%, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 62%),
+          radial-gradient(520px circle at 62% 78%, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 64%);
+        transform: translate3d(0, 0, 0);
+        animation: drift 14s ease-in-out infinite alternate;
+        opacity: 0.55;
+      }
+
+      @keyframes drift {
+        0% {
+          transform: translate3d(-1.2%, -0.8%, 0) scale(1.02);
+        }
+        100% {
+          transform: translate3d(1.0%, 0.6%, 0) scale(1.03);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .atmo::after {
+          animation: none;
+        }
+      }
+
+      .glass {
+        position: relative;
+        border-radius: var(--radius-panel);
+        border: 1px solid rgba(var(--border) / 0.55);
+        background: rgba(var(--surface-1) / 0.18);
+        box-shadow: var(--glass-shadow);
+        backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat)) brightness(var(--glass-bright)) contrast(var(--glass-contrast));
+        -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-sat)) brightness(var(--glass-bright)) contrast(var(--glass-contrast));
+        transform: translate3d(0, 0, 0);
+      }
+
+      .glass::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        background:
+          radial-gradient(520px circle at var(--px, 50%) var(--py, 20%), rgba(255, 255, 255, var(--glass-highlight-opacity)) 0%, rgba(255, 255, 255, 0) 60%),
+          linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(0, 0, 0, 0.10) 100%);
+        mask: linear-gradient(#000, #000);
+        opacity: 0.88;
+      }
+
+      .glass::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        pointer-events: none;
+        background:
+          linear-gradient(180deg, var(--glass-stroke-a), var(--glass-stroke-b)) border-box;
+        box-shadow: var(--glass-inner);
+        opacity: 0.9;
+      }
+
+      .glass-inner {
+        border-radius: calc(var(--radius-panel) - 6px);
+        border: 1px solid rgba(var(--border) / 0.55);
+        background: rgba(var(--surface-2) / 0.20);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(calc(var(--glass-sat) * 0.9));
+        -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(calc(var(--glass-sat) * 0.9));
+      }
+
+      .glass-noise {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        border-radius: inherit;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
+        opacity: var(--glass-noise-opacity);
+        mix-blend-mode: overlay;
+      }
+
+      .seg {
+        border-radius: 999px;
+        border: 1px solid rgba(var(--border) / 0.55);
+        background: rgba(var(--surface-1) / 0.25);
+        padding: 4px;
+        backdrop-filter: blur(calc(var(--glass-blur) * 0.85));
+        -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.85));
+      }
+
+      .seg button {
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 12px;
+        line-height: 1;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        font-weight: 800;
+        color: rgba(var(--text) / 0.78);
+        transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+      }
+
+      .seg button[aria-pressed="true"] {
+        background: rgba(255, 255, 255, 0.16);
+        color: rgba(var(--text) / 0.96);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      }
+
+      .seg button:active {
+        transform: translateY(1px);
+      }
+
+      .chip {
+        border-radius: 999px;
+        border: 1px solid rgba(var(--border) / 0.55);
+        background: rgba(var(--surface-2) / 0.18);
+        padding: 6px 10px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(var(--text) / 0.80);
+      }
+
+      .btn-glass {
+        border-radius: 999px;
+        border: 1px solid rgba(var(--border) / 0.65);
+        background: rgba(var(--surface-2) / 0.20);
+        padding: 10px 12px;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: rgba(var(--text) / 0.88);
+        backdrop-filter: blur(calc(var(--glass-blur) * 0.85)) saturate(calc(var(--glass-sat) * 0.95));
+        -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.85)) saturate(calc(var(--glass-sat) * 0.95));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+      }
+
+      .btn-glass:hover {
+        background: rgba(var(--surface-2) / 0.26);
+        border-color: rgba(255, 255, 255, 0.22);
+      }
+
+      .btn-glass:active {
+        transform: translateY(1px);
+      }
+
+      .input-glass {
+        width: 100%;
+        border-radius: calc(var(--radius-panel) - 6px);
+        border: 1px solid rgba(var(--border) / 0.65);
+        background: rgba(var(--surface-1) / 0.16);
+        padding: 12px 12px;
+        font-size: 14px;
+        color: rgba(var(--text) / 0.92);
+        outline: none;
+        backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(calc(var(--glass-sat) * 0.95));
+        -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(calc(var(--glass-sat) * 0.95));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+      }
+
+      .input-glass::placeholder {
+        color: rgba(var(--muted) / 0.9);
+      }
+
+      .input-glass:focus {
+        border-color: rgba(var(--cyan) / 0.85);
+        box-shadow: 0 0 0 3px rgba(var(--cyan) / 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.10);
+      }
+
+      .kpi {
+        border-radius: calc(var(--radius-panel) - 6px);
+        border: 1px solid rgba(var(--border) / 0.55);
+        background: rgba(var(--surface-2) / 0.16);
+        padding: 12px;
+      }
+
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="atmo" aria-hidden="true"></div>
+
+    <main class="min-h-screen px-4 py-5 md:px-7 md:py-7">
+      <section class="mx-auto w-full max-w-[1240px]">
+        <header class="glass rounded-panel border border-theme-border/60 px-4 py-3 md:px-5 md:py-4">
+          <div class="glass-noise" aria-hidden="true"></div>
+          <div class="relative z-10 flex items-center gap-3">
+            <div class="flex items-center gap-3">
+              <div class="h-9 w-9 rounded-inner border border-theme-border/60 bg-theme-surface2/25 grid place-items-center shadow-glow-cyan">
+                <span class="text-sm font-black tracking-widest">S</span>
+              </div>
+              <div class="leading-tight">
+                <div class="text-[11px] uppercase tracking-[0.28em] text-theme-muted">Slopcast</div>
+                <div class="font-black tracking-tight text-theme-text">Liquid Glass Prototype</div>
+              </div>
+            </div>
+
+            <div class="ml-auto hidden md:flex items-center gap-3">
+              <div class="seg flex items-center gap-1" role="group" aria-label="View mode">
+                <button id="btnBuilder" aria-pressed="true" type="button">Builder</button>
+                <button id="btnAnalysis" aria-pressed="false" type="button">Analysis</button>
+              </div>
+
+              <div class="seg flex items-center gap-1" role="group" aria-label="Theme">
+                <button id="btnSlate" aria-pressed="true" type="button">Slate</button>
+                <button id="btnMario" aria-pressed="false" type="button">Mario</button>
+              </div>
+
+              <button id="btnFx" class="btn-glass" type="button">FX: On</button>
+            </div>
+          </div>
+        </header>
+
+        <div class="mt-4 md:hidden flex items-center justify-between gap-3">
+          <div class="seg flex items-center gap-1" role="group" aria-label="View mode">
+            <button id="btnBuilderM" aria-pressed="true" type="button">Builder</button>
+            <button id="btnAnalysisM" aria-pressed="false" type="button">Analysis</button>
+          </div>
+
+          <div class="seg flex items-center gap-1" role="group" aria-label="Theme">
+            <button id="btnSlateM" aria-pressed="true" type="button">Slate</button>
+            <button id="btnMarioM" aria-pressed="false" type="button">Mario</button>
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-12 gap-4">
+          <aside class="glass col-span-12 md:col-span-3 rounded-panel border border-theme-border/60">
+            <div class="glass-noise" aria-hidden="true"></div>
+            <div class="relative z-10 p-4">
+              <div class="flex items-center justify-between">
+                <div class="text-[11px] uppercase tracking-[0.28em] text-theme-muted">Workspace</div>
+                <span class="chip">Local</span>
+              </div>
+
+              <div class="mt-3 glass-inner rounded-inner border border-theme-border/60 p-3">
+                <div class="text-xs font-black tracking-wide text-theme-text">Episodes</div>
+                <div class="mt-2 space-y-2">
+                  <button class="w-full text-left rounded-inner border border-theme-border/50 bg-theme-surface2/10 px-3 py-2">
+                    <div class="text-[11px] font-black tracking-wide">Permian — PDP refresh</div>
+                    <div class="text-[11px] text-theme-muted">8:12 • draft</div>
+                  </button>
+                  <button class="w-full text-left rounded-inner border border-theme-border/40 bg-theme-surface2/5 px-3 py-2">
+                    <div class="text-[11px] font-black tracking-wide">DJ Basin — type curves</div>
+                    <div class="text-[11px] text-theme-muted">14:09 • ready</div>
+                  </button>
+                  <button class="w-full text-left rounded-inner border border-theme-border/40 bg-theme-surface2/5 px-3 py-2">
+                    <div class="text-[11px] font-black tracking-wide">Eagle Ford — A&D memo</div>
+                    <div class="text-[11px] text-theme-muted">5:45 • queued</div>
+                  </button>
+                </div>
+              </div>
+
+              <div class="mt-3 grid grid-cols-2 gap-3">
+                <div class="kpi">
+                  <div class="text-[10px] uppercase tracking-[0.28em] text-theme-muted">Runs</div>
+                  <div class="mt-1 text-lg font-black text-theme-text">12</div>
+                </div>
+                <div class="kpi">
+                  <div class="text-[10px] uppercase tracking-[0.28em] text-theme-muted">Status</div>
+                  <div class="mt-1 text-[12px] font-black text-theme-success">Green</div>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <section class="col-span-12 md:col-span-6">
+            <div id="viewBuilder" class="glass rounded-panel border border-theme-border/60">
+              <div class="glass-noise" aria-hidden="true"></div>
+              <div class="relative z-10 p-4 md:p-5">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <div class="text-[11px] uppercase tracking-[0.28em] text-theme-muted">Builder</div>
+                    <div class="mt-1 text-lg font-black text-theme-text">Deal graph + prompt</div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="chip">Draft</span>
+                    <button class="btn-glass" type="button">Run</button>
+                  </div>
+                </div>
+
+                <div class="mt-4 grid grid-cols-12 gap-3">
+                  <div class="glass-inner col-span-12 rounded-inner border border-theme-border/60 p-3">
+                    <div class="flex items-center justify-between gap-2">
+                      <div class="text-xs font-black tracking-wide text-theme-text">Prompt</div>
+                      <div class="flex items-center gap-2">
+                        <span class="chip mono">gpt-</span>
+                        <span class="chip">Cost: 0.03</span>
+                      </div>
+                    </div>
+                    <div class="mt-2">
+                      <input
+                        class="input-glass"
+                        value="Evaluate PDP/PUD mix, propose price guardrails, and draft a one-page IC memo."
+                        aria-label="Prompt"
+                      />
+                    </div>
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                      <span class="chip">PDP</span>
+                      <span class="chip">Strip</span>
+                      <span class="chip">Differentials</span>
+                      <span class="chip">Taxes</span>
+                      <span class="chip">LOE</span>
+                      <span class="chip">Capex</span>
+                    </div>
+                  </div>
+
+                  <div class="glass-inner col-span-12 rounded-inner border border-theme-border/60 p-4">
+                    <div class="flex items-center justify-between">
+                      <div class="text-xs font-black tracking-wide text-theme-text">Graph</div>
+                      <span class="chip">Auto-layout</span>
+                    </div>
+                    <div class="mt-3 grid grid-cols-12 gap-3">
+                      <div class="col-span-12 md:col-span-7 space-y-2">
+                        <div class="kpi">
+                          <div class="text-[10px] uppercase tracking-[0.28em] text-theme-muted">Node</div>
+                          <div class="mt-1 text-[12px] font-black text-theme-text">Inputs</div>
+                          <div class="mt-2 text-[12px] text-theme-muted">
+                            Prices, declines, costs, ownership, macro, and constraints.
+                          </div>
+                        </div>
+                        <div class="kpi">
+                          <div class="text-[10px] uppercase tracking-[0.28em] text-theme-muted">Node</div>
+                          <div class="mt-1 text-[12px] font-black text-theme-text">Economics</div>
+                          <div class="mt-2 text-[12px] text-theme-muted">
+                            NPV/IRR, payout, sensitivities, risk checks.
+                          </div>
+                        </div>
+                        <div class="kpi">
+                          <div class="text-[10px] uppercase tracking-[0.28em] text-theme-muted">Node</div>
+                          <div class="mt-1 text-[12px] font-black text-theme-text">Memo</div>
+                          <div class="mt-2 text-[12px] text-theme-muted">
+                            Executive summary, valuation, risks, recommendation.
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="col-span-12 md:col-span-5">
+                        <div class="kpi h-full">
+                          <div class="text-[10px] uppercase tracking-[0.28em] text-theme-muted">Live output</div>
+                          <div class="mt-1 text-[12px] font-black text-theme-text">Preview</div>
+                          <div class="mt-2 space-y-2 text-[12px] text-theme-muted">
+                            <div class="flex items-center justify-between">
+                              <span>NPV10</span>
+                              <span class="text-theme-text font-black">$182MM</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                              <span>IRR</span>
+                              <span class="text-theme-text font-black">32%</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                              <span>Payback</span>
+                              <span class="text-theme-text font-black">2.1y</span>
+                            </div>
+                            <div class="mt-3">
+                              <svg viewBox="0 0 120 36" class="w-full">
+                                <path
+                                  d="M0,28 C14,18 28,20 42,12 C56,4 70,10 84,14 C98,18 108,14 120,6"
+                                  fill="none"
+                                  stroke="rgba(59,130,246,0.9)"
+                                  stroke-width="2.5"
+                                />
+                                <path
+                                  d="M0,28 C14,18 28,20 42,12 C56,4 70,10 84,14 C98,18 108,14 120,6 L120,36 L0,36 Z"
+                                  fill="rgba(59,130,246,0.14)"
+                                />
+                              </svg>
+                            </div>
+                            <div class="mt-2 flex items-center justify-between">
+                              <span>Confidence</span>
+                              <span class="chip">Med</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="viewAnalysis" class="glass rounded-panel border border-theme-border/60 hidden">
+              <div class="glass-noise" aria-hidden="true"></div>
+              <div class="relative z-10 p-4 md:p-5">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <div class="text-[11px] uppercase tracking-[0.28em] text-theme-muted">Analysis</div>
+                    <div class="mt-1 text-lg font-black text-theme-text">IC-ready snapshot</div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button class="btn-glass" type="button">Export</button>
+                    <button class="btn-glass" type="button">Share</button>
+                  </div>
+                </div>
+
+                <div class="mt-4 grid grid-cols-12 gap-3">
+                  <div class="glass-inner col-span-12 md:col-span-7 rounded-inner border border-theme-border/60 p-4">
+                    <div class="flex items-center justify-between">
+                      <div class="text-xs font-black tracking-wide text-theme-text">Sensitivity</div>
+                      <span class="chip">WTI ±10</span>
+                    </div>
+                    <div class="mt-3 grid grid-cols-3 gap-2">
+                      <div class="kpi">
+                        <div class="text-[10px] uppercase tracking-[0.28em] text-theme-muted">Low</div>
+                        <div class="mt-1 text-[13px] font-black text-theme-text">$92MM</div>
+                        <div class="mt-1 text-[11px] text-theme-muted">NPV10</div>
+                      </div>
+                      <div class="kpi border-theme-cyan/60">
+                        <div class="text-[10px] uppercase tracking-[0.28em] text-theme-muted">Base</div>
+                        <div class="mt-1 text-[13px] font-black text-theme-text">$182MM</div>
+                        <div class="mt-1 text-[11px] text-theme-muted">NPV10</div>
+                      </div>
+                      <div class="kpi">
+                        <div class="text-[10px] uppercase tracking-[0.28em] text-theme-muted">High</div>
+                        <div class="mt-1 text-[13px] font-black text-theme-text">$261MM</div>
+                        <div class="mt-1 text-[11px] text-theme-muted">NPV10</div>
+                      </div>
+                    </div>
+                    <div class="mt-3 kpi">
+                      <div class="text-[10px] uppercase tracking-[0.28em] text-theme-muted">Notes</div>
+                      <div class="mt-1 text-[12px] text-theme-muted">
+                        Major drivers: strip, differentials, development pace, and LOE inflation.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="glass-inner col-span-12 md:col-span-5 rounded-inner border border-theme-border/60 p-4">
+                    <div class="flex items-center justify-between">
+                      <div class="text-xs font-black tracking-wide text-theme-text">Recommendation</div>
+                      <span class="chip">Guardrails</span>
+                    </div>
+                    <div class="mt-3 space-y-2 text-[12px] text-theme-muted">
+                      <div class="kpi">
+                        <div class="text-[10px] uppercase tracking-[0.28em] text-theme-muted">Price</div>
+                        <div class="mt-1 text-[13px] font-black text-theme-text">$1.15B max</div>
+                        <div class="mt-1 text-[11px] text-theme-muted">Base case</div>
+                      </div>
+                      <div class="kpi">
+                        <div class="text-[10px] uppercase tracking-[0.28em] text-theme-muted">Structure</div>
+                        <div class="mt-1 text-[13px] font-black text-theme-text">Earnout + hedge</div>
+                        <div class="mt-1 text-[11px] text-theme-muted">Downside protection</div>
+                      </div>
+                      <div class="kpi">
+                        <div class="text-[10px] uppercase tracking-[0.28em] text-theme-muted">Risks</div>
+                        <div class="mt-1 text-[12px] text-theme-muted">
+                          Spacing, water handling, service cost rebound, and strip backwardation.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <aside class="glass col-span-12 md:col-span-3 rounded-panel border border-theme-border/60">
+            <div class="glass-noise" aria-hidden="true"></div>
+            <div class="relative z-10 p-4">
+              <div class="flex items-center justify-between">
+                <div class="text-[11px] uppercase tracking-[0.28em] text-theme-muted">Inspector</div>
+                <span class="chip">v0</span>
+              </div>
+              <div class="mt-3 glass-inner rounded-inner border border-theme-border/60 p-3">
+                <div class="text-xs font-black tracking-wide text-theme-text">Controls</div>
+                <div class="mt-2 space-y-2">
+                  <label class="flex items-center justify-between gap-3 rounded-inner border border-theme-border/50 bg-theme-surface2/10 px-3 py-2 text-[12px] text-theme-muted">
+                    <span>Auto-summarize</span>
+                    <input type="checkbox" checked />
+                  </label>
+                  <label class="flex items-center justify-between gap-3 rounded-inner border border-theme-border/50 bg-theme-surface2/10 px-3 py-2 text-[12px] text-theme-muted">
+                    <span>Inline citations</span>
+                    <input type="checkbox" />
+                  </label>
+                  <label class="flex items-center justify-between gap-3 rounded-inner border border-theme-border/50 bg-theme-surface2/10 px-3 py-2 text-[12px] text-theme-muted">
+                    <span>Fast mode</span>
+                    <input type="checkbox" checked />
+                  </label>
+                </div>
+              </div>
+
+              <div class="mt-3 glass-inner rounded-inner border border-theme-border/60 p-3">
+                <div class="text-xs font-black tracking-wide text-theme-text">Context</div>
+                <div class="mt-2 space-y-2 text-[12px] text-theme-muted">
+                  <div class="flex items-center justify-between">
+                    <span>Deck</span>
+                    <span class="chip">Attached</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span>Model</span>
+                    <span class="chip mono">v6</span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span>Region</span>
+                    <span class="chip">Permian</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-3 flex items-center gap-2">
+                <button class="btn-glass w-full" type="button">Save</button>
+                <button class="btn-glass w-full" type="button">Reset</button>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <footer class="mt-4 glass rounded-panel border border-theme-border/60 px-4 py-3">
+          <div class="glass-noise" aria-hidden="true"></div>
+          <div class="relative z-10 flex flex-wrap items-center gap-3 text-[12px] text-theme-muted">
+            <span class="chip">Liquid glass: prototype only</span>
+            <span class="chip">Tokens: theme.css</span>
+            <span class="chip">Radii: rounded-panel / rounded-inner</span>
+            <span class="ml-auto text-[11px] uppercase tracking-[0.22em]">
+              Tip: move pointer for highlights
+            </span>
+          </div>
+        </footer>
+      </section>
+    </main>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+
+      const elHtml = document.documentElement;
+      const viewBuilder = $("viewBuilder");
+      const viewAnalysis = $("viewAnalysis");
+
+      function setPressed(group, pressedId) {
+        for (const id of group) {
+          const el = $(id);
+          if (!el) continue;
+          el.setAttribute("aria-pressed", id === pressedId ? "true" : "false");
+        }
+      }
+
+      function setView(mode) {
+        const isBuilder = mode === "builder";
+        viewBuilder.classList.toggle("hidden", !isBuilder);
+        viewAnalysis.classList.toggle("hidden", isBuilder);
+        setPressed(["btnBuilder", "btnAnalysis"], isBuilder ? "btnBuilder" : "btnAnalysis");
+        setPressed(["btnBuilderM", "btnAnalysisM"], isBuilder ? "btnBuilderM" : "btnAnalysisM");
+      }
+
+      function setTheme(themeId) {
+        elHtml.setAttribute("data-theme", themeId);
+        setPressed(["btnSlate", "btnMario"], themeId === "slate" ? "btnSlate" : "btnMario");
+        setPressed(["btnSlateM", "btnMarioM"], themeId === "slate" ? "btnSlateM" : "btnMarioM");
+      }
+
+      function setFx(enabled) {
+        const btnFx = $("btnFx");
+        if (!btnFx) return;
+        btnFx.textContent = enabled ? "FX: On" : "FX: Off";
+        document.documentElement.style.setProperty("--glass-noise-opacity", enabled ? "0.055" : "0");
+        document.documentElement.style.setProperty("--glass-highlight-opacity", enabled ? "0.35" : "0.18");
+      }
+
+      $("btnBuilder")?.addEventListener("click", () => setView("builder"));
+      $("btnAnalysis")?.addEventListener("click", () => setView("analysis"));
+      $("btnBuilderM")?.addEventListener("click", () => setView("builder"));
+      $("btnAnalysisM")?.addEventListener("click", () => setView("analysis"));
+
+      $("btnSlate")?.addEventListener("click", () => setTheme("slate"));
+      $("btnMario")?.addEventListener("click", () => setTheme("mario"));
+      $("btnSlateM")?.addEventListener("click", () => setTheme("slate"));
+      $("btnMarioM")?.addEventListener("click", () => setTheme("mario"));
+
+      let fxEnabled = true;
+      $("btnFx")?.addEventListener("click", () => {
+        fxEnabled = !fxEnabled;
+        setFx(fxEnabled);
+      });
+
+      const atmo = document.querySelector(".atmo");
+      function onPointerMove(e) {
+        const x = (e.clientX / window.innerWidth) * 100;
+        const y = (e.clientY / window.innerHeight) * 100;
+        elHtml.style.setProperty("--px", `${x}%`);
+        elHtml.style.setProperty("--py", `${y}%`);
+        atmo?.style.setProperty("--px", `${x}%`);
+        atmo?.style.setProperty("--py", `${y}%`);
+      }
+      window.addEventListener("pointermove", onPointerMove, { passive: true });
+
+      setTheme("slate");
+      setView("builder");
+      setFx(true);
+    </script>
+  </body>
+</html>

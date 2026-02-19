@@ -5,6 +5,7 @@ import { ThemeId } from '../../theme/themes';
 import { MonthlyCashFlow, WellGroup } from '../../types';
 import KpiGrid from './KpiGrid';
 import OperationsConsole, { OperationsConsoleProps } from './OperationsConsole';
+import EconomicsDriversPanel from './EconomicsDriversPanel';
 import { WorkflowStep } from './WorkflowStepper';
 import EconomicsGroupBar from './EconomicsGroupBar';
 import EconomicsResultsTabs, { EconomicsResultsTab } from './EconomicsResultsTabs';
@@ -45,10 +46,6 @@ interface DesignEconomicsViewProps {
   aggregateFlow: MonthlyCashFlow[];
   operationsProps: OperationsConsoleProps;
 }
-
-const readinessTone = (done: boolean) => {
-  return done ? 'text-theme-cyan' : 'text-theme-muted';
-};
 
 const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   isClassic,
@@ -97,10 +94,6 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
           : needsRerun
             ? 'Inputs changed. Run economics to refresh results.'
             : 'Ready for review.';
-
-  const runMetaSummary = operationsProps.validationWarnings.length > 0
-    ? `${operationsProps.validationWarnings.length} validation checks need attention.`
-    : 'All validation checks passed.';
 
   const chartPanel = (
     <div
@@ -179,6 +172,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
             onOpenSectionHandled={onControlsOpenHandled}
           />
 
+          {/* Setup Insights - compact vertical checklist */}
           <div
             className={
               isClassic
@@ -205,16 +199,25 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                 <p className="text-[10px] text-theme-muted">
                   {activeWorkflowStep?.label || 'Setup'} step is <span className="uppercase font-black text-theme-cyan">{activeWorkflowStep?.status.toLowerCase()}</span>.
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
+
+                {/* Compact vertical checklist instead of tile grid */}
+                <div className="space-y-1">
                   {checklist.map((item) => (
-                    <div key={item.id} className="rounded-inner border border-theme-border bg-theme-bg px-3 py-2">
-                      <p className={`text-[9px] font-black uppercase tracking-[0.16em] ${readinessTone(item.done)}`}>
-                        {item.done ? 'Done' : 'Pending'}
-                      </p>
-                      <p className="text-[10px] text-theme-text mt-1">{item.label}</p>
+                    <div key={item.id} className="flex items-center gap-2.5 py-1.5 px-2 rounded-inner hover:bg-theme-surface2/50 transition-colors">
+                      <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 text-[8px] font-black ${
+                        item.done
+                          ? 'bg-theme-cyan/20 border-theme-cyan text-theme-cyan'
+                          : 'bg-transparent border-theme-border text-transparent'
+                      }`}>
+                        {item.done ? '✓' : ''}
+                      </span>
+                      <span className={`text-[10px] ${item.done ? 'text-theme-text' : 'text-theme-muted'}`}>
+                        {item.label}
+                      </span>
                     </div>
                   ))}
                 </div>
+
                 <div className="rounded-inner border border-theme-border bg-theme-bg px-3 py-2">
                   <p className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-lavender">Current blocker</p>
                   <p className="text-[10px] text-theme-muted mt-1">{readinessBlocker}</p>
@@ -232,98 +235,43 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
           <EconomicsResultsTabs isClassic={isClassic} tab={resultsTab} onChange={onSetResultsTab} />
 
           {resultsTab === 'SUMMARY' && (
-            <>
+            <div className="space-y-6">
+              {/* Hero NPV + stat strip */}
               <KpiGrid isClassic={isClassic} metrics={aggregateMetrics} />
-              <div
-                className={
-                  isClassic
-                    ? 'sc-panel theme-transition p-4'
-                    : 'rounded-panel border shadow-card p-4 theme-transition bg-theme-surface1/70 border-theme-border'
-                }
-              >
-                <p className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.2em] text-white' : 'text-[10px] font-black uppercase tracking-[0.2em] text-theme-cyan'}>
-                  Run Summary
+
+              {/* Divider: Execution section */}
+              <div className="border-t border-theme-border/30 pt-2">
+                <p className={isClassic
+                  ? 'text-[9px] font-black uppercase tracking-[0.2em] text-white/50 mb-3'
+                  : 'text-[9px] font-black uppercase tracking-[0.2em] text-theme-muted/60 mb-3'
+                }>
+                  Execution
                 </p>
-                <p className="text-[10px] text-theme-muted mt-2">
-                  {operationsProps.lastEconomicsRunAt
-                    ? `Last run ${new Date(operationsProps.lastEconomicsRunAt).toLocaleString()}`
-                    : 'No run yet'}
-                  {needsRerun && <span className="ml-2 text-theme-warning">Rerun needed.</span>}
-                </p>
-                <p className="text-[10px] text-theme-muted mt-1">{runMetaSummary}</p>
               </div>
-            </>
+
+              {/* Compact run bar (replaces separate Run Summary + OperationsConsole) */}
+              <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />
+            </div>
           )}
 
           {resultsTab === 'CHARTS' && chartPanel}
 
           {resultsTab === 'DRIVERS' && (
-            <div
-              className={
-                isClassic
-                  ? 'sc-panel theme-transition p-4 space-y-3'
-                  : 'rounded-panel border shadow-card p-4 theme-transition bg-theme-surface1/70 border-theme-border space-y-3'
-              }
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {operationsProps.topDrivers.map((driver) => (
-                  <div key={driver.id} className="rounded-inner border p-3 bg-theme-bg border-theme-border">
-                    <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">{driver.label}</p>
-                    <p className={`text-lg font-black ${driver.dominantDelta >= 0 ? 'text-theme-cyan' : 'text-theme-magenta'}`}>
-                      {(driver.dominantDelta / 1e6).toFixed(1)} MM
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="rounded-inner border p-3 bg-theme-bg border-theme-border">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Biggest Upside</p>
-                  <p className="text-[10px] text-theme-muted">{operationsProps.biggestPositive?.label || 'n/a'}</p>
-                  <p className="text-lg font-black text-theme-cyan">
-                    {operationsProps.biggestPositive ? `${(operationsProps.biggestPositive.deltaNpv / 1e6).toFixed(1)} MM` : '-'}
-                  </p>
-                </div>
-                <div className="rounded-inner border p-3 bg-theme-bg border-theme-border">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Biggest Downside</p>
-                  <p className="text-[10px] text-theme-muted">{operationsProps.biggestNegative?.label || 'n/a'}</p>
-                  <p className="text-lg font-black text-theme-magenta">
-                    {operationsProps.biggestNegative ? `${(operationsProps.biggestNegative.deltaNpv / 1e6).toFixed(1)} MM` : '-'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="rounded-inner border p-3 bg-theme-bg border-theme-border">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Breakeven Oil</p>
-                  <p className="text-2xl font-black text-theme-text">
-                    {operationsProps.breakevenOilPrice !== null ? `$${operationsProps.breakevenOilPrice.toFixed(1)}` : 'Out of range'}
-                  </p>
-                </div>
-                <div className="rounded-inner border p-3 bg-theme-bg border-theme-border">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Payout Highlights</p>
-                  <p className="text-[10px] text-theme-muted">Portfolio: {operationsProps.payoutMonths > 0 ? `${operationsProps.payoutMonths} mo` : '-'}</p>
-                  <p className="text-[10px] text-theme-muted">Fastest: {operationsProps.fastestPayoutScenarioName}</p>
-                </div>
-              </div>
-
-              <div className="rounded-inner border overflow-hidden bg-theme-bg border-theme-border">
-                <div className="px-3 py-2 border-b text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender border-theme-border">
-                  Scenario Rank (NPV / ROI)
-                </div>
-                <div className="max-h-56 overflow-y-auto">
-                  {operationsProps.scenarioRankings.map((row, idx) => (
-                    <div key={row.id} className="px-3 py-2 text-[10px] border-b border-theme-border/30 flex items-center justify-between text-theme-muted">
-                      <span className="font-semibold text-theme-text">{idx + 1}. {row.name}</span>
-                      <span>NPV {(row.npv10 / 1e6).toFixed(1)} | ROI {row.roi.toFixed(2)}x</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <EconomicsDriversPanel
+              isClassic={isClassic}
+              topDrivers={operationsProps.topDrivers}
+              biggestPositive={operationsProps.biggestPositive}
+              biggestNegative={operationsProps.biggestNegative}
+              breakevenOilPrice={operationsProps.breakevenOilPrice}
+              payoutMonths={operationsProps.payoutMonths}
+              fastestPayoutScenarioName={operationsProps.fastestPayoutScenarioName}
+              scenarioRankings={operationsProps.scenarioRankings}
+            />
           )}
 
-          <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />
+          {resultsTab !== 'SUMMARY' && (
+            <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />
+          )}
         </section>
       </div>
     </>
