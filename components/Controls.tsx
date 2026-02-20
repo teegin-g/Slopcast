@@ -34,7 +34,7 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
         isClassic
           ? `sc-panel theme-transition mb-3 ${isOpen ? 'ring-2 ring-theme-warning/30' : ''}`
           : `
-            border rounded-panel overflow-hidden theme-transition mb-3 shadow-sm
+            border rounded-panel overflow-hidden theme-transition mb-3 shadow-card
             ${isOpen 
               ? 'bg-theme-surface1 border-theme-magenta shadow-glow-magenta' 
               : 'bg-theme-surface1/40 border-theme-border'}
@@ -45,7 +45,7 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
         onClick={() => onToggle(id)}
         className={
           isClassic
-            ? `w-full flex items-center justify-between px-4 py-3 text-left transition-all sc-panelTitlebar sc-titlebar--red ${
+            ? `w-full flex items-center justify-between px-4 py-3 text-left transition-all sc-panelTitlebar sc-titlebar--neutral ${
                 isOpen ? 'text-white' : 'text-white/90'
               }`
             : `w-full flex items-center justify-between px-4 py-3 text-left transition-all ${isOpen ? 'text-theme-cyan' : 'text-theme-muted'}`
@@ -116,8 +116,8 @@ const Controls: React.FC<ControlsProps> = ({
   }, [group.capex.items, group.wellIds.size]);
 
   const inputClass = isClassic
-    ? 'w-full rounded-md px-3 py-1.5 text-[11px] font-black sc-inputNavy'
-    : 'w-full bg-theme-bg border rounded-lg px-3 py-1.5 text-[11px] text-theme-text outline-none focus:ring-1 theme-transition border-theme-border focus:border-theme-cyan focus:ring-theme-cyan/30';
+    ? 'w-full rounded-inner px-3 py-1.5 text-[11px] font-black sc-inputNavy'
+    : 'w-full bg-theme-bg border rounded-inner px-3 py-1.5 text-[11px] text-theme-text outline-none focus:ring-1 theme-transition border-theme-border focus:border-theme-cyan focus:ring-theme-cyan/30';
 
   const labelClass = isClassic
     ? 'text-[9px] font-black uppercase tracking-[0.2em] mb-1 block text-theme-warning'
@@ -170,7 +170,7 @@ const Controls: React.FC<ControlsProps> = ({
             }}
             className={
               isClassic
-                ? 'sc-btnPrimary px-3 py-1.5 rounded-md text-[9px] font-black uppercase tracking-[0.16em]'
+                ? 'sc-btnPrimary px-3 py-1.5 rounded-inner text-[9px] font-black uppercase tracking-[0.16em]'
                 : 'px-3 py-1.5 rounded-inner text-[9px] font-black uppercase tracking-[0.16em] bg-theme-magenta text-white hover:shadow-glow-magenta transition-all'
             }
           >

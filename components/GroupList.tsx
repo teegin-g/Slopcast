@@ -43,7 +43,7 @@ const GroupList: React.FC<GroupListProps> = ({
                 <div
                   key={group.id}
                   onClick={() => onActivateGroup(group.id)}
-                  className={`border rounded-md overflow-hidden cursor-pointer transition-all ${
+                  className={`border rounded-inner overflow-hidden cursor-pointer transition-all ${
                     isActive ? 'border-theme-warning shadow-card' : 'border-black/25 hover:border-black/40'
                   }`}
                 >
@@ -102,10 +102,10 @@ const GroupList: React.FC<GroupListProps> = ({
             })}
 
             {/* Lasso Data */}
-            <div className={`border rounded-md overflow-hidden transition-all border-black/25 ${selectedWellCount > 0 ? 'opacity-100' : 'opacity-85'}`}>
+            <div className={`border rounded-inner overflow-hidden transition-all border-black/25 ${selectedWellCount > 0 ? 'opacity-100' : 'opacity-85'}`}>
               <div className="sc-panelTitlebar sc-titlebar--neutral px-4 py-2 flex items-center justify-between">
                 <span className="text-[10px] font-black uppercase tracking-[0.25em] text-white">LASSO DATA</span>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded bg-theme-cyan text-white border border-black/30">
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-inner bg-theme-cyan text-white border border-black/30">
                   {selectedWellCount} Wells
                 </span>
               </div>
@@ -113,7 +113,7 @@ const GroupList: React.FC<GroupListProps> = ({
                 <button
                   onClick={onAssignWells}
                   disabled={selectedWellCount === 0}
-                  className={`sc-btnSecondary w-full px-3 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${
+                  className={`sc-btnSecondary w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-widest transition-all ${
                     selectedWellCount > 0 ? '' : 'opacity-60 cursor-not-allowed'
                   }`}
                 >
@@ -122,7 +122,7 @@ const GroupList: React.FC<GroupListProps> = ({
                 <button
                   onClick={onCreateGroupFromSelection}
                   disabled={selectedWellCount === 0}
-                  className={`sc-btnSecondary w-full px-3 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${
+                  className={`sc-btnSecondary w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-widest transition-all ${
                     selectedWellCount > 0 ? '' : 'opacity-60 cursor-not-allowed'
                   }`}
                 >

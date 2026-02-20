@@ -105,7 +105,7 @@ const FiltersPanel: React.FC<{
             <select
               value={formationFilter}
               onChange={(e) => onSetFormationFilter(e.target.value)}
-              className="w-full rounded-md px-3 py-2 text-xs font-black sc-inputNavy"
+              className="w-full rounded-inner px-3 py-2 text-xs font-black sc-inputNavy"
             >
               <option value="ALL">All Formations</option>
               {formationOptions.map(formation => (
@@ -118,7 +118,7 @@ const FiltersPanel: React.FC<{
             <select
               value={statusFilter}
               onChange={(e) => onSetStatusFilter(e.target.value as Well['status'] | 'ALL')}
-              className="w-full rounded-md px-3 py-2 text-xs font-black sc-inputNavy"
+              className="w-full rounded-inner px-3 py-2 text-xs font-black sc-inputNavy"
             >
               <option value="ALL">All Statuses</option>
               {statusOptions.map(status => (
@@ -126,7 +126,7 @@ const FiltersPanel: React.FC<{
               ))}
             </select>
           </div>
-          <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/80 border border-black/25 rounded-md px-3 py-2">
+          <div className="text-[10px] font-black uppercase tracking-[0.18em] text-white/80 border border-black/25 rounded-inner px-3 py-2">
             {filteredWellsCount} visible / {totalWellCount} total
           </div>
         </div>
