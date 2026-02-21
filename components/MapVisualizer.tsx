@@ -12,6 +12,7 @@ interface MapVisualizerProps {
   onToggleWell: (id: string) => void;
   onSelectWells: (ids: string[]) => void;
   themeId: ThemeId;
+  uiBottomInsetPx?: number;
 }
 
 const PERMIAN_CENTER = {
@@ -124,7 +125,8 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
   groups,
   onToggleWell,
   onSelectWells,
-  themeId
+  themeId,
+  uiBottomInsetPx = 0,
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -350,9 +352,20 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
         >
           <span>{isLassoMode ? 'LASSO ENGAGED' : 'LASSO'}</span>
         </button>
+        <div className="mt-1 pointer-events-none">
+          <p
+            className={`px-2 py-1 rounded text-[9px] uppercase tracking-[0.14em] ${
+              isClassic
+                ? 'bg-black/40 text-white/80 border border-black/35'
+                : 'bg-theme-bg/70 text-theme-muted border border-theme-border/70'
+            }`}
+          >
+            Shift+drag to lasso
+          </p>
+        </div>
       </div>
 
-      <div className="absolute bottom-3 left-3 z-20 pointer-events-none">
+      <div className="absolute left-3 z-20 pointer-events-none" style={{ bottom: 12 + uiBottomInsetPx }}>
         <p className={`px-2 py-1 rounded text-[9px] uppercase tracking-[0.14em] ${isClassic ? 'bg-black/40 text-white/80 border border-black/35' : 'bg-theme-bg/70 text-theme-muted border border-theme-border/70'}`}>
           Map data © OpenStreetMap contributors
         </p>

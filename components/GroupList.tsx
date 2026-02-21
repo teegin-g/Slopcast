@@ -5,16 +5,13 @@ import { useTheme } from '../theme/ThemeProvider';
 interface GroupListProps {
   groups: WellGroup[];
   activeGroupId: string;
-  selectedWellCount: number;
   onActivateGroup: (id: string) => void;
   onAddGroup: () => void;
   onCloneGroup: (groupId: string) => void;
-  onAssignWells: () => void;
-  onCreateGroupFromSelection: () => void;
 }
 
 const GroupList: React.FC<GroupListProps> = ({ 
-  groups, activeGroupId, selectedWellCount, onActivateGroup, onAddGroup, onCloneGroup, onAssignWells, onCreateGroupFromSelection 
+  groups, activeGroupId, onActivateGroup, onAddGroup, onCloneGroup
 }) => {
   const { theme } = useTheme();
   const isClassic = theme.id === 'mario';
@@ -100,36 +97,6 @@ const GroupList: React.FC<GroupListProps> = ({
                 </div>
               );
             })}
-
-            {/* Lasso Data */}
-            <div className={`border rounded-inner overflow-hidden transition-all border-black/25 ${selectedWellCount > 0 ? 'opacity-100' : 'opacity-85'}`}>
-              <div className="sc-panelTitlebar sc-titlebar--neutral px-4 py-2 flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-[0.25em] text-white">LASSO DATA</span>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-inner bg-theme-cyan text-white border border-black/30">
-                  {selectedWellCount} Wells
-                </span>
-              </div>
-              <div className="p-3 space-y-2 bg-black/10">
-                <button
-                  onClick={onAssignWells}
-                  disabled={selectedWellCount === 0}
-                  className={`sc-btnSecondary w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-widest transition-all ${
-                    selectedWellCount > 0 ? '' : 'opacity-60 cursor-not-allowed'
-                  }`}
-                >
-                  ASSIGN TO ACTIVE GROUP
-                </button>
-                <button
-                  onClick={onCreateGroupFromSelection}
-                  disabled={selectedWellCount === 0}
-                  className={`sc-btnSecondary w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-widest transition-all ${
-                    selectedWellCount > 0 ? '' : 'opacity-60 cursor-not-allowed'
-                  }`}
-                >
-                  BUILD NEW SCENARIO
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       ) : (
@@ -167,7 +134,7 @@ const GroupList: React.FC<GroupListProps> = ({
                               <div className="flex items-center space-x-2">
                                   <button 
                                       onClick={(e) => { e.stopPropagation(); onCloneGroup(group.id); }}
-                                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded text-theme-muted hover:text-white transition-all"
+                                      className="opacity-100 md:opacity-0 md:group-hover:opacity-100 [@media(hover:none)]:opacity-100 p-1 hover:bg-white/10 rounded text-theme-muted hover:text-white transition-all"
                                       title="Clone Group"
                                   >
                                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
@@ -199,35 +166,6 @@ const GroupList: React.FC<GroupListProps> = ({
                       </div>
                   );
               })}
-          </div>
-
-          {/* Action Bar */}
-          <div className={`p-4 rounded-panel border mt-6 backdrop-blur theme-transition ${selectedWellCount > 0 ? 'opacity-100 translate-y-0' : 'opacity-70 translate-y-2 grayscale'} bg-theme-surface1/80 border-theme-magenta`}>
-              <div className="flex justify-between items-center text-xs mb-3">
-                  <span className={`font-bold uppercase tracking-wider text-[10px] text-theme-cyan ${theme.features.brandFont ? 'brand-font' : ''}`}>
-                      Lasso Data
-                  </span>
-                  <span className="font-mono px-2 py-0.5 rounded text-[10px] bg-theme-magenta text-white">
-                      {selectedWellCount} Wells
-                  </span>
-              </div>
-              
-              <div className="flex flex-col gap-2">
-                  <button 
-                      onClick={onAssignWells}
-                      disabled={selectedWellCount === 0}
-                      className={`w-full px-3 py-2 rounded-inner font-bold uppercase tracking-wide text-[10px] transition-all shadow-lg ${selectedWellCount > 0 ? 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan' : 'bg-theme-surface2 text-theme-muted cursor-not-allowed'}`}
-                  >
-                      Assign to Active Group
-                  </button>
-                  <button 
-                      onClick={onCreateGroupFromSelection}
-                      disabled={selectedWellCount === 0}
-                      className={`w-full px-3 py-2 rounded-inner font-bold uppercase tracking-wide text-[10px] transition-all border ${selectedWellCount > 0 ? 'bg-theme-surface2 text-theme-magenta border-theme-magenta hover:bg-theme-surface1' : 'bg-theme-surface2 text-theme-muted cursor-not-allowed border-theme-border'}`}
-                  >
-                      Build New Scenario
-                  </button>
-              </div>
           </div>
         </>
       )}

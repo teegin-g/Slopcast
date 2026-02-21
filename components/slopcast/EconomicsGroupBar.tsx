@@ -46,12 +46,6 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
   }, []);
 
   const handleSelectKeyDown: React.KeyboardEventHandler<HTMLButtonElement> = (event) => {
-    if (event.key === 'Tab') {
-      event.preventDefault();
-      cycleGroup(event.shiftKey ? -1 : 1);
-      return;
-    }
-
     if (event.key === 'ArrowLeft') {
       event.preventDefault();
       cycleGroup(-1);

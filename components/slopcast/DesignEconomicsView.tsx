@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Controls from '../Controls';
 import Charts from '../Charts';
 import { ThemeId } from '../../theme/themes';
-import { MonthlyCashFlow, WellGroup } from '../../types';
+import { MonthlyCashFlow, Well, WellGroup } from '../../types';
 import KpiGrid from './KpiGrid';
 import OperationsConsole, { OperationsConsoleProps } from './OperationsConsole';
 import EconomicsDriversPanel from './EconomicsDriversPanel';
 import { WorkflowStep } from './WorkflowStepper';
 import EconomicsGroupBar from './EconomicsGroupBar';
 import EconomicsResultsTabs, { EconomicsResultsTab } from './EconomicsResultsTabs';
+import GroupWellsTable from './GroupWellsTable';
 
 export type EconomicsMobilePanel = 'SETUP' | 'RESULTS';
 
@@ -22,6 +23,7 @@ interface DesignEconomicsViewProps {
   onSetMobilePanel: (panel: EconomicsMobilePanel) => void;
   resultsTab: EconomicsResultsTab;
   onSetResultsTab: (tab: EconomicsResultsTab) => void;
+  wells: Well[];
   groups: WellGroup[];
   activeGroupId: string;
   onActivateGroup: (id: string) => void;
@@ -55,6 +57,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   onSetMobilePanel,
   resultsTab,
   onSetResultsTab,
+  wells,
   groups,
   activeGroupId,
   onActivateGroup,
@@ -73,7 +76,16 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   aggregateFlow,
   operationsProps,
 }) => {
-  const [showSetupInsights, setShowSetupInsights] = useState(false);
+  const hasReadinessBlocker = !hasGroup || !hasGroupWells || !hasCapexItems || !hasRun || needsRerun;
+  const [showSetupInsights, setShowSetupInsights] = useState(hasReadinessBlocker);
+  const [didAutoOpenInsights, setDidAutoOpenInsights] = useState(hasReadinessBlocker);
+
+  useEffect(() => {
+    if (didAutoOpenInsights) return;
+    if (!hasReadinessBlocker) return;
+    setShowSetupInsights(true);
+    setDidAutoOpenInsights(true);
+  }, [didAutoOpenInsights, hasReadinessBlocker]);
   const checklist = [
     { id: 'group', label: 'Choose active group', done: hasGroup },
     { id: 'wells', label: 'Assign wells to group', done: hasGroupWells },
@@ -170,6 +182,15 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
             onMarkDirty={onMarkDirty}
             openSectionKey={controlsOpenSection}
             onOpenSectionHandled={onControlsOpenHandled}
+          />
+
+          <GroupWellsTable
+            isClassic={isClassic}
+            group={activeGroup}
+            wells={wells}
+            title="Wells in active group"
+            defaultSort={{ key: 'name', dir: 'asc' }}
+            dense
           />
 
           {/* Setup Insights - compact vertical checklist */}
