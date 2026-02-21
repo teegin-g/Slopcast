@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server.js",
+    "deploy:supabase:storage": "node scripts/deploy-supabase-storage.mjs",
     "ui:audit": "node scripts/ui-audit.mjs",
     "ui:shots": "node scripts/ui-snapshots.mjs",
     "ui:verify": "node scripts/ui-verify-flow.mjs",
@@ -16,7 +17,8 @@
     "theme:fx:url:clear": "node scripts/theme-fx-toggle.mjs clear",
     "theme:fx:cinematic": "node scripts/theme-fx-toggle.mjs cinematic --open",
     "theme:fx:max": "node scripts/theme-fx-toggle.mjs max --open",
-    "theme:fx:clear": "node scripts/theme-fx-toggle.mjs clear --open"
+    "theme:fx:clear": "node scripts/theme-fx-toggle.mjs clear --open",
+    "seed:supabase:wells": "node scripts/seed-wells.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.38.0",
