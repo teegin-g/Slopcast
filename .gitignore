@@ -43,3 +43,4 @@ ENV/
 artifacts/
 playwright-report/
 test-results/
+output/playwright/**/*.png
