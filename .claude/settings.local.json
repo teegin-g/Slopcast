@@ -27,7 +27,10 @@
       "Bash(npx playwright --version)",
       "Bash(npx playwright install chromium)",
       "Bash(npx vite build)",
-      "Bash(npx:*)"
+      "Bash(npx:*)",
+      "Skill(creative-exploration)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_wait_for"
     ]
   }
 }
