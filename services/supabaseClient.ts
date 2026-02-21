@@ -1,24 +1,31 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-function requiredEnv(name: string, value: string | undefined): string {
-  if (typeof value === 'string' && value.trim().length > 0) return value;
-  throw new Error(
-    `Missing ${name}. Add it to .env.local (Vite requires restarting the dev server after env changes).`
-  );
+let cachedClient: SupabaseClient | null | undefined;
+
+function readPublicKey(): string | undefined {
+  return import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 }
 
-/**
- * Supabase browser client.
- *
- * IMPORTANT:
- * - Use a public key only (Supabase "publishable"/"anon" key).
- * - Never put your Postgres connection string/password in Vite env vars.
- */
-export const supabase: SupabaseClient = createClient(
-  requiredEnv('VITE_SUPABASE_URL', import.meta.env.VITE_SUPABASE_URL),
-  requiredEnv(
-    'VITE_SUPABASE_ANON_KEY or VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY',
-    import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY
-  )
-);
+export function hasSupabaseEnv(): boolean {
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  const key = readPublicKey();
+  return typeof url === 'string' && url.trim().length > 0 && typeof key === 'string' && key.trim().length > 0;
+}
 
+export function getSupabaseClient(): SupabaseClient | null {
+  if (cachedClient !== undefined) return cachedClient;
+
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  const key = readPublicKey();
+  if (typeof url !== 'string' || url.trim().length === 0) {
+    cachedClient = null;
+    return cachedClient;
+  }
+  if (typeof key !== 'string' || key.trim().length === 0) {
+    cachedClient = null;
+    return cachedClient;
+  }
+
+  cachedClient = createClient(url, key);
+  return cachedClient;
+}

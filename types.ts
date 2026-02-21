@@ -141,3 +141,84 @@ export interface SensitivityMatrixResult {
   yValue: number;
   npv: number;
 }
+
+export type ProjectMemberRole = 'owner' | 'editor' | 'viewer';
+
+export interface ProjectUiState {
+  designWorkspace?: 'WELLS' | 'ECONOMICS';
+  economicsResultsTab?: 'SUMMARY' | 'CHARTS' | 'DRIVERS';
+  operatorFilter?: string;
+  formationFilter?: string;
+  statusFilter?: Well['status'] | 'ALL';
+}
+
+export interface ProjectRecord {
+  id: string;
+  ownerUserId: string;
+  name: string;
+  description: string | null;
+  activeGroupId: string | null;
+  uiState: ProjectUiState;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectGroupRecord {
+  id: string;
+  projectId: string;
+  name: string;
+  color: string;
+  sortOrder: number;
+  wellIds: string[];
+  typeCurve: TypeCurveParams;
+  capex: CapexAssumptions;
+  opex: OpexAssumptions;
+  ownership: OwnershipAssumptions;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ProjectScenarioRecord {
+  id: string;
+  projectId: string;
+  name: string;
+  color: string;
+  isBaseCase: boolean;
+  pricing: CommodityPricingAssumptions;
+  schedule: ScheduleParams;
+  capexScalar: number;
+  productionScalar: number;
+  sortOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface EconomicsRunRecord {
+  id: string;
+  projectId: string;
+  triggeredBy: string;
+  inputHash: string;
+  portfolioMetrics: {
+    npv10: number;
+    totalCapex: number;
+    eur: number;
+    payoutMonths: number;
+    wellCount: number;
+  };
+  warnings: string[];
+  createdAt: string;
+}
+
+export interface EconomicsRunGroupMetricRecord {
+  economicsRunId: string;
+  projectGroupId: string;
+  rank: number | null;
+  metrics: {
+    npv10: number;
+    totalCapex: number;
+    eur: number;
+    roi: number;
+    payoutMonths: number;
+    wellCount: number;
+  };
+}
