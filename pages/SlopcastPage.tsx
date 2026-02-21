@@ -10,6 +10,9 @@ import { EconomicsResultsTab } from '../components/slopcast/EconomicsResultsTabs
 import PageHeader from '../components/slopcast/PageHeader';
 import { DesignStep, StepStatus, WorkflowStep } from '../components/slopcast/WorkflowStepper';
 import { useViewportLayout } from '../components/slopcast/hooks/useViewportLayout';
+import { useProjectPersistence } from '../components/slopcast/hooks/useProjectPersistence';
+import { useAuth } from '../auth/AuthProvider';
+import { hasSupabaseEnv } from '../services/supabaseClient';
 import { useTheme } from '../theme/ThemeProvider';
 import { aggregateEconomics, calculateEconomics } from '../utils/economics';
 
@@ -38,29 +41,6 @@ type DriverFamily = {
   downShockId: string;
 };
 
-type SavedScenarioSnapshot = {
-  id: string;
-  name: string;
-  createdAt: string;
-  activeGroupId: string;
-  selectedWellCount: number;
-  portfolio: {
-    npv10: number;
-    totalCapex: number;
-    eur: number;
-    payoutMonths: number;
-    wellCount: number;
-  };
-  groups: {
-    id: string;
-    name: string;
-    wellCount: number;
-    npv10: number;
-    roi: number;
-    payoutMonths: number;
-  }[];
-};
-
 const DRIVER_SHOCKS: DriverShock[] = [
   { id: 'oil-up', label: 'Oil +$10/bbl', modifiers: { oilPriceDelta: 10 } },
   { id: 'oil-down', label: 'Oil -$10/bbl', modifiers: { oilPriceDelta: -10 } },
@@ -86,7 +66,6 @@ const DEFAULT_SCHEDULE: ScheduleParams = {
   rigStartDate: new Date().toISOString().split('T')[0],
 };
 
-const SAVED_SCENARIOS_STORAGE_KEY = 'slopcast-saved-scenarios';
 const DESIGN_WORKSPACE_STORAGE_KEY = 'slopcast-design-workspace';
 const ECONOMICS_RESULTS_TAB_STORAGE_KEY = 'slopcast-econ-results-tab';
 const FX_QUERY_KEY = 'fx';
@@ -123,6 +102,7 @@ const readStoredEconomicsResultsTab = (): EconomicsResultsTab => {
 const SlopcastPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { status, session } = useAuth();
   // --- Theme (from provider) ---
   const { themeId, theme, themes, setThemeId } = useTheme();
   const isClassic = themeId === 'mario';
@@ -289,6 +269,33 @@ const SlopcastPage: React.FC = () => {
     });
     return count;
   }, [selectedWellIds, visibleWellIds]);
+
+  const supabasePersistenceEnabled =
+    status === 'authenticated' && session?.provider === 'supabase' && hasSupabaseEnv();
+
+  const persistence = useProjectPersistence({
+    enabled: supabasePersistenceEnabled,
+    projectName: 'Slopcast Project',
+    groups,
+    scenarios,
+    activeGroupId,
+    uiState: {
+      designWorkspace,
+      economicsResultsTab,
+      operatorFilter,
+      formationFilter,
+      statusFilter,
+    },
+    setGroups,
+    setScenarios,
+    setActiveGroupId,
+    setDesignWorkspace,
+    setEconomicsResultsTab,
+    setOperatorFilter,
+    setFormationFilter,
+    setStatusFilter,
+    onStatusMessage: setActionMessage,
+  });
 
   // --- Handlers ---
   const activeGroup = processedGroups.find(g => g.id === activeGroupId) || processedGroups[0];
@@ -694,40 +701,18 @@ const SlopcastPage: React.FC = () => {
     setActionMessage('Print dialog opened for PDF export.');
   };
 
-  const handleSaveScenario = () => {
-    const snapshot: SavedScenarioSnapshot = {
-      id: `snapshot-${Date.now()}`,
-      name: `${activeGroup.name} Snapshot`,
-      createdAt: new Date().toISOString(),
-      activeGroupId,
-      selectedWellCount: selectedWellIds.size,
-      portfolio: {
-        npv10: aggregateMetrics.npv10,
-        totalCapex: aggregateMetrics.totalCapex,
-        eur: aggregateMetrics.eur,
-        payoutMonths: aggregateMetrics.payoutMonths,
-        wellCount: aggregateMetrics.wellCount,
-      },
-      groups: scenarioRankings.map(group => ({
-        id: group.id,
-        name: group.name,
-        wellCount: group.wellCount,
-        npv10: group.npv10,
-        roi: group.roi,
-        payoutMonths: group.payoutMonths,
-      })),
-    };
+  const handleSaveScenario = async () => {
+    if (!supabasePersistenceEnabled) {
+      setActionMessage('Supabase save unavailable. Enable Supabase auth and env vars to persist snapshots.');
+      return;
+    }
 
     try {
-      const raw = localStorage.getItem(SAVED_SCENARIOS_STORAGE_KEY);
-      const existing: SavedScenarioSnapshot[] = raw ? JSON.parse(raw) : [];
-      localStorage.setItem(
-        SAVED_SCENARIOS_STORAGE_KEY,
-        JSON.stringify([snapshot, ...existing].slice(0, 30))
-      );
-      setActionMessage(`${snapshot.name} saved.`);
-    } catch {
-      setActionMessage('Scenario save failed.');
+      await persistence.runEconomicsSnapshot(aggregateMetrics, scenarioRankings, validationWarnings);
+      setActionMessage(`${activeGroup.name} Snapshot saved.`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Scenario save failed.';
+      setActionMessage(`Scenario save failed: ${message}`);
     }
   };
 
@@ -738,20 +723,27 @@ const SlopcastPage: React.FC = () => {
   }, [actionMessage]);
 
   useEffect(() => {
+    if (!persistence.error) return;
+    setActionMessage(`Persistence error: ${persistence.error}`);
+  }, [persistence.error]);
+
+  useEffect(() => {
+    if (supabasePersistenceEnabled) return;
     try {
       localStorage.setItem(DESIGN_WORKSPACE_STORAGE_KEY, designWorkspace);
     } catch {
       // no-op
     }
-  }, [designWorkspace]);
+  }, [designWorkspace, supabasePersistenceEnabled]);
 
   useEffect(() => {
+    if (supabasePersistenceEnabled) return;
     try {
       localStorage.setItem(ECONOMICS_RESULTS_TAB_STORAGE_KEY, economicsResultsTab);
     } catch {
       // no-op
     }
-  }, [economicsResultsTab]);
+  }, [economicsResultsTab, supabasePersistenceEnabled]);
 
   const hasGroup = !!activeGroup;
   const hasGroupWells = activeGroup.wellIds.size > 0;
@@ -917,6 +909,7 @@ const SlopcastPage: React.FC = () => {
                    onSetMobilePanel={setEconomicsMobilePanel}
                    resultsTab={economicsResultsTab}
                    onSetResultsTab={setEconomicsResultsTab}
+                   wells={MOCK_WELLS}
                    groups={processedGroups}
                    activeGroupId={activeGroupId}
                    onActivateGroup={setActiveGroupId}
