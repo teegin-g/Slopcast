@@ -237,6 +237,12 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
     filteredWellsCount > 0 && selectedWellCount === filteredWellsCount ? 'Deselect filtered' : 'Select filtered';
   const mapHeightClass = isMobileMap ? 'h-[min(56vh,560px)]' : 'h-[min(64vh,620px)]';
 
+  const activeFilters = [
+    ...(operatorFilter !== 'ALL' ? [{ label: 'Operator', value: operatorFilter }] : []),
+    ...(formationFilter !== 'ALL' ? [{ label: 'Formation', value: formationFilter }] : []),
+    ...(statusFilter !== 'ALL' ? [{ label: 'Status', value: statusFilter }] : []),
+  ];
+
   return (
     <>
       <div
@@ -360,6 +366,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                     onSelectWells={onSelectWells}
                     themeId={themeId}
                     uiBottomInsetPx={isMobileMap ? 96 : 0}
+                    activeFilters={activeFilters}
                   />
                 </div>
               </div>
@@ -400,6 +407,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                   onSelectWells={onSelectWells}
                   themeId={themeId}
                   uiBottomInsetPx={isMobileMap ? 96 : 0}
+                  activeFilters={activeFilters}
                 />
               </div>
             </div>

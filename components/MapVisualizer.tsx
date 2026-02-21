@@ -3,6 +3,11 @@ import * as d3 from 'd3';
 import { Well, WellGroup } from '../types';
 import { ThemeId, getTheme } from '../theme/themes';
 
+interface ActiveFilter {
+  label: string;
+  value: string;
+}
+
 interface MapVisualizerProps {
   wells: Well[];
   selectedWellIds: Set<string>;
@@ -13,6 +18,7 @@ interface MapVisualizerProps {
   onSelectWells: (ids: string[]) => void;
   themeId: ThemeId;
   uiBottomInsetPx?: number;
+  activeFilters?: ActiveFilter[];
 }
 
 const PERMIAN_CENTER = {
@@ -127,6 +133,7 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
   onSelectWells,
   themeId,
   uiBottomInsetPx = 0,
+  activeFilters = [],
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -322,19 +329,43 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
 
       {/* HUD Info */}
       {!isClassic && (
-        <div className="absolute top-4 left-4 z-20 pointer-events-none select-none">
+        <div className="absolute top-4 left-4 z-20 pointer-events-none select-none space-y-1.5">
           <p className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded backdrop-blur transition-all bg-theme-bg/80 text-theme-cyan border border-theme-border">
             {visibleWellIds.size} Visible / {selectedWellIds.size} Selected
           </p>
+          {activeFilters.length > 0 && (
+            <div className="flex flex-col gap-1">
+              {activeFilters.map((f) => (
+                <span
+                  key={f.label}
+                  className="inline-block text-[9px] font-bold uppercase tracking-[0.12em] px-2 py-0.5 rounded backdrop-blur bg-theme-surface1/80 text-theme-lavender border border-theme-border/70"
+                >
+                  {f.label}: {f.value}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {isClassic && (
-        <div className="absolute top-4 left-4 z-20 pointer-events-none select-none">
+        <div className="absolute top-4 left-4 z-20 pointer-events-none select-none space-y-1.5">
           <div className="px-3 py-1.5 rounded border border-black/40 shadow-card bg-theme-cyan text-white text-[10px] font-black uppercase tracking-widest">
             <span className="mr-2">🔒</span>
             BASIN VISUALIZER
           </div>
+          {activeFilters.length > 0 && (
+            <div className="flex flex-col gap-1">
+              {activeFilters.map((f) => (
+                <span
+                  key={f.label}
+                  className="inline-block text-[9px] font-black uppercase tracking-[0.12em] px-2 py-0.5 rounded border border-black/30 shadow-card bg-black/40 text-white/80"
+                >
+                  {f.label}: {f.value}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
