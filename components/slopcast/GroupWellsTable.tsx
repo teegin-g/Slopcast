@@ -36,7 +36,7 @@ const GroupWellsTable: React.FC<GroupWellsTableProps> = ({
   defaultSort = { key: 'name', dir: 'asc' },
   dense = false,
 }) => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(!dense);
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>(defaultSort);
 
@@ -61,28 +61,28 @@ const GroupWellsTable: React.FC<GroupWellsTableProps> = ({
     : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border overflow-hidden';
 
   const titlebarClassName = isClassic
-    ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-3 flex items-center justify-between gap-3'
-    : 'px-4 py-3 border-b border-theme-border/60 flex items-center justify-between gap-3';
+    ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2 flex items-center justify-between gap-3'
+    : 'px-4 py-2 border-b border-theme-border/60 flex items-center justify-between gap-3';
 
   const titleClassName = isClassic
     ? 'text-[11px] font-black uppercase tracking-[0.24em] text-white'
     : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan';
 
-  const controlRowClassName = dense ? 'px-4 py-3' : 'px-4 py-3';
+  const controlRowClassName = dense ? 'px-3 py-2' : 'px-3 py-2';
   const controlTextClassName = dense ? 'text-[10px]' : 'text-[11px]';
   const inputClassName = isClassic
-    ? `w-full rounded-inner px-3 py-2 ${dense ? 'text-[11px]' : 'text-[12px]'} font-black sc-inputNavy`
-    : `w-full rounded-inner border border-theme-border bg-theme-bg px-3 py-2 ${dense ? 'text-[11px]' : 'text-[12px]'} text-theme-text placeholder:text-theme-muted`;
+    ? `w-full rounded-inner px-2 py-1.5 ${dense ? 'text-[11px]' : 'text-[12px]'} font-black sc-inputNavy`
+    : `w-full rounded-inner border border-theme-border bg-theme-bg px-2 py-1.5 ${dense ? 'text-[11px]' : 'text-[12px]'} text-theme-text placeholder:text-theme-muted`;
 
   const headerButtonBase = isClassic
     ? 'sc-btnSecondary px-3 py-1.5 rounded-inner text-[10px] font-black uppercase tracking-widest transition-all'
     : 'px-2 py-1.5 rounded-inner border border-theme-border bg-theme-bg text-theme-muted hover:text-theme-text transition-colors';
 
   const sortSelectClassName = isClassic
-    ? `rounded-inner px-3 py-2 ${dense ? 'text-[11px]' : 'text-[12px]'} font-black sc-inputNavy`
-    : `rounded-inner border border-theme-border bg-theme-bg px-3 py-2 ${dense ? 'text-[11px]' : 'text-[12px]'} text-theme-text`;
+    ? `rounded-inner px-2 py-1.5 ${dense ? 'text-[11px]' : 'text-[12px]'} font-black sc-inputNavy`
+    : `rounded-inner border border-theme-border bg-theme-bg px-2 py-1.5 ${dense ? 'text-[11px]' : 'text-[12px]'} text-theme-text`;
 
-  const tableWrapperClassName = dense ? 'max-h-[260px]' : 'max-h-[340px]';
+  const tableWrapperClassName = dense ? 'max-h-[180px]' : 'max-h-[240px]';
 
   function toggleSort(nextKey: SortKey) {
     setSort(prev => {
@@ -213,14 +213,14 @@ const GroupWellsTable: React.FC<GroupWellsTableProps> = ({
                       </th>
                     </tr>
                   </thead>
-                  <tbody className={isClassic ? 'text-white' : 'text-theme-text'}>
+                  <tbody className={`text-[11px] ${isClassic ? 'text-white' : 'text-theme-text'}`}>
                     {sortedWells.map(well => (
                       <tr key={well.id} className={isClassic ? 'border-t border-white/15' : 'border-t border-theme-border/50'}>
-                        <td className={`${dense ? 'py-2' : 'py-2.5'} pr-3 font-black`}>{well.name}</td>
-                        <td className={`${dense ? 'py-2' : 'py-2.5'} pr-3`}>{well.formation}</td>
-                        <td className={`${dense ? 'py-2' : 'py-2.5'} pr-3`}>{formatFeet(well.lateralLength)}</td>
-                        <td className={`${dense ? 'py-2' : 'py-2.5'} pr-3`}>{well.status}</td>
-                        <td className={`${dense ? 'py-2' : 'py-2.5'}`}>{well.operator}</td>
+                        <td className={`${dense ? 'py-1' : 'py-1.5'} pr-3 font-black`}>{well.name}</td>
+                        <td className={`${dense ? 'py-1' : 'py-1.5'} pr-3`}>{well.formation}</td>
+                        <td className={`${dense ? 'py-1' : 'py-1.5'} pr-3`}>{formatFeet(well.lateralLength)}</td>
+                        <td className={`${dense ? 'py-1' : 'py-1.5'} pr-3`}>{well.status}</td>
+                        <td className={`${dense ? 'py-1' : 'py-1.5'}`}>{well.operator}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -235,8 +235,8 @@ const GroupWellsTable: React.FC<GroupWellsTableProps> = ({
                       key={well.id}
                       className={
                         isClassic
-                          ? 'sc-insetDark rounded-inner px-3 py-2'
-                          : 'rounded-inner border border-theme-border bg-theme-bg px-3 py-2'
+                          ? 'sc-insetDark rounded-inner px-2 py-1.5'
+                          : 'rounded-inner border border-theme-border bg-theme-bg px-2 py-1.5'
                       }
                     >
                       <div className={isClassic ? 'text-white font-black' : 'text-theme-text font-black'}>

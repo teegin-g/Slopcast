@@ -10,6 +10,8 @@ import { WorkflowStep } from './WorkflowStepper';
 import EconomicsGroupBar from './EconomicsGroupBar';
 import EconomicsResultsTabs, { EconomicsResultsTab } from './EconomicsResultsTabs';
 import GroupWellsTable from './GroupWellsTable';
+import GroupComparisonStrip from './GroupComparisonStrip';
+import MiniMapPreview from './MiniMapPreview';
 
 export type EconomicsMobilePanel = 'SETUP' | 'RESULTS';
 
@@ -36,8 +38,6 @@ interface DesignEconomicsViewProps {
   hasGroup: boolean;
   hasGroupWells: boolean;
   hasCapexItems: boolean;
-  hasRun: boolean;
-  needsRerun: boolean;
   aggregateMetrics: {
     npv10: number;
     totalCapex: number;
@@ -47,7 +47,109 @@ interface DesignEconomicsViewProps {
   };
   aggregateFlow: MonthlyCashFlow[];
   operationsProps: OperationsConsoleProps;
+  breakevenOilPrice?: number | null;
 }
+
+/** SVG progress ring for Setup Insights */
+const SetupProgressRing: React.FC<{ completed: number; total: number; isClassic: boolean }> = ({ completed, total, isClassic }) => {
+  const r = 10;
+  const circumference = 2 * Math.PI * r;
+  const progress = total > 0 ? completed / total : 0;
+  const dashLen = progress * circumference;
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" className="shrink-0">
+      <circle cx="12" cy="12" r={r} fill="none" stroke="currentColor" strokeWidth="2" className={isClassic ? 'text-white/15' : 'text-theme-border'} />
+      <circle
+        cx="12"
+        cy="12"
+        r={r}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeDasharray={`${dashLen} ${circumference}`}
+        strokeLinecap="round"
+        transform="rotate(-90 12 12)"
+        className={isClassic ? 'text-theme-warning' : 'text-theme-cyan'}
+      />
+      <text x="12" y="12" textAnchor="middle" dominantBaseline="central" className="text-[7px] font-black" style={{ fill: isClassic ? 'white' : 'rgb(var(--text))' }}>
+        {completed}/{total}
+      </text>
+    </svg>
+  );
+};
+
+/** Gradient accent divider */
+const AccentDivider: React.FC = () => (
+  <div className="h-[2px] rounded-full bg-gradient-to-r from-theme-cyan via-theme-magenta to-theme-lavender opacity-40" />
+);
+
+/** Quick Drivers mini-panel shown in the 2-column layout */
+const QuickDrivers: React.FC<{
+  isClassic: boolean;
+  topDrivers: Array<{ id: string; label: string; dominantDelta: number }>;
+  breakevenOilPrice: number | null;
+}> = ({ isClassic, topDrivers, breakevenOilPrice }) => {
+  const top2 = topDrivers.slice(0, 2);
+  const maxMag = Math.max(...top2.map(d => Math.abs(d.dominantDelta)), 1);
+
+  return (
+    <div
+      className={
+        isClassic
+          ? 'sc-panel theme-transition h-full'
+          : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border h-full'
+      }
+    >
+      <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
+        <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
+          Quick Drivers
+        </h2>
+      </div>
+
+      <div className="p-3 space-y-2">
+        {top2.map(driver => {
+          const isPositive = driver.dominantDelta >= 0;
+          const barPct = (Math.abs(driver.dominantDelta) / maxMag) * 100;
+          return (
+            <div key={driver.id}>
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className={`text-[9px] font-black uppercase tracking-[0.1em] ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
+                  {driver.label}
+                </span>
+                <span className={`text-[9px] font-black tabular-nums ${isPositive ? (isClassic ? 'text-theme-warning' : 'text-theme-cyan') : 'text-theme-magenta'}`}>
+                  {isPositive ? '+' : ''}${(driver.dominantDelta / 1e6).toFixed(1)}M
+                </span>
+              </div>
+              <div className="h-1 rounded-full bg-theme-bg/60 overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{
+                    width: `${Math.max(2, barPct)}%`,
+                    backgroundColor: isPositive ? 'rgb(var(--cyan))' : 'rgb(var(--magenta))',
+                    opacity: 0.7,
+                  }}
+                />
+              </div>
+            </div>
+          );
+        })}
+
+        {breakevenOilPrice != null && (
+          <div className={`mt-2 pt-2 border-t ${isClassic ? 'border-white/10' : 'border-theme-border/30'}`}>
+            <div className="flex items-center justify-between">
+              <span className={`text-[9px] font-black uppercase tracking-[0.1em] ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
+                Breakeven Oil
+              </span>
+              <span className={`text-[10px] font-black tabular-nums ${isClassic ? 'text-theme-warning' : 'text-theme-lavender'}`}>
+                ${breakevenOilPrice}/bbl
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   isClassic,
@@ -70,13 +172,12 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   hasGroup,
   hasGroupWells,
   hasCapexItems,
-  hasRun,
-  needsRerun,
   aggregateMetrics,
   aggregateFlow,
   operationsProps,
+  breakevenOilPrice,
 }) => {
-  const hasReadinessBlocker = !hasGroup || !hasGroupWells || !hasCapexItems || !hasRun || needsRerun;
+  const hasReadinessBlocker = !hasGroup || !hasGroupWells || !hasCapexItems;
   const [showSetupInsights, setShowSetupInsights] = useState(hasReadinessBlocker);
   const [didAutoOpenInsights, setDidAutoOpenInsights] = useState(hasReadinessBlocker);
 
@@ -90,8 +191,9 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
     { id: 'group', label: 'Choose active group', done: hasGroup },
     { id: 'wells', label: 'Assign wells to group', done: hasGroupWells },
     { id: 'capex', label: 'Confirm CAPEX items', done: hasCapexItems },
-    { id: 'run', label: 'Run economics', done: hasRun && !needsRerun },
   ];
+
+  const completedCount = checklist.filter(c => c.done).length;
 
   const activeWorkflowStep =
     workflowSteps.find(step => step.status === 'ACTIVE' || step.status === 'STALE') || workflowSteps[0];
@@ -102,10 +204,8 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
       : !hasGroupWells
         ? 'Assign wells to this group in Wells workspace.'
         : !hasCapexItems
-          ? 'Add CAPEX line items before running economics.'
-          : needsRerun
-            ? 'Inputs changed. Run economics to refresh results.'
-            : 'Ready for review.';
+          ? 'Add CAPEX line items to see economics.'
+          : 'Ready — economics are live.';
 
   const chartPanel = (
     <div
@@ -176,6 +276,12 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
             mobilePanel !== 'SETUP' ? 'hidden lg:block' : ''
           }`}
         >
+          <MiniMapPreview
+            isClassic={isClassic}
+            wells={wells}
+            activeGroup={activeGroup}
+          />
+
           <Controls
             group={activeGroup}
             onUpdateGroup={onUpdateGroup}
@@ -193,7 +299,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
             dense
           />
 
-          {/* Setup Insights - compact vertical checklist */}
+          {/* Setup Insights - compact vertical checklist with progress ring */}
           <div
             className={
               isClassic
@@ -203,9 +309,12 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
           >
             <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
               <div className="flex items-center justify-between gap-2">
-                <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
-                  Setup Insights
-                </h2>
+                <div className="flex items-center gap-2">
+                  <SetupProgressRing completed={completedCount} total={checklist.length} isClassic={isClassic} />
+                  <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
+                    Setup Insights
+                  </h2>
+                </div>
                 <button
                   type="button"
                   onClick={() => setShowSetupInsights(prev => !prev)}
@@ -256,12 +365,39 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
           <EconomicsResultsTabs isClassic={isClassic} tab={resultsTab} onChange={onSetResultsTab} />
 
           {resultsTab === 'SUMMARY' && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Hero NPV + stat strip */}
-              <KpiGrid isClassic={isClassic} metrics={aggregateMetrics} />
+              <KpiGrid
+                isClassic={isClassic}
+                metrics={aggregateMetrics}
+                aggregateFlow={aggregateFlow}
+                breakevenOilPrice={breakevenOilPrice}
+              />
 
-              {/* Divider: Execution section */}
-              <div className="border-t border-theme-border/30 pt-2">
+              {/* Accent divider */}
+              <AccentDivider />
+
+              {/* 2-column: Group Comparison + Quick Drivers */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <GroupComparisonStrip
+                  isClassic={isClassic}
+                  groups={groups}
+                  activeGroupId={activeGroupId}
+                  onActivateGroup={onActivateGroup}
+                  scenarioRankings={operationsProps.scenarioRankings}
+                />
+                <QuickDrivers
+                  isClassic={isClassic}
+                  topDrivers={operationsProps.topDrivers}
+                  breakevenOilPrice={operationsProps.breakevenOilPrice}
+                />
+              </div>
+
+              {/* Accent divider before Execution */}
+              <AccentDivider />
+
+              {/* Execution label */}
+              <div className="pt-1">
                 <p className={isClassic
                   ? 'text-[9px] font-black uppercase tracking-[0.2em] text-white/50 mb-3'
                   : 'text-[9px] font-black uppercase tracking-[0.2em] text-theme-muted/60 mb-3'
@@ -270,7 +406,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                 </p>
               </div>
 
-              {/* Compact run bar (replaces separate Run Summary + OperationsConsole) */}
+              {/* Compact run bar */}
               <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />
             </div>
           )}

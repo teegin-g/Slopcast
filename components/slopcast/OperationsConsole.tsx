@@ -32,19 +32,16 @@ export interface OperationsConsoleProps {
   onCreateGroup?: () => void;
   onSelectAll?: () => void;
   onClear?: () => void;
-  onRunEconomics: () => void;
-  onSaveScenario: () => void;
+  onSaveSnapshot: () => void;
   onExportCsv: () => void;
   onExportPdf: () => void;
   canAssign?: boolean;
   canClear?: boolean;
-  canRun: boolean;
   canUseSecondaryActions: boolean;
-  lastEconomicsRunAt: string | null;
+  lastSnapshotAt: string | null;
   actionMessage: string;
   validationWarnings: string[];
   stepGuidance: string;
-  needsRerun: boolean;
   topDrivers: DriverInsight[];
   biggestPositive: ShockSummary | null;
   biggestNegative: ShockSummary | null;
@@ -70,27 +67,21 @@ const buttonTone = (isClassic: boolean, active: boolean) => {
 
 const CompactRunBar: React.FC<{
   isClassic: boolean;
-  canRun: boolean;
   canUseSecondaryActions: boolean;
-  onRunEconomics: () => void;
-  onSaveScenario: () => void;
+  onSaveSnapshot: () => void;
   onExportCsv: () => void;
   onExportPdf: () => void;
-  lastEconomicsRunAt: string | null;
-  needsRerun: boolean;
+  lastSnapshotAt: string | null;
   actionMessage: string;
   validationWarnings: string[];
   stepGuidance: string;
 }> = ({
   isClassic,
-  canRun,
   canUseSecondaryActions,
-  onRunEconomics,
-  onSaveScenario,
+  onSaveSnapshot,
   onExportCsv,
   onExportPdf,
-  lastEconomicsRunAt,
-  needsRerun,
+  lastSnapshotAt,
   actionMessage,
   validationWarnings,
   stepGuidance,
@@ -98,9 +89,9 @@ const CompactRunBar: React.FC<{
   const [showOverflow, setShowOverflow] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
-  const statusText = lastEconomicsRunAt
-    ? `Last run ${new Date(lastEconomicsRunAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-    : 'Not yet run';
+  const statusText = lastSnapshotAt
+    ? `Last snapshot ${new Date(lastSnapshotAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+    : 'Live economics — auto-computed';
 
   return (
     <div
@@ -113,26 +104,17 @@ const CompactRunBar: React.FC<{
       {/* Primary action row */}
       <div className={isClassic ? 'p-3 flex items-center gap-2 flex-wrap' : 'p-3 flex items-center gap-2 flex-wrap'}>
         <button
-          onClick={onRunEconomics}
-          disabled={!canRun}
-          className={`px-4 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.14em] transition-all shrink-0 ${
-            canRun
-              ? 'bg-theme-magenta text-white hover:shadow-glow-magenta'
-              : 'bg-theme-surface2 text-theme-muted cursor-not-allowed'
-          }`}
+          onClick={onSaveSnapshot}
+          className="px-4 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.14em] transition-all shrink-0 bg-theme-magenta text-white hover:shadow-glow-magenta"
         >
-          Run Economics
+          Save Snapshot
         </button>
 
         <div className="flex items-center gap-2 min-w-0 flex-1">
+          <span className="inline-block w-1.5 h-1.5 rounded-full bg-theme-cyan animate-pulse shrink-0" />
           <span data-testid="economics-run-status" className="text-[10px] text-theme-muted truncate">
             {statusText}
           </span>
-          {needsRerun && (
-            <span className="text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-theme-warning/15 text-theme-warning border border-theme-warning/20 shrink-0">
-              rerun
-            </span>
-          )}
           {actionMessage && (
             <span className="text-[10px] text-theme-cyan truncate">{actionMessage}</span>
           )}
@@ -149,7 +131,6 @@ const CompactRunBar: React.FC<{
           {showOverflow && (
             <div className="absolute right-0 top-full mt-1 z-30 rounded-inner border border-theme-border bg-theme-surface1 shadow-card p-1 min-w-[140px]">
               {[
-                { label: 'Save Scenario', action: onSaveScenario },
                 { label: 'Export CSV', action: onExportCsv },
                 { label: 'Export PDF', action: onExportPdf },
               ].map((item) => (
@@ -218,19 +199,16 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
   onCreateGroup,
   onSelectAll,
   onClear,
-  onRunEconomics,
-  onSaveScenario,
+  onSaveSnapshot,
   onExportCsv,
   onExportPdf,
   canAssign,
   canClear,
-  canRun,
   canUseSecondaryActions,
-  lastEconomicsRunAt,
+  lastSnapshotAt,
   actionMessage,
   validationWarnings,
   stepGuidance,
-  needsRerun,
   topDrivers,
   biggestPositive,
   biggestNegative,
@@ -248,14 +226,11 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
     return (
       <CompactRunBar
         isClassic={isClassic}
-        canRun={canRun}
         canUseSecondaryActions={canUseSecondaryActions}
-        onRunEconomics={onRunEconomics}
-        onSaveScenario={onSaveScenario}
+        onSaveSnapshot={onSaveSnapshot}
         onExportCsv={onExportCsv}
         onExportPdf={onExportPdf}
-        lastEconomicsRunAt={lastEconomicsRunAt}
-        needsRerun={needsRerun}
+        lastSnapshotAt={lastSnapshotAt}
         actionMessage={actionMessage}
         validationWarnings={validationWarnings}
         stepGuidance={stepGuidance}
@@ -372,15 +347,10 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
 
               <div className="space-y-2">
                 <button
-                  onClick={onRunEconomics}
-                  disabled={!canRun}
-                  className={`w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.14em] transition-all ${
-                    canRun
-                      ? 'bg-theme-magenta text-white hover:shadow-glow-magenta'
-                      : 'bg-theme-surface2 text-theme-muted cursor-not-allowed'
-                  }`}
+                  onClick={onSaveSnapshot}
+                  className="w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.14em] transition-all bg-theme-magenta text-white hover:shadow-glow-magenta"
                 >
-                  Run Economics
+                  Save Snapshot
                 </button>
 
                 <button
@@ -391,18 +361,7 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
                 </button>
 
                 {showSecondaryActions && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <button
-                      onClick={onSaveScenario}
-                      disabled={!canUseSecondaryActions}
-                      className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all border ${
-                        canUseSecondaryActions
-                          ? 'bg-theme-bg text-theme-text border-theme-border hover:border-theme-cyan'
-                          : 'bg-theme-surface2 text-theme-muted border-theme-border cursor-not-allowed'
-                      }`}
-                    >
-                      Save Scenario
-                    </button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <button
                       onClick={onExportCsv}
                       disabled={!canUseSecondaryActions}
@@ -429,11 +388,10 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
                 )}
               </div>
 
-              <div data-testid="economics-run-status" className="rounded-inner border px-3 py-2 text-[10px] bg-theme-bg border-theme-border text-theme-muted">
-                {lastEconomicsRunAt
-                  ? `Last run: ${new Date(lastEconomicsRunAt).toLocaleString()}`
-                  : 'Last run: not yet triggered'}
-                {needsRerun && <span className="ml-2 text-theme-warning">Inputs changed, rerun needed.</span>}
+              <div data-testid="economics-run-status" className="rounded-inner border px-3 py-2 text-[10px] bg-theme-bg border-theme-border text-theme-muted flex items-center gap-2">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-theme-cyan animate-pulse shrink-0" />
+                <span>Live economics — auto-computed</span>
+                {lastSnapshotAt && <span className="ml-1">· Last snapshot: {new Date(lastSnapshotAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
                 {actionMessage && <span className="ml-2 text-theme-cyan">{actionMessage}</span>}
               </div>
 

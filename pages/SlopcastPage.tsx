@@ -156,8 +156,7 @@ const SlopcastPage: React.FC = () => {
   const [opsTab, setOpsTab] = useState<OpsTab>('SELECTION_ACTIONS');
   const viewportLayout = useViewportLayout();
   const [controlsOpenSection, setControlsOpenSection] = useState<ControlsSection | null>(null);
-  const [economicsInputVersion, setEconomicsInputVersion] = useState(1);
-  const [lastRunVersion, setLastRunVersion] = useState(0);
+  // Economics are now auto-computed (live via useMemo). No run gate needed.
 
   const [groups, setGroups] = useState<WellGroup[]>([
     {
@@ -207,7 +206,7 @@ const SlopcastPage: React.FC = () => {
   
   const [activeGroupId, setActiveGroupId] = useState<string>('g-1');
   const [selectedWellIds, setSelectedWellIds] = useState<Set<string>>(new Set());
-  const [lastEconomicsRunAt, setLastEconomicsRunAt] = useState<string | null>(null);
+  const [lastSnapshotAt, setLastSnapshotAt] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState('');
   const [operatorFilter, setOperatorFilter] = useState<string>('ALL');
   const [formationFilter, setFormationFilter] = useState<string>('ALL');
@@ -299,15 +298,13 @@ const SlopcastPage: React.FC = () => {
 
   // --- Handlers ---
   const activeGroup = processedGroups.find(g => g.id === activeGroupId) || processedGroups[0];
-  const markEconomicsDirty = () => setEconomicsInputVersion(prev => prev + 1);
   const handleSetScenarios: React.Dispatch<React.SetStateAction<Scenario[]>> = (next) => {
     setScenarios(next);
-    markEconomicsDirty();
   };
 
   const handleUpdateGroup = (updatedGroup: WellGroup) => {
     setGroups(prev => prev.map(g => g.id === updatedGroup.id ? updatedGroup : g));
-    markEconomicsDirty();
+
   };
 
   const handleAddGroup = () => {
@@ -325,7 +322,7 @@ const SlopcastPage: React.FC = () => {
     };
     setGroups([...groups, newGroup]);
     setActiveGroupId(newId);
-    markEconomicsDirty();
+
   };
 
   const handleCloneGroup = (groupId: string) => {
@@ -348,7 +345,7 @@ const SlopcastPage: React.FC = () => {
     };
     setGroups([...groups, newGroup]);
     setActiveGroupId(newId);
-    markEconomicsDirty();
+
   };
 
   const handleAssignWellsToActive = () => {
@@ -365,7 +362,7 @@ const SlopcastPage: React.FC = () => {
       });
     });
     setSelectedWellIds(new Set());
-    markEconomicsDirty();
+
   };
 
   const handleCreateGroupFromSelection = () => {
@@ -392,7 +389,7 @@ const SlopcastPage: React.FC = () => {
     });
     setActiveGroupId(newId);
     setSelectedWellIds(new Set());
-    markEconomicsDirty();
+
   };
 
   const handleToggleWell = (id: string) => {
@@ -403,7 +400,7 @@ const SlopcastPage: React.FC = () => {
       else next.add(id);
       return next;
     });
-    markEconomicsDirty();
+
   };
 
   const handleSelectWells = (ids: string[]) => {
@@ -414,7 +411,7 @@ const SlopcastPage: React.FC = () => {
           });
           return next;
       });
-      markEconomicsDirty();
+  
   };
 
   const handleSelectAll = () => {
@@ -436,12 +433,12 @@ const SlopcastPage: React.FC = () => {
         return next;
       });
     }
-    markEconomicsDirty();
+
   };
 
   const handleClearSelection = () => {
     setSelectedWellIds(new Set());
-    markEconomicsDirty();
+
   };
 
   const handleResetFilters = () => {
@@ -642,10 +639,21 @@ const SlopcastPage: React.FC = () => {
     return Number(((low + high) / 2).toFixed(1));
   }, [aggregateMetrics.wellCount, processedGroups, scenarios]);
 
-  const handleRunEconomics = () => {
-    setLastEconomicsRunAt(new Date().toISOString());
-    setLastRunVersion(economicsInputVersion);
-    setActionMessage('Economics refreshed.');
+  const handleSaveSnapshot = async () => {
+    if (!supabasePersistenceEnabled) {
+      setLastSnapshotAt(new Date().toISOString());
+      setActionMessage('Snapshot saved locally.');
+      return;
+    }
+
+    try {
+      await persistence.runEconomicsSnapshot(aggregateMetrics, scenarioRankings, validationWarnings);
+      setLastSnapshotAt(new Date().toISOString());
+      setActionMessage(`${activeGroup.name} Snapshot saved.`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Snapshot save failed.';
+      setActionMessage(`Snapshot save failed: ${message}`);
+    }
   };
 
   const handleExportCsv = () => {
@@ -701,20 +709,7 @@ const SlopcastPage: React.FC = () => {
     setActionMessage('Print dialog opened for PDF export.');
   };
 
-  const handleSaveScenario = async () => {
-    if (!supabasePersistenceEnabled) {
-      setActionMessage('Supabase save unavailable. Enable Supabase auth and env vars to persist snapshots.');
-      return;
-    }
-
-    try {
-      await persistence.runEconomicsSnapshot(aggregateMetrics, scenarioRankings, validationWarnings);
-      setActionMessage(`${activeGroup.name} Snapshot saved.`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Scenario save failed.';
-      setActionMessage(`Scenario save failed: ${message}`);
-    }
-  };
+  // handleSaveScenario merged into handleSaveSnapshot above
 
   useEffect(() => {
     if (!actionMessage) return;
@@ -750,40 +745,33 @@ const SlopcastPage: React.FC = () => {
   const hasCapexItems = activeGroup.capex.items.length > 0;
   const setupComplete = hasGroup && hasCapexItems && activeGroup.typeCurve.qi > 0;
   const selectionComplete = hasGroupWells || selectedVisibleCount > 0;
-  const hasRun = !!lastEconomicsRunAt;
-  const needsRerun = economicsInputVersion > lastRunVersion;
-  const runComplete = hasRun && !needsRerun;
+  const reviewReady = setupComplete && selectionComplete;
   const activeStep: DesignStep = !setupComplete
     ? 'SETUP'
     : !selectionComplete
       ? 'SELECT'
-      : !runComplete
-        ? 'RUN'
-        : 'REVIEW';
+      : 'REVIEW';
 
-  const orderedSteps: DesignStep[] = ['SETUP', 'SELECT', 'RUN', 'REVIEW'];
+  const orderedSteps: DesignStep[] = ['SETUP', 'SELECT', 'REVIEW'];
   const stepStatusMap: Record<DesignStep, StepStatus> = {
     SETUP: setupComplete ? 'COMPLETE' : (activeStep === 'SETUP' ? 'ACTIVE' : 'NOT_STARTED'),
     SELECT: selectionComplete ? 'COMPLETE' : (activeStep === 'SELECT' ? 'ACTIVE' : 'NOT_STARTED'),
-    RUN: runComplete ? 'COMPLETE' : (needsRerun && hasRun ? 'STALE' : (activeStep === 'RUN' ? 'ACTIVE' : 'NOT_STARTED')),
-    REVIEW: runComplete ? (activeStep === 'REVIEW' ? 'ACTIVE' : 'COMPLETE') : 'NOT_STARTED',
+    RUN: 'NOT_STARTED', // kept for type compatibility but not rendered
+    REVIEW: reviewReady ? (activeStep === 'REVIEW' ? 'ACTIVE' : 'COMPLETE') : 'NOT_STARTED',
   };
   const workflowSteps: WorkflowStep[] = orderedSteps.map(step => ({
     id: step,
-    label: step === 'SETUP' ? 'Setup' : step === 'SELECT' ? 'Select Wells' : step === 'RUN' ? 'Run' : 'Review',
+    label: step === 'SETUP' ? 'Setup' : step === 'SELECT' ? 'Select Wells' : 'Review',
     status: stepStatusMap[step],
   }));
   const stepGuidance = activeStep === 'SETUP'
     ? 'Complete setup inputs (CAPEX, decline, ownership).'
     : activeStep === 'SELECT'
       ? 'Assign wells to the active group.'
-      : activeStep === 'RUN'
-        ? (needsRerun ? 'Inputs changed. Run economics to refresh outputs.' : 'Run economics to generate portfolio outputs.')
-        : 'Review KPIs, charts, and drivers.';
-  const canUseSecondaryActions = runComplete;
-  const canRunEconomics = hasGroup && hasGroupWells && hasCapexItems;
+      : 'Review live KPIs, charts, and drivers.';
+  const canUseSecondaryActions = reviewReady;
   const wellsNeedsAttention = !setupComplete || !selectionComplete;
-  const economicsNeedsAttention = needsRerun || !runComplete;
+  const economicsNeedsAttention = !reviewReady;
 
   useEffect(() => {
     if (viewMode !== 'DASHBOARD') return;
@@ -804,19 +792,16 @@ const SlopcastPage: React.FC = () => {
     onCreateGroup: handleCreateGroupFromSelection,
     onSelectAll: handleSelectAll,
     onClear: handleClearSelection,
-    onRunEconomics: handleRunEconomics,
-    onSaveScenario: handleSaveScenario,
+    onSaveSnapshot: handleSaveSnapshot,
     onExportCsv: handleExportCsv,
     onExportPdf: handleExportPdf,
     canAssign: selectedVisibleCount > 0,
     canClear: selectedVisibleCount > 0,
-    canRun: canRunEconomics,
     canUseSecondaryActions,
-    lastEconomicsRunAt,
+    lastSnapshotAt,
     actionMessage,
     validationWarnings,
     stepGuidance,
-    needsRerun,
     topDrivers: keyDriverInsights.topDrivers,
     biggestPositive: keyDriverInsights.biggestPositive,
     biggestNegative: keyDriverInsights.biggestNegative,
@@ -916,17 +901,16 @@ const SlopcastPage: React.FC = () => {
                    onCloneGroup={handleCloneGroup}
                    activeGroup={activeGroup}
                    onUpdateGroup={handleUpdateGroup}
-                   onMarkDirty={markEconomicsDirty}
+                   onMarkDirty={() => {}}
                    controlsOpenSection={controlsOpenSection}
                    onControlsOpenHandled={() => setControlsOpenSection(null)}
                    hasGroup={hasGroup}
                    hasGroupWells={hasGroupWells}
                    hasCapexItems={hasCapexItems}
-                   hasRun={hasRun}
-                   needsRerun={needsRerun}
                    aggregateMetrics={aggregateMetrics}
                    aggregateFlow={aggregateFlow}
                    operationsProps={operationsProps}
+                   breakevenOilPrice={breakevenOilPrice}
                  />
                )}
              </>
