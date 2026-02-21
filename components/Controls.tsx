@@ -4,6 +4,7 @@ import CapexControls from './CapexControls';
 import OpexControls from './OpexControls';
 import OwnershipControls from './OwnershipControls';
 import { useTheme } from '../theme/ThemeProvider';
+import { ASSUMPTION_TEMPLATES, AssumptionTemplate } from '../constants/templates';
 
 interface ControlsProps {
   group: WellGroup;
@@ -73,8 +74,33 @@ const Controls: React.FC<ControlsProps> = ({
 }) => {
   const [activeSection, setActiveSection] = useState<SectionKey>('TYPE_CURVE');
   const [capexEditSignal, setCapexEditSignal] = useState(0);
+  const [showTemplateMenu, setShowTemplateMenu] = useState(false);
+  const [pendingTemplate, setPendingTemplate] = useState<AssumptionTemplate | null>(null);
   const { theme } = useTheme();
   const isClassic = theme.id === 'mario';
+
+  const applyTemplate = (template: AssumptionTemplate) => {
+    const newCapexItems = template.capexItems.map(item => ({
+      ...item,
+      id: `c-${Date.now()}-${Math.random()}`,
+    }));
+    onUpdateGroup({
+      ...group,
+      typeCurve: { ...template.typeCurve },
+      capex: { ...group.capex, items: newCapexItems },
+    });
+    if (onMarkDirty) onMarkDirty();
+    setPendingTemplate(null);
+    setShowTemplateMenu(false);
+  };
+
+  const handleTemplateSelect = (template: AssumptionTemplate) => {
+    if (group.capex.items.length > 0 || group.typeCurve.qi !== 850) {
+      setPendingTemplate(template);
+    } else {
+      applyTemplate(template);
+    }
+  };
 
   useEffect(() => {
     if (!openSectionKey) return;
@@ -150,6 +176,88 @@ const Controls: React.FC<ControlsProps> = ({
             {group.wellIds.size} wells · ${group.metrics ? (group.metrics.totalCapex / 1e6).toFixed(1) : 0}M capex
           </p>
         </div>
+      </div>
+
+      {/* Template selector */}
+      <div className="relative">
+        <div
+          className={
+            isClassic
+              ? 'sc-panel theme-transition mb-3'
+              : 'rounded-panel border p-3 mb-3 shadow-card theme-transition bg-theme-surface1/60 border-theme-border/60'
+          }
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
+              Template
+            </span>
+            <button
+              onClick={() => setShowTemplateMenu(prev => !prev)}
+              className={`px-3 py-1.5 rounded-inner text-[9px] font-black uppercase tracking-[0.14em] transition-all border ${
+                isClassic
+                  ? 'bg-black/15 text-white border-black/30 hover:bg-black/25'
+                  : 'bg-theme-bg text-theme-cyan border-theme-border hover:border-theme-cyan'
+              }`}
+            >
+              {showTemplateMenu ? 'Close' : 'Apply Template'}
+            </button>
+          </div>
+
+          {showTemplateMenu && (
+            <div className="mt-2 space-y-1">
+              {ASSUMPTION_TEMPLATES.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => handleTemplateSelect(t)}
+                  className={`w-full text-left px-3 py-2 rounded-inner border transition-all ${
+                    isClassic
+                      ? 'bg-black/10 border-black/20 hover:bg-black/20 text-white'
+                      : 'bg-theme-bg border-theme-border hover:border-theme-cyan text-theme-text'
+                  }`}
+                >
+                  <p className="text-[10px] font-black uppercase tracking-[0.1em]">{t.name}</p>
+                  <p className={`text-[9px] mt-0.5 ${isClassic ? 'text-white/60' : 'text-theme-muted'}`}>
+                    {t.description} · Qi: {t.typeCurve.qi} BOPD
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Confirmation dialog */}
+        {pendingTemplate && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className={`max-w-sm w-full mx-4 p-4 rounded-panel border shadow-card ${
+              isClassic ? 'sc-panel' : 'bg-theme-surface1 border-theme-border'
+            }`}>
+              <p className={`text-[10px] font-black uppercase tracking-[0.16em] mb-2 ${isClassic ? 'text-white' : 'text-theme-text'}`}>
+                Apply "{pendingTemplate.name}"?
+              </p>
+              <p className={`text-[10px] mb-4 ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
+                This will overwrite the current type curve and CAPEX items for {group.name}.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => applyTemplate(pendingTemplate)}
+                  className="flex-1 px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] bg-theme-magenta text-white hover:shadow-glow-magenta transition-all"
+                >
+                  Apply
+                </button>
+                <button
+                  onClick={() => setPendingTemplate(null)}
+                  className={`flex-1 px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] border transition-all ${
+                    isClassic
+                      ? 'bg-black/15 text-white border-black/30'
+                      : 'bg-theme-bg text-theme-muted border-theme-border'
+                  }`}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div
