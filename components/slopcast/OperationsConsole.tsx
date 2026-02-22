@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import EconomicsDriversPanel from './EconomicsDriversPanel';
+import EconomicsDriversPanel, { DriverFamilyId } from './EconomicsDriversPanel';
 
 type OpsTab = 'SELECTION_ACTIONS' | 'KEY_DRIVERS';
 
 interface DriverInsight {
-  id: string;
+  id: DriverFamilyId;
   label: string;
   dominantDelta: number;
+  upShock?: { label: string; deltaNpv: number };
+  downShock?: { label: string; deltaNpv: number };
 }
 
 interface ShockSummary {
@@ -19,6 +21,9 @@ interface ScenarioRanking {
   name: string;
   npv10: number;
   roi: number;
+  totalCapex: number;
+  payoutMonths: number;
+  wellCount: number;
 }
 
 export interface OperationsConsoleProps {

@@ -5,7 +5,7 @@ import { ThemeId } from '../../theme/themes';
 import { MonthlyCashFlow, Well, WellGroup } from '../../types';
 import KpiGrid from './KpiGrid';
 import OperationsConsole, { OperationsConsoleProps } from './OperationsConsole';
-import EconomicsDriversPanel from './EconomicsDriversPanel';
+import EconomicsDriversPanel, { DriverFamilyId } from './EconomicsDriversPanel';
 import { WorkflowStep } from './WorkflowStepper';
 import EconomicsGroupBar from './EconomicsGroupBar';
 import EconomicsResultsTabs, { EconomicsResultsTab } from './EconomicsResultsTabs';
@@ -16,6 +16,7 @@ import MiniMapPreview from './MiniMapPreview';
 export type EconomicsMobilePanel = 'SETUP' | 'RESULTS';
 
 type ControlsSection = 'TYPE_CURVE' | 'CAPEX' | 'OPEX' | 'OWNERSHIP';
+type AnalysisOpenSection = 'PRICING' | 'SCHEDULE' | 'SCALARS';
 
 interface DesignEconomicsViewProps {
   isClassic: boolean;
@@ -25,6 +26,10 @@ interface DesignEconomicsViewProps {
   onSetMobilePanel: (panel: EconomicsMobilePanel) => void;
   resultsTab: EconomicsResultsTab;
   onSetResultsTab: (tab: EconomicsResultsTab) => void;
+  focusMode: boolean;
+  onToggleFocusMode: () => void;
+  onRequestOpenControlsSection: (section: ControlsSection) => void;
+  onRequestOpenAnalysisSection: (section: AnalysisOpenSection) => void;
   wells: Well[];
   groups: WellGroup[];
   activeGroupId: string;
@@ -159,6 +164,10 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   onSetMobilePanel,
   resultsTab,
   onSetResultsTab,
+  focusMode,
+  onToggleFocusMode,
+  onRequestOpenControlsSection,
+  onRequestOpenAnalysisSection,
   wells,
   groups,
   activeGroupId,
@@ -187,6 +196,12 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
     setShowSetupInsights(true);
     setDidAutoOpenInsights(true);
   }, [didAutoOpenInsights, hasReadinessBlocker]);
+
+  useEffect(() => {
+    if (!focusMode) return;
+    if (mobilePanel === 'RESULTS') return;
+    onSetMobilePanel('RESULTS');
+  }, [focusMode, mobilePanel, onSetMobilePanel]);
   const checklist = [
     { id: 'group', label: 'Choose active group', done: hasGroup },
     { id: 'wells', label: 'Assign wells to group', done: hasGroupWells },
@@ -219,6 +234,29 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
     </div>
   );
 
+  const handleJumpToDriver = (driverId: DriverFamilyId) => {
+    if (driverId === 'capex') {
+      onRequestOpenControlsSection('CAPEX');
+      onSetMobilePanel('SETUP');
+      return;
+    }
+
+    if (driverId === 'eur') {
+      onRequestOpenControlsSection('TYPE_CURVE');
+      onSetMobilePanel('SETUP');
+      return;
+    }
+
+    if (driverId === 'oil') {
+      onRequestOpenAnalysisSection('PRICING');
+      return;
+    }
+
+    if (driverId === 'rig') {
+      onRequestOpenAnalysisSection('SCHEDULE');
+    }
+  };
+
   return (
     <>
       <EconomicsGroupBar
@@ -227,139 +265,148 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
         activeGroupId={activeGroupId}
         onActivateGroup={onActivateGroup}
         onCloneActiveGroup={() => onCloneGroup(activeGroupId)}
+        scenarioRankings={operationsProps.scenarioRankings}
+        focusMode={focusMode}
+        onToggleFocusMode={onToggleFocusMode}
       />
 
-      <div
-        className={`lg:hidden mb-4 border p-2 theme-transition ${
-          isClassic ? 'sc-panel' : 'rounded-panel bg-theme-surface1/60 border-theme-border shadow-card backdrop-blur-sm'
-        }`}
-      >
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={() => onSetMobilePanel('SETUP')}
-            className={
-              isClassic
-                ? `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
-                    mobilePanel === 'SETUP' ? 'bg-theme-warning text-black border-black/20' : 'bg-black/15 text-white/90 border-black/25'
-                  }`
-                : `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border transition-colors ${
-                    mobilePanel === 'SETUP'
-                      ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
-                      : 'bg-theme-bg text-theme-muted border-theme-border'
-                  }`
-            }
-          >
-            Setup
-          </button>
-          <button
-            onClick={() => onSetMobilePanel('RESULTS')}
-            className={
-              isClassic
-                ? `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
-                    mobilePanel === 'RESULTS' ? 'bg-theme-warning text-black border-black/20' : 'bg-black/15 text-white/90 border-black/25'
-                  }`
-                : `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border transition-colors ${
-                    mobilePanel === 'RESULTS'
-                      ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
-                      : 'bg-theme-bg text-theme-muted border-theme-border'
-                  }`
-            }
-          >
-            Results
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:min-h-[calc(100vh-13.5rem)]">
-        <aside
-          className={`lg:col-span-5 xl:col-span-4 space-y-4 lg:max-h-[calc(100vh-13.5rem)] lg:overflow-y-auto lg:pr-1 ${
-            mobilePanel !== 'SETUP' ? 'hidden lg:block' : ''
+      {!focusMode && (
+        <div
+          className={`lg:hidden mb-4 border p-2 theme-transition ${
+            isClassic ? 'sc-panel' : 'rounded-panel bg-theme-surface1/60 border-theme-border shadow-card backdrop-blur-sm'
           }`}
         >
-          <MiniMapPreview
-            isClassic={isClassic}
-            wells={wells}
-            activeGroup={activeGroup}
-          />
-
-          <Controls
-            group={activeGroup}
-            onUpdateGroup={onUpdateGroup}
-            onMarkDirty={onMarkDirty}
-            openSectionKey={controlsOpenSection}
-            onOpenSectionHandled={onControlsOpenHandled}
-          />
-
-          <GroupWellsTable
-            isClassic={isClassic}
-            group={activeGroup}
-            wells={wells}
-            title="Wells in active group"
-            defaultSort={{ key: 'name', dir: 'asc' }}
-            dense
-          />
-
-          {/* Setup Insights - compact vertical checklist with progress ring */}
-          <div
-            className={
-              isClassic
-                ? 'sc-panel theme-transition'
-                : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
-            }
-          >
-            <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <SetupProgressRing completed={completedCount} total={checklist.length} isClassic={isClassic} />
-                  <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
-                    Setup Insights
-                  </h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowSetupInsights(prev => !prev)}
-                  className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-cyan"
-                >
-                  {showSetupInsights ? 'Hide' : 'Show'}
-                </button>
-              </div>
-            </div>
-            {showSetupInsights && (
-              <div className="p-4 space-y-3">
-                <p className="text-[10px] text-theme-muted">
-                  {activeWorkflowStep?.label || 'Setup'} step is <span className="uppercase font-black text-theme-cyan">{activeWorkflowStep?.status.toLowerCase()}</span>.
-                </p>
-
-                {/* Compact vertical checklist instead of tile grid */}
-                <div className="space-y-1">
-                  {checklist.map((item) => (
-                    <div key={item.id} className="flex items-center gap-2.5 py-1.5 px-2 rounded-inner hover:bg-theme-surface2/50 transition-colors">
-                      <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 text-[8px] font-black ${
-                        item.done
-                          ? 'bg-theme-cyan/20 border-theme-cyan text-theme-cyan'
-                          : 'bg-transparent border-theme-border text-transparent'
-                      }`}>
-                        {item.done ? '✓' : ''}
-                      </span>
-                      <span className={`text-[10px] ${item.done ? 'text-theme-text' : 'text-theme-muted'}`}>
-                        {item.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="rounded-inner border border-theme-border bg-theme-bg px-3 py-2">
-                  <p className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-lavender">Current blocker</p>
-                  <p className="text-[10px] text-theme-muted mt-1">{readinessBlocker}</p>
-                </div>
-              </div>
-            )}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => onSetMobilePanel('SETUP')}
+              className={
+                isClassic
+                  ? `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
+                      mobilePanel === 'SETUP' ? 'bg-theme-warning text-black border-black/20' : 'bg-black/15 text-white/90 border-black/25'
+                    }`
+                  : `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border transition-colors ${
+                      mobilePanel === 'SETUP'
+                        ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
+                        : 'bg-theme-bg text-theme-muted border-theme-border'
+                    }`
+              }
+            >
+              Setup
+            </button>
+            <button
+              onClick={() => onSetMobilePanel('RESULTS')}
+              className={
+                isClassic
+                  ? `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
+                      mobilePanel === 'RESULTS' ? 'bg-theme-warning text-black border-black/20' : 'bg-black/15 text-white/90 border-black/25'
+                    }`
+                  : `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border transition-colors ${
+                      mobilePanel === 'RESULTS'
+                        ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
+                        : 'bg-theme-bg text-theme-muted border-theme-border'
+                    }`
+              }
+            >
+              Results
+            </button>
           </div>
-        </aside>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:min-h-[calc(100vh-13.5rem)]">
+        {!focusMode && (
+          <aside
+            className={`lg:col-span-5 xl:col-span-4 space-y-4 lg:max-h-[calc(100vh-13.5rem)] lg:overflow-y-auto lg:pr-1 ${
+              mobilePanel !== 'SETUP' ? 'hidden lg:block' : ''
+            }`}
+          >
+            <MiniMapPreview
+              isClassic={isClassic}
+              wells={wells}
+              activeGroup={activeGroup}
+            />
+
+            <Controls
+              group={activeGroup}
+              onUpdateGroup={onUpdateGroup}
+              onMarkDirty={onMarkDirty}
+              openSectionKey={controlsOpenSection}
+              onOpenSectionHandled={onControlsOpenHandled}
+            />
+
+            <GroupWellsTable
+              isClassic={isClassic}
+              group={activeGroup}
+              wells={wells}
+              title="Wells in active group"
+              defaultSort={{ key: 'name', dir: 'asc' }}
+              dense
+            />
+
+            {/* Setup Insights - compact vertical checklist with progress ring */}
+            <div
+              className={
+                isClassic
+                  ? 'sc-panel theme-transition'
+                  : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
+              }
+            >
+              <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <SetupProgressRing completed={completedCount} total={checklist.length} isClassic={isClassic} />
+                    <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
+                      Setup Insights
+                    </h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowSetupInsights(prev => !prev)}
+                    className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-cyan"
+                  >
+                    {showSetupInsights ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </div>
+              {showSetupInsights && (
+                <div className="p-4 space-y-3">
+                  <p className="text-[10px] text-theme-muted">
+                    {activeWorkflowStep?.label || 'Setup'} step is <span className="uppercase font-black text-theme-cyan">{activeWorkflowStep?.status.toLowerCase()}</span>.
+                  </p>
+
+                  {/* Compact vertical checklist instead of tile grid */}
+                  <div className="space-y-1">
+                    {checklist.map((item) => (
+                      <div key={item.id} className="flex items-center gap-2.5 py-1.5 px-2 rounded-inner hover:bg-theme-surface2/50 transition-colors">
+                        <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 text-[8px] font-black ${
+                          item.done
+                            ? 'bg-theme-cyan/20 border-theme-cyan text-theme-cyan'
+                            : 'bg-transparent border-theme-border text-transparent'
+                        }`}>
+                          {item.done ? '✓' : ''}
+                        </span>
+                        <span className={`text-[10px] ${item.done ? 'text-theme-text' : 'text-theme-muted'}`}>
+                          {item.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="rounded-inner border border-theme-border bg-theme-bg px-3 py-2">
+                    <p className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-lavender">Current blocker</p>
+                    <p className="text-[10px] text-theme-muted mt-1">{readinessBlocker}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </aside>
+        )}
 
         <section
-          className={`lg:col-span-7 xl:col-span-8 space-y-4 lg:max-h-[calc(100vh-13.5rem)] lg:overflow-y-auto lg:pr-1 ${
-            mobilePanel !== 'RESULTS' ? 'hidden lg:block' : ''
+          className={`space-y-4 lg:max-h-[calc(100vh-13.5rem)] lg:overflow-y-auto lg:pr-1 ${
+            focusMode ? 'lg:col-span-12 xl:col-span-12' : 'lg:col-span-7 xl:col-span-8'
+          } ${
+            !focusMode && mobilePanel !== 'RESULTS' ? 'hidden lg:block' : ''
           }`}
         >
           <EconomicsResultsTabs isClassic={isClassic} tab={resultsTab} onChange={onSetResultsTab} />
@@ -394,20 +441,21 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
               </div>
 
               {/* Accent divider before Execution */}
-              <AccentDivider />
+              {!focusMode && <AccentDivider />}
 
-              {/* Execution label */}
-              <div className="pt-1">
-                <p className={isClassic
-                  ? 'text-[9px] font-black uppercase tracking-[0.2em] text-white/50 mb-3'
-                  : 'text-[9px] font-black uppercase tracking-[0.2em] text-theme-muted/60 mb-3'
-                }>
-                  Execution
-                </p>
-              </div>
+              {!focusMode && (
+                <div className="pt-1">
+                  <p className={isClassic
+                    ? 'text-[9px] font-black uppercase tracking-[0.2em] text-white/50 mb-3'
+                    : 'text-[9px] font-black uppercase tracking-[0.2em] text-theme-muted/60 mb-3'
+                  }>
+                    Execution
+                  </p>
+                </div>
+              )}
 
               {/* Compact run bar */}
-              <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />
+              {!focusMode && <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />}
             </div>
           )}
 
@@ -423,10 +471,11 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
               payoutMonths={operationsProps.payoutMonths}
               fastestPayoutScenarioName={operationsProps.fastestPayoutScenarioName}
               scenarioRankings={operationsProps.scenarioRankings}
+              onJumpToDriver={handleJumpToDriver}
             />
           )}
 
-          {resultsTab !== 'SUMMARY' && (
+          {!focusMode && resultsTab !== 'SUMMARY' && (
             <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />
           )}
         </section>

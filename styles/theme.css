@@ -641,6 +641,83 @@
   /* muted slate */
 }
 
+/* ---------- Hyperborea (Winter Village) ---------- */
+[data-theme='hyperborea'] {
+  --bg-deep: 11 19 32;
+  /* #0B1320 */
+  --bg-space: 22 35 56;
+  /* #162338 */
+  --surface-1: 32 52 80;
+  /* #203450 */
+  --surface-2: 44 67 101;
+  /* #2C4365 */
+  --border: 90 108 135;
+  /* #5A6C87 */
+  --cyan: 56 189 248;
+  /* #38BDF8 */
+  --magenta: 251 188 5;
+  /* #FBBC05 window glow amber */
+  --violet: 143 159 184;
+  /* #8F9FB8 snow ground */
+  --purple: 20 29 46;
+  /* #141D2E village sil */
+  --lav: 203 213 225;
+  /* #CBD5E1 */
+  --text: 241 245 249;
+  /* #F1F5F9 */
+  --muted: 148 163 184;
+  /* #94A3B8 */
+  --success: 52 211 153;
+  /* #34D399 */
+  --warning: 251 191 36;
+  /* #FBBF24 */
+  --danger: 248 113 113;
+  /* #F87171 */
+
+  --shadow-glow-cyan: 0 0 16px rgba(56, 189, 248, 0.28), 0 0 40px rgba(56, 189, 248, 0.12);
+  --shadow-glow-magenta: 0 0 12px rgba(251, 188, 5, 0.26), 0 0 32px rgba(251, 188, 5, 0.10);
+  --shadow-card: 0 14px 32px rgba(0, 0, 0, 0.56);
+
+  --grad-space:
+    radial-gradient(1080px circle at 10% -20%, rgba(56, 189, 248, 0.15) 0%, rgba(56, 189, 248, 0) 58%),
+    radial-gradient(980px circle at 90% -12%, rgba(251, 188, 5, 0.1) 0%, rgba(251, 188, 5, 0) 56%),
+    linear-gradient(170deg, #162338 0%, #0b1320 100%);
+  --font-brand: 'Inter';
+  --ambient-left: 56 189 248;
+  --ambient-right: 251 188 5;
+  --ambient-left-alpha: 0.15;
+  --ambient-right-alpha: 0.15;
+  --ambient-orb-left-alpha: 0.1;
+  --ambient-orb-right-alpha: 0.1;
+  --hyperborea-cloud: 28 46 72;
+  --hyperborea-ridge: 11 19 32;
+
+  --header-bg-1: 32 52 80;
+  --header-bg-2: 22 35 56;
+  --header-border: 11 19 32;
+  --header-text: 241 245 249;
+
+  --bar-neutral-bg-1: 44 67 101;
+  --bar-neutral-bg-2: 32 52 80;
+  --bar-neutral-text: 241 245 249;
+  --bar-neutral-border: 22 35 56;
+
+  --bar-blue-bg-1: 56 189 248;
+  --bar-blue-bg-2: 14 165 233;
+  --bar-blue-text: 11 19 32;
+  --bar-blue-border: 22 35 56;
+
+  --bar-yellow-bg-1: 251 188 5;
+  --bar-yellow-bg-2: 245 158 11;
+  --bar-yellow-text: 11 19 32;
+  --bar-yellow-border: 22 35 56;
+
+  --btn-primary-bg-1: var(--cyan);
+  --btn-primary-bg-2: 14 165 233;
+  --btn-primary-border: 2 132 199;
+  --btn-primary-text: 11 19 32;
+}
+
 /* ==========================================================================
    Global base styles
    ========================================================================== */
@@ -1192,7 +1269,7 @@ body {
       rgb(255 255 255 / 0.06) 0%,
       rgb(255 255 255 / 0.02) 40%,
       rgb(var(--surface-1) / 0.08) 100%);
-  opacity: 0.72;
+  opacity: 0.5;
   z-index: 0;
 }
 
@@ -1235,7 +1312,7 @@ body {
       transparent 1px,
       transparent 21px);
   mix-blend-mode: screen;
-  opacity: 0.2;
+  opacity: 0.14;
 }
 
 [data-theme='mario'] .theme-atmo-bands.fx-max {
@@ -1265,7 +1342,7 @@ body {
       rgb(var(--warning) / 0.26) 72%,
       rgb(var(--warning) / 0) 100%),
     linear-gradient(90deg, rgb(var(--cyan) / 0.16) 0%, rgb(var(--warning) / 0.20) 52%, rgb(var(--magenta) / 0.14) 100%);
-  opacity: 0.58;
+  opacity: 0.4;
 }
 
 [data-theme='mario'] .theme-atmo-horizon.fx-max {
@@ -1289,12 +1366,114 @@ body {
   background:
     linear-gradient(164deg, rgb(var(--surface-2) / 0.8) 18%, rgb(var(--surface-2) / 0.08) 64%, rgb(var(--surface-2) / 0) 100%),
     linear-gradient(18deg, rgb(var(--surface-1) / 0.74) 18%, rgb(var(--surface-1) / 0.06) 72%, rgb(var(--surface-1) / 0) 100%);
-  opacity: 0.56;
+  opacity: 0.4;
 }
 
 [data-theme='mario'] .theme-atmo-ridges.fx-max {
   height: 6.4rem;
   opacity: 0.74;
+}
+
+[data-theme='hyperborea'] .theme-atmo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120px 120px at 50% 10%, rgb(var(--cyan) / 0.16) 0%, rgb(var(--cyan) / 0) 74%),
+    linear-gradient(180deg,
+      rgb(var(--hyperborea-cloud) / 0.2) 0%,
+      rgb(var(--hyperborea-cloud) / 0.08) 40%,
+      transparent 100%);
+  opacity: 0.6;
+  z-index: 0;
+}
+
+[data-theme='hyperborea'] .theme-atmo.fx-max::before {
+  background:
+    radial-gradient(160px 160px at 50% 10%, rgb(var(--cyan) / 0.24) 0%, rgb(var(--cyan) / 0) 76%),
+    linear-gradient(180deg,
+      rgb(var(--hyperborea-cloud) / 0.3) 0%,
+      rgb(var(--hyperborea-cloud) / 0.1) 40%,
+      transparent 100%);
+  opacity: 0.85;
+}
+
+[data-theme='hyperborea'] .theme-atmo-header {
+  border-bottom-color: rgb(var(--header-border) / 0.9);
+  box-shadow:
+    inset 0 -1px 0 rgb(var(--cyan) / 0.22),
+    0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme='hyperborea'] .theme-atmo-header.fx-max {
+  box-shadow:
+    inset 0 -1px 0 rgb(var(--cyan) / 0.42),
+    0 16px 36px rgba(0, 0, 0, 0.48);
+}
+
+[data-theme='hyperborea'] .theme-atmo-bands {
+  inset: 0;
+  background:
+    repeating-linear-gradient(166deg,
+      rgb(var(--cyan) / 0.1) 0,
+      rgb(var(--cyan) / 0.1) 1px,
+      transparent 1px,
+      transparent 11px);
+  mix-blend-mode: screen;
+  opacity: 0.2;
+}
+
+[data-theme='hyperborea'] .theme-atmo-bands.fx-max {
+  background:
+    repeating-linear-gradient(166deg,
+      rgb(var(--cyan) / 0.15) 0,
+      rgb(var(--cyan) / 0.15) 1px,
+      transparent 1px,
+      transparent 8px);
+  opacity: 0.4;
+}
+
+[data-theme='hyperborea'] .theme-atmo-horizon {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4.5rem;
+  background:
+    linear-gradient(180deg,
+      rgb(var(--magenta) / 0) 0%,
+      rgb(var(--magenta) / 0.1) 50%,
+      rgb(var(--magenta) / 0.2) 70%,
+      rgb(var(--magenta) / 0.0) 100%),
+    linear-gradient(90deg, rgb(var(--cyan) / 0.15) 0%, rgb(var(--magenta) / 0.15) 50%, rgb(var(--cyan) / 0.15) 100%);
+  opacity: 0.6;
+}
+
+[data-theme='hyperborea'] .theme-atmo-horizon.fx-max {
+  height: 6.4rem;
+  background:
+    linear-gradient(180deg,
+      rgb(var(--magenta) / 0) 0%,
+      rgb(var(--magenta) / 0.15) 50%,
+      rgb(var(--magenta) / 0.3) 70%,
+      rgb(var(--magenta) / 0.0) 100%),
+    linear-gradient(90deg, rgb(var(--cyan) / 0.25) 0%, rgb(var(--magenta) / 0.25) 50%, rgb(var(--cyan) / 0.25) 100%);
+  opacity: 0.8;
+}
+
+[data-theme='hyperborea'] .theme-atmo-ridges {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5.9rem;
+  background:
+    linear-gradient(164deg, rgb(var(--hyperborea-ridge) / 0.93) 18%, rgb(var(--hyperborea-ridge) / 0.24) 63%, rgb(var(--hyperborea-ridge) / 0) 100%);
+  opacity: 0.7;
+}
+
+[data-theme='hyperborea'] .theme-atmo-ridges.fx-max {
+  height: 7.8rem;
+  opacity: 0.9;
 }
 
 @media (max-width: 900px) {
@@ -1433,7 +1612,7 @@ body {
   }
 
   [data-theme='mario'] .theme-atmo-bands {
-    opacity: 0.15;
+    opacity: 0.11;
   }
 
   [data-theme='mario'] .theme-atmo-bands.fx-max {
@@ -1442,7 +1621,7 @@ body {
 
   [data-theme='mario'] .theme-atmo-horizon {
     height: 2.8rem;
-    opacity: 0.48;
+    opacity: 0.34;
   }
 
   [data-theme='mario'] .theme-atmo-horizon.fx-max {
@@ -1452,7 +1631,7 @@ body {
 
   [data-theme='mario'] .theme-atmo-ridges {
     height: 3.7rem;
-    opacity: 0.45;
+    opacity: 0.32;
   }
 
   [data-theme='mario'] .theme-atmo-ridges.fx-max {

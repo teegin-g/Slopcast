@@ -20,6 +20,7 @@ type ViewMode = 'DASHBOARD' | 'ANALYSIS';
 type OpsTab = 'SELECTION_ACTIONS' | 'KEY_DRIVERS';
 type FxMode = 'cinematic' | 'max';
 type ControlsSection = 'TYPE_CURVE' | 'CAPEX' | 'OPEX' | 'OWNERSHIP';
+type AnalysisOpenSection = 'PRICING' | 'SCHEDULE' | 'SCALARS';
 
 type DriverModifier = {
   oilPriceDelta?: number;
@@ -34,8 +35,10 @@ type DriverShock = {
   modifiers: DriverModifier;
 };
 
+type DriverFamilyId = 'oil' | 'capex' | 'eur' | 'rig';
+
 type DriverFamily = {
-  id: string;
+  id: DriverFamilyId;
   label: string;
   upShockId: string;
   downShockId: string;
@@ -68,8 +71,10 @@ const DEFAULT_SCHEDULE: ScheduleParams = {
 
 const DESIGN_WORKSPACE_STORAGE_KEY = 'slopcast-design-workspace';
 const ECONOMICS_RESULTS_TAB_STORAGE_KEY = 'slopcast-econ-results-tab';
+const ECONOMICS_FOCUS_MODE_STORAGE_KEY = 'slopcast-econ-focus-mode';
 const FX_QUERY_KEY = 'fx';
 const FX_STORAGE_KEY_PREFIX = 'slopcast-fx-';
+const ANALYSIS_OPEN_SECTION_STORAGE_KEY = 'slopcast-analysis-open-section';
 
 const csvCell = (value: string | number) => {
   const raw = String(value);
@@ -97,6 +102,17 @@ const readStoredEconomicsResultsTab = (): EconomicsResultsTab => {
     // no-op
   }
   return 'SUMMARY';
+};
+
+const readStoredEconomicsFocusMode = (): boolean => {
+  try {
+    const raw = localStorage.getItem(ECONOMICS_FOCUS_MODE_STORAGE_KEY);
+    if (raw === '1') return true;
+    if (raw === '0') return false;
+  } catch {
+    // no-op
+  }
+  return false;
 };
 
 const SlopcastPage: React.FC = () => {
@@ -153,6 +169,7 @@ const SlopcastPage: React.FC = () => {
   const [wellsMobilePanel, setWellsMobilePanel] = useState<WellsMobilePanel>('MAP');
   const [economicsMobilePanel, setEconomicsMobilePanel] = useState<EconomicsMobilePanel>('RESULTS');
   const [economicsResultsTab, setEconomicsResultsTab] = useState<EconomicsResultsTab>(readStoredEconomicsResultsTab);
+  const [economicsFocusMode, setEconomicsFocusMode] = useState<boolean>(readStoredEconomicsFocusMode);
   const [opsTab, setOpsTab] = useState<OpsTab>('SELECTION_ACTIONS');
   const viewportLayout = useViewportLayout();
   const [controlsOpenSection, setControlsOpenSection] = useState<ControlsSection | null>(null);
@@ -581,6 +598,8 @@ const SlopcastPage: React.FC = () => {
           id: family.id,
           label: family.label,
           dominantDelta,
+          upShock: up ? { label: up.label, deltaNpv: up.deltaNpv } : undefined,
+          downShock: down ? { label: down.label, deltaNpv: down.deltaNpv } : undefined,
           bestDelta: Math.max(upDelta, downDelta),
           worstDelta: Math.min(upDelta, downDelta),
           magnitude: Math.max(Math.abs(upDelta), Math.abs(downDelta)),
@@ -740,6 +759,18 @@ const SlopcastPage: React.FC = () => {
     }
   }, [economicsResultsTab, supabasePersistenceEnabled]);
 
+  useEffect(() => {
+    try {
+      if (economicsFocusMode) {
+        localStorage.setItem(ECONOMICS_FOCUS_MODE_STORAGE_KEY, '1');
+      } else {
+        localStorage.removeItem(ECONOMICS_FOCUS_MODE_STORAGE_KEY);
+      }
+    } catch {
+      // no-op
+    }
+  }, [economicsFocusMode]);
+
   const hasGroup = !!activeGroup;
   const hasGroupWells = activeGroup.wellIds.size > 0;
   const hasCapexItems = activeGroup.capex.items.length > 0;
@@ -772,6 +803,20 @@ const SlopcastPage: React.FC = () => {
   const canUseSecondaryActions = reviewReady;
   const wellsNeedsAttention = !setupComplete || !selectionComplete;
   const economicsNeedsAttention = !reviewReady;
+
+  const handleRequestOpenControlsSection = (section: ControlsSection) => {
+    setControlsOpenSection(section);
+    if (viewportLayout === 'mobile') setEconomicsMobilePanel('SETUP');
+  };
+
+  const handleRequestOpenAnalysisSection = (section: AnalysisOpenSection) => {
+    try {
+      localStorage.setItem(ANALYSIS_OPEN_SECTION_STORAGE_KEY, section);
+    } catch {
+      // no-op
+    }
+    setViewMode('ANALYSIS');
+  };
 
   useEffect(() => {
     if (viewMode !== 'DASHBOARD') return;
@@ -894,6 +939,10 @@ const SlopcastPage: React.FC = () => {
                    onSetMobilePanel={setEconomicsMobilePanel}
                    resultsTab={economicsResultsTab}
                    onSetResultsTab={setEconomicsResultsTab}
+                   focusMode={economicsFocusMode}
+                   onToggleFocusMode={() => setEconomicsFocusMode(prev => !prev)}
+                   onRequestOpenControlsSection={handleRequestOpenControlsSection}
+                   onRequestOpenAnalysisSection={handleRequestOpenAnalysisSection}
                    wells={MOCK_WELLS}
                    groups={processedGroups}
                    activeGroupId={activeGroupId}

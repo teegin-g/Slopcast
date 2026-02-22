@@ -170,6 +170,8 @@ export default function MarioOverworldBackground() {
     let W = 0;
     let H = 0;
     let DPR = 1;
+    const motionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    let reduceMotion = motionQuery?.matches ?? false;
 
     function resize() {
       DPR = Math.min(window.devicePixelRatio || 1, 2);
@@ -177,6 +179,7 @@ export default function MarioOverworldBackground() {
       H = Math.floor(window.innerHeight * DPR);
       canvas.width = W;
       canvas.height = H;
+      if (reduceMotion) draw(0);
     }
 
     function ridgeY(nx: number, time: number, layer: HillLayer) {
@@ -345,16 +348,41 @@ export default function MarioOverworldBackground() {
       drawMotifs(time);
       drawSparkles(time);
       drawVignette();
+      if (reduceMotion) return;
       rafRef.current = requestAnimationFrame(draw);
     }
 
     resize();
     window.addEventListener('resize', resize);
-    rafRef.current = requestAnimationFrame(draw);
+
+    const handleMotionChange = () => {
+      reduceMotion = motionQuery?.matches ?? false;
+      cancelAnimationFrame(rafRef.current);
+      if (reduceMotion) {
+        draw(0);
+      } else {
+        rafRef.current = requestAnimationFrame(draw);
+      }
+    };
+
+    if (motionQuery) {
+      if (motionQuery.addEventListener) motionQuery.addEventListener('change', handleMotionChange);
+      else motionQuery.addListener(handleMotionChange);
+    }
+
+    if (reduceMotion) {
+      draw(0);
+    } else {
+      rafRef.current = requestAnimationFrame(draw);
+    }
 
     return () => {
       window.removeEventListener('resize', resize);
       cancelAnimationFrame(rafRef.current);
+      if (motionQuery) {
+        if (motionQuery.removeEventListener) motionQuery.removeEventListener('change', handleMotionChange);
+        else motionQuery.removeListener(handleMotionChange);
+      }
     };
   }, []);
 

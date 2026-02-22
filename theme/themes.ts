@@ -69,6 +69,7 @@ const MoonlightBackground = React.lazy(() => import('../components/MoonlightBack
 const TropicalBackground = React.lazy(() => import('../components/TropicalBackground'));
 const MarioOverworldBackground = React.lazy(() => import('../components/MarioOverworldBackground'));
 const StormDuskBackground = React.lazy(() => import('../components/StormDuskBackground'));
+const HyperboreaBackground = React.lazy(() => import('../components/HyperboreaBackground'));
 
 // ---------------------------------------------------------------------------
 // Theme definitions
@@ -296,11 +297,49 @@ const mario: ThemeMeta = {
   fxTheme: true,
 };
 
+const hyperborea: ThemeMeta = {
+  id: 'hyperborea',
+  label: 'Hyperborea',
+  icon: '❄️',
+  description: 'Winter village frost',
+  appName: 'SLOPCAST',
+  appSubtitle: 'Arctic Operations',
+  chartPalette: {
+    oil: '#38BDF8',
+    cash: '#FBBC05',
+    lav: '#CBD5E1',
+    grid: 'rgba(90, 108, 135, 0.25)',
+    text: '#94A3B8',
+    surface: '#141D2E',
+    border: 'rgba(90, 108, 135, 0.4)',
+  },
+  mapPalette: {
+    gridColor: '#5A6C87',
+    gridOpacity: 0.3,
+    selectedStroke: '#38BDF8',
+    glowColor: '#38BDF8',
+    unassignedFill: '#2C4365',
+    lassoFill: 'rgba(251, 188, 5, 0.15)',
+    lassoStroke: '#FBBC05',
+    lassoDash: '6, 3',
+  },
+  features: {
+    retroGrid: false,
+    brandFont: false,
+    glowEffects: true,
+  },
+  BackgroundComponent: HyperboreaBackground,
+  atmosphereClass: 'theme-atmo',
+  headerAtmosphereClass: 'theme-atmo-header',
+  atmosphericOverlays: ['theme-atmo-bands', 'theme-atmo-horizon', 'theme-atmo-ridges'],
+  fxTheme: true,
+};
+
 // ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
-export const THEMES: ThemeMeta[] = [slate, synthwave, tropical, league, stormwatch, mario];
+export const THEMES: ThemeMeta[] = [slate, synthwave, tropical, league, stormwatch, mario, hyperborea];
 
 export const DEFAULT_THEME: ThemeId = 'slate';
 

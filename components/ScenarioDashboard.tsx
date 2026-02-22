@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { WellGroup, Well, Scenario, SensitivityVariable, ScheduleParams } from '../types';
 import { calculateEconomics } from '../utils/economics';
 import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
@@ -74,6 +74,19 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, sc
   const [activeScenarioId, setActiveScenarioId] = useState<string>('s-base');
   const [editingScenario, setEditingScenario] = useState<boolean>(false);
   const [openSection, setOpenSection] = useState<'PRICING' | 'SCHEDULE' | 'SCALARS'>('PRICING');
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('slopcast-analysis-open-section');
+      if (raw === 'PRICING' || raw === 'SCHEDULE' || raw === 'SCALARS') {
+        setOpenSection(raw);
+        setEditingScenario(true);
+        localStorage.removeItem('slopcast-analysis-open-section');
+      }
+    } catch {
+      // no-op
+    }
+  }, []);
 
   const [sensX, setSensX] = useState<SensitivityVariable>('OIL_PRICE');
   const [sensY, setSensY] = useState<SensitivityVariable>('RIG_COUNT');

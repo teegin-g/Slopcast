@@ -186,9 +186,9 @@ try {
       await page.getByRole('button', { name: /^Wells/i }).first().click();
       await ensureVisibleText(page, 'Basin Visualizer');
 
-      const runInWellsVisible = await page.getByRole('button', { name: 'Run Economics' }).first().isVisible().catch(() => false);
-      if (runInWellsVisible) {
-        throw new Error('Run Economics should not be visible in Wells workspace');
+      const saveInWellsVisible = await page.getByRole('button', { name: 'Save Snapshot' }).first().isVisible().catch(() => false);
+      if (saveInWellsVisible) {
+        throw new Error('Save Snapshot should not be visible in Wells workspace');
       }
 
       let operatorChangedValue = null;
@@ -213,7 +213,7 @@ try {
         await page.getByRole('button', { name: 'Results' }).first().click();
       }
 
-      await page.getByRole('button', { name: 'Run Economics' }).first().waitFor({ state: 'visible', timeout: 15000 });
+      await page.getByRole('button', { name: 'Save Snapshot' }).first().waitFor({ state: 'visible', timeout: 15000 });
       await ensureEconomicsGroupSwitch(page);
 
       await clickByTestId(page, 'economics-results-tab-summary');
