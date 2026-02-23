@@ -188,7 +188,7 @@ function generateVillage() {
     for (let i = 0; i < count * 3; i++) xs.push(lerp(xMin, xMax, rand()));
     xs.sort((a, b) => a - b);
 
-    const minGap = depth === 0 ? 0.016 : 0.012;
+    const minGap = depth === 0 ? 0.08 : 0.06;
     let lastX = -1;
     for (let i = 0; i < xs.length && houses.length < 32; i++) {
       const x = xs[i];
@@ -213,11 +213,11 @@ function generateVillage() {
   }
 
   // Near row clusters
-  addRow(0, -1, 9);
-  addRow(0, 1, 9);
+  addRow(0, -1, 4);
+  addRow(0, 1, 4);
   // Far row silhouettes
-  addRow(1, -1, 4);
-  addRow(1, 1, 4);
+  addRow(1, -1, 2);
+  addRow(1, 1, 2);
 
   const streetlights: StreetlightData[] = [];
   const streetCount = 7;
@@ -236,8 +236,8 @@ function generateVillage() {
 
 // ── UFOs (subtle saucers near the sun) ──────────────────────────────────
 type UfoData = {
-  orbitR: number; // relative to min(W,H)
-  orbitSpeed: number; // rad/sec
+  xBase: number; // relative to W (0..1)
+  yBase: number; // relative to H (0..1)
   phase: number;
   size: number; // relative to min(W,H)
   bobPhase: number;
@@ -247,16 +247,35 @@ type UfoData = {
 function generateUfos(): UfoData[] {
   const rand = seededRandom(303);
   const ufos: UfoData[] = [];
-  for (let i = 0; i < 3; i++) {
-    ufos.push({
-      orbitR: lerp(0.06, 0.14, rand()),
-      orbitSpeed: lerp(0.1, 0.22, rand()),
-      phase: rand() * TAU,
-      size: lerp(0.014, 0.023, rand()),
-      bobPhase: rand() * TAU,
-      blink: lerp(0.7, 1.4, rand()),
-    });
-  }
+  
+  // Left side UFO
+  ufos.push({
+    xBase: 0.15,
+    yBase: 0.25,
+    phase: rand() * TAU,
+    size: lerp(0.014, 0.023, rand()),
+    bobPhase: rand() * TAU,
+    blink: lerp(0.7, 1.4, rand()),
+  });
+  
+  // Right side UFOs
+  ufos.push({
+    xBase: 0.85,
+    yBase: 0.3,
+    phase: rand() * TAU,
+    size: lerp(0.014, 0.023, rand()),
+    bobPhase: rand() * TAU,
+    blink: lerp(0.7, 1.4, rand()),
+  });
+  ufos.push({
+    xBase: 0.80,
+    yBase: 0.18,
+    phase: rand() * TAU,
+    size: lerp(0.014, 0.023, rand()),
+    bobPhase: rand() * TAU,
+    blink: lerp(0.7, 1.4, rand()),
+  });
+
   return ufos;
 }
 
@@ -512,22 +531,35 @@ export default function HyperboreaBackground() {
     }
 
     // ── Draw: UFOs ───────────────────────────────────────────────────
-    function drawUfos(time: number, intensity: number, sun: { cx: number; cy: number; size: number }) {
-      const { cx, cy } = sun;
+    function drawUfos(time: number, intensity: number) {
       const minD = Math.min(W, H);
       const glowA = 0.18 * clamp(intensity, 1, 2);
 
       for (const u of UFOS) {
-        const orbitR = u.orbitR * minD;
-        const ang = time * u.orbitSpeed + u.phase;
-        const x = cx + Math.cos(ang) * orbitR;
-        const y = cy + Math.sin(ang) * orbitR * 0.45 + Math.sin(time * 0.9 + u.bobPhase) * orbitR * 0.06;
+        const x = u.xBase * W + Math.sin(time * 0.5 + u.phase) * minD * 0.05;
+        const y = u.yBase * H + Math.sin(time * 0.9 + u.bobPhase) * minD * 0.02;
         const s = u.size * minD;
-
-        const nav = 0.55 + 0.45 * Math.sin(time * (1.2 * u.blink) + u.phase * 1.7);
 
         ctx!.save();
         ctx!.translate(x, y);
+
+        // Abduction Beam
+        const beamH = minD * 0.3;
+        const beamW1 = s * 0.5;
+        const beamW2 = s * 3.0;
+        
+        const beamGrad = ctx!.createLinearGradient(0, 0, 0, beamH);
+        beamGrad.addColorStop(0, `rgba(56, 189, 248, ${0.3 * intensity})`);
+        beamGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+        
+        ctx!.fillStyle = beamGrad;
+        ctx!.beginPath();
+        ctx!.moveTo(-beamW1, 0);
+        ctx!.lineTo(beamW1, 0);
+        ctx!.lineTo(beamW2, beamH);
+        ctx!.lineTo(-beamW2, beamH);
+        ctx!.closePath();
+        ctx!.fill();
 
         // Glow (subtle in cinematic, richer in fx-max)
         ctx!.shadowColor = `rgba(56, 189, 248, ${glowA})`;
@@ -554,11 +586,21 @@ export default function HyperboreaBackground() {
         ctx!.ellipse(0, s * 0.03, s * 1.18, s * 0.38, 0, 0, TAU);
         ctx!.stroke();
 
-        // Nav light
-        ctx!.fillStyle = `rgba(34, 211, 238, ${0.35 + 0.35 * nav})`;
-        ctx!.beginPath();
-        ctx!.arc(s * 0.75, s * 0.1, Math.max(1.2, s * 0.12), 0, TAU);
-        ctx!.fill();
+        // Rim lights (5 blinking lights)
+        const lightCount = 5;
+        for (let i = 0; i < lightCount; i++) {
+          const t = i / (lightCount - 1); // 0 to 1
+          const ang = lerp(Math.PI * 0.8, Math.PI * 0.2, t);
+          const lx = Math.cos(ang) * s * 1.1;
+          const ly = Math.sin(ang) * s * 0.35 + s * 0.03;
+          
+          const lightBlink = 0.55 + 0.45 * Math.sin(time * (2.0 + i * 0.5) + u.phase + i);
+          
+          ctx!.fillStyle = `rgba(34, 211, 238, ${0.35 + 0.35 * lightBlink})`;
+          ctx!.beginPath();
+          ctx!.arc(lx, ly, Math.max(1.0, s * 0.1), 0, TAU);
+          ctx!.fill();
+        }
 
         ctx!.restore();
       }
@@ -792,13 +834,13 @@ export default function HyperboreaBackground() {
         ctx!.translate(bodyWorldX, bodyDrawY);
         ctx!.scale(drawScale, 1);
 
-        // Legs as 2-segment lines (draw back legs first for depth)
+        // Legs helper
         const footLiftPx = s * 0.22;
-        for (let pass = 0; pass < 2; pass++) {
+        const drawLegs = (isFrontPass: boolean) => {
           for (let i = 0; i < 4; i++) {
             const def = legDefs[i];
             const isBackLeg = i >= 2;
-            if ((pass === 0) !== isBackLeg) continue;
+            if (isFrontPass === isBackLeg) continue;
 
             const p = fract(time * stepRate + def.offset + m.phase * 0.07);
             const inStance = p < 0.55;
@@ -833,7 +875,10 @@ export default function HyperboreaBackground() {
             ctx!.lineTo(footX, footY);
             ctx!.stroke();
           }
-        }
+        };
+
+        // Draw back legs
+        drawLegs(false);
 
         // Body (humped shape)
         ctx!.fillStyle = COLORS.mammothBody;
@@ -866,6 +911,9 @@ export default function HyperboreaBackground() {
         ctx!.lineWidth = s * 0.09;
         ctx!.strokeStyle = COLORS.mammothTusk;
         ctx!.stroke();
+
+        // Draw front legs
+        drawLegs(true);
 
         ctx!.restore();
       }
@@ -921,7 +969,7 @@ export default function HyperboreaBackground() {
       drawSky();
       drawAurora(time, intensity, sun);
       drawSun(time, sun);
-      drawUfos(time, intensity, sun);
+      drawUfos(time, intensity);
       drawMountains(MOUNTAINS_FAR, COLORS.mountainFar, H * 0.55);
       drawMountains(MOUNTAINS_NEAR, COLORS.mountainNear, H * 0.60);
       drawGround();
