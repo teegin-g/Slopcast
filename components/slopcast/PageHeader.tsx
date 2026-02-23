@@ -1,5 +1,5 @@
 import React from 'react';
-import { ThemeMeta } from '../../theme/themes';
+import { ThemeMeta, ColorMode } from '../../theme/themes';
 import DesignWorkspaceTabs, { DesignWorkspace } from './DesignWorkspaceTabs';
 
 type ViewMode = 'DASHBOARD' | 'ANALYSIS';
@@ -20,6 +20,11 @@ interface PageHeaderProps {
   atmosphericOverlays: string[];
   headerAtmosphereClass: string;
   fxClass: string;
+  colorMode?: ColorMode;
+  onSetColorMode?: (mode: ColorMode) => void;
+  effectiveMode?: 'dark' | 'light';
+  onShare?: () => void;
+  onRestartTour?: () => void;
 }
 
 const PageHeader: React.FC<PageHeaderProps> = ({
@@ -38,6 +43,11 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   atmosphericOverlays,
   headerAtmosphereClass,
   fxClass,
+  colorMode,
+  onSetColorMode,
+  effectiveMode = 'dark',
+  onShare,
+  onRestartTour,
 }) => {
   return (
     <header
@@ -160,7 +170,53 @@ const PageHeader: React.FC<PageHeaderProps> = ({
           </div>
         </div>
 
-        <div className="min-w-0 flex items-center justify-between md:justify-end gap-3">
+        <div className="min-w-0 flex items-center justify-between md:justify-end gap-2">
+          {/* Action buttons */}
+          <div className="flex items-center gap-1 shrink-0">
+            {onShare && (
+              <button
+                onClick={onShare}
+                className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-wide transition-colors ${
+                  isClassic
+                    ? 'bg-black/25 text-white/80 border border-black/30 hover:bg-black/35'
+                    : 'bg-theme-surface2 text-theme-muted border border-theme-border hover:text-theme-text'
+                }`}
+                title="Share Project"
+              >
+                Share
+              </button>
+            )}
+            {onRestartTour && (
+              <button
+                onClick={onRestartTour}
+                className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-wide transition-colors ${
+                  isClassic
+                    ? 'bg-black/25 text-white/80 border border-black/30 hover:bg-black/35'
+                    : 'bg-theme-surface2 text-theme-muted border border-theme-border hover:text-theme-text'
+                }`}
+                title="Restart Tour"
+              >
+                Tour
+              </button>
+            )}
+          </div>
+
+          {/* Dark/Light mode toggle */}
+          {onSetColorMode && theme.hasLightVariant && (
+            <button
+              onClick={() => onSetColorMode(effectiveMode === 'dark' ? 'light' : 'dark')}
+              className={`w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center theme-transition shrink-0 ${
+                isClassic
+                  ? 'bg-black/25 border border-black/30 text-white/80 hover:text-white'
+                  : 'bg-theme-bg border border-theme-border text-theme-muted hover:text-theme-text'
+              }`}
+              title={effectiveMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              <span className="text-xs">{effectiveMode === 'dark' ? '\u2600' : '\u263E'}</span>
+            </button>
+          )}
+
+          {/* Theme picker */}
           <div className={`flex items-center rounded-full p-1 border theme-transition shrink-0 ${isClassic ? 'bg-black/25 border-black/30' : 'bg-theme-bg border-theme-border'}`}>
             {themes.map(t => (
               <button

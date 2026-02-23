@@ -2380,3 +2380,36 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgb(var(--cyan));
 }
+
+/* ==========================================================================
+   Light mode overrides for Slate theme
+   ========================================================================== */
+
+[data-theme='slate'][data-mode='light'] {
+  --bg-deep: 248 250 252;      /* #f8fafc */
+  --bg-space: 241 245 249;     /* #f1f5f9 */
+  --surface-1: 255 255 255;    /* #ffffff */
+  --surface-2: 241 245 249;    /* #f1f5f9 */
+  --border: 203 213 225;       /* #cbd5e1 */
+  --text: 15 23 42;            /* #0f172a */
+  --muted: 100 116 139;        /* #64748b */
+  --shadow-glow-cyan: 0 0 10px rgba(59, 130, 246, 0.15);
+  --shadow-glow-magenta: 0 0 10px rgba(236, 72, 153, 0.15);
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --grad-space:
+    radial-gradient(1200px circle at 10% -20%, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0) 58%),
+    radial-gradient(980px circle at 92% -8%, rgba(99, 102, 241, 0.06) 0%, rgba(99, 102, 241, 0) 54%),
+    linear-gradient(160deg, #f8fafc 0%, #f1f5f9 58%, #e2e8f0 100%);
+  --ambient-left-alpha: 0.08;
+  --ambient-right-alpha: 0.06;
+  --ambient-orb-left-alpha: 0.04;
+  --ambient-orb-right-alpha: 0.05;
+  --header-bg-1: 241 245 249;
+  --header-bg-2: 255 255 255;
+  --header-border: 203 213 225;
+  --header-text: 15 23 42;
+  --bar-neutral-bg-1: 241 245 249;
+  --bar-neutral-bg-2: 255 255 255;
+  --bar-neutral-text: 15 23 42;
+  --bar-neutral-border: 203 213 225;
+}

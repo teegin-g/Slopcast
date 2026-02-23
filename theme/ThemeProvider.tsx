@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { ThemeId, ThemeMeta, DEFAULT_THEME, getTheme, THEMES } from './themes';
+import { ThemeId, ThemeMeta, ColorMode, DEFAULT_THEME, getTheme, THEMES } from './themes';
 
 // ---------------------------------------------------------------------------
 // Context
@@ -10,6 +10,9 @@ interface ThemeContextValue {
   theme: ThemeMeta;
   themes: ThemeMeta[];
   setThemeId: (id: ThemeId) => void;
+  colorMode: ColorMode;
+  setColorMode: (mode: ColorMode) => void;
+  effectiveMode: 'dark' | 'light';
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -19,6 +22,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 // ---------------------------------------------------------------------------
 
 const STORAGE_KEY = 'slopcast-theme';
+const COLOR_MODE_KEY = 'slopcast-color-mode';
 
 function readStoredTheme(): ThemeId {
   try {
@@ -28,8 +32,22 @@ function readStoredTheme(): ThemeId {
   return DEFAULT_THEME;
 }
 
-function applyThemeToDOM(id: ThemeId) {
+function readStoredColorMode(): ColorMode {
+  try {
+    const raw = localStorage.getItem(COLOR_MODE_KEY);
+    if (raw === 'dark' || raw === 'light' || raw === 'system') return raw;
+  } catch { /* ignore */ }
+  return 'dark';
+}
+
+function getSystemPreference(): 'dark' | 'light' {
+  if (typeof window === 'undefined') return 'dark';
+  return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+
+function applyThemeToDOM(id: ThemeId, mode: 'dark' | 'light') {
   document.documentElement.dataset.theme = id;
+  document.documentElement.dataset.mode = mode;
 }
 
 // ---------------------------------------------------------------------------
@@ -38,22 +56,50 @@ function applyThemeToDOM(id: ThemeId) {
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [themeId, setThemeIdRaw] = useState<ThemeId>(readStoredTheme);
+  const [colorMode, setColorModeRaw] = useState<ColorMode>(readStoredColorMode);
 
-  // Apply on first render
-  useEffect(() => { applyThemeToDOM(themeId); }, []);
+  const theme = useMemo(() => getTheme(themeId), [themeId]);
+
+  const effectiveMode = useMemo<'dark' | 'light'>(() => {
+    if (colorMode === 'system') {
+      const sysPref = getSystemPreference();
+      return theme.hasLightVariant ? sysPref : 'dark';
+    }
+    if (colorMode === 'light' && !theme.hasLightVariant) return 'dark';
+    return colorMode;
+  }, [colorMode, theme.hasLightVariant]);
+
+  // Apply on first render and changes
+  useEffect(() => { applyThemeToDOM(themeId, effectiveMode); }, [themeId, effectiveMode]);
+
+  // Listen for system preference changes when in 'system' mode
+  useEffect(() => {
+    if (colorMode !== 'system') return;
+    const mql = window.matchMedia('(prefers-color-scheme: light)');
+    const handler = () => applyThemeToDOM(themeId, theme.hasLightVariant && mql.matches ? 'light' : 'dark');
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, [colorMode, themeId, theme.hasLightVariant]);
 
   const setThemeId = useCallback((id: ThemeId) => {
     setThemeIdRaw(id);
-    applyThemeToDOM(id);
     try { localStorage.setItem(STORAGE_KEY, id); } catch { /* ignore */ }
+  }, []);
+
+  const setColorMode = useCallback((mode: ColorMode) => {
+    setColorModeRaw(mode);
+    try { localStorage.setItem(COLOR_MODE_KEY, mode); } catch { /* ignore */ }
   }, []);
 
   const value = useMemo<ThemeContextValue>(() => ({
     themeId,
-    theme: getTheme(themeId),
+    theme,
     themes: THEMES,
     setThemeId,
-  }), [themeId, setThemeId]);
+    colorMode,
+    setColorMode,
+    effectiveMode,
+  }), [themeId, theme, setThemeId, colorMode, setColorMode, effectiveMode]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };

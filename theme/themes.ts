@@ -38,6 +38,8 @@ export interface ThemeFeatures {
   glowEffects: boolean;     // neon glow filters on map / cards
 }
 
+export type ColorMode = 'dark' | 'light' | 'system';
+
 export interface ThemeMeta {
   id: ThemeId;
   label: string;
@@ -48,6 +50,10 @@ export interface ThemeMeta {
   chartPalette: ChartPalette;
   mapPalette: MapPalette;
   features: ThemeFeatures;
+  /** Default variant for this theme */
+  variant: 'dark' | 'light';
+  /** Whether this theme has a light mode variant */
+  hasLightVariant?: boolean;
   /** Optional animated background component for this theme */
   BackgroundComponent?: React.ComponentType;
   /** CSS class names for atmospheric overlay divs rendered in the header */
@@ -77,6 +83,8 @@ const HyperboreaBackground = React.lazy(() => import('../components/HyperboreaBa
 
 const slate: ThemeMeta = {
   id: 'slate',
+  variant: 'dark',
+  hasLightVariant: true,
   label: 'Slate',
   icon: '🏢',
   description: 'Corporate blue-gray',
@@ -110,6 +118,7 @@ const slate: ThemeMeta = {
 
 const synthwave: ThemeMeta = {
   id: 'synthwave',
+  variant: 'dark',
   label: 'Synthwave',
   icon: '🕹️',
   description: 'Neon retro vibes',
@@ -148,6 +157,7 @@ const synthwave: ThemeMeta = {
 
 const tropical: ThemeMeta = {
   id: 'tropical',
+  variant: 'dark',
   label: 'Tropical',
   icon: '🌴',
   description: 'Tommy Bahama resort',
@@ -186,6 +196,7 @@ const tropical: ThemeMeta = {
 
 const league: ThemeMeta = {
   id: 'league',
+  variant: 'dark',
   label: 'Nocturne',
   icon: '🌙',
   description: 'Moonlit alpine palette',
@@ -223,6 +234,7 @@ const league: ThemeMeta = {
 
 const stormwatch: ThemeMeta = {
   id: 'stormwatch',
+  variant: 'dark',
   label: 'Stormwatch',
   icon: '⛈️',
   description: 'Moody dusk storm atmosphere',
@@ -261,6 +273,7 @@ const stormwatch: ThemeMeta = {
 
 const mario: ThemeMeta = {
   id: 'mario',
+  variant: 'dark',
   label: 'Classic',
   icon: '🧱',
   description: 'Slopcast Classic — beveled retro dashboard',
@@ -299,6 +312,7 @@ const mario: ThemeMeta = {
 
 const hyperborea: ThemeMeta = {
   id: 'hyperborea',
+  variant: 'dark',
   label: 'Hyperborea',
   icon: '❄️',
   description: 'Winter village frost',
