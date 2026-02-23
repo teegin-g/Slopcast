@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import WaterfallChart from './WaterfallChart';
 
 export type DriverFamilyId = 'oil' | 'capex' | 'eur' | 'rig';
 
@@ -40,6 +41,7 @@ export interface EconomicsDriversPanelProps {
   fastestPayoutScenarioName: string;
   scenarioRankings: ScenarioRanking[];
   onJumpToDriver?: (driverId: DriverFamilyId) => void;
+  baseNpv?: number;
 }
 
 const RankBadge: React.FC<{ rank: number }> = ({ rank }) => (
@@ -68,6 +70,7 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
   fastestPayoutScenarioName,
   scenarioRankings,
   onJumpToDriver,
+  baseNpv,
 }) => {
   const maxAbs = useMemo(
     () => topDrivers.reduce((m, d) => Math.max(m, Math.abs(d.dominantDelta)), 0),
@@ -286,6 +289,18 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
           </div>
         )}
       </div>
+
+      {/* Waterfall Chart - Value Bridge */}
+      {baseNpv != null && topDrivers.length > 0 && (
+        <WaterfallChart
+          isClassic={isClassic}
+          baseNpv={baseNpv}
+          drivers={topDrivers.map(d => ({
+            label: d.label,
+            deltaNpv: d.dominantDelta,
+          }))}
+        />
+      )}
 
       {/* Upside / Downside - asymmetric with color tints */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

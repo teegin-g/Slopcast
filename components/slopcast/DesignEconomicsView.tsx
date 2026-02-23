@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import Controls from '../Controls';
 import Charts from '../Charts';
+import TaxControls from '../TaxControls';
+import DebtControls from '../DebtControls';
 import { ThemeId } from '../../theme/themes';
-import { MonthlyCashFlow, Well, WellGroup } from '../../types';
+import { MonthlyCashFlow, Well, WellGroup, TaxAssumptions, DebtAssumptions, ReserveCategory, DEFAULT_TAX_ASSUMPTIONS, DEFAULT_DEBT_ASSUMPTIONS } from '../../types';
 import KpiGrid from './KpiGrid';
 import OperationsConsole, { OperationsConsoleProps } from './OperationsConsole';
 import EconomicsDriversPanel, { DriverFamilyId } from './EconomicsDriversPanel';
@@ -12,6 +14,7 @@ import EconomicsResultsTabs, { EconomicsResultsTab } from './EconomicsResultsTab
 import GroupWellsTable from './GroupWellsTable';
 import GroupComparisonStrip from './GroupComparisonStrip';
 import MiniMapPreview from './MiniMapPreview';
+import ReservesPanel from './ReservesPanel';
 
 export type EconomicsMobilePanel = 'SETUP' | 'RESULTS';
 
@@ -49,10 +52,18 @@ interface DesignEconomicsViewProps {
     eur: number;
     payoutMonths: number;
     wellCount: number;
+    afterTaxNpv10?: number;
+    leveredNpv10?: number;
+    dscr?: number;
   };
   aggregateFlow: MonthlyCashFlow[];
   operationsProps: OperationsConsoleProps;
   breakevenOilPrice?: number | null;
+  snapshotHistory?: Array<{ npv: number; capex: number; eur: number; payout: number; timestamp: number }>;
+  showAfterTax?: boolean;
+  showLevered?: boolean;
+  onToggleAfterTax?: () => void;
+  onToggleLevered?: () => void;
 }
 
 /** SVG progress ring for Setup Insights */
@@ -185,6 +196,11 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   aggregateFlow,
   operationsProps,
   breakevenOilPrice,
+  snapshotHistory,
+  showAfterTax,
+  showLevered,
+  onToggleAfterTax,
+  onToggleLevered,
 }) => {
   const hasReadinessBlocker = !hasGroup || !hasGroupWells || !hasCapexItems;
   const [showSetupInsights, setShowSetupInsights] = useState(hasReadinessBlocker);
@@ -334,6 +350,81 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
               onOpenSectionHandled={onControlsOpenHandled}
             />
 
+            {/* Tax & Fiscal Controls */}
+            <div
+              className={
+                isClassic
+                  ? 'sc-panel theme-transition'
+                  : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
+              }
+            >
+              <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
+                <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
+                  Tax &amp; Fiscal
+                </h2>
+              </div>
+              <div className="p-3">
+                <TaxControls
+                  isClassic={isClassic}
+                  tax={activeGroup.taxAssumptions || DEFAULT_TAX_ASSUMPTIONS}
+                  onChange={(tax) => onUpdateGroup({ ...activeGroup, taxAssumptions: tax })}
+                />
+              </div>
+            </div>
+
+            {/* Leverage / Debt Controls */}
+            <div
+              className={
+                isClassic
+                  ? 'sc-panel theme-transition'
+                  : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
+              }
+            >
+              <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
+                <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
+                  Leverage
+                </h2>
+              </div>
+              <div className="p-3">
+                <DebtControls
+                  isClassic={isClassic}
+                  debt={activeGroup.debtAssumptions || DEFAULT_DEBT_ASSUMPTIONS}
+                  onChange={(debt) => onUpdateGroup({ ...activeGroup, debtAssumptions: debt })}
+                />
+              </div>
+            </div>
+
+            {/* Reserve Category Selector */}
+            <div
+              className={
+                isClassic
+                  ? 'sc-panel theme-transition'
+                  : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
+              }
+            >
+              <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
+                <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
+                  Reserve Category
+                </h2>
+              </div>
+              <div className="p-3">
+                <select
+                  value={activeGroup.reserveCategory || 'PDP'}
+                  onChange={(e) => onUpdateGroup({ ...activeGroup, reserveCategory: e.target.value as ReserveCategory })}
+                  className={
+                    isClassic
+                      ? 'w-full rounded-md px-2 py-1 text-[10px] font-black sc-inputNavy'
+                      : 'w-full bg-theme-bg border border-theme-border rounded-lg px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition'
+                  }
+                >
+                  <option value="PDP">PDP (Proved Developed)</option>
+                  <option value="PUD">PUD (Proved Undeveloped)</option>
+                  <option value="PROBABLE">Probable</option>
+                  <option value="POSSIBLE">Possible</option>
+                </select>
+              </div>
+            </div>
+
             <GroupWellsTable
               isClassic={isClassic}
               group={activeGroup}
@@ -419,6 +510,9 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                 metrics={aggregateMetrics}
                 aggregateFlow={aggregateFlow}
                 breakevenOilPrice={breakevenOilPrice}
+                snapshotHistory={snapshotHistory}
+                showAfterTax={showAfterTax}
+                showLevered={showLevered}
               />
 
               {/* Accent divider */}
@@ -472,6 +566,14 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
               fastestPayoutScenarioName={operationsProps.fastestPayoutScenarioName}
               scenarioRankings={operationsProps.scenarioRankings}
               onJumpToDriver={handleJumpToDriver}
+              baseNpv={aggregateMetrics.npv10}
+            />
+          )}
+
+          {resultsTab === 'RESERVES' && (
+            <ReservesPanel
+              isClassic={isClassic}
+              groups={groups}
             />
           )}
 

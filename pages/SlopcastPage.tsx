@@ -1,7 +1,7 @@
-import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DEFAULT_CAPEX, DEFAULT_COMMODITY_PRICING, DEFAULT_OPEX, DEFAULT_OWNERSHIP, DEFAULT_TYPE_CURVE, GROUP_COLORS, MOCK_WELLS } from '../constants';
-import { Scenario, ScheduleParams, Well, WellGroup } from '../types';
+import { Scenario, ScheduleParams, Well, WellGroup, TaxAssumptions, DebtAssumptions, DEFAULT_TAX_ASSUMPTIONS, DEFAULT_DEBT_ASSUMPTIONS } from '../types';
 import ScenarioDashboard from '../components/ScenarioDashboard';
 import DesignEconomicsView, { EconomicsMobilePanel } from '../components/slopcast/DesignEconomicsView';
 import DesignWellsView, { WellsMobilePanel } from '../components/slopcast/DesignWellsView';
@@ -14,7 +14,12 @@ import { useProjectPersistence } from '../components/slopcast/hooks/useProjectPe
 import { useAuth } from '../auth/AuthProvider';
 import { hasSupabaseEnv } from '../services/supabaseClient';
 import { useTheme } from '../theme/ThemeProvider';
-import { aggregateEconomics, calculateEconomics } from '../utils/economics';
+import { aggregateEconomics, calculateEconomics, applyTaxLayer, applyDebtLayer, applyReservesRisk } from '../utils/economics';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import KeyboardShortcutsHelp from '../components/slopcast/KeyboardShortcutsHelp';
+import OnboardingTour, { ONBOARDING_STORAGE_KEY } from '../components/slopcast/OnboardingTour';
+import ProjectSharePanel from '../components/slopcast/ProjectSharePanel';
+import ReservesPanel from '../components/slopcast/ReservesPanel';
 
 type ViewMode = 'DASHBOARD' | 'ANALYSIS'; 
 type OpsTab = 'SELECTION_ACTIONS' | 'KEY_DRIVERS';
@@ -97,7 +102,7 @@ const readStoredDesignWorkspace = (): DesignWorkspace => {
 const readStoredEconomicsResultsTab = (): EconomicsResultsTab => {
   try {
     const raw = localStorage.getItem(ECONOMICS_RESULTS_TAB_STORAGE_KEY);
-    if (raw === 'SUMMARY' || raw === 'CHARTS' || raw === 'DRIVERS') return raw;
+    if (raw === 'SUMMARY' || raw === 'CHARTS' || raw === 'DRIVERS' || raw === 'RESERVES') return raw;
   } catch {
     // no-op
   }
@@ -120,7 +125,7 @@ const SlopcastPage: React.FC = () => {
   const location = useLocation();
   const { status, session } = useAuth();
   // --- Theme (from provider) ---
-  const { themeId, theme, themes, setThemeId } = useTheme();
+  const { themeId, theme, themes, setThemeId, colorMode, setColorMode, effectiveMode } = useTheme();
   const isClassic = themeId === 'mario';
   const isFxTheme = !!theme.fxTheme;
 
@@ -225,9 +230,25 @@ const SlopcastPage: React.FC = () => {
   const [selectedWellIds, setSelectedWellIds] = useState<Set<string>>(new Set());
   const [lastSnapshotAt, setLastSnapshotAt] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState('');
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  const [showSharePanel, setShowSharePanel] = useState(false);
+  const [snapshotHistory, setSnapshotHistory] = useState<Array<{ npv: number; capex: number; eur: number; payout: number; timestamp: number }>>([]);
+  const [showAfterTax, setShowAfterTax] = useState(false);
+  const [showLevered, setShowLevered] = useState(false);
   const [operatorFilter, setOperatorFilter] = useState<string>('ALL');
   const [formationFilter, setFormationFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<Well['status'] | 'ALL'>('ALL');
+
+  // --- Keyboard Shortcuts ---
+  useKeyboardShortcuts({
+    onSwitchToWells: useCallback(() => setDesignWorkspace('WELLS'), []),
+    onSwitchToEconomics: useCallback(() => setDesignWorkspace('ECONOMICS'), []),
+    onSaveSnapshot: useCallback(() => handleSaveSnapshot(), []),
+    onExportCsv: useCallback(() => handleExportCsv(), []),
+    onSelectAll: useCallback(() => handleSelectAll(), []),
+    onClearSelection: useCallback(() => handleClearSelection(), []),
+    onShowHelp: useCallback(() => setShowShortcutsHelp(prev => !prev), []),
+  });
 
   // --- Computed Economics per Group ---
   const processedGroups = useMemo(() => {
@@ -235,7 +256,27 @@ const SlopcastPage: React.FC = () => {
     const basePricing = baseScenario?.pricing || DEFAULT_COMMODITY_PRICING;
     return groups.map(group => {
       const groupWells = MOCK_WELLS.filter(w => group.wellIds.has(w.id));
-      const { flow, metrics } = calculateEconomics(groupWells, group.typeCurve, group.capex, basePricing, group.opex, group.ownership);
+      let { flow, metrics } = calculateEconomics(groupWells, group.typeCurve, group.capex, basePricing, group.opex, group.ownership);
+
+      // Apply tax layer if group has tax assumptions
+      if (group.taxAssumptions) {
+        const taxResult = applyTaxLayer(flow, metrics, group.taxAssumptions);
+        flow = taxResult.flow;
+        metrics = taxResult.metrics;
+      }
+
+      // Apply debt layer if group has debt assumptions and debt is enabled
+      if (group.debtAssumptions?.enabled) {
+        const debtResult = applyDebtLayer(flow, metrics, group.debtAssumptions);
+        flow = debtResult.flow;
+        metrics = debtResult.metrics;
+      }
+
+      // Apply reserves risk factor
+      if (group.reserveCategory) {
+        metrics = applyReservesRisk(metrics, group.reserveCategory);
+      }
+
       return { ...group, flow, metrics };
     });
   }, [groups, scenarios]);
@@ -659,6 +700,18 @@ const SlopcastPage: React.FC = () => {
   }, [aggregateMetrics.wellCount, processedGroups, scenarios]);
 
   const handleSaveSnapshot = async () => {
+    // Track snapshot history for KPI sparklines
+    setSnapshotHistory(prev => [
+      ...prev.slice(-19), // keep last 20
+      {
+        npv: aggregateMetrics.npv10,
+        capex: aggregateMetrics.totalCapex,
+        eur: aggregateMetrics.eur,
+        payout: aggregateMetrics.payoutMonths,
+        timestamp: Date.now(),
+      },
+    ]);
+
     if (!supabasePersistenceEnabled) {
       setLastSnapshotAt(new Date().toISOString());
       setActionMessage('Snapshot saved locally.');
@@ -880,6 +933,14 @@ const SlopcastPage: React.FC = () => {
         atmosphericOverlays={atmosphericOverlays}
         headerAtmosphereClass={headerAtmosphereClass}
         fxClass={fxClass}
+        colorMode={colorMode}
+        onSetColorMode={setColorMode}
+        effectiveMode={effectiveMode}
+        onShare={() => setShowSharePanel(true)}
+        onRestartTour={() => {
+          try { localStorage.removeItem(ONBOARDING_STORAGE_KEY); } catch { /* no-op */ }
+          window.location.reload();
+        }}
       />
 
       <main className="p-4 md:p-6 max-w-[1920px] mx-auto w-full">
@@ -960,12 +1021,34 @@ const SlopcastPage: React.FC = () => {
                    aggregateFlow={aggregateFlow}
                    operationsProps={operationsProps}
                    breakevenOilPrice={breakevenOilPrice}
+                   snapshotHistory={snapshotHistory}
+                   showAfterTax={showAfterTax}
+                   showLevered={showLevered}
+                   onToggleAfterTax={() => setShowAfterTax(prev => !prev)}
+                   onToggleLevered={() => setShowLevered(prev => !prev)}
                  />
                )}
              </>
         )}
 
       </main>
+
+      {/* Onboarding Tour */}
+      <OnboardingTour isClassic={isClassic} />
+
+      {/* Keyboard Shortcuts Help Modal */}
+      <KeyboardShortcutsHelp isClassic={isClassic} open={showShortcutsHelp} onClose={() => setShowShortcutsHelp(false)} />
+
+      {/* Project Share Panel */}
+      <ProjectSharePanel
+        isClassic={isClassic}
+        open={showSharePanel}
+        onClose={() => setShowSharePanel(false)}
+        members={[]}
+        onInvite={() => {}}
+        onRemoveMember={() => {}}
+        onUpdateRole={() => {}}
+      />
     </div>
   );
 };

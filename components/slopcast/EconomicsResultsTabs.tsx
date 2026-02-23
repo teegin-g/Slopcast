@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type EconomicsResultsTab = 'SUMMARY' | 'CHARTS' | 'DRIVERS';
+export type EconomicsResultsTab = 'SUMMARY' | 'CHARTS' | 'DRIVERS' | 'RESERVES';
 
 export interface EconomicsResultsTabsProps {
   isClassic: boolean;
@@ -12,6 +12,7 @@ const tabs: Array<{ id: EconomicsResultsTab; label: string }> = [
   { id: 'SUMMARY', label: 'Summary' },
   { id: 'CHARTS', label: 'Charts' },
   { id: 'DRIVERS', label: 'Drivers' },
+  { id: 'RESERVES', label: 'Reserves' },
 ];
 
 const EconomicsResultsTabs: React.FC<EconomicsResultsTabsProps> = ({
@@ -25,7 +26,7 @@ const EconomicsResultsTabs: React.FC<EconomicsResultsTabsProps> = ({
         isClassic ? 'sc-panel' : 'rounded-panel bg-theme-surface1/60 border-theme-border shadow-card'
       }`}
     >
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         {tabs.map((item) => {
           const active = tab === item.id;
           return (

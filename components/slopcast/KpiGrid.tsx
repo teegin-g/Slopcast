@@ -1,11 +1,22 @@
 import React from 'react';
 import { DealMetrics, MonthlyCashFlow } from '../../types';
 
+interface SnapshotHistoryEntry {
+  npv: number;
+  capex: number;
+  eur: number;
+  payout: number;
+  timestamp: number;
+}
+
 interface KpiGridProps {
   isClassic: boolean;
   metrics: DealMetrics;
   aggregateFlow?: MonthlyCashFlow[];
   breakevenOilPrice?: number | null;
+  snapshotHistory?: SnapshotHistoryEntry[];
+  showAfterTax?: boolean;
+  showLevered?: boolean;
 }
 
 type AccentColor = 'cyan' | 'magenta' | 'lavender' | 'muted';
@@ -118,7 +129,33 @@ const WellsBadge: React.FC<{ count: number }> = ({ count }) => (
   </div>
 );
 
-const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, breakevenOilPrice }) => {
+/** Tiny inline sparkline for metric trends across snapshots */
+const MetricSparkline: React.FC<{ values: number[] }> = ({ values }) => {
+  if (values.length < 2) return null;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const w = 48;
+  const h = 16;
+  const points = values.map((v, i) => {
+    const x = (i / (values.length - 1)) * w;
+    const y = h - ((v - min) / range) * h;
+    return `${x},${y}`;
+  });
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h} className="shrink-0 opacity-40">
+      <polyline
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+        points={points.join(' ')}
+      />
+    </svg>
+  );
+};
+
+const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, breakevenOilPrice, snapshotHistory, showAfterTax, showLevered }) => {
   const breakevenLabel = breakevenOilPrice != null ? `Breakeven $${breakevenOilPrice}/bbl` : null;
 
   if (isClassic) {
@@ -216,6 +253,26 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
         {breakevenLabel && (
           <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-theme-muted/70 mt-2 relative z-10">{breakevenLabel}</p>
         )}
+        {/* After-tax / Levered NPV indicators */}
+        {(showAfterTax || showLevered) && (
+          <div className="flex items-center gap-4 mt-2 relative z-10">
+            {showAfterTax && metrics.afterTaxNpv10 != null && (
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-theme-lavender">
+                After-Tax: ${(metrics.afterTaxNpv10 / 1e6).toFixed(1)}MM
+              </span>
+            )}
+            {showLevered && metrics.leveredNpv10 != null && (
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-theme-magenta">
+                Levered: ${(metrics.leveredNpv10 / 1e6).toFixed(1)}MM
+              </span>
+            )}
+            {showLevered && metrics.dscr != null && metrics.dscr > 0 && (
+              <span className="text-[10px] font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-theme-surface2 text-theme-muted border border-theme-border">
+                DSCR: {metrics.dscr.toFixed(2)}x
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
@@ -224,12 +281,14 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
           value={`$${(metrics.totalCapex / 1e6).toFixed(1)}`}
           unit="MM"
           accent="magenta"
+          extra={snapshotHistory && snapshotHistory.length >= 2 ? <MetricSparkline values={snapshotHistory.map(s => s.capex)} /> : undefined}
         />
         <KpiStripTile
           title="Portfolio EUR"
           value={(metrics.eur / 1e3).toFixed(0)}
           unit="MBOE"
           accent="cyan"
+          extra={snapshotHistory && snapshotHistory.length >= 2 ? <MetricSparkline values={snapshotHistory.map(s => s.eur)} /> : undefined}
         />
         <KpiStripTile
           title="Payout"
