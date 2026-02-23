@@ -1,5 +1,5 @@
 
-import { Well, TypeCurveParams, CapexAssumptions, CommodityPricingAssumptions, MonthlyCashFlow, DealMetrics, WellGroup, Scenario, SensitivityVariable, SensitivityMatrixResult, ScheduleParams, OpexAssumptions, OwnershipAssumptions, JvAgreement } from '../types';
+import { Well, TypeCurveParams, CapexAssumptions, CommodityPricingAssumptions, MonthlyCashFlow, DealMetrics, WellGroup, Scenario, SensitivityVariable, SensitivityMatrixResult, ScheduleParams, OpexAssumptions, OwnershipAssumptions, JvAgreement, TaxAssumptions, DebtAssumptions, ReserveCategory, DEFAULT_RESERVE_RISK_FACTORS } from '../types';
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
@@ -273,6 +273,164 @@ export const calculateEconomics = (
       payoutMonths: payoutMonth,
       wellCount: selectedWells.length
     }
+  };
+};
+
+// --- TAX LAYER ---
+export const applyTaxLayer = (
+  flow: MonthlyCashFlow[],
+  metrics: DealMetrics,
+  tax: TaxAssumptions
+): { flow: MonthlyCashFlow[], metrics: DealMetrics } => {
+  const monthlyDiscountRate = 0.10 / 12;
+  let cumulativeAfterTax = 0;
+  let afterTaxNpv = 0;
+  let afterTaxPayoutMonth = 0;
+  let afterTaxPayoutFound = false;
+
+  const taxedFlow = flow.map((f, i) => {
+    // Severance tax on gross revenue
+    const severanceTax = f.revenue * (tax.severanceTaxPct / 100);
+    // Ad valorem tax on capex (assessed value proxy)
+    const adValoremTax = f.capex * (tax.adValoremTaxPct / 100);
+    // Pre-tax income
+    const preTaxIncome = f.netCashFlow - severanceTax - adValoremTax;
+    // Depletion allowance (% of gross revenue, capped at 65% of pre-tax income)
+    const depletionRaw = f.revenue * (tax.depletionAllowancePct / 100);
+    const depletionAllowance = Math.min(depletionRaw, Math.max(0, preTaxIncome * 0.65));
+    // Taxable income
+    const taxableIncome = Math.max(0, preTaxIncome - depletionAllowance);
+    // Income tax
+    const incomeTax = taxableIncome * ((tax.federalTaxRate + tax.stateTaxRate) / 100);
+    // After-tax cash flow
+    const afterTaxCashFlow = preTaxIncome - incomeTax;
+
+    cumulativeAfterTax += afterTaxCashFlow;
+    afterTaxNpv += afterTaxCashFlow / Math.pow(1 + monthlyDiscountRate, i + 1);
+
+    if (!afterTaxPayoutFound && cumulativeAfterTax >= 0) {
+      afterTaxPayoutMonth = i + 1;
+      afterTaxPayoutFound = true;
+    }
+
+    return {
+      ...f,
+      severanceTax,
+      adValoremTax,
+      incomeTax,
+      afterTaxCashFlow,
+      cumulativeAfterTaxCashFlow: cumulativeAfterTax,
+    };
+  });
+
+  return {
+    flow: taxedFlow,
+    metrics: {
+      ...metrics,
+      afterTaxNpv10: afterTaxNpv,
+      afterTaxPayoutMonths: afterTaxPayoutMonth,
+    },
+  };
+};
+
+// --- DEBT / LEVERAGE LAYER ---
+export const applyDebtLayer = (
+  flow: MonthlyCashFlow[],
+  metrics: DealMetrics,
+  debt: DebtAssumptions
+): { flow: MonthlyCashFlow[], metrics: DealMetrics } => {
+  if (!debt.enabled) return { flow, metrics };
+
+  const monthlyDiscountRate = 0.10 / 12;
+  const revolverMonthlyRate = (debt.revolverRate / 100) / 12;
+  const termMonthlyRate = (debt.termLoanRate / 100) / 12;
+  const termMonthlyPayment = debt.termLoanAmount > 0 && debt.termLoanAmortMonths > 0
+    ? (debt.termLoanAmount * termMonthlyRate) / (1 - Math.pow(1 + termMonthlyRate, -debt.termLoanAmortMonths))
+    : 0;
+
+  let revolverBalance = 0;
+  let termBalance = debt.termLoanAmount;
+  let cumulativeLevered = 0;
+  let leveredNpv = 0;
+  let totalDebtService = 0;
+  let totalCashAvailable = 0;
+
+  const leveredFlow = flow.map((f, i) => {
+    // Base cash flow (use afterTax if available, otherwise netCashFlow)
+    const baseCf = f.afterTaxCashFlow ?? f.netCashFlow;
+
+    // Interest on outstanding balances
+    const revolverInterest = revolverBalance * revolverMonthlyRate;
+    const termInterest = termBalance * termMonthlyRate;
+    const totalInterest = revolverInterest + termInterest;
+
+    // Term loan principal
+    const termPrincipal = termBalance > 0 ? Math.min(termBalance, Math.max(0, termMonthlyPayment - termInterest)) : 0;
+
+    // Available cash after debt service
+    const cashAfterService = baseCf - totalInterest - termPrincipal;
+
+    // Cash sweep on excess cash
+    let revolverPaydown = 0;
+    if (cashAfterService > 0 && revolverBalance > 0) {
+      revolverPaydown = Math.min(revolverBalance, cashAfterService * (debt.cashSweepPct / 100));
+    }
+
+    // If negative cash, draw from revolver
+    let revolverDraw = 0;
+    if (cashAfterService < 0) {
+      const deficit = Math.abs(cashAfterService);
+      revolverDraw = Math.min(deficit, debt.revolverSize - revolverBalance);
+    }
+
+    // Update balances
+    revolverBalance = revolverBalance - revolverPaydown + revolverDraw;
+    termBalance = Math.max(0, termBalance - termPrincipal);
+
+    const totalPrincipal = termPrincipal + revolverPaydown;
+    const leveredCashFlow = baseCf - totalInterest - totalPrincipal + revolverDraw;
+
+    cumulativeLevered += leveredCashFlow;
+    leveredNpv += leveredCashFlow / Math.pow(1 + monthlyDiscountRate, i + 1);
+
+    // DSCR tracking
+    if (baseCf > 0) totalCashAvailable += baseCf;
+    totalDebtService += totalInterest + totalPrincipal;
+
+    return {
+      ...f,
+      interestExpense: totalInterest,
+      principalPayment: totalPrincipal,
+      leveredCashFlow,
+      cumulativeLeveredCashFlow: cumulativeLevered,
+      outstandingDebt: revolverBalance + termBalance,
+    };
+  });
+
+  const dscr = totalDebtService > 0 ? totalCashAvailable / totalDebtService : 0;
+
+  return {
+    flow: leveredFlow,
+    metrics: {
+      ...metrics,
+      leveredNpv10: leveredNpv,
+      dscr,
+      equityIrr: 0, // simplified - full IRR computation is complex
+    },
+  };
+};
+
+// --- RESERVES RISK LAYER ---
+export const applyReservesRisk = (
+  metrics: DealMetrics,
+  reserveCategory?: ReserveCategory
+): DealMetrics => {
+  if (!reserveCategory) return metrics;
+  const riskFactor = DEFAULT_RESERVE_RISK_FACTORS[reserveCategory] ?? 1.0;
+  return {
+    ...metrics,
+    riskedEur: metrics.eur * riskFactor,
+    riskedNpv10: metrics.npv10 * riskFactor,
   };
 };
 
