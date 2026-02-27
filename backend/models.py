@@ -18,6 +18,7 @@ class Well(BaseModel):
     lateralLength: float = Field(..., ge=0, description="Feet")
     status: WellStatus
     operator: str
+    formation: str = ""
 
 
 class TypeCurveParams(BaseModel):
@@ -25,6 +26,7 @@ class TypeCurveParams(BaseModel):
     b: float = Field(..., ge=0, description="b-factor")
     di: float = Field(..., ge=0, description="Nominal initial decline rate (annual %)")
     terminalDecline: float = Field(..., ge=0, description="Terminal decline (annual %)")
+    gorMcfPerBbl: float = Field(0.0, ge=0, description="Gas-Oil Ratio (mcf/bbl)")
 
 
 class CapexItem(BaseModel):
@@ -51,6 +53,39 @@ class PricingAssumptions(BaseModel):
     gasDifferential: float
     nri: float = Field(..., ge=0)
     loePerMonth: float = Field(..., ge=0)
+
+
+class OpexSegment(BaseModel):
+    id: str
+    label: str
+    startMonth: int = Field(..., ge=1)
+    endMonth: int = Field(..., ge=1)
+    fixedPerWellPerMonth: float = Field(..., ge=0)
+    variableOilPerBbl: float = Field(0.0, ge=0)
+    variableGasPerMcf: float = Field(0.0, ge=0)
+
+
+class OpexAssumptions(BaseModel):
+    segments: list[OpexSegment]
+
+
+class JvAgreementTerms(BaseModel):
+    conveyRevenuePctOfBase: float = Field(0.0, ge=0, le=1)
+    conveyCostPctOfBase: float = Field(0.0, ge=0, le=1)
+
+
+class JvAgreement(BaseModel):
+    id: str
+    name: str
+    startMonth: int = Field(1, ge=1)
+    prePayout: JvAgreementTerms
+    postPayout: JvAgreementTerms
+
+
+class OwnershipAssumptions(BaseModel):
+    baseNri: float = Field(..., ge=0, le=1)
+    baseCostInterest: float = Field(..., ge=0, le=1)
+    agreements: list[JvAgreement] = Field(default_factory=list)
 
 
 class MonthlyCashFlow(BaseModel):

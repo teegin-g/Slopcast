@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ThemeMeta, ColorMode } from '../../theme/themes';
 import DesignWorkspaceTabs, { DesignWorkspace } from './DesignWorkspaceTabs';
 
@@ -26,6 +26,66 @@ interface PageHeaderProps {
   onShare?: () => void;
   onRestartTour?: () => void;
 }
+
+const ThemeDropdown: React.FC<{
+  themes: ThemeMeta[];
+  themeId: string;
+  currentTheme: ThemeMeta;
+  isClassic: boolean;
+  onSelect: (id: string) => void;
+}> = ({ themes, themeId, currentTheme, isClassic, onSelect }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button
+        onClick={() => setOpen(prev => !prev)}
+        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-[11px] font-bold theme-transition ${
+          isClassic
+            ? 'bg-black/25 border-black/30 text-white hover:bg-black/35'
+            : 'bg-theme-bg border-theme-border text-theme-text hover:border-theme-cyan'
+        }`}
+      >
+        <span className="text-xs">{currentTheme.icon}</span>
+        <span className="hidden sm:inline">{currentTheme.label}</span>
+        <span className={`text-[8px] opacity-50 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>▼</span>
+      </button>
+
+      {open && (
+        <div
+          className={`absolute right-0 top-full mt-1 z-50 min-w-[140px] rounded-panel border shadow-card overflow-hidden theme-transition ${
+            isClassic ? 'bg-black/80 border-black/40 backdrop-blur-md' : 'bg-theme-surface1 border-theme-border backdrop-blur-md'
+          }`}
+        >
+          {themes.map(t => (
+            <button
+              key={t.id}
+              onClick={() => { onSelect(t.id); setOpen(false); }}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] font-bold transition-colors ${
+                isClassic
+                  ? `${themeId === t.id ? 'bg-theme-warning/20 text-theme-warning' : 'text-white/80 hover:bg-white/10'}`
+                  : `${themeId === t.id ? 'bg-theme-cyan/10 text-theme-cyan' : 'text-theme-muted hover:text-theme-text hover:bg-theme-bg'}`
+              }`}
+            >
+              <span className="text-xs">{t.icon}</span>
+              <span>{t.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const PageHeader: React.FC<PageHeaderProps> = ({
   isClassic,
@@ -216,27 +276,14 @@ const PageHeader: React.FC<PageHeaderProps> = ({
             </button>
           )}
 
-          {/* Theme picker */}
-          <div className={`flex items-center rounded-full p-1 border theme-transition shrink-0 ${isClassic ? 'bg-black/25 border-black/30' : 'bg-theme-bg border-theme-border'}`}>
-            {themes.map(t => (
-              <button
-                key={t.id}
-                onClick={() => setThemeId(t.id)}
-                className={
-                  isClassic
-                    ? `w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center theme-transition ${
-                        themeId === t.id ? 'bg-theme-warning text-black scale-110 shadow-card' : 'text-white/80 hover:text-white'
-                      }`
-                    : `w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center theme-transition ${
-                        themeId === t.id ? 'bg-theme-cyan text-theme-bg scale-110 shadow-glow-cyan' : 'text-theme-muted hover:text-theme-text'
-                      }`
-                }
-                title={t.label}
-              >
-                <span className="text-xs">{t.icon}</span>
-              </button>
-            ))}
-          </div>
+          {/* Theme dropdown selector */}
+          <ThemeDropdown
+            themes={themes}
+            themeId={themeId}
+            currentTheme={theme}
+            isClassic={isClassic}
+            onSelect={setThemeId}
+          />
         </div>
       </div>
 

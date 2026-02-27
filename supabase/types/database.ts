@@ -6,6 +6,9 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
+export type DealStatus = 'draft' | 'active' | 'closed' | 'archived';
+export type DealWellType = 'developed' | 'undeveloped';
+
 export type Database = {
   public: {
     Tables: {
@@ -250,6 +253,351 @@ export type Database = {
           rank?: number | null;
         };
       };
+      deals: {
+        Row: {
+          id: string;
+          owner_user_id: string;
+          name: string;
+          category: string | null;
+          status: DealStatus;
+          basin: string | null;
+          metadata: Json;
+          baseline_scenario_id: string | null;
+          kpis: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          owner_user_id: string;
+          name: string;
+          category?: string | null;
+          status?: DealStatus;
+          basin?: string | null;
+          metadata?: Json;
+          baseline_scenario_id?: string | null;
+          kpis?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          owner_user_id?: string;
+          name?: string;
+          category?: string | null;
+          status?: DealStatus;
+          basin?: string | null;
+          metadata?: Json;
+          baseline_scenario_id?: string | null;
+          kpis?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      deal_wells: {
+        Row: {
+          id: string;
+          deal_id: string;
+          well_id: string | null;
+          slopcast_well_id: string;
+          group_id: string | null;
+          well_type: DealWellType;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          deal_id: string;
+          well_id?: string | null;
+          slopcast_well_id: string;
+          group_id?: string | null;
+          well_type?: DealWellType;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          deal_id?: string;
+          well_id?: string | null;
+          slopcast_well_id?: string;
+          group_id?: string | null;
+          well_type?: DealWellType;
+          metadata?: Json;
+          created_at?: string;
+        };
+      };
+      deal_well_groups: {
+        Row: {
+          id: string;
+          deal_id: string;
+          name: string;
+          color: string;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          deal_id: string;
+          name: string;
+          color?: string;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          deal_id?: string;
+          name?: string;
+          color?: string;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      deal_production_profiles: {
+        Row: {
+          id: string;
+          deal_id: string;
+          group_id: string | null;
+          well_id: string | null;
+          name: string;
+          qi: number;
+          b: number;
+          di: number;
+          terminal_decline: number;
+          gor_mcf_per_bbl: number;
+          water_cut: number;
+          params: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          deal_id: string;
+          group_id?: string | null;
+          well_id?: string | null;
+          name?: string;
+          qi: number;
+          b: number;
+          di: number;
+          terminal_decline?: number;
+          gor_mcf_per_bbl?: number;
+          water_cut?: number;
+          params?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          deal_id?: string;
+          group_id?: string | null;
+          well_id?: string | null;
+          name?: string;
+          qi?: number;
+          b?: number;
+          di?: number;
+          terminal_decline?: number;
+          gor_mcf_per_bbl?: number;
+          water_cut?: number;
+          params?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      deal_capex_profiles: {
+        Row: {
+          id: string;
+          deal_id: string;
+          group_id: string | null;
+          well_id: string | null;
+          name: string;
+          rig_count: number;
+          drill_duration_days: number;
+          stim_duration_days: number;
+          rig_start_date: string | null;
+          items: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          deal_id: string;
+          group_id?: string | null;
+          well_id?: string | null;
+          name?: string;
+          rig_count?: number;
+          drill_duration_days?: number;
+          stim_duration_days?: number;
+          rig_start_date?: string | null;
+          items?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          deal_id?: string;
+          group_id?: string | null;
+          well_id?: string | null;
+          name?: string;
+          rig_count?: number;
+          drill_duration_days?: number;
+          stim_duration_days?: number;
+          rig_start_date?: string | null;
+          items?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      deal_opex_profiles: {
+        Row: {
+          id: string;
+          deal_id: string;
+          group_id: string | null;
+          well_id: string | null;
+          name: string;
+          segments: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          deal_id: string;
+          group_id?: string | null;
+          well_id?: string | null;
+          name?: string;
+          segments?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          deal_id?: string;
+          group_id?: string | null;
+          well_id?: string | null;
+          name?: string;
+          segments?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      deal_ownership_profiles: {
+        Row: {
+          id: string;
+          deal_id: string;
+          group_id: string | null;
+          well_id: string | null;
+          name: string;
+          base_nri: number;
+          base_cost_interest: number;
+          agreements: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          deal_id: string;
+          group_id?: string | null;
+          well_id?: string | null;
+          name?: string;
+          base_nri?: number;
+          base_cost_interest?: number;
+          agreements?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          deal_id?: string;
+          group_id?: string | null;
+          well_id?: string | null;
+          name?: string;
+          base_nri?: number;
+          base_cost_interest?: number;
+          agreements?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      deal_scenarios: {
+        Row: {
+          id: string;
+          deal_id: string;
+          name: string;
+          color: string;
+          is_base_case: boolean;
+          pricing: Json;
+          schedule: Json;
+          capex_scalar: number;
+          production_scalar: number;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          deal_id: string;
+          name: string;
+          color?: string;
+          is_base_case?: boolean;
+          pricing?: Json;
+          schedule?: Json;
+          capex_scalar?: number;
+          production_scalar?: number;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          deal_id?: string;
+          name?: string;
+          color?: string;
+          is_base_case?: boolean;
+          pricing?: Json;
+          schedule?: Json;
+          capex_scalar?: number;
+          production_scalar?: number;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      deal_economics_runs: {
+        Row: {
+          id: string;
+          deal_id: string;
+          scenario_id: string | null;
+          triggered_by: string;
+          input_hash: string;
+          portfolio_metrics: Json;
+          group_metrics: Json;
+          warnings: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          deal_id: string;
+          scenario_id?: string | null;
+          triggered_by: string;
+          input_hash: string;
+          portfolio_metrics?: Json;
+          group_metrics?: Json;
+          warnings?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          deal_id?: string;
+          scenario_id?: string | null;
+          triggered_by?: string;
+          input_hash?: string;
+          portfolio_metrics?: Json;
+          group_metrics?: Json;
+          warnings?: Json;
+          created_at?: string;
+        };
+      };
     };
     Functions: {
       save_project_bundle: {
@@ -271,6 +619,37 @@ export type Database = {
           p_portfolio_metrics: Json;
           p_warnings: Json;
           p_group_metrics: Json;
+        };
+        Returns: string;
+      };
+      current_deal_role: {
+        Args: {
+          target_deal_id: string;
+        };
+        Returns: string | null;
+      };
+      has_deal_access: {
+        Args: {
+          target_deal_id: string;
+        };
+        Returns: boolean;
+      };
+      save_deal_bundle: {
+        Args: {
+          p_deal_id: string | null;
+          p_name: string;
+          p_category: string | null;
+          p_status: string | null;
+          p_basin: string | null;
+          p_metadata: Json;
+          p_kpis: Json;
+          p_well_groups: Json;
+          p_wells: Json;
+          p_production_profiles: Json;
+          p_capex_profiles: Json;
+          p_opex_profiles: Json;
+          p_ownership_profiles: Json;
+          p_scenarios: Json;
         };
         Returns: string;
       };

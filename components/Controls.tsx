@@ -72,7 +72,16 @@ const Controls: React.FC<ControlsProps> = ({
   openSectionKey,
   onOpenSectionHandled,
 }) => {
-  const [activeSection, setActiveSection] = useState<SectionKey>('TYPE_CURVE');
+  const [openSections, setOpenSections] = useState<Set<SectionKey>>(() => new Set(['TYPE_CURVE']));
+
+  const toggleSection = (id: SectionKey) => {
+    setOpenSections(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
   const [capexEditSignal, setCapexEditSignal] = useState(0);
   const [showTemplateMenu, setShowTemplateMenu] = useState(false);
   const [pendingTemplate, setPendingTemplate] = useState<AssumptionTemplate | null>(null);
@@ -104,7 +113,12 @@ const Controls: React.FC<ControlsProps> = ({
 
   useEffect(() => {
     if (!openSectionKey) return;
-    setActiveSection(openSectionKey);
+    setOpenSections(prev => {
+      if (prev.has(openSectionKey)) return prev;
+      const next = new Set(prev);
+      next.add(openSectionKey);
+      return next;
+    });
     if (onOpenSectionHandled) onOpenSectionHandled();
   }, [onOpenSectionHandled, openSectionKey]);
 
@@ -273,7 +287,12 @@ const Controls: React.FC<ControlsProps> = ({
           </h3>
           <button
             onClick={() => {
-              setActiveSection('CAPEX');
+              setOpenSections(prev => {
+                if (prev.has('CAPEX')) return prev;
+                const next = new Set(prev);
+                next.add('CAPEX');
+                return next;
+              });
               setCapexEditSignal(prev => prev + 1);
             }}
             className={
@@ -308,7 +327,7 @@ const Controls: React.FC<ControlsProps> = ({
         </div>
       </div>
 
-      <AccordionSection id="TYPE_CURVE" title="Decline Profile" isOpen={activeSection === 'TYPE_CURVE'} onToggle={setActiveSection}>
+      <AccordionSection id="TYPE_CURVE" title="Decline Profile" isOpen={openSections.has('TYPE_CURVE')} onToggle={toggleSection}>
         <div className="space-y-4">
             <div>
                 <div className="flex justify-between items-center mb-1">
@@ -368,15 +387,15 @@ const Controls: React.FC<ControlsProps> = ({
         </div>
       </AccordionSection>
 
-      <AccordionSection id="CAPEX" title="CAPEX Logic" isOpen={activeSection === 'CAPEX'} onToggle={setActiveSection}>
+      <AccordionSection id="CAPEX" title="CAPEX Logic" isOpen={openSections.has('CAPEX')} onToggle={toggleSection}>
          <CapexControls capex={group.capex} onChange={handleCapexChange} focusEditSignal={capexEditSignal} />
       </AccordionSection>
 
-      <AccordionSection id="OPEX" title="LOE / Operating Expenses" isOpen={activeSection === 'OPEX'} onToggle={setActiveSection}>
+      <AccordionSection id="OPEX" title="LOE / Operating Expenses" isOpen={openSections.has('OPEX')} onToggle={toggleSection}>
         <OpexControls opex={group.opex} onChange={handleOpexChange} />
       </AccordionSection>
 
-      <AccordionSection id="OWNERSHIP" title="Ownership / Revenue Interest" isOpen={activeSection === 'OWNERSHIP'} onToggle={setActiveSection}>
+      <AccordionSection id="OWNERSHIP" title="Ownership / Revenue Interest" isOpen={openSections.has('OWNERSHIP')} onToggle={toggleSection}>
         <OwnershipControls ownership={group.ownership} onChange={handleOwnershipChange} />
       </AccordionSection>
     </div>
