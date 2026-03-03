@@ -16,6 +16,7 @@ import { hasSupabaseEnv } from '../services/supabaseClient';
 import { useTheme } from '../theme/ThemeProvider';
 import { aggregateEconomics, cachedCalculateEconomics, applyTaxLayer, applyDebtLayer, applyReservesRisk } from '../utils/economics';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useDerivedMetrics } from '../hooks/useDerivedMetrics';
 import KeyboardShortcutsHelp from '../components/slopcast/KeyboardShortcutsHelp';
 import OnboardingTour, { ONBOARDING_STORAGE_KEY } from '../components/slopcast/OnboardingTour';
@@ -137,6 +138,15 @@ const SlopcastPage: React.FC = () => {
   // --- Page mode (landing page vs workspace) ---
   type PageMode = 'landing' | 'workspace';
   const [pageMode, setPageMode] = useState<PageMode>('landing');
+
+  // --- State ---
+  const [viewMode, setViewMode] = useState<ViewMode>('DASHBOARD');
+  const docTitle = pageMode === 'landing'
+    ? 'Slopcast — Deals'
+    : viewMode === 'ANALYSIS'
+      ? 'Slopcast — Scenarios'
+      : 'Slopcast — Design';
+  useDocumentTitle(docTitle);
   const [savedDeals, setSavedDeals] = useState<DealRecord[]>([]);
 
   const handleSelectDeal = useCallback((dealId: string) => {
@@ -154,8 +164,6 @@ const SlopcastPage: React.FC = () => {
     console.log('[AcreageSearch]', query, filters);
   }, []);
 
-  // --- State ---
-  const [viewMode, setViewMode] = useState<ViewMode>('DASHBOARD');
   const [designWorkspace, setDesignWorkspace] = useState<DesignWorkspace>(readStoredDesignWorkspace);
   const [wellsMobilePanel, setWellsMobilePanel] = useState<WellsMobilePanel>('MAP');
   const [economicsMobilePanel, setEconomicsMobilePanel] = useState<EconomicsMobilePanel>('RESULTS');

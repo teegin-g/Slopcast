@@ -244,8 +244,8 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
           </div>
         )}
         <p className="text-theme-muted text-[10px] font-bold uppercase tracking-[0.4em] mb-2 relative z-10">Portfolio NPV (10%)</p>
-        <div className="flex items-baseline relative z-10">
-          <span className="text-5xl sm:text-6xl xl:text-7xl font-black tracking-tighter leading-none text-theme-cyan">
+        <div className="flex items-baseline relative z-10" key={metrics.npv10.toFixed(1)}>
+          <span className="text-5xl sm:text-6xl xl:text-7xl font-black tracking-tighter leading-none text-theme-cyan kpi-pulse">
             ${(metrics.npv10 / 1e6).toFixed(1)}
           </span>
           <span className="text-2xl font-black ml-3 text-theme-lavender italic">MM</span>

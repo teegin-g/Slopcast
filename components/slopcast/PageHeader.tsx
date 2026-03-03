@@ -121,10 +121,12 @@ const PageHeader: React.FC<PageHeaderProps> = ({
       <div className="relative z-10 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-3 md:gap-4 items-start md:items-center">
         <div className="min-w-0 flex flex-col md:flex-row md:items-center gap-3 md:gap-10">
           <div className="flex items-center gap-3 md:gap-4 min-w-0">
-            <div
-              className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center theme-transition overflow-hidden shrink-0 ${
-                isClassic ? 'rounded-full border border-black/30 shadow-card bg-theme-magenta' : 'rounded-panel bg-theme-surface2 border border-theme-border'
+            <button
+              onClick={onNavigateHub}
+              className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center theme-transition overflow-hidden shrink-0 hover:scale-105 transition-transform ${
+                isClassic ? 'rounded-full border border-black/30 shadow-card bg-theme-magenta' : 'rounded-panel bg-theme-surface2 border border-theme-border hover:border-theme-cyan'
               }`}
+              title="Back to Hub"
             >
               {isClassic ? (
                 <span className="text-white font-black text-lg md:text-xl leading-none">SL</span>
@@ -145,7 +147,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                   }}
                 />
               )}
-            </div>
+            </button>
 
             <div className={`flex flex-col pr-2 md:pr-8 min-w-0 ${isClassic ? 'md:border-r md:border-black/20' : 'md:border-r md:border-white/5'}`}>
               <h1

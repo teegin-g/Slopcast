@@ -2417,3 +2417,50 @@ body {
   --bar-neutral-text: 15 23 42;
   --bar-neutral-border: 203 213 225;
 }
+
+/* ── View transition ──────────────────────────────────── */
+@keyframes scViewEnter {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.sc-viewEnter {
+  animation: scViewEnter 0.15s ease-out both;
+}
+
+/* ── Recalc pulse for KPI values ──────────────────────── */
+@keyframes kpiPulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+.kpi-pulse {
+  animation: kpiPulse 0.3s ease-in-out;
+}
+
+/* ── Tooltip component ────────────────────────────────── */
+.sc-tooltip {
+  position: relative;
+}
+.sc-tooltip::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  background: rgb(var(--surface-1));
+  color: rgb(var(--text));
+  border: 1px solid rgb(var(--border));
+  box-shadow: var(--shadow-card);
+  z-index: 100;
+}
+.sc-tooltip:hover::after {
+  opacity: 1;
+}

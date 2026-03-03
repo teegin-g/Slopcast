@@ -399,7 +399,7 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, sc
       </div>
 
       <div className="xl:col-span-9 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
+          <div className={`grid gap-6 ${scenarioResults.length <= 3 ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2 2xl:grid-cols-3'}`}>
               {scenarioResults.map((res) => (
 	                  <div key={res.scenario.id} className={isClassic ? 'sc-panel theme-transition overflow-hidden group' : 'rounded-panel border p-6 relative overflow-hidden theme-transition shadow-card group bg-theme-surface1/80 border-theme-border hover:border-theme-cyan'}>
                       <div className="absolute top-0 left-0 w-1.5 h-full opacity-60" style={{ backgroundColor: res.scenario.color }}></div>

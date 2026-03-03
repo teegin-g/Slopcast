@@ -503,7 +503,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
           <EconomicsResultsTabs isClassic={isClassic} tab={resultsTab} onChange={onSetResultsTab} />
 
           {resultsTab === 'SUMMARY' && (
-            <div className="space-y-4">
+            <div className="space-y-4 sc-viewEnter" key="summary">
               {/* Hero NPV + stat strip */}
               <KpiGrid
                 isClassic={isClassic}
@@ -553,10 +553,10 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
             </div>
           )}
 
-          {resultsTab === 'CHARTS' && chartPanel}
+          {resultsTab === 'CHARTS' && <div key="charts" className="sc-viewEnter">{chartPanel}</div>}
 
           {resultsTab === 'DRIVERS' && (
-            <EconomicsDriversPanel
+            <div key="drivers" className="sc-viewEnter"><EconomicsDriversPanel
               isClassic={isClassic}
               topDrivers={operationsProps.topDrivers}
               biggestPositive={operationsProps.biggestPositive}
@@ -567,14 +567,14 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
               scenarioRankings={operationsProps.scenarioRankings}
               onJumpToDriver={handleJumpToDriver}
               baseNpv={aggregateMetrics.npv10}
-            />
+            /></div>
           )}
 
           {resultsTab === 'RESERVES' && (
-            <ReservesPanel
+            <div key="reserves" className="sc-viewEnter"><ReservesPanel
               isClassic={isClassic}
               groups={groups}
-            />
+            /></div>
           )}
 
           {!focusMode && resultsTab !== 'SUMMARY' && (

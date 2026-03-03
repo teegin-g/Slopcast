@@ -2,8 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { useTheme } from '../theme/ThemeProvider';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 const AuthPage: React.FC = () => {
+  useDocumentTitle('Slopcast — Sign In');
   const { status, signIn } = useAuth();
   const { themeId, themes, setThemeId } = useTheme();
   const isClassic = themeId === 'mario';

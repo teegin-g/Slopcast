@@ -132,10 +132,31 @@ const DealsTable: React.FC<DealsTableProps> = ({ isClassic, deals, onSelectDeal,
       </div>
 
       {sortedDeals.length === 0 ? (
-        <div className="p-8 text-center">
-          <p className={`text-[11px] ${isClassic ? 'text-white/50' : 'text-theme-muted'}`}>
-            No deals found. Create one to get started.
-          </p>
+        <div className="p-8 flex flex-col items-center gap-4">
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isClassic ? 'bg-black/20' : 'bg-theme-surface2'}`}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className={isClassic ? 'text-white/40' : 'text-theme-muted'}>
+              <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M12 11v4M10 13h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div className="text-center space-y-1">
+            <p className={`text-sm font-bold ${isClassic ? 'text-white/70' : 'text-theme-text'}`}>No deals yet</p>
+            <p className={`text-[11px] max-w-xs ${isClassic ? 'text-white/40' : 'text-theme-muted'}`}>
+              Search for acreage above, or open a blank workspace to explore with sample data.
+            </p>
+          </div>
+          {onCreateDeal && (
+            <button
+              onClick={onCreateDeal}
+              className={`px-4 py-2 rounded-inner text-[10px] font-bold tracking-wide transition-all ${
+                isClassic
+                  ? 'bg-theme-cyan text-white border border-theme-magenta/60'
+                  : 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan'
+              }`}
+            >
+              + New Deal
+            </button>
+          )}
         </div>
       ) : (
         <div className="overflow-x-auto">

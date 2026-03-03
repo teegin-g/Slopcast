@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { useTheme } from '../theme/ThemeProvider';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 interface AppModule {
   id: string;
@@ -59,6 +60,8 @@ const HubPage: React.FC = () => {
   const navigate = useNavigate();
   const { status, session, signOut, refreshSession } = useAuth();
   const { themeId, themes, setThemeId } = useTheme();
+
+  useDocumentTitle('Slopcast — Hub');
 
   const isClassic = themeId === 'mario';
   const isAuthenticated = status === 'authenticated';
@@ -140,7 +143,7 @@ const HubPage: React.FC = () => {
               <button
                 key={t.id}
                 onClick={() => setThemeId(t.id)}
-                className={
+                className={`sc-tooltip ${
                   isClassic
                     ? `w-8 h-8 rounded-full flex items-center justify-center theme-transition ${
                         themeId === t.id ? 'bg-theme-warning text-black scale-110 shadow-card' : 'text-white/80 hover:text-white'
@@ -148,8 +151,8 @@ const HubPage: React.FC = () => {
                     : `w-8 h-8 rounded-full flex items-center justify-center theme-transition ${
                         themeId === t.id ? 'bg-theme-cyan text-theme-bg scale-110 shadow-glow-cyan' : 'text-theme-muted hover:text-theme-text'
                       }`
-                }
-                title={t.label}
+                }`}
+                data-tip={t.label}
               >
                 <span className="text-xs">{t.icon}</span>
               </button>

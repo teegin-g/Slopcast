@@ -135,24 +135,39 @@ const FiltersPanel: React.FC<{
     );
   }
 
+  const activeCount = [operatorFilter, formationFilter, statusFilter].filter(f => f !== 'ALL').length;
+  const selectBorder = (isActive: boolean) =>
+    `w-full bg-theme-bg border rounded-inner px-3 py-2 text-xs text-theme-text outline-none transition-colors ${
+      isActive ? 'border-theme-cyan' : 'border-theme-border'
+    }`;
+
   return (
     <div className="rounded-panel border p-4 shadow-card theme-transition bg-theme-surface1/80 border-theme-border">
       <div className="flex items-center justify-between mb-3">
-        <h3 className={`font-semibold text-sm uppercase tracking-wide text-theme-cyan ${theme.features.brandFont ? 'brand-font' : ''}`}>Filters</h3>
+        <h3 className={`font-semibold text-sm tracking-wide text-theme-cyan ${theme.features.brandFont ? 'brand-font' : ''}`}>
+          Filters
+          {activeCount > 0 && (
+            <span className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-theme-cyan/20 text-theme-cyan text-[8px] font-bold">{activeCount}</span>
+          )}
+        </h3>
         <button
           onClick={onResetFilters}
-          className="text-[10px] px-3 py-1 rounded-inner border font-black uppercase tracking-[0.16em] border-theme-border text-theme-muted hover:text-theme-text"
+          className={`text-[10px] px-3 py-1 rounded-inner border font-bold tracking-wide transition-colors ${
+            activeCount > 0
+              ? 'border-theme-cyan/40 text-theme-cyan hover:bg-theme-cyan/10'
+              : 'border-theme-border text-theme-muted hover:text-theme-text'
+          }`}
         >
           Reset
         </button>
       </div>
       <div className="grid grid-cols-1 gap-3">
         <div>
-          <label className="text-[9px] font-black uppercase tracking-[0.2em] mb-1 block text-theme-muted">Operator</label>
+          <label className="text-[9px] font-bold uppercase tracking-[0.2em] mb-1 block text-theme-muted">Operator</label>
           <select
             value={operatorFilter}
             onChange={(e) => onSetOperatorFilter(e.target.value)}
-            className="w-full bg-theme-bg border rounded-inner px-3 py-2 text-xs text-theme-text outline-none border-theme-border"
+            className={selectBorder(operatorFilter !== 'ALL')}
           >
             <option value="ALL">All Operators</option>
             {operatorOptions.map(operator => (
@@ -161,11 +176,11 @@ const FiltersPanel: React.FC<{
           </select>
         </div>
         <div>
-          <label className="text-[9px] font-black uppercase tracking-[0.2em] mb-1 block text-theme-muted">Formation</label>
+          <label className="text-[9px] font-bold uppercase tracking-[0.2em] mb-1 block text-theme-muted">Formation</label>
           <select
             value={formationFilter}
             onChange={(e) => onSetFormationFilter(e.target.value)}
-            className="w-full bg-theme-bg border rounded-inner px-3 py-2 text-xs text-theme-text outline-none border-theme-border"
+            className={selectBorder(formationFilter !== 'ALL')}
           >
             <option value="ALL">All Formations</option>
             {formationOptions.map(formation => (
@@ -174,11 +189,11 @@ const FiltersPanel: React.FC<{
           </select>
         </div>
         <div>
-          <label className="text-[9px] font-black uppercase tracking-[0.2em] mb-1 block text-theme-muted">Status</label>
+          <label className="text-[9px] font-bold uppercase tracking-[0.2em] mb-1 block text-theme-muted">Status</label>
           <select
             value={statusFilter}
             onChange={(e) => onSetStatusFilter(e.target.value as Well['status'] | 'ALL')}
-            className="w-full bg-theme-bg border rounded-inner px-3 py-2 text-xs text-theme-text outline-none border-theme-border"
+            className={selectBorder(statusFilter !== 'ALL')}
           >
             <option value="ALL">All Statuses</option>
             {statusOptions.map(status => (
@@ -187,7 +202,7 @@ const FiltersPanel: React.FC<{
           </select>
         </div>
       </div>
-      <div className="mt-3 rounded-inner border px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-theme-muted border-theme-border bg-theme-bg">
+      <div className="mt-3 rounded-inner border px-3 py-2 text-[10px] font-bold tracking-wide text-theme-muted border-theme-border bg-theme-bg">
         {filteredWellsCount} visible / {totalWellCount} total
       </div>
     </div>

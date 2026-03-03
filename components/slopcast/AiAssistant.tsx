@@ -156,19 +156,26 @@ const AiAssistant: React.FC<AiAssistantProps> = ({
 
   if (!isOpen) {
     return (
-      <button
-        onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full flex items-center justify-center shadow-card transition-all hover:scale-105 ${
-          isClassic
-            ? 'bg-theme-cyan text-white border-2 border-theme-magenta/60'
-            : 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
-        }`}
-        title="Open AI Assistant"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
-      </button>
+      <div className="fixed bottom-6 right-6 z-40 flex items-center gap-2">
+        <span className={`px-2.5 py-1.5 rounded-panel text-[10px] font-bold shadow-card transition-opacity ${
+          isClassic ? 'bg-black/80 text-white/70 border border-white/10' : 'bg-theme-surface1 text-theme-muted border border-theme-border'
+        }`}>
+          AI Assistant
+        </span>
+        <button
+          onClick={() => setIsOpen(true)}
+          className={`w-12 h-12 rounded-full flex items-center justify-center shadow-card transition-all hover:scale-105 ${
+            isClassic
+              ? 'bg-theme-cyan text-white border-2 border-theme-magenta/60'
+              : 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
+          }`}
+          title="Open AI Assistant"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        </button>
+      </div>
     );
   }
 

@@ -68,19 +68,17 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ isClassic }) => {
   const isLast = stepIndex === TOUR_STEPS.length - 1;
 
   return (
-    <div className="fixed inset-0 z-[200] pointer-events-none">
-      <div className="absolute inset-0 bg-black/30 pointer-events-auto" onClick={handleDone} />
+    <div className="fixed z-[200] pointer-events-none" style={{ top: position.top, left: Math.min(position.left, window.innerWidth - 300) }}>
       <div
-        className={`absolute z-10 w-72 pointer-events-auto ${
+        className={`w-72 pointer-events-auto shadow-lg ${
           isClassic
             ? 'sc-panel overflow-hidden'
-            : 'rounded-panel border shadow-card bg-theme-surface1 border-theme-cyan'
+            : 'rounded-panel border shadow-card bg-theme-surface1 border-theme-cyan backdrop-blur-md'
         }`}
-        style={{ top: position.top, left: Math.min(position.left, window.innerWidth - 300) }}
       >
         <div className="p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className={`text-[9px] font-black uppercase tracking-[0.18em] ${isClassic ? 'text-theme-warning' : 'text-theme-cyan'}`}>
+            <span className={`text-[9px] font-bold uppercase tracking-[0.18em] ${isClassic ? 'text-theme-warning' : 'text-theme-cyan'}`}>
               Step {stepIndex + 1} of {TOUR_STEPS.length}
             </span>
             <button
@@ -90,18 +88,20 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ isClassic }) => {
               Skip
             </button>
           </div>
-          <h3 className={`text-sm font-black mb-1 ${isClassic ? 'text-white' : 'text-theme-text'}`}>{step.title}</h3>
+          <h3 className={`text-sm font-bold mb-1 ${isClassic ? 'text-white' : 'text-theme-text'}`}>{step.title}</h3>
           <p className={`text-[11px] leading-relaxed mb-3 ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>{step.description}</p>
-          <button
-            onClick={handleNext}
-            className={`w-full py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.14em] transition-colors ${
-              isClassic
-                ? 'sc-btnPrimary'
-                : 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan'
-            }`}
-          >
-            {isLast ? 'Done' : 'Next'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleNext}
+              className={`flex-1 py-2 rounded-inner text-[10px] font-bold uppercase tracking-[0.14em] transition-colors ${
+                isClassic
+                  ? 'sc-btnPrimary'
+                  : 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan'
+              }`}
+            >
+              {isLast ? 'Done' : 'Next'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
