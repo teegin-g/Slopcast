@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type RefObject } from 'react';
 
 interface ShortcutHandlers {
   onSwitchToWells?: () => void;
@@ -51,6 +51,111 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
       }
       if (e.key === '?') {
         handlers.onShowHelp?.();
+        return;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handlers]);
+}
+
+interface GridShortcutHandlers {
+  gridRef: RefObject<HTMLElement | null>;
+  onFillDown?: () => void;
+  onSelectAll?: () => void;
+  onCopy?: () => void;
+  onPaste?: () => void;
+  onDelete?: () => void;
+  onNavigate?: (direction: 'up' | 'down' | 'left' | 'right', extend: boolean) => void;
+  onTab?: (reverse: boolean) => void;
+  onEnter?: () => void;
+  onEscape?: () => void;
+}
+
+export function useGridKeyboardShortcuts(handlers: GridShortcutHandlers) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const grid = handlers.gridRef.current;
+      if (!grid || !grid.contains(document.activeElement)) return;
+
+      const mod = e.metaKey || e.ctrlKey;
+
+      // Ctrl/Cmd + D: Fill down
+      if (mod && e.key === 'd') {
+        e.preventDefault();
+        handlers.onFillDown?.();
+        return;
+      }
+
+      // Ctrl/Cmd + A: Select all within grid
+      if (mod && e.key === 'a') {
+        e.preventDefault();
+        handlers.onSelectAll?.();
+        return;
+      }
+
+      // Ctrl/Cmd + C: Copy
+      if (mod && e.key === 'c') {
+        e.preventDefault();
+        handlers.onCopy?.();
+        return;
+      }
+
+      // Ctrl/Cmd + V: Paste
+      if (mod && e.key === 'v') {
+        e.preventDefault();
+        handlers.onPaste?.();
+        return;
+      }
+
+      // Delete / Backspace: Clear cell
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        handlers.onDelete?.();
+        return;
+      }
+
+      // Arrow keys: Navigate, Shift extends selection
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        handlers.onNavigate?.('up', e.shiftKey);
+        return;
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        handlers.onNavigate?.('down', e.shiftKey);
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlers.onNavigate?.('left', e.shiftKey);
+        return;
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        handlers.onNavigate?.('right', e.shiftKey);
+        return;
+      }
+
+      // Tab / Shift+Tab
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        handlers.onTab?.(e.shiftKey);
+        return;
+      }
+
+      // Enter: Start editing
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handlers.onEnter?.();
+        return;
+      }
+
+      // Escape: Cancel
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handlers.onEscape?.();
         return;
       }
     };

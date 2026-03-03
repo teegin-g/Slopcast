@@ -20,6 +20,11 @@ import KeyboardShortcutsHelp from '../components/slopcast/KeyboardShortcutsHelp'
 import OnboardingTour, { ONBOARDING_STORAGE_KEY } from '../components/slopcast/OnboardingTour';
 import ProjectSharePanel from '../components/slopcast/ProjectSharePanel';
 import ReservesPanel from '../components/slopcast/ReservesPanel';
+import LandingPage, { ParsedFilters } from '../components/slopcast/LandingPage';
+import AiAssistant from '../components/slopcast/AiAssistant';
+import ForecastGrid from '../components/slopcast/ForecastGrid';
+import EngineComparisonPanel from '../components/slopcast/EngineComparisonPanel';
+import type { DealRecord } from '../types';
 
 type ViewMode = 'DASHBOARD' | 'ANALYSIS'; 
 type OpsTab = 'SELECTION_ACTIONS' | 'KEY_DRIVERS';
@@ -167,6 +172,26 @@ const SlopcastPage: React.FC = () => {
   const headerAtmosphereClass = theme.headerAtmosphereClass || '';
   const BackgroundComponent = theme.BackgroundComponent;
   const atmosphericOverlays = theme.atmosphericOverlays || [];
+
+  // --- Page mode (landing page vs workspace) ---
+  type PageMode = 'landing' | 'workspace';
+  const [pageMode, setPageMode] = useState<PageMode>('landing');
+  const [savedDeals, setSavedDeals] = useState<DealRecord[]>([]);
+
+  const handleSelectDeal = useCallback((dealId: string) => {
+    // In a full implementation, this would load the deal from Supabase
+    setPageMode('workspace');
+  }, []);
+
+  const handleCreateDeal = useCallback(() => {
+    setPageMode('workspace');
+  }, []);
+
+  const handleAcreageSearch = useCallback((query: string, filters: ParsedFilters) => {
+    // In a full implementation, this would query Supabase for matching wells
+    // and populate the deals table / map preview
+    console.log('[AcreageSearch]', query, filters);
+  }, []);
 
   // --- State ---
   const [viewMode, setViewMode] = useState<ViewMode>('DASHBOARD');
@@ -909,6 +934,30 @@ const SlopcastPage: React.FC = () => {
     scenarioRankings,
   };
 
+  // Landing page: show when pageMode is 'landing'
+  if (pageMode === 'landing') {
+    return (
+      <div className={`min-h-screen bg-transparent theme-transition ${atmosphereClass} ${fxClass}`}>
+        {BackgroundComponent && (
+          <Suspense fallback={null}>
+            <BackgroundComponent />
+          </Suspense>
+        )}
+        <LandingPage
+          isClassic={isClassic}
+          theme={theme}
+          deals={savedDeals}
+          onSelectDeal={handleSelectDeal}
+          onCreateDeal={handleCreateDeal}
+          onSearch={handleAcreageSearch}
+          onEnterWorkspace={() => setPageMode('workspace')}
+          wells={MOCK_WELLS}
+          activeGroup={activeGroup}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={`min-h-screen bg-transparent theme-transition ${atmosphereClass} ${fxClass}`}>
       {BackgroundComponent && (
@@ -916,7 +965,7 @@ const SlopcastPage: React.FC = () => {
           <BackgroundComponent />
         </Suspense>
       )}
-      
+
       <PageHeader
         isClassic={isClassic}
         theme={theme}
@@ -1028,10 +1077,55 @@ const SlopcastPage: React.FC = () => {
                    onToggleLevered={() => setShowLevered(prev => !prev)}
                  />
                )}
+
+               {/* Forecast Grid — tabular editor for aggregate cash flows */}
+               {designWorkspace === 'ECONOMICS' && aggregateFlow.length > 0 && (
+                 <div className="mt-4">
+                   <ForecastGrid
+                     isClassic={isClassic}
+                     flow={aggregateFlow}
+                     readOnly
+                   />
+                 </div>
+               )}
+
+               {/* Engine Comparison Panel — debug view comparing TS vs Python results */}
+               {designWorkspace === 'ECONOMICS' && (
+                 <div className="mt-4">
+                   <EngineComparisonPanel
+                     isClassic={isClassic}
+                     tsResult={aggregateFlow.length > 0 ? { flow: aggregateFlow, metrics: aggregateMetrics } : null}
+                     pyResult={null}
+                   />
+                 </div>
+               )}
              </>
         )}
 
       </main>
+
+      {/* AI Assistant */}
+      <AiAssistant
+        isClassic={isClassic}
+        activeGroup={activeGroup}
+        onUpdateGroup={handleUpdateGroup}
+        onUpdatePricing={(pricingUpdates) => {
+          setScenarios(prev => prev.map(s => s.isBaseCase
+            ? { ...s, pricing: { ...s.pricing, ...pricingUpdates } }
+            : s
+          ));
+        }}
+        onUpdateScalars={(scalars) => {
+          setScenarios(prev => prev.map(s => s.isBaseCase
+            ? { ...s, capexScalar: scalars.capex, productionScalar: scalars.production }
+            : s
+          ));
+        }}
+        currentScalars={{
+          capex: (scenarios.find(s => s.isBaseCase) || scenarios[0])?.capexScalar ?? 1,
+          production: (scenarios.find(s => s.isBaseCase) || scenarios[0])?.productionScalar ?? 1,
+        }}
+      />
 
       {/* Onboarding Tour */}
       <OnboardingTour isClassic={isClassic} />

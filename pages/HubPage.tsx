@@ -345,6 +345,16 @@ const HubPage: React.FC = () => {
                     Sync Session
                   </button>
                 )}
+                <button
+                  onClick={() => navigate('/hub/integrations')}
+                  className={
+                    isClassic
+                      ? 'rounded-inner px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] bg-black/20 border border-black/25 text-white/90'
+                      : 'rounded-inner px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] bg-theme-bg border border-theme-border text-theme-muted hover:text-theme-text'
+                  }
+                >
+                  Data Integrations
+                </button>
               </div>
             </div>
           </aside>

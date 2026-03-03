@@ -443,3 +443,41 @@ export interface DealEconomicsRunRecord {
   warnings: string[];
   createdAt: string;
 }
+
+
+// --- DEAL EXTENSION TYPES ---
+
+export interface DealDifferentialProfile {
+  id: string;
+  dealId: string;
+  groupId: string | null;
+  wellId: string | null;
+  name: string;
+  oilDifferential: number;
+  gasDifferential: number;
+  nglDifferential: number;
+  oilGathering: number;
+  gasGathering: number;
+  oilTransport: number;
+  gasTransport: number;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ProfileType = 'type_curve' | 'capex' | 'opex' | 'ownership' | 'pricing' | 'composite';
+
+export interface DealTypeCurvePreset {
+  id: string;
+  ownerUserId: string;
+  name: string;
+  profileType: ProfileType;
+  parentPresetId: string | null;
+  basin: string | null;
+  formation: string | null;
+  operator: string | null;
+  config: Record<string, unknown>;
+  isTemplate: boolean;
+  createdAt: string;
+  updatedAt: string;
+}

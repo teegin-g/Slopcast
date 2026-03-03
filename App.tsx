@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AuthPage from './pages/AuthPage';
 import HubPage from './pages/HubPage';
+import IntegrationsPage from './pages/IntegrationsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import SlopcastPage from './pages/SlopcastPage';
 
@@ -10,6 +11,14 @@ const App: React.FC = () => {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/slopcast" replace />} />
+      <Route
+        path="/hub/integrations"
+        element={(
+          <ProtectedRoute>
+            <IntegrationsPage />
+          </ProtectedRoute>
+        )}
+      />
       <Route path="/hub" element={<HubPage />} />
       <Route path="/auth" element={<AuthPage />} />
       <Route
