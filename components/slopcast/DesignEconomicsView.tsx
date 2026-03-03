@@ -586,4 +586,4 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   );
 };
 
-export default DesignEconomicsView;
+export default React.memo(DesignEconomicsView);

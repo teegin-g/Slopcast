@@ -233,4 +233,4 @@ const LandingPage: React.FC<LandingPageProps> = ({
   );
 };
 
-export default LandingPage;
+export default React.memo(LandingPage);

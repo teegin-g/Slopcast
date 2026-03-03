@@ -18,6 +18,14 @@ export default defineConfig(({ mode }) => {
       },
       build: {
         outDir: 'dist',
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+              'vendor-charts': ['recharts', 'd3'],
+            },
+          },
+        },
       },
       plugins: [react()],
       define: {

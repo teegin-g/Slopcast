@@ -571,4 +571,4 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
   );
 };
 
-export default MapVisualizer;
+export default React.memo(MapVisualizer);

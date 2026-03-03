@@ -561,4 +561,4 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
   );
 };
 
-export default DesignWellsView;
+export default React.memo(DesignWellsView);

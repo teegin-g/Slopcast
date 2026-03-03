@@ -3,6 +3,72 @@ import { Well, TypeCurveParams, CapexAssumptions, CommodityPricingAssumptions, M
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
+// --- LRU Memoization Cache for calculateEconomics ---
+const ECON_CACHE_MAX = 100;
+const econCache = new Map<string, { flow: MonthlyCashFlow[], metrics: DealMetrics }>();
+
+const buildEconCacheKey = (
+  wellIds: string[],
+  tc: TypeCurveParams,
+  capex: CapexAssumptions,
+  pricing: CommodityPricingAssumptions,
+  opex: OpexAssumptions,
+  ownership: OwnershipAssumptions,
+  scalars: { capex: number; production: number },
+  schedule?: ScheduleParams,
+): string => {
+  // Sort well IDs for stable keys
+  const sortedIds = [...wellIds].sort().join(',');
+  const parts = [
+    sortedIds,
+    tc.qi, tc.di, tc.b, tc.gorMcfPerBbl || 0,
+    capex.rigCount, capex.drillDurationDays, capex.stimDurationDays,
+    capex.items.map(i => `${i.id}:${i.value}:${i.basis}`).join('|'),
+    pricing.oilPrice, pricing.gasPrice, pricing.oilDifferential || 0, pricing.gasDifferential || 0,
+    opex.segments.map(s => `${s.startMonth}:${s.endMonth}:${s.fixedPerWellPerMonth}:${s.variableOilPerBbl}:${s.variableGasPerMcf}`).join('|'),
+    ownership.baseNri, ownership.baseCostInterest,
+    ownership.agreements.map(a => `${a.id}:${a.startMonth}:${a.prePayout.conveyRevenuePctOfBase}:${a.prePayout.conveyCostPctOfBase}:${a.postPayout.conveyRevenuePctOfBase}:${a.postPayout.conveyCostPctOfBase}`).join('|'),
+    scalars.capex, scalars.production,
+    schedule ? `${schedule.annualRigs.join(',')}:${schedule.drillDurationDays}:${schedule.stimDurationDays}` : '',
+  ];
+  return parts.join('::');
+};
+
+const cachedCalculateEconomics = (
+  selectedWells: Well[],
+  tc: TypeCurveParams,
+  capex: CapexAssumptions,
+  pricing: CommodityPricingAssumptions,
+  opex: OpexAssumptions,
+  ownership: OwnershipAssumptions,
+  scalars: { capex: number; production: number } = { capex: 1, production: 1 },
+  scheduleOverride?: ScheduleParams,
+): { flow: MonthlyCashFlow[], metrics: DealMetrics } => {
+  const key = buildEconCacheKey(
+    selectedWells.map(w => w.id),
+    tc, capex, pricing, opex, ownership, scalars, scheduleOverride,
+  );
+
+  const cached = econCache.get(key);
+  if (cached) {
+    // Move to end for LRU behavior
+    econCache.delete(key);
+    econCache.set(key, cached);
+    return cached;
+  }
+
+  const result = calculateEconomics(selectedWells, tc, capex, pricing, opex, ownership, scalars, scheduleOverride);
+
+  // Evict oldest if over capacity
+  if (econCache.size >= ECON_CACHE_MAX) {
+    const firstKey = econCache.keys().next().value;
+    if (firstKey !== undefined) econCache.delete(firstKey);
+  }
+
+  econCache.set(key, result);
+  return result;
+};
+
 const getOpexSegmentForAgeMonth = (opex: OpexAssumptions, ageMonth: number) => {
   const segments = [...(opex.segments || [])].sort((a, b) => a.startMonth - b.startMonth);
   return segments.find(seg => ageMonth >= seg.startMonth && ageMonth <= seg.endMonth) || null;
@@ -579,7 +645,7 @@ export const generateSensitivityMatrix = (
                 pricing = r2.newPricing;
                 schedule = r2.newSchedule;
 
-                const { metrics } = calculateEconomics(groupWells, group.typeCurve, group.capex, pricing, group.opex, group.ownership, scalars, schedule);
+                const { metrics } = cachedCalculateEconomics(groupWells, group.typeCurve, group.capex, pricing, group.opex, group.ownership, scalars, schedule);
                 portfolioNpv += metrics.npv10;
             }
 
@@ -590,3 +656,5 @@ export const generateSensitivityMatrix = (
 
     return matrix;
 };
+
+export { cachedCalculateEconomics };

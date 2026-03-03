@@ -303,4 +303,4 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
   );
 };
 
-export default KpiGrid;
+export default React.memo(KpiGrid);

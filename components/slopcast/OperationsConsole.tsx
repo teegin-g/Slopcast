@@ -445,4 +445,4 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
   );
 };
 
-export default OperationsConsole;
+export default React.memo(OperationsConsole);

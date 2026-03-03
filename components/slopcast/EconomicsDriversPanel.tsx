@@ -364,4 +364,4 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
   );
 };
 
-export default EconomicsDriversPanel;
+export default React.memo(EconomicsDriversPanel);

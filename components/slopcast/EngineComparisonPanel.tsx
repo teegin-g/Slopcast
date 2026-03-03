@@ -242,4 +242,4 @@ const EngineComparisonPanel: React.FC<EngineComparisonPanelProps> = ({
   );
 };
 
-export default EngineComparisonPanel;
+export default React.memo(EngineComparisonPanel);

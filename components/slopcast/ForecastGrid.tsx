@@ -226,4 +226,4 @@ const ForecastGrid: React.FC<ForecastGridProps> = ({ isClassic, flow, onUpdateFl
   );
 };
 
-export default ForecastGrid;
+export default React.memo(ForecastGrid);

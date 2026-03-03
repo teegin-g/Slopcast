@@ -14,8 +14,9 @@ import { useProjectPersistence } from '../components/slopcast/hooks/useProjectPe
 import { useAuth } from '../auth/AuthProvider';
 import { hasSupabaseEnv } from '../services/supabaseClient';
 import { useTheme } from '../theme/ThemeProvider';
-import { aggregateEconomics, calculateEconomics, applyTaxLayer, applyDebtLayer, applyReservesRisk } from '../utils/economics';
+import { aggregateEconomics, cachedCalculateEconomics, applyTaxLayer, applyDebtLayer, applyReservesRisk } from '../utils/economics';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { useDerivedMetrics } from '../hooks/useDerivedMetrics';
 import KeyboardShortcutsHelp from '../components/slopcast/KeyboardShortcutsHelp';
 import OnboardingTour, { ONBOARDING_STORAGE_KEY } from '../components/slopcast/OnboardingTour';
 import ProjectSharePanel from '../components/slopcast/ProjectSharePanel';
@@ -31,46 +32,6 @@ type OpsTab = 'SELECTION_ACTIONS' | 'KEY_DRIVERS';
 type FxMode = 'cinematic' | 'max';
 type ControlsSection = 'TYPE_CURVE' | 'CAPEX' | 'OPEX' | 'OWNERSHIP';
 type AnalysisOpenSection = 'PRICING' | 'SCHEDULE' | 'SCALARS';
-
-type DriverModifier = {
-  oilPriceDelta?: number;
-  capexScalar?: number;
-  productionScalar?: number;
-  rigDelta?: number;
-};
-
-type DriverShock = {
-  id: string;
-  label: string;
-  modifiers: DriverModifier;
-};
-
-type DriverFamilyId = 'oil' | 'capex' | 'eur' | 'rig';
-
-type DriverFamily = {
-  id: DriverFamilyId;
-  label: string;
-  upShockId: string;
-  downShockId: string;
-};
-
-const DRIVER_SHOCKS: DriverShock[] = [
-  { id: 'oil-up', label: 'Oil +$10/bbl', modifiers: { oilPriceDelta: 10 } },
-  { id: 'oil-down', label: 'Oil -$10/bbl', modifiers: { oilPriceDelta: -10 } },
-  { id: 'capex-up', label: 'CAPEX +10%', modifiers: { capexScalar: 1.1 } },
-  { id: 'capex-down', label: 'CAPEX -10%', modifiers: { capexScalar: 0.9 } },
-  { id: 'eur-up', label: 'EUR +10%', modifiers: { productionScalar: 1.1 } },
-  { id: 'eur-down', label: 'EUR -10%', modifiers: { productionScalar: 0.9 } },
-  { id: 'rig-up', label: 'Rig count +1', modifiers: { rigDelta: 1 } },
-  { id: 'rig-down', label: 'Rig count -1', modifiers: { rigDelta: -1 } },
-];
-
-const DRIVER_FAMILIES: DriverFamily[] = [
-  { id: 'oil', label: 'Oil Benchmark', upShockId: 'oil-up', downShockId: 'oil-down' },
-  { id: 'capex', label: 'CAPEX Intensity', upShockId: 'capex-up', downShockId: 'capex-down' },
-  { id: 'eur', label: 'Production Yield', upShockId: 'eur-up', downShockId: 'eur-down' },
-  { id: 'rig', label: 'Development Pace', upShockId: 'rig-up', downShockId: 'rig-down' },
-];
 
 const DEFAULT_SCHEDULE: ScheduleParams = { 
   annualRigs: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 
@@ -264,24 +225,13 @@ const SlopcastPage: React.FC = () => {
   const [formationFilter, setFormationFilter] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<Well['status'] | 'ALL'>('ALL');
 
-  // --- Keyboard Shortcuts ---
-  useKeyboardShortcuts({
-    onSwitchToWells: useCallback(() => setDesignWorkspace('WELLS'), []),
-    onSwitchToEconomics: useCallback(() => setDesignWorkspace('ECONOMICS'), []),
-    onSaveSnapshot: useCallback(() => handleSaveSnapshot(), []),
-    onExportCsv: useCallback(() => handleExportCsv(), []),
-    onSelectAll: useCallback(() => handleSelectAll(), []),
-    onClearSelection: useCallback(() => handleClearSelection(), []),
-    onShowHelp: useCallback(() => setShowShortcutsHelp(prev => !prev), []),
-  });
-
   // --- Computed Economics per Group ---
   const processedGroups = useMemo(() => {
     const baseScenario = scenarios.find(s => s.isBaseCase) || scenarios[0];
     const basePricing = baseScenario?.pricing || DEFAULT_COMMODITY_PRICING;
     return groups.map(group => {
       const groupWells = MOCK_WELLS.filter(w => group.wellIds.has(w.id));
-      let { flow, metrics } = calculateEconomics(groupWells, group.typeCurve, group.capex, basePricing, group.opex, group.ownership);
+      let { flow, metrics } = cachedCalculateEconomics(groupWells, group.typeCurve, group.capex, basePricing, group.opex, group.ownership);
 
       // Apply tax layer if group has tax assumptions
       if (group.taxAssumptions) {
@@ -381,123 +331,126 @@ const SlopcastPage: React.FC = () => {
 
   // --- Handlers ---
   const activeGroup = processedGroups.find(g => g.id === activeGroupId) || processedGroups[0];
-  const handleSetScenarios: React.Dispatch<React.SetStateAction<Scenario[]>> = (next) => {
+  const handleSetScenarios: React.Dispatch<React.SetStateAction<Scenario[]>> = useCallback((next) => {
     setScenarios(next);
-  };
+  }, []);
 
-  const handleUpdateGroup = (updatedGroup: WellGroup) => {
+  const handleUpdateGroup = useCallback((updatedGroup: WellGroup) => {
     setGroups(prev => prev.map(g => g.id === updatedGroup.id ? updatedGroup : g));
+  }, []);
 
-  };
-
-  const handleAddGroup = () => {
+  const handleAddGroup = useCallback(() => {
     const newId = `g-${Date.now()}`;
-    const color = GROUP_COLORS[groups.length % GROUP_COLORS.length];
-    const newGroup: WellGroup = {
-      id: newId,
-      name: `Group ${groups.length + 1}`,
-      color,
-      wellIds: new Set(),
-      typeCurve: { ...DEFAULT_TYPE_CURVE },
-      capex: { ...DEFAULT_CAPEX },
-      opex: { ...DEFAULT_OPEX, segments: DEFAULT_OPEX.segments.map(seg => ({ ...seg, id: `o-${Date.now()}-${Math.random()}` })) },
-      ownership: { ...DEFAULT_OWNERSHIP, agreements: [] }
-    };
-    setGroups([...groups, newGroup]);
+    setGroups(prev => {
+      const color = GROUP_COLORS[prev.length % GROUP_COLORS.length];
+      const newGroup: WellGroup = {
+        id: newId,
+        name: `Group ${prev.length + 1}`,
+        color,
+        wellIds: new Set(),
+        typeCurve: { ...DEFAULT_TYPE_CURVE },
+        capex: { ...DEFAULT_CAPEX },
+        opex: { ...DEFAULT_OPEX, segments: DEFAULT_OPEX.segments.map(seg => ({ ...seg, id: `o-${Date.now()}-${Math.random()}` })) },
+        ownership: { ...DEFAULT_OWNERSHIP, agreements: [] }
+      };
+      return [...prev, newGroup];
+    });
     setActiveGroupId(newId);
+  }, []);
 
-  };
-
-  const handleCloneGroup = (groupId: string) => {
-    const sourceGroup = groups.find(g => g.id === groupId);
-    if (!sourceGroup) return;
+  const handleCloneGroup = useCallback((groupId: string) => {
     const newId = `g-${Date.now()}`;
-    const color = GROUP_COLORS[(groups.length) % GROUP_COLORS.length];
-    const newGroup: WellGroup = {
+    setGroups(prev => {
+      const sourceGroup = prev.find(g => g.id === groupId);
+      if (!sourceGroup) return prev;
+      const color = GROUP_COLORS[prev.length % GROUP_COLORS.length];
+      const newGroup: WellGroup = {
         id: newId,
         name: `${sourceGroup.name} (Copy)`,
-        color: color,
+        color,
         wellIds: new Set(sourceGroup.wellIds),
         typeCurve: { ...sourceGroup.typeCurve },
-        capex: { 
-            ...sourceGroup.capex, 
-            items: sourceGroup.capex.items.map(i => ({...i, id: `c-${Date.now()}-${Math.random()}`})) 
+        capex: {
+          ...sourceGroup.capex,
+          items: sourceGroup.capex.items.map(i => ({ ...i, id: `c-${Date.now()}-${Math.random()}` }))
         },
         opex: { ...sourceGroup.opex, segments: sourceGroup.opex.segments.map(seg => ({ ...seg, id: `o-${Date.now()}-${Math.random()}` })) },
         ownership: { ...sourceGroup.ownership, agreements: sourceGroup.ownership.agreements.map(a => ({ ...a, id: `jv-${Date.now()}-${Math.random()}` })) }
-    };
-    setGroups([...groups, newGroup]);
-    setActiveGroupId(newId);
-
-  };
-
-  const handleAssignWellsToActive = () => {
-    if (selectedWellIds.size === 0) return;
-    setGroups(prevGroups => {
-      return prevGroups.map(g => {
-        const nextIds = new Set(g.wellIds);
-        if (g.id === activeGroupId) {
-          selectedWellIds.forEach(id => nextIds.add(id));
-        } else {
-          selectedWellIds.forEach(id => nextIds.delete(id));
-        }
-        return { ...g, wellIds: nextIds };
-      });
+      };
+      return [...prev, newGroup];
     });
-    setSelectedWellIds(new Set());
+    setActiveGroupId(newId);
+  }, []);
 
-  };
+  const handleAssignWellsToActive = useCallback(() => {
+    setSelectedWellIds(prevSelected => {
+      if (prevSelected.size === 0) return prevSelected;
+      setGroups(prevGroups => {
+        return prevGroups.map(g => {
+          const nextIds = new Set(g.wellIds);
+          if (g.id === activeGroupId) {
+            prevSelected.forEach(id => nextIds.add(id));
+          } else {
+            prevSelected.forEach(id => nextIds.delete(id));
+          }
+          return { ...g, wellIds: nextIds };
+        });
+      });
+      return new Set();
+    });
+  }, [activeGroupId]);
 
-  const handleCreateGroupFromSelection = () => {
-    if (selectedWellIds.size === 0) return;
-    const newId = `g-${Date.now()}`;
-    const color = GROUP_COLORS[groups.length % GROUP_COLORS.length];
-    const newGroup: WellGroup = {
-      id: newId,
-      name: `Selection Set ${groups.length + 1}`,
-      color,
-      wellIds: new Set(selectedWellIds),
-      typeCurve: { ...DEFAULT_TYPE_CURVE },
-      capex: { ...DEFAULT_CAPEX },
-      opex: { ...DEFAULT_OPEX, segments: DEFAULT_OPEX.segments.map(seg => ({ ...seg, id: `o-${Date.now()}-${Math.random()}` })) },
-      ownership: { ...DEFAULT_OWNERSHIP, agreements: [] }
-    };
-    setGroups(prevGroups => {
+  const handleCreateGroupFromSelection = useCallback(() => {
+    setSelectedWellIds(prevSelected => {
+      if (prevSelected.size === 0) return prevSelected;
+      const newId = `g-${Date.now()}`;
+      const newGroup: WellGroup = {
+        id: newId,
+        name: `Selection Set`,
+        color: '#888',
+        wellIds: new Set(prevSelected),
+        typeCurve: { ...DEFAULT_TYPE_CURVE },
+        capex: { ...DEFAULT_CAPEX },
+        opex: { ...DEFAULT_OPEX, segments: DEFAULT_OPEX.segments.map(seg => ({ ...seg, id: `o-${Date.now()}-${Math.random()}` })) },
+        ownership: { ...DEFAULT_OWNERSHIP, agreements: [] }
+      };
+      setGroups(prevGroups => {
+        // Fix color and name based on current group count
+        newGroup.color = GROUP_COLORS[prevGroups.length % GROUP_COLORS.length];
+        newGroup.name = `Selection Set ${prevGroups.length + 1}`;
         const updatedPrevGroups = prevGroups.map(g => {
-            const nextIds = new Set(g.wellIds);
-            selectedWellIds.forEach(id => nextIds.delete(id));
-            return { ...g, wellIds: nextIds };
+          const nextIds = new Set(g.wellIds);
+          prevSelected.forEach(id => nextIds.delete(id));
+          return { ...g, wellIds: nextIds };
         });
         return [...updatedPrevGroups, newGroup];
+      });
+      setActiveGroupId(newId);
+      return new Set();
     });
-    setActiveGroupId(newId);
-    setSelectedWellIds(new Set());
+  }, []);
 
-  };
-
-  const handleToggleWell = (id: string) => {
-    if (!visibleWellIds.has(id)) return;
+  const handleToggleWell = useCallback((id: string) => {
     setSelectedWellIds(prev => {
+      if (!visibleWellIds.has(id)) return prev;
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
+  }, [visibleWellIds]);
 
-  };
-
-  const handleSelectWells = (ids: string[]) => {
-      setSelectedWellIds(prev => {
-          const next = new Set(prev);
-          ids.forEach(id => {
-            if (visibleWellIds.has(id)) next.add(id);
-          });
-          return next;
+  const handleSelectWells = useCallback((ids: string[]) => {
+    setSelectedWellIds(prev => {
+      const next = new Set(prev);
+      ids.forEach(id => {
+        if (visibleWellIds.has(id)) next.add(id);
       });
-  
-  };
+      return next;
+    });
+  }, [visibleWellIds]);
 
-  const handleSelectAll = () => {
+  const handleSelectAll = useCallback(() => {
     if (filteredWells.length === 0) {
       setActionMessage('No visible wells match current filters.');
       return;
@@ -516,13 +469,11 @@ const SlopcastPage: React.FC = () => {
         return next;
       });
     }
+  }, [filteredWells.length, selectedVisibleCount, visibleWellIds]);
 
-  };
-
-  const handleClearSelection = () => {
+  const handleClearSelection = useCallback(() => {
     setSelectedWellIds(new Set());
-
-  };
+  }, []);
 
   const handleResetFilters = () => {
     setOperatorFilter('ALL');
@@ -612,117 +563,12 @@ const SlopcastPage: React.FC = () => {
     scenarios,
   ]);
 
-  const keyDriverInsights = useMemo(() => {
-    const baseScenario = scenarios.find(s => s.isBaseCase) || scenarios[0];
-    const basePricing = baseScenario?.pricing || DEFAULT_COMMODITY_PRICING;
-    const evaluateNpv = (modifier: DriverModifier = {}, forceOilPrice?: number) => {
-      return processedGroups.reduce((sum, group) => {
-        const groupWells = MOCK_WELLS.filter(w => group.wellIds.has(w.id));
-        const pricing = {
-          ...basePricing,
-          oilPrice: forceOilPrice ?? Math.max(0, basePricing.oilPrice + (modifier.oilPriceDelta ?? 0)),
-        };
-        const capex = {
-          ...group.capex,
-          rigCount: Math.max(1, Math.round(group.capex.rigCount + (modifier.rigDelta ?? 0))),
-        };
-        const { metrics } = calculateEconomics(
-          groupWells,
-          group.typeCurve,
-          capex,
-          pricing,
-          group.opex,
-          group.ownership,
-          {
-            capex: modifier.capexScalar ?? 1,
-            production: modifier.productionScalar ?? 1,
-          }
-        );
-        return sum + metrics.npv10;
-      }, 0);
-    };
-
-    const baseNpv = evaluateNpv();
-    const shocks = DRIVER_SHOCKS.map(shock => {
-      const npv = evaluateNpv(shock.modifiers);
-      return {
-        ...shock,
-        npv,
-        deltaNpv: npv - baseNpv,
-      };
-    });
-
-    const findShock = (id: string) => shocks.find(shock => shock.id === id);
-    const topDrivers = DRIVER_FAMILIES
-      .map(family => {
-        const up = findShock(family.upShockId);
-        const down = findShock(family.downShockId);
-        const upDelta = up?.deltaNpv ?? 0;
-        const downDelta = down?.deltaNpv ?? 0;
-        const dominantDelta = Math.abs(upDelta) >= Math.abs(downDelta) ? upDelta : downDelta;
-        return {
-          id: family.id,
-          label: family.label,
-          dominantDelta,
-          upShock: up ? { label: up.label, deltaNpv: up.deltaNpv } : undefined,
-          downShock: down ? { label: down.label, deltaNpv: down.deltaNpv } : undefined,
-          bestDelta: Math.max(upDelta, downDelta),
-          worstDelta: Math.min(upDelta, downDelta),
-          magnitude: Math.max(Math.abs(upDelta), Math.abs(downDelta)),
-        };
-      })
-      .sort((a, b) => b.magnitude - a.magnitude)
-      .slice(0, 3);
-
-    const orderedShocks = [...shocks].sort((a, b) => b.deltaNpv - a.deltaNpv);
-    const biggestPositive = orderedShocks[0] || null;
-    const biggestNegative = orderedShocks[orderedShocks.length - 1] || null;
-
-    return {
-      topDrivers,
-      biggestPositive,
-      biggestNegative,
-    };
-  }, [processedGroups, scenarios]);
-
-  const breakevenOilPrice = useMemo(() => {
-    if (aggregateMetrics.wellCount === 0) return null;
-    const baseScenario = scenarios.find(s => s.isBaseCase) || scenarios[0];
-    const basePricing = baseScenario?.pricing || DEFAULT_COMMODITY_PRICING;
-
-    const evaluateAtOil = (oilPrice: number) => {
-      return processedGroups.reduce((sum, group) => {
-        const groupWells = MOCK_WELLS.filter(w => group.wellIds.has(w.id));
-        const { metrics } = calculateEconomics(groupWells, group.typeCurve, group.capex, { ...basePricing, oilPrice }, group.opex, group.ownership);
-        return sum + metrics.npv10;
-      }, 0);
-    };
-
-    let low = 30;
-    let high = 140;
-    let lowNpv = evaluateAtOil(low);
-    let highNpv = evaluateAtOil(high);
-
-    if (Math.abs(lowNpv) < 1e-2) return low;
-    if (Math.abs(highNpv) < 1e-2) return high;
-    if ((lowNpv < 0 && highNpv < 0) || (lowNpv > 0 && highNpv > 0)) return null;
-
-    for (let i = 0; i < 28; i++) {
-      const mid = (low + high) / 2;
-      const midNpv = evaluateAtOil(mid);
-      if (Math.abs(midNpv) < 1e-2) return Number(mid.toFixed(1));
-
-      if ((lowNpv < 0 && midNpv > 0) || (lowNpv > 0 && midNpv < 0)) {
-        high = mid;
-        highNpv = midNpv;
-      } else {
-        low = mid;
-        lowNpv = midNpv;
-      }
-    }
-
-    return Number(((low + high) / 2).toFixed(1));
-  }, [aggregateMetrics.wellCount, processedGroups, scenarios]);
+  // Debounced derived metrics (keyDriverInsights + breakevenOilPrice)
+  const { keyDriverInsights, breakevenOilPrice } = useDerivedMetrics(
+    processedGroups,
+    scenarios,
+    aggregateMetrics.wellCount,
+  );
 
   const handleSaveSnapshot = async () => {
     // Track snapshot history for KPI sparklines
@@ -806,7 +652,16 @@ const SlopcastPage: React.FC = () => {
     setActionMessage('Print dialog opened for PDF export.');
   };
 
-  // handleSaveScenario merged into handleSaveSnapshot above
+  // --- Keyboard Shortcuts ---
+  useKeyboardShortcuts({
+    onSwitchToWells: useCallback(() => setDesignWorkspace('WELLS'), []),
+    onSwitchToEconomics: useCallback(() => setDesignWorkspace('ECONOMICS'), []),
+    onSaveSnapshot: handleSaveSnapshot,
+    onExportCsv: handleExportCsv,
+    onSelectAll: handleSelectAll,
+    onClearSelection: handleClearSelection,
+    onShowHelp: useCallback(() => setShowShortcutsHelp(prev => !prev), []),
+  });
 
   useEffect(() => {
     if (!actionMessage) return;
@@ -904,7 +759,7 @@ const SlopcastPage: React.FC = () => {
     if (viewportLayout === 'mobile') setEconomicsMobilePanel('SETUP');
   }, [designWorkspace, hasCapexItems, viewMode, viewportLayout]);
 
-  const operationsProps = {
+  const operationsProps = useMemo(() => ({
     isClassic,
     opsTab,
     onOpsTabChange: setOpsTab,
@@ -932,7 +787,14 @@ const SlopcastPage: React.FC = () => {
     payoutMonths: aggregateMetrics.payoutMonths,
     fastestPayoutScenarioName,
     scenarioRankings,
-  };
+  }), [
+    isClassic, opsTab, selectedVisibleCount, filteredWells.length,
+    activeGroup.name, handleAssignWellsToActive, handleCreateGroupFromSelection,
+    handleSelectAll, handleClearSelection, handleSaveSnapshot, handleExportCsv,
+    handleExportPdf, canUseSecondaryActions, lastSnapshotAt, actionMessage,
+    validationWarnings, stepGuidance, keyDriverInsights, breakevenOilPrice,
+    aggregateMetrics.payoutMonths, fastestPayoutScenarioName, scenarioRankings,
+  ]);
 
   // Landing page: show when pageMode is 'landing'
   if (pageMode === 'landing') {

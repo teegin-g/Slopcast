@@ -303,4 +303,4 @@ const AiAssistant: React.FC<AiAssistantProps> = ({
   );
 };
 
-export default AiAssistant;
+export default React.memo(AiAssistant);

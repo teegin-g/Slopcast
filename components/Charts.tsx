@@ -143,4 +143,4 @@ const Charts: React.FC<ChartsProps> = ({ data, themeId }) => {
   );
 };
 
-export default Charts;
+export default React.memo(Charts);
