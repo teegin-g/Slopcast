@@ -11,8 +11,9 @@ export interface OverlapViolation {
   overlapArea: number; // in pixels squared
 }
 
-const MINIMUM_OVERLAP_THRESHOLD = 100; // pixels squared
-const MINIMUM_ELEMENT_SIZE = 5; // pixels (width or height)
+const MINIMUM_OVERLAP_THRESHOLD = 400; // pixels squared — filters out border/margin artifacts
+const MINIMUM_ELEMENT_SIZE = 10; // pixels (width or height)
+const MINIMUM_OVERLAP_RATIO = 0.05; // overlap must be ≥5% of the smaller element's area
 
 /**
  * Generates a readable CSS selector for an element.
@@ -121,6 +122,33 @@ function areSiblings(el1: HTMLElement, el2: HTMLElement): boolean {
 }
 
 /**
+ * Checks if a parent uses flex or grid layout (meaning children are
+ * positioned by the layout engine, not accidentally overlapping).
+ */
+function isFlowLayout(parent: HTMLElement): boolean {
+  const style = window.getComputedStyle(parent);
+  const display = style.display;
+  return (
+    display === 'flex' ||
+    display === 'inline-flex' ||
+    display === 'grid' ||
+    display === 'inline-grid'
+  );
+}
+
+/**
+ * Returns true if the overlap between two rects is significant enough
+ * relative to the smaller element to be a real issue (not just a
+ * sub-pixel / border artifact).
+ */
+function isSignificantOverlap(r1: DOMRect, r2: DOMRect, overlapArea: number): boolean {
+  if (overlapArea < MINIMUM_OVERLAP_THRESHOLD) return false;
+  const smallerArea = Math.min(r1.width * r1.height, r2.width * r2.height);
+  if (smallerArea === 0) return false;
+  return overlapArea / smallerArea >= MINIMUM_OVERLAP_RATIO;
+}
+
+/**
  * Gets all visible elements within a root element.
  */
 function getVisibleElements(root: HTMLElement): HTMLElement[] {
@@ -153,9 +181,11 @@ export function detectOverlaps(root?: HTMLElement): OverlapViolation[] {
     elementsByParent.get(parent)!.push(el);
   }
 
-  // Check siblings for overlaps
-  for (const siblings of elementsByParent.values()) {
+  // Check siblings for overlaps (skip flex/grid containers — their
+  // children are positioned by the layout engine, not accidentally)
+  for (const [parent, siblings] of elementsByParent.entries()) {
     if (siblings.length < 2) continue;
+    if (parent && isFlowLayout(parent)) continue;
 
     for (let i = 0; i < siblings.length; i++) {
       const el1 = siblings[i];
@@ -167,7 +197,7 @@ export function detectOverlaps(root?: HTMLElement): OverlapViolation[] {
 
         const overlapArea = calculateOverlapArea(rect1, rect2);
 
-        if (overlapArea > MINIMUM_OVERLAP_THRESHOLD) {
+        if (isSignificantOverlap(rect1, rect2, overlapArea)) {
           violations.push({
             elementA: { selector: getSelector(el1), rect: rect1 },
             elementB: { selector: getSelector(el2), rect: rect2 },
@@ -175,37 +205,6 @@ export function detectOverlaps(root?: HTMLElement): OverlapViolation[] {
           });
         }
       }
-    }
-  }
-
-  // Check parent-child overlaps (direct children only)
-  for (const el of elements) {
-    const parent = el.parentElement;
-    if (!parent || parent === rootElement) continue;
-
-    // Check if parent is also in our visible elements list
-    if (!elements.includes(parent)) continue;
-
-    const elRect = el.getBoundingClientRect();
-    const parentRect = parent.getBoundingClientRect();
-
-    const overlapArea = calculateOverlapArea(elRect, parentRect);
-
-    // Only report if child extends beyond parent boundaries significantly
-    // (not just contained within parent)
-    const childArea = elRect.width * elRect.height;
-    const parentArea = parentRect.width * parentRect.height;
-
-    // If child is completely within parent, that's expected
-    if (overlapArea === childArea) continue;
-
-    // If there's a significant overlap that's not full containment, report it
-    if (overlapArea > MINIMUM_OVERLAP_THRESHOLD && overlapArea < childArea) {
-      violations.push({
-        elementA: { selector: getSelector(parent), rect: parentRect },
-        elementB: { selector: getSelector(el), rect: elRect },
-        overlapArea,
-      });
     }
   }
 

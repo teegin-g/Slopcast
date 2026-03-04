@@ -95,6 +95,33 @@ Syncs groups/scenarios/UI state to Supabase when authenticated; falls back to lo
 - **UI tests:** Playwright (`npm run ui:shots`, `npm run ui:verify`)
 - Test data: reuse `DEFAULT_*` constants with small well sets
 
+## Multi-Agent Development System
+
+This project includes a multi-agent system in `.agents/` for structured feature development with isolated worktrees, validation gates, and coordinated merges.
+
+### Quick Start
+
+| Mode | How to invoke |
+|------|--------------|
+| **Claude Code (auto)** | Tell Claude: "Act as the supervisor from `.agents/roles/supervisor.md` and implement {feature}" |
+| **Claude Code (manual)** | Use `/supervisor` to plan, `/implement` per worktree, `/validate` to check |
+| **Cursor** | Open Composer, say "Act as supervisor" or "Act as implementer" — see `.cursorrules` |
+| **Codex** | `codex --agent supervisor "Add dark mode toggle"` |
+
+### Key files
+- `.agents/system.md` — Architecture overview
+- `.agents/roles/supervisor.md` — Supervisor: decomposes, coordinates, merges
+- `.agents/roles/implementer.md` — Implementer: builds in worktrees, follows TDD
+- `.agents/roles/validator.md` — Validator: runs gate, reports pass/fail
+- `.agents/workflows/feature-pipeline.md` — Full end-to-end pipeline
+- `.agents/validation/gate.sh` — Automated validation gate (typecheck → build → test → audit → screenshots)
+
+### Rules
+- Implementers MUST verify they're in a worktree before writing code
+- Task briefs MUST include testable acceptance criteria
+- Implementers follow TDD: write failing tests first, then implement
+- All activity is logged to `.agents/state/activity.jsonl`
+
 ## UI Audit Workflow
 
 When making visual/layout/style changes:
