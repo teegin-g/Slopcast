@@ -1,3 +1,42 @@
+/**
+ * DebugOverlay Component
+ *
+ * A floating, draggable debug panel for development use.
+ * Toggle visibility with Ctrl+Shift+D.
+ *
+ * @example
+ * ```tsx
+ * import { DebugOverlay } from '@/components/debug/DebugOverlay';
+ * import { useOverlapDetector } from '@/utils/overlapDetector';
+ * import { usePerformanceMonitor } from '@/hooks/usePerformanceMonitor';
+ *
+ * function App() {
+ *   const overlaps = useOverlapDetector();
+ *   const performance = usePerformanceMonitor();
+ *   const viewport = {
+ *     width: window.innerWidth,
+ *     height: window.innerHeight,
+ *     breakpoint: 'desktop',
+ *     isMobile: false,
+ *     devicePixelRatio: window.devicePixelRatio,
+ *   };
+ *
+ *   return (
+ *     <>
+ *       <YourApp />
+ *       {import.meta.env.DEV && (
+ *         <DebugOverlay
+ *           overlaps={overlaps}
+ *           performance={performance}
+ *           viewport={viewport}
+ *         />
+ *       )}
+ *     </>
+ *   );
+ * }
+ * ```
+ */
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
