@@ -172,7 +172,7 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
                   <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_auto] gap-3 items-center">
                     <div className="min-w-0 flex items-center gap-2">
                       <span
-                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${positive ? 'bg-theme-cyan' : 'bg-theme-magenta'}`}
+                        className={`w-2.5 h-2.5 shrink-0 ${positive ? 'rounded-full bg-theme-cyan' : 'rounded-sm bg-theme-magenta'}`}
                       />
                       <span className={`truncate text-[11px] ${isClassic ? 'text-white/90 font-black uppercase tracking-[0.08em]' : 'text-theme-text font-semibold'}`}>
                         {driver.label}

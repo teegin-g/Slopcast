@@ -398,12 +398,7 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
                 )}
               </div>
 
-              <div data-testid="economics-run-status" className="rounded-inner border px-3 py-2 text-[10px] bg-theme-bg border-theme-border text-theme-muted flex items-center gap-2">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-theme-cyan animate-pulse shrink-0" />
-                <span>Live economics — auto-computed</span>
-                {lastSnapshotAt && <span className="ml-1">· Last snapshot: {new Date(lastSnapshotAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
-                {actionMessage && <span className="ml-2 text-theme-cyan">{actionMessage}</span>}
-              </div>
+              {/* Status indicator removed - already shown in CompactRunBar */}
 
               <div className="rounded-inner border p-3 bg-theme-bg border-theme-border space-y-2">
                 <div className="flex items-center justify-between gap-2">

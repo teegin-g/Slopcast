@@ -105,7 +105,7 @@ const KpiStripTile: React.FC<{
   extra?: React.ReactNode;
 }> = ({ title, value, unit, accent, extra }) => (
   <div className={`rounded-inner border border-theme-border bg-theme-surface1/60 px-4 py-3 theme-transition hover:bg-theme-surface2 ${accentBorder[accent]}`}>
-    <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-1.5 text-theme-muted">{title}</p>
+    <p className="text-[11px] font-bold uppercase tracking-[0.18em] mb-1.5 text-theme-text/70">{title}</p>
     <div className="flex items-center gap-2">
       <p className="text-xl font-black text-theme-text leading-none">
         {value}
@@ -119,12 +119,11 @@ const KpiStripTile: React.FC<{
 const WellsBadge: React.FC<{ count: number }> = ({ count }) => (
   <div className="rounded-inner border border-theme-border bg-theme-surface1/60 px-4 py-3 theme-transition hover:bg-theme-surface2 border-l-2 border-l-theme-muted/40 flex items-center gap-3">
     <div>
-      <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-1.5 text-theme-muted">Wells</p>
+      <p className="text-[11px] font-bold uppercase tracking-[0.18em] mb-1.5 text-theme-text/70">Wells</p>
       <p className="text-xl font-black text-theme-text leading-none">{count}</p>
     </div>
-    <span className="ml-auto relative text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-theme-cyan/10 text-theme-cyan border border-theme-cyan/20">
-      <span className="absolute inset-0 rounded-full bg-theme-cyan/20 animate-ping" />
-      <span className="relative">active</span>
+    <span className="ml-auto text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-theme-cyan/10 text-theme-cyan border border-theme-cyan/20">
+      active
     </span>
   </div>
 );

@@ -84,7 +84,7 @@ const GroupComparisonStrip: React.FC<GroupComparisonStripProps> = ({
                 <div className="flex items-center gap-2 min-w-0">
                   <RankBadge rank={index + 1} isClassic={isClassic} />
                   <span
-                    className="w-2 h-2 rounded-full shrink-0"
+                    className="w-3 h-3 rounded-full shrink-0"
                     style={{ backgroundColor: groupColor }}
                   />
                   <span className={`text-[10px] font-black uppercase tracking-[0.1em] truncate ${
