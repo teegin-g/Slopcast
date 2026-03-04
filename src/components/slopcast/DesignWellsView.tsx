@@ -418,41 +418,39 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
               <h3 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.2em] text-white mb-3' : 'text-[10px] font-black uppercase tracking-[0.2em] text-theme-cyan mb-3'}>
                 Selection Actions
               </h3>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={onAssignWells}
-                  disabled={selectedWellCount === 0}
-                  className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
-                    selectedWellCount > 0 ? 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan' : 'bg-theme-surface2 text-theme-muted cursor-not-allowed'
-                  }`}
-                >
-                  Assign to active group
-                </button>
-                <button
-                  onClick={onCreateGroupFromSelection}
-                  disabled={selectedWellCount === 0}
-                  className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
-                    selectedWellCount > 0 ? 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan' : 'bg-theme-surface2 text-theme-muted cursor-not-allowed'
-                  }`}
-                >
-                  Create group from selection
-                </button>
-                <button
-                  onClick={onSelectAll}
-                  className="px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all bg-theme-surface2 text-theme-text border border-theme-border hover:border-theme-cyan"
-                >
-                  {selectFilteredLabel}
-                </button>
-                <button
-                  onClick={onClearSelection}
-                  disabled={selectedWellCount === 0}
-                  className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all border ${
-                    selectedWellCount > 0 ? 'bg-theme-surface2 text-theme-text border-theme-border hover:border-theme-cyan' : 'bg-theme-surface2 text-theme-muted border-theme-border cursor-not-allowed'
-                  }`}
-                >
-                  Clear
-                </button>
-              </div>
+              {selectedWellCount === 0 ? (
+                <div className="py-8 text-center">
+                  <div className="text-2xl mb-2">📍</div>
+                  <p className="text-[11px] text-theme-muted">Select wells on the map to get started</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={onAssignWells}
+                    className="px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all bg-theme-cyan text-theme-bg hover:shadow-glow-cyan"
+                  >
+                    Assign to active group
+                  </button>
+                  <button
+                    onClick={onCreateGroupFromSelection}
+                    className="px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all bg-theme-cyan text-theme-bg hover:shadow-glow-cyan"
+                  >
+                    Create group from selection
+                  </button>
+                  <button
+                    onClick={onSelectAll}
+                    className="px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all bg-theme-surface2 text-theme-text border border-theme-border hover:border-theme-cyan"
+                  >
+                    {selectFilteredLabel}
+                  </button>
+                  <button
+                    onClick={onClearSelection}
+                    className="px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all border bg-theme-surface2 text-theme-text border-theme-border hover:border-theme-cyan"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </section>
