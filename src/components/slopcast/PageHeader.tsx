@@ -87,6 +87,127 @@ const ThemeDropdown: React.FC<{
   );
 };
 
+interface OverflowMenuProps {
+  isClassic: boolean;
+  theme: ThemeMeta;
+  onShare?: () => void;
+  onRestartTour?: () => void;
+  onSetColorMode?: (mode: ColorMode) => void;
+  colorMode?: ColorMode;
+  effectiveMode?: 'dark' | 'light';
+}
+
+const OverflowMenu: React.FC<OverflowMenuProps> = ({
+  isClassic,
+  theme,
+  onShare,
+  onRestartTour,
+  onSetColorMode,
+  effectiveMode = 'dark',
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  const hasAnyActions = onShare || onRestartTour || (onSetColorMode && theme.hasLightVariant);
+
+  if (!hasAnyActions) {
+    return null;
+  }
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={
+          isClassic
+            ? 'w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center theme-transition border-2 shadow-card bg-black/15 text-white/90 border-black/25 hover:bg-black/20'
+            : 'w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center theme-transition bg-theme-surface2 border border-theme-border text-theme-text hover:bg-theme-surface3'
+        }
+        title="More options"
+      >
+        <span className="text-base">⋮</span>
+      </button>
+
+      {isOpen && (
+        <div
+          className={
+            isClassic
+              ? 'absolute right-0 top-full mt-2 w-48 rounded-md border-2 shadow-card theme-transition bg-theme-surface1 border-black/30 overflow-hidden'
+              : 'absolute right-0 top-full mt-2 w-48 rounded-panel border shadow-lg theme-transition bg-theme-surface1 border-theme-border overflow-hidden'
+          }
+        >
+          <div className="py-1">
+            {onShare && (
+              <button
+                onClick={() => {
+                  onShare();
+                  setIsOpen(false);
+                }}
+                className={
+                  isClassic
+                    ? 'w-full px-4 py-2 text-left text-[10px] uppercase font-bold tracking-widest theme-transition text-white/90 hover:bg-black/20'
+                    : 'w-full px-4 py-2 text-left text-[10px] uppercase font-bold tracking-widest theme-transition text-theme-text hover:bg-theme-surface2'
+                }
+              >
+                Share
+              </button>
+            )}
+
+            {onRestartTour && (
+              <button
+                onClick={() => {
+                  onRestartTour();
+                  setIsOpen(false);
+                }}
+                className={
+                  isClassic
+                    ? 'w-full px-4 py-2 text-left text-[10px] uppercase font-bold tracking-widest theme-transition text-white/90 hover:bg-black/20'
+                    : 'w-full px-4 py-2 text-left text-[10px] uppercase font-bold tracking-widest theme-transition text-theme-text hover:bg-theme-surface2'
+                }
+              >
+                Tour
+              </button>
+            )}
+
+            {onSetColorMode && theme.hasLightVariant && (
+              <button
+                onClick={() => {
+                  onSetColorMode(effectiveMode === 'dark' ? 'light' : 'dark');
+                  setIsOpen(false);
+                }}
+                className={
+                  isClassic
+                    ? 'w-full px-4 py-2 text-left text-[10px] uppercase font-bold tracking-widest theme-transition text-white/90 hover:bg-black/20 flex items-center gap-2'
+                    : 'w-full px-4 py-2 text-left text-[10px] uppercase font-bold tracking-widest theme-transition text-theme-text hover:bg-theme-surface2 flex items-center gap-2'
+                }
+              >
+                <span className="text-sm">{effectiveMode === 'dark' ? '☀' : '☾'}</span>
+                <span>{effectiveMode === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const PageHeader: React.FC<PageHeaderProps> = ({
   isClassic,
   theme,
@@ -231,50 +352,15 @@ const PageHeader: React.FC<PageHeaderProps> = ({
         </div>
 
         <div className="min-w-0 flex items-center justify-between md:justify-end gap-2">
-          {/* Action buttons */}
-          <div className="flex items-center gap-1 shrink-0">
-            {onShare && (
-              <button
-                onClick={onShare}
-                className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-wide transition-colors ${
-                  isClassic
-                    ? 'bg-black/25 text-white/80 border border-black/30 hover:bg-black/35'
-                    : 'bg-theme-surface2 text-theme-muted border border-theme-border hover:text-theme-text'
-                }`}
-                title="Share Project"
-              >
-                Share
-              </button>
-            )}
-            {onRestartTour && (
-              <button
-                onClick={onRestartTour}
-                className={`px-2 py-1 rounded text-[9px] font-black uppercase tracking-wide transition-colors ${
-                  isClassic
-                    ? 'bg-black/25 text-white/80 border border-black/30 hover:bg-black/35'
-                    : 'bg-theme-surface2 text-theme-muted border border-theme-border hover:text-theme-text'
-                }`}
-                title="Restart Tour"
-              >
-                Tour
-              </button>
-            )}
-          </div>
-
-          {/* Dark/Light mode toggle */}
-          {onSetColorMode && theme.hasLightVariant && (
-            <button
-              onClick={() => onSetColorMode(effectiveMode === 'dark' ? 'light' : 'dark')}
-              className={`w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center theme-transition shrink-0 ${
-                isClassic
-                  ? 'bg-black/25 border border-black/30 text-white/80 hover:text-white'
-                  : 'bg-theme-bg border border-theme-border text-theme-muted hover:text-theme-text'
-              }`}
-              title={effectiveMode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              <span className="text-xs">{effectiveMode === 'dark' ? '\u2600' : '\u263E'}</span>
-            </button>
-          )}
+          {/* Overflow menu for secondary actions */}
+          <OverflowMenu
+            isClassic={isClassic}
+            theme={theme}
+            onShare={onShare}
+            onRestartTour={onRestartTour}
+            onSetColorMode={onSetColorMode}
+            effectiveMode={effectiveMode}
+          />
 
           {/* Theme dropdown selector */}
           <ThemeDropdown
