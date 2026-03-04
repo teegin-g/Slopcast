@@ -13,6 +13,7 @@ set -euo pipefail
 #   VALIDATION_PORT   — Dev server port for screenshots (default: 3001)
 #   BASELINE_DIR      — Baseline screenshot directory (default: .agents/state/baseline)
 #   DIFF_THRESHOLD    — Max pixel diff % before failure (default: 1)
+#   TASK_NAME         — Task name for logging (default: derived from directory)
 
 SKIP_SCREENSHOTS=false
 for arg in "$@"; do
@@ -24,6 +25,17 @@ done
 VALIDATION_PORT="${VALIDATION_PORT:-3001}"
 BASELINE_DIR="${BASELINE_DIR:-.agents/state/baseline}"
 DIFF_THRESHOLD="${DIFF_THRESHOLD:-1}"
+TASK_NAME="${TASK_NAME:-$(basename "$(pwd)")}"
+
+# Locate activity-log.sh (works from worktrees)
+MAIN_WORKTREE="$(git worktree list --porcelain 2>/dev/null | head -1 | sed 's/^worktree //' || pwd)"
+ACTIVITY_LOG="${MAIN_WORKTREE}/.agents/activity-log.sh"
+
+log_event() {
+  if [ -f "$ACTIVITY_LOG" ]; then
+    bash "$ACTIVITY_LOG" "$@" 2>/dev/null || true
+  fi
+}
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -35,25 +47,68 @@ PASS_COUNT=0
 FAIL_COUNT=0
 SKIP_COUNT=0
 
+# Associative array to track stage results for validation record
+declare -A STAGE_RESULTS
+
 stage_pass() {
   echo -e "  ${GREEN}PASS${NC} $1"
   PASS_COUNT=$((PASS_COUNT + 1))
+  STAGE_RESULTS["$1"]="PASS"
 }
 
 stage_fail() {
   echo -e "  ${RED}FAIL${NC} $1"
   FAIL_COUNT=$((FAIL_COUNT + 1))
+  STAGE_RESULTS["$1"]="FAIL"
 }
 
 stage_skip() {
   echo -e "  ${YELLOW}SKIP${NC} $1"
   SKIP_COUNT=$((SKIP_COUNT + 1))
+  STAGE_RESULTS["$1"]="SKIP"
+}
+
+# Write validation record and log result
+write_validation_record() {
+  local result="$1"
+  local timestamp
+  timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  local date_slug
+  date_slug="$(date -u +%Y%m%d-%H%M%S)"
+
+  local validations_dir="${MAIN_WORKTREE}/.agents/state/validations"
+  mkdir -p "$validations_dir"
+
+  local record_file="${validations_dir}/${TASK_NAME}-${date_slug}.json"
+
+  cat > "$record_file" <<RECORD_EOF
+{
+  "task": "${TASK_NAME}",
+  "timestamp": "${timestamp}",
+  "result": "${result}",
+  "passed": ${PASS_COUNT},
+  "failed": ${FAIL_COUNT},
+  "skipped": ${SKIP_COUNT},
+  "stages": {
+    "typecheck": "${STAGE_RESULTS[typecheck]:-SKIP}",
+    "build": "${STAGE_RESULTS[build]:-SKIP}",
+    "tests": "${STAGE_RESULTS[tests]:-SKIP}",
+    "ui_audit": "${STAGE_RESULTS[ui:audit]:-SKIP}",
+    "screenshots": "${STAGE_RESULTS[screenshots]:-SKIP}",
+    "ui_verify": "${STAGE_RESULTS[ui:verify]:-SKIP}"
+  }
+}
+RECORD_EOF
+
+  log_event gate_result task="$TASK_NAME" result="$result" passed="$PASS_COUNT" failed="$FAIL_COUNT"
 }
 
 echo -e "${CYAN}═══════════════════════════════════════${NC}"
 echo -e "${CYAN}  Slopcast Validation Gate${NC}"
 echo -e "${CYAN}═══════════════════════════════════════${NC}"
 echo ""
+
+log_event validation_start task="$TASK_NAME"
 
 # ── Stage 1: Type Safety ──────────────────────────────────────
 echo -e "${CYAN}Stage 1: Type Safety${NC}"
@@ -62,6 +117,7 @@ if npm run typecheck 2>&1; then
 else
   stage_fail "typecheck"
   echo -e "\n${RED}Gate failed at Stage 1: Type errors found.${NC}"
+  write_validation_record "FAIL"
   exit 1
 fi
 echo ""
@@ -73,6 +129,7 @@ if npm run build 2>&1; then
 else
   stage_fail "build"
   echo -e "\n${RED}Gate failed at Stage 2: Build errors found.${NC}"
+  write_validation_record "FAIL"
   exit 1
 fi
 echo ""
@@ -84,7 +141,49 @@ if npm test 2>&1; then
 else
   stage_fail "tests"
   echo -e "\n${RED}Gate failed at Stage 3: Test failures found.${NC}"
+  write_validation_record "FAIL"
   exit 1
+fi
+echo ""
+
+# ── Stage 3.5: Test Coverage Warning ─────────────────────────
+echo -e "${CYAN}Stage 3.5: Test Coverage Check${NC}"
+
+# Files that don't need unit tests
+SKIP_TEST_PATTERNS="App.tsx|index.tsx|main.tsx|pages/.*\.tsx|types\.ts|constants\.ts|constants/.*\.ts|theme/.*\.ts|styles/.*|auth/.*Provider|\.d\.ts"
+
+MISSING_TESTS=()
+CHANGED_FILES=$(git diff --name-only main...HEAD 2>/dev/null || echo "")
+
+if [ -n "$CHANGED_FILES" ]; then
+  while IFS= read -r file; do
+    # Only check .ts/.tsx source files under src/
+    if [[ "$file" == src/*.ts ]] || [[ "$file" == src/*.tsx ]]; then
+      # Skip files that don't need tests
+      if echo "$file" | grep -qE "$SKIP_TEST_PATTERNS"; then
+        continue
+      fi
+      # Skip test files themselves
+      if [[ "$file" == *.test.ts ]] || [[ "$file" == *.test.tsx ]]; then
+        continue
+      fi
+      # Check for corresponding test file
+      test_file="${file%.*}.test.${file##*.}"
+      if [ ! -f "$test_file" ]; then
+        MISSING_TESTS+=("$file")
+      fi
+    fi
+  done <<< "$CHANGED_FILES"
+fi
+
+if [ ${#MISSING_TESTS[@]} -gt 0 ]; then
+  echo -e "  ${YELLOW}WARNING${NC} The following changed source files have no corresponding .test.ts file:"
+  for f in "${MISSING_TESTS[@]}"; do
+    echo -e "    ${YELLOW}⚠${NC}  $f"
+  done
+  echo -e "  (This is a warning, not a failure — some files are hard to unit test)"
+else
+  echo -e "  ${GREEN}OK${NC} All changed source files have test coverage (or are exempt)"
 fi
 echo ""
 
@@ -95,6 +194,7 @@ if npm run ui:audit 2>&1; then
 else
   stage_fail "ui:audit"
   echo -e "\n${RED}Gate failed at Stage 4: Style drift detected.${NC}"
+  write_validation_record "FAIL"
   exit 1
 fi
 echo ""
@@ -145,6 +245,7 @@ else
       if echo "$DIFF_RESULT" | grep -q "SCREENSHOT_DIFF_FAIL"; then
         stage_fail "screenshots (diff exceeds ${DIFF_THRESHOLD}% threshold)"
         echo -e "\n${RED}Gate failed at Stage 5: Screenshot regression detected.${NC}"
+        write_validation_record "FAIL"
         exit 1
       else
         stage_pass "screenshots"
@@ -174,6 +275,7 @@ else
       kill "$DEV_PID" 2>/dev/null || true
       wait "$DEV_PID" 2>/dev/null || true
       echo -e "\n${RED}Gate failed at Stage 6: UI flow verification failed.${NC}"
+      write_validation_record "FAIL"
       exit 1
     fi
 
@@ -188,8 +290,10 @@ echo -e "${CYAN}═════════════════════�
 echo -e "  ${GREEN}${PASS_COUNT} passed${NC}  ${SKIP_COUNT} skipped  ${RED}${FAIL_COUNT} failed${NC}"
 if [ "$FAIL_COUNT" -eq 0 ]; then
   echo -e "  ${GREEN}VALIDATION GATE: PASS${NC}"
+  write_validation_record "PASS"
 else
   echo -e "  ${RED}VALIDATION GATE: FAIL${NC}"
+  write_validation_record "FAIL"
 fi
 echo -e "${CYAN}═══════════════════════════════════════${NC}"
 

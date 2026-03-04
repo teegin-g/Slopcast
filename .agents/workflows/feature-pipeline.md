@@ -29,11 +29,13 @@ End-to-end workflow for implementing features using the multi-agent system.
 
 For each task (parallel if independent, sequential if dependent):
 
-1. Implementer reads task brief and relevant code
-2. Implementer writes code following CLAUDE.md conventions
-3. Implementer runs self-checks: `typecheck` + `test` + `build`
-4. Implementer commits with descriptive message
-5. Implementer signals completion
+1. **Implementer verifies environment** (MANDATORY first action — see `roles/implementer.md`)
+2. Implementer reads task brief and relevant code
+3. **RED**: Write failing tests from task brief acceptance criteria / test cases
+4. **GREEN**: Implement minimum code to pass tests
+5. **REFACTOR**: Clean up while keeping tests green
+6. Final verification: `typecheck` + `test` + `build`
+7. Implementer commits and signals completion
 
 In manual mode: user runs `/implement` in each worktree
 
@@ -54,7 +56,8 @@ Sequential merge of validated worktrees:
 
 1. `git checkout main`
 2. For each worktree (in dependency order):
-   a. `git merge --no-ff agent/{task-slug}`
+   a. **Verify commits are on expected branch** (see `roles/supervisor.md` Pre-Merge Validation)
+   b. `git merge --no-ff agent/{task-slug}`
    b. Run integration check: `npm run typecheck && npm run build && npm test`
    c. If fail: `git merge --abort`, report to user
    d. If pass: continue to next worktree

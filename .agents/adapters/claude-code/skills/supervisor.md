@@ -31,10 +31,18 @@ git branch -d agent/{slug}
 ```
 
 ### Spawning agents (Claude Code)
-- Use the `Agent` tool with `isolation: "worktree"` to spawn implementers
-- Use the `Agent` tool to spawn validators
+- Use the `Agent` tool with `isolation: "worktree"` to spawn implementers — this creates worktrees automatically
+- Do NOT pre-create worktrees for Claude Code agents — the `isolation: "worktree"` parameter handles this
+- Use the `Agent` tool (without isolation) to spawn validators
 - Pass the full task brief including context, requirements, and file list
 - Reference `.agents/roles/implementer.md` or `.agents/roles/validator.md` in the prompt
+- The agent prompt MUST include: "FIRST STEP: Verify your environment with `pwd && git branch --show-current && git worktree list`. If not in a worktree, STOP immediately."
+
+### After agent returns
+- Check the result for `worktreePath` and `worktreeBranch` fields
+- Verify commits landed on the worktree branch: `git log <worktreeBranch> --oneline -5`
+- Verify main branch is untouched: `git log main --oneline -1`
+- If commits are on the wrong branch, do NOT merge — report to user
 
 ### Manual mode
 If the user wants manual control:

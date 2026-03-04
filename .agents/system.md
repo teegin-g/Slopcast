@@ -65,10 +65,50 @@ The supervisor handles everything end-to-end. User reviews final result.
 | **Cursor** | `adapters/cursor/` | Load `.cursorrules`, invoke roles via Composer |
 | **Codex** | `adapters/codex/` | `codex --agent supervisor` (or `implementer`/`validator`) |
 
+## Activity Logging
+
+All agents log structured events to `.agents/state/activity.jsonl` using the logging script:
+
+```bash
+bash .agents/activity-log.sh <event> [key=value ...]
+```
+
+### Event Types
+
+| Event | Logged By | Description |
+|-------|-----------|-------------|
+| `session_start` | Supervisor | Session begins |
+| `task_created` | Supervisor | Task decomposed and brief created |
+| `worktree_created` | Supervisor | Worktree created for a task |
+| `worktree_verified` | Implementer | Implementer confirmed they're in a worktree |
+| `implementation_start` | Implementer | Coding begins |
+| `implementation_done` | Implementer | Coding complete, self-checks passed |
+| `validation_start` | Validator/gate.sh | Validation gate starts |
+| `validation_done` | Validator | Validation complete |
+| `gate_result` | gate.sh | Gate pass/fail with stage counts |
+| `merge_start` | Supervisor | About to merge a worktree |
+| `merge_result` | Supervisor | Merge succeeded or failed |
+| `worktree_cleaned` | Supervisor | Worktree removed |
+| `session_end` | Supervisor | Session complete |
+
+### Reading the Log
+
+```bash
+bash .agents/activity-summary.sh                 # All events, formatted table
+bash .agents/activity-summary.sh --task {slug}    # Filter by task
+cat .agents/state/activity.jsonl                  # Raw JSONL
+```
+
+### Validation Records
+
+The gate script writes structured JSON records to `.agents/state/validations/{task}-{timestamp}.json` with per-stage results.
+
 ## Key Directories
 
 - `.agents/state/` — Ephemeral session state (gitignored)
 - `.agents/state/baseline/` — Screenshot baseline from main
+- `.agents/state/activity.jsonl` — Activity log (JSONL format)
+- `.agents/state/validations/` — Structured validation records (JSON)
 - `.worktrees/` — Git worktrees for isolated work (gitignored)
 
 ## Project Conventions

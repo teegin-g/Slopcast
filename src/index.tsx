@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './auth/AuthProvider';
 import { ThemeProvider } from './theme/ThemeProvider';
 import './styles/theme.css';
+
+const DebugProvider = import.meta.env.DEV
+  ? lazy(() => import('./components/debug/DebugProvider').then(m => ({ default: m.DebugProvider })))
+  : null;
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -18,6 +22,11 @@ root.render(
       <BrowserRouter>
         <AuthProvider>
           <App />
+          {DebugProvider && (
+            <Suspense fallback={null}>
+              <DebugProvider />
+            </Suspense>
+          )}
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>

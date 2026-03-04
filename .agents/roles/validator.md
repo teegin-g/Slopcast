@@ -84,6 +84,14 @@ Generate a report in this format:
 {Fix suggestions or "Ready to merge"}
 ```
 
+## Activity Logging
+
+Log validation events:
+```bash
+bash .agents/activity-log.sh validation_start task={task-slug}
+bash .agents/activity-log.sh validation_done task={task-slug} result=PASS
+```
+
 ## Boundaries
 
 - Do NOT modify any code — you are read-only

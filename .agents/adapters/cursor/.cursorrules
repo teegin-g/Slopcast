@@ -14,6 +14,7 @@ When asked to act as the supervisor (or when the user says "supervisor mode"):
 
 ### Acting as Implementer
 When asked to implement a task (or when working in a `.worktrees/` directory):
+- **First step:** Verify you're in a worktree with `pwd && git branch --show-current`. If not in a worktree, STOP.
 - Read and follow `.agents/roles/implementer.md`
 - Read existing code patterns before writing new code
 - Run self-checks before committing: `npm run typecheck && npm test && npm run build`

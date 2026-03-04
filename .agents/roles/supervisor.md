@@ -23,6 +23,8 @@ When decomposing a feature request:
   - **Requirements**: Specific acceptance criteria
   - **Likely files**: Which files will need changes
   - **Patterns to follow**: Reference existing code patterns from CLAUDE.md
+  - **Test cases**: 2-3 concrete input→output examples that implementer will use as RED phase tests
+    Example: `Given NRI=0.75, royalty=0.20 → WI=0.9375`
 
 ## Worktree Management
 
@@ -30,6 +32,22 @@ When decomposing a feature request:
 ```bash
 git worktree add -b agent/{task-slug} .worktrees/{task-slug} main
 cd .worktrees/{task-slug} && npm install
+```
+
+### Verifying Agent Isolation (After Agent Completes)
+
+1. Check the agent result for `worktreePath` and `worktreeBranch` fields
+2. Verify commits exist on the worktree branch: `git log <branch> --oneline -5`
+3. Verify main/current branch is untouched: `git log main --oneline -1`
+4. If commits landed on the wrong branch — do NOT merge, report to user
+
+### Pre-Merge Validation
+
+Before merging any worktree, verify the work is on the correct branch:
+```bash
+git log agent/{task-slug} --oneline -5   # Confirm commits exist
+git diff main..agent/{task-slug} --stat  # Review what will merge
+git log main --oneline -1                # Confirm main is unchanged
 ```
 
 ### Merging (sequential, one at a time)
@@ -70,6 +88,20 @@ bash .agents/validation/capture-baseline.sh
 3. If integration validation fails, abort the merge and report
 4. After all merges complete, run `npm run ui:verify` as a final check
 5. Clean up all worktrees and branches
+
+## Activity Logging
+
+Log key events throughout the session:
+```bash
+bash .agents/activity-log.sh session_start role=supervisor
+bash .agents/activity-log.sh task_created task={task-slug}
+bash .agents/activity-log.sh merge_start task={task-slug}
+bash .agents/activity-log.sh merge_result task={task-slug} result=PASS
+bash .agents/activity-log.sh worktree_cleaned task={task-slug}
+bash .agents/activity-log.sh session_end
+```
+
+Review activity with: `bash .agents/activity-summary.sh`
 
 ## Communication
 
