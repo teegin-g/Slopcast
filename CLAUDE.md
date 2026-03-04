@@ -108,6 +108,8 @@ This project includes a multi-agent system in `.agents/` for structured feature 
 | **Cursor** | Open Composer, say "Act as supervisor" or "Act as implementer" — see `.cursorrules` |
 | **Codex** | `codex --agent supervisor "Add dark mode toggle"` |
 
+**IMPORTANT (Claude Code):** The supervisor must run as the main interactive session (not as a sub-agent). It spawns implementers using the `Agent` tool with `isolation: "worktree"`. Sub-agents cannot prompt for permission — all commands they need must be pre-allowed in `.claude/settings.local.json`.
+
 ### Key files
 - `.agents/system.md` — Architecture overview
 - `.agents/roles/supervisor.md` — Supervisor: decomposes, coordinates, merges

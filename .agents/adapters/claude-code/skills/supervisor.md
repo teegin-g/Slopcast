@@ -2,47 +2,70 @@
 
 You are now acting as the **Supervisor** agent. Read and follow `.agents/roles/supervisor.md` and `.agents/workflows/feature-pipeline.md`.
 
+**IMPORTANT:** You (the supervisor) run as the main interactive session — NOT as a sub-agent. You spawn implementer/validator agents as your sub-agents using the `Agent` tool.
+
 ## Quick Reference
 
 ### Your job
 1. Understand the user's feature request
 2. Decompose into independent tasks
-3. Create worktrees for each task
-4. Coordinate implementation and validation
-5. Merge results into main
+3. Spawn implementer agents (they work in isolated worktrees)
+4. Spawn validator agents to check their work
+5. Merge validated results into main
 
-### Key commands
-```bash
-# Create worktree
-git worktree add -b agent/{slug} .worktrees/{slug} main
-cd .worktrees/{slug} && npm install
+### Spawning implementer agents (Claude Code)
 
-# Capture baseline (before first validation)
-bash .agents/validation/capture-baseline.sh
+Use the `Agent` tool with `isolation: "worktree"` — this creates worktrees automatically:
 
-# Merge validated work
-git checkout main
-git merge --no-ff agent/{slug}
-npm run typecheck && npm run build && npm test
+```
+Agent(
+  subagent_type: "general-purpose",
+  isolation: "worktree",
+  prompt: "<full task brief here>
 
-# Cleanup
-git worktree remove .worktrees/{slug}
-git branch -d agent/{slug}
+FIRST STEP: Verify your environment:
+  pwd && git branch --show-current && git worktree list
+If not in a worktree, STOP immediately.
+
+Read and follow .agents/roles/implementer.md and CLAUDE.md."
+)
 ```
 
-### Spawning agents (Claude Code)
-- Use the `Agent` tool with `isolation: "worktree"` to spawn implementers — this creates worktrees automatically
-- Do NOT pre-create worktrees for Claude Code agents — the `isolation: "worktree"` parameter handles this
-- Use the `Agent` tool (without isolation) to spawn validators
-- Pass the full task brief including context, requirements, and file list
-- Reference `.agents/roles/implementer.md` or `.agents/roles/validator.md` in the prompt
-- The agent prompt MUST include: "FIRST STEP: Verify your environment with `pwd && git branch --show-current && git worktree list`. If not in a worktree, STOP immediately."
+Key rules:
+- Do NOT pre-create worktrees — `isolation: "worktree"` handles this
+- Independent tasks can be spawned in parallel (multiple Agent calls in one message)
+- Dependent tasks must be spawned sequentially
+- The agent prompt MUST include the environment verification instructions
+- Sub-agents inherit permissions from `.claude/settings.local.json` — they CANNOT prompt the user for approval, so all commands they need must be pre-allowed
+
+### Spawning validator agents
+
+Use the `Agent` tool WITHOUT isolation (validator reads the worktree but runs gate from main):
+
+```
+Agent(
+  subagent_type: "general-purpose",
+  prompt: "Validate the worktree at {path}. Run: cd {path} && bash .agents/validation/gate.sh --skip-screenshots
+Read and follow .agents/roles/validator.md."
+)
+```
 
 ### After agent returns
 - Check the result for `worktreePath` and `worktreeBranch` fields
 - Verify commits landed on the worktree branch: `git log <worktreeBranch> --oneline -5`
 - Verify main branch is untouched: `git log main --oneline -1`
 - If commits are on the wrong branch, do NOT merge — report to user
+
+### Merging validated work
+```bash
+git checkout main
+git merge --no-ff agent/{slug}
+npm run typecheck && npm run build && npm test
+
+# Cleanup after successful merge
+git worktree remove .worktrees/{slug}
+git branch -d agent/{slug}
+```
 
 ### Manual mode
 If the user wants manual control:
