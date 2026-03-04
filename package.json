@@ -46,7 +46,9 @@
     "@types/mapbox-gl": "^3.4.1",
     "@types/node": "^22.14.0",
     "jsdom": "^28.1.0",
+    "pixelmatch": "^7.1.0",
     "playwright": "^1.58.2",
+    "pngjs": "^7.0.0",
     "vitest": "^4.0.18"
   }
 }

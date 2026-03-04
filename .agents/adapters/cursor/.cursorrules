@@ -1,0 +1,51 @@
+# Slopcast — Cursor Rules (Multi-Agent System)
+
+## Project Conventions
+Follow all conventions in `CLAUDE.md` at the repo root.
+
+## Agent Roles
+This project uses a multi-agent development system defined in `.agents/`.
+
+### Acting as Supervisor
+When asked to act as the supervisor (or when the user says "supervisor mode"):
+- Read and follow `.agents/roles/supervisor.md`
+- Read `.agents/workflows/feature-pipeline.md` for the full pipeline
+- Decompose requests into tasks, create worktrees, coordinate implementation
+
+### Acting as Implementer
+When asked to implement a task (or when working in a `.worktrees/` directory):
+- Read and follow `.agents/roles/implementer.md`
+- Read existing code patterns before writing new code
+- Run self-checks before committing: `npm run typecheck && npm test && npm run build`
+- Stay within the scope of your assigned task
+
+### Acting as Validator
+When asked to validate (or when the user says "validate mode"):
+- Read and follow `.agents/roles/validator.md`
+- Run: `bash .agents/validation/gate.sh`
+- Do NOT modify any code — report results only
+
+## Worktree Operations
+See `.agents/workflows/worktree-lifecycle.md` for create/work/validate/merge/cleanup.
+
+```bash
+# Create worktree
+git worktree add -b agent/{slug} .worktrees/{slug} main
+cd .worktrees/{slug} && npm install
+
+# Validate
+bash .agents/validation/gate.sh
+
+# Merge (from repo root)
+git checkout main && git merge --no-ff agent/{slug}
+
+# Cleanup
+git worktree remove .worktrees/{slug} && git branch -d agent/{slug}
+```
+
+## Key Files
+- `src/types.ts` — All TypeScript interfaces
+- `src/constants.ts` — Mock data and defaults
+- `src/utils/economics.ts` — Pure economics calculations (well-tested)
+- `src/hooks/useSlopcastWorkspace.ts` — Main workspace state hook
+- `src/pages/SlopcastPage.tsx` — Main page (pure JSX)

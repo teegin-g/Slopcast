@@ -44,3 +44,8 @@ artifacts/
 playwright-report/
 test-results/
 output/playwright/**/*.png
+
+# Multi-agent system
+.worktrees/
+.agents/state/*
+!.agents/state/.gitkeep

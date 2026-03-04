@@ -155,6 +155,81 @@ describe('calculateEconomics', () => {
     // Last month should be positive (recovered)
     expect(flow[flow.length - 1].cumulativeCashFlow).toBeGreaterThan(0);
   });
+
+  it('higher oil price increases project NPV', () => {
+    const lowDeck = calculateEconomics(
+      TEST_WELLS,
+      DEFAULT_TYPE_CURVE,
+      DEFAULT_CAPEX,
+      { ...DEFAULT_COMMODITY_PRICING, oilPrice: 60 },
+      DEFAULT_OPEX,
+      DEFAULT_OWNERSHIP,
+    );
+
+    const highDeck = calculateEconomics(
+      TEST_WELLS,
+      DEFAULT_TYPE_CURVE,
+      DEFAULT_CAPEX,
+      { ...DEFAULT_COMMODITY_PRICING, oilPrice: 90 },
+      DEFAULT_OPEX,
+      DEFAULT_OWNERSHIP,
+    );
+
+    expect(highDeck.metrics.npv10).toBeGreaterThan(lowDeck.metrics.npv10);
+  });
+
+  it('lower base NRI reduces NPV while keeping capex unchanged', () => {
+    const fullNri = calculateEconomics(
+      TEST_WELLS,
+      DEFAULT_TYPE_CURVE,
+      DEFAULT_CAPEX,
+      DEFAULT_COMMODITY_PRICING,
+      DEFAULT_OPEX,
+      { ...DEFAULT_OWNERSHIP, baseNri: 1.0, baseCostInterest: 1.0 },
+    );
+
+    const reducedNri = calculateEconomics(
+      TEST_WELLS,
+      DEFAULT_TYPE_CURVE,
+      DEFAULT_CAPEX,
+      DEFAULT_COMMODITY_PRICING,
+      DEFAULT_OPEX,
+      { ...DEFAULT_OWNERSHIP, baseNri: 0.7, baseCostInterest: 1.0 },
+    );
+
+    expect(reducedNri.metrics.totalCapex).toBeCloseTo(fullNri.metrics.totalCapex, 2);
+    expect(reducedNri.metrics.npv10).toBeLessThan(fullNri.metrics.npv10);
+  });
+
+  it('faster rig schedule improves payout timing', () => {
+    const defaultSchedule = calculateEconomics(
+      TEST_WELLS,
+      DEFAULT_TYPE_CURVE,
+      DEFAULT_CAPEX,
+      DEFAULT_COMMODITY_PRICING,
+      DEFAULT_OPEX,
+      DEFAULT_OWNERSHIP,
+    );
+
+    const acceleratedSchedule = calculateEconomics(
+      TEST_WELLS,
+      DEFAULT_TYPE_CURVE,
+      DEFAULT_CAPEX,
+      DEFAULT_COMMODITY_PRICING,
+      DEFAULT_OPEX,
+      DEFAULT_OWNERSHIP,
+      { capex: 1, production: 1 },
+      {
+        annualRigs: [8, 8, 8, 8, 8, 8, 8, 8, 8, 8],
+        drillDurationDays: DEFAULT_CAPEX.drillDurationDays,
+        stimDurationDays: DEFAULT_CAPEX.stimDurationDays,
+        rigStartDate: DEFAULT_CAPEX.rigStartDate,
+      },
+    );
+
+    expect(acceleratedSchedule.metrics.payoutMonths).toBeGreaterThan(0);
+    expect(acceleratedSchedule.metrics.payoutMonths).toBeLessThanOrEqual(defaultSchedule.metrics.payoutMonths);
+  });
 });
 
 // ─── applyTaxLayer ─────────────────────────────────────────────────

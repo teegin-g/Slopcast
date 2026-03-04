@@ -1,0 +1,14 @@
+{
+  "$schema": "https://docs.anthropic.com/claude-code/hooks-schema.json",
+  "description": "Optional Claude Code hooks for the Slopcast agent system. Copy entries into your ~/.claude/settings.json or .claude/settings.json to enable.",
+  "examples": {
+    "post-commit-validate": {
+      "description": "Auto-run quick validation after each commit in a worktree",
+      "event": "PostToolUse",
+      "tool": "Bash",
+      "condition": "The command was a git commit",
+      "action": "Run: bash .agents/validation/gate.sh --skip-screenshots"
+    }
+  },
+  "note": "These are examples, not active hooks. Claude Code hooks are configured in settings.json, not here."
+}

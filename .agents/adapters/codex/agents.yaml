@@ -1,0 +1,39 @@
+# Slopcast Multi-Agent System — Codex Agent Definitions
+#
+# Usage:
+#   codex --agent supervisor "Add dark mode toggle"
+#   codex --agent implementer "Implement the theme toggle button per the task brief"
+#   codex --agent validator "Validate the current worktree"
+
+agents:
+  supervisor:
+    name: Supervisor
+    description: Decomposes feature requests, creates worktrees, coordinates implementation and validation, merges results.
+    instructions:
+      - file: .agents/roles/supervisor.md
+      - file: .agents/workflows/feature-pipeline.md
+      - file: .agents/workflows/worktree-lifecycle.md
+      - file: CLAUDE.md
+    permissions:
+      - file: codex/slopcast.rules
+      - file: .agents/adapters/codex/slopcast-agents.rules
+
+  implementer:
+    name: Implementer
+    description: Implements features in isolated worktrees following project conventions.
+    instructions:
+      - file: .agents/roles/implementer.md
+      - file: CLAUDE.md
+    permissions:
+      - file: codex/slopcast.rules
+      - file: .agents/adapters/codex/slopcast-agents.rules
+
+  validator:
+    name: Validator
+    description: Runs the validation gate and generates pass/fail reports. Read-only — does not modify code.
+    instructions:
+      - file: .agents/roles/validator.md
+      - file: CLAUDE.md
+    permissions:
+      - file: codex/slopcast.rules
+      - file: .agents/adapters/codex/slopcast-agents.rules

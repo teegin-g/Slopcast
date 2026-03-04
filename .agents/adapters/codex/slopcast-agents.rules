@@ -1,0 +1,27 @@
+# Slopcast Agent System — Codex Permissions
+# Extends codex/slopcast.rules with agent-specific commands
+
+# Worktree management
+prefix_rule(pattern=["git", "worktree"], decision="allow")
+
+# Validation gate
+prefix_rule(pattern=["bash", ".agents/validation/gate.sh"], decision="allow")
+prefix_rule(pattern=["bash", ".agents/validation/capture-baseline.sh"], decision="allow")
+prefix_rule(pattern=["node", ".agents/validation/screenshot-diff.mjs"], decision="allow")
+
+# npm scripts used by validation
+prefix_rule(pattern=["npm", "run", "typecheck"], decision="allow")
+prefix_rule(pattern=["npm", "run", "test"], decision="allow")
+prefix_rule(pattern=["npm", "test"], decision="allow")
+prefix_rule(pattern=["npm", "run", "ui:verify"], decision="allow")
+
+# Vite dev server for screenshot capture
+prefix_rule(pattern=["npx", "vite"], decision="allow")
+
+# Process management (for dev server cleanup)
+prefix_rule(pattern=["kill"], decision="allow")
+prefix_rule(pattern=["curl", "-s"], decision="allow")
+
+# npm install in worktrees
+prefix_rule(pattern=["npm", "install"], decision="allow")
+prefix_rule(pattern=["npm", "ci"], decision="allow")
