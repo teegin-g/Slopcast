@@ -19,7 +19,8 @@
     "theme:fx:cinematic": "node scripts/theme-fx-toggle.mjs cinematic --open",
     "theme:fx:max": "node scripts/theme-fx-toggle.mjs max --open",
     "theme:fx:clear": "node scripts/theme-fx-toggle.mjs clear --open",
-    "seed:supabase:wells": "node scripts/seed-wells.mjs"
+    "seed:supabase:wells": "node scripts/seed-wells.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@google/genai": "^1.38.0",
