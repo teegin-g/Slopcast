@@ -205,6 +205,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   const hasReadinessBlocker = !hasGroup || !hasGroupWells || !hasCapexItems;
   const [showSetupInsights, setShowSetupInsights] = useState(hasReadinessBlocker);
   const [didAutoOpenInsights, setDidAutoOpenInsights] = useState(hasReadinessBlocker);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   useEffect(() => {
     if (didAutoOpenInsights) return;
@@ -425,14 +426,50 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
               </div>
             </div>
 
-            <GroupWellsTable
-              isClassic={isClassic}
-              group={activeGroup}
-              wells={wells}
-              title="Wells in active group"
-              defaultSort={{ key: 'name', dir: 'asc' }}
-              dense
-            />
+            {/* Advanced Settings - Collapsible Section */}
+            <div
+              className={
+                isClassic
+                  ? 'sc-panel theme-transition'
+                  : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
+              }
+            >
+              <button
+                type="button"
+                onClick={() => setAdvancedOpen(prev => !prev)}
+                className={`w-full px-4 py-2.5 flex items-center justify-between ${
+                  isClassic
+                    ? 'sc-panelTitlebar sc-titlebar--neutral hover:bg-black/10'
+                    : 'border-b border-theme-border/60 hover:bg-theme-surface2/30'
+                } transition-colors`}
+              >
+                <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
+                  Advanced Settings
+                </h2>
+                <span className={`transform transition-transform duration-300 text-xs ${advancedOpen ? 'rotate-180' : ''} ${
+                  isClassic ? 'text-white/50' : 'text-theme-muted'
+                }`}>
+                  ▼
+                </span>
+              </button>
+
+              <div
+                className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                  advancedOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+                }`}
+              >
+                <div className="p-4">
+                  <GroupWellsTable
+                    isClassic={isClassic}
+                    group={activeGroup}
+                    wells={wells}
+                    title="Wells in active group"
+                    defaultSort={{ key: 'name', dir: 'asc' }}
+                    dense
+                  />
+                </div>
+              </div>
+            </div>
 
             {/* Setup Insights - compact vertical checklist with progress ring */}
             <div
