@@ -8,7 +8,7 @@ import type {
   DealOwnershipProfile,
   DealScenarioRecord,
 } from '../types';
-import type { Json } from '../supabase/types/database';
+import type { Json } from '../../supabase/types/database';
 import { getSupabaseClient } from './supabaseClient';
 
 const UUID_RE =
