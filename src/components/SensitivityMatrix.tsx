@@ -28,7 +28,9 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
   const { theme } = useTheme();
   const isClassic = theme.id === 'mario';
 
-  const allNpvs = useMemo(() => data.flat().map(d => d.npv), [data]);
+  const isEmpty = !data || data.length === 0 || (data.length > 0 && data[0].length === 0);
+
+  const allNpvs = useMemo(() => isEmpty ? [0] : data.flat().map(d => d.npv), [data, isEmpty]);
   const maxNpv = Math.max(...allNpvs);
   const minNpv = Math.min(...allNpvs);
 
@@ -67,6 +69,27 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
       }
   };
 
+  if (isEmpty) {
+    return (
+      <div className={isClassic ? 'sc-panel theme-transition' : 'overflow-hidden rounded-panel border theme-transition bg-theme-surface1/60 border-theme-border shadow-card'}>
+        <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--red p-4 flex justify-between items-center' : 'p-4 border-b flex justify-between items-center transition-all bg-theme-surface1 border-theme-border'}>
+          <h3 className={`text-xs font-bold uppercase tracking-widest ${isClassic ? 'text-white' : 'text-theme-magenta'} ${theme.features.brandFont ? 'brand-font' : ''}`}>
+            Portfolio NPV Sensitivity <span className={`${isClassic ? 'text-theme-warning/90' : 'text-theme-muted'} ml-2`}>(MM)</span>
+          </h3>
+        </div>
+        <div className={isClassic ? 'p-4' : 'p-6'}>
+          <div className={`flex flex-col items-center justify-center py-12 rounded-inner border-2 border-dashed ${isClassic ? 'border-black/20 bg-black/10' : 'border-theme-border/40 bg-theme-bg/20'}`}>
+            <svg className={`w-8 h-8 mb-3 ${isClassic ? 'text-white/20' : 'text-theme-muted/40'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+            </svg>
+            <span className={`text-[11px] font-bold uppercase tracking-[0.15em] ${isClassic ? 'text-white/30' : 'text-theme-muted/60'}`}>No sensitivity data available</span>
+            <span className={`text-[10px] mt-1 ${isClassic ? 'text-white/20' : 'text-theme-muted/40'}`}>Add well groups to generate the matrix</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const xLabels = data[0].map(d => d.xValue);
   const yLabels = data.map(d => d[0].yValue);
 
@@ -77,7 +100,7 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
                 Portfolio NPV Sensitivity <span className={`${isClassic ? 'text-theme-warning/90' : 'text-theme-muted'} ml-2`}>(MM)</span>
             </h3>
         </div>
-        
+
         <div className={isClassic ? 'p-4' : 'p-6 overflow-x-auto flex flex-col items-center'}>
           {isClassic && (
             <div className="rounded-inner p-4 overflow-x-auto flex flex-col items-center bg-black/10 border border-black/25">
