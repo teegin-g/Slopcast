@@ -228,6 +228,9 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, sc
                             <div className="flex items-center space-x-3 min-w-0">
                               <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 10px ${s.color}66` }}></div>
                               <span className={`font-black text-[11px] uppercase tracking-[0.1em] truncate text-white ${theme.features.brandFont ? 'brand-font' : ''}`}>{s.name}</span>
+                              {s.id === activeScenarioId && (
+                                <span className="text-[8px] font-black uppercase tracking-[0.15em] px-1.5 py-0.5 rounded bg-theme-warning/90 text-black leading-none">ACTIVE</span>
+                              )}
                             </div>
                             <div className="w-1.5 h-1.5 rounded-full bg-black/20 group-hover:bg-black/40 animate-pulse"></div>
                           </div>
@@ -261,6 +264,9 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, sc
                                   <div className="flex items-center space-x-3">
                                       <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 10px ${s.color}66` }}></div>
                                       <span className={`font-black text-[11px] uppercase tracking-[0.1em] text-theme-text ${theme.features.brandFont ? 'brand-font' : ''}`}>{s.name}</span>
+                                      {s.id === activeScenarioId && (
+                                        <span className="text-[8px] font-black uppercase tracking-[0.15em] px-1.5 py-0.5 rounded bg-theme-cyan/20 text-theme-cyan leading-none">ACTIVE</span>
+                                      )}
                                   </div>
                                   <div className="w-1.5 h-1.5 rounded-full bg-theme-cyan/20 group-hover:bg-theme-cyan animate-pulse"></div>
                               </div>
@@ -453,15 +459,22 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, sc
 
                     <div className={isClassic ? 'p-5' : ''}>
                       <div className="h-[320px] w-full" ref={overlayChart.containerRef}>
-                        {overlayChart.ready ? (
+                        {scenarioResults.length === 0 ? (
+                          <div className={`h-full w-full rounded-inner border-2 border-dashed flex flex-col items-center justify-center ${isClassic ? 'border-black/20 bg-black/10' : 'border-theme-border/40 bg-theme-bg/20'}`}>
+                            <svg className={`w-8 h-8 mb-3 ${isClassic ? 'text-white/20' : 'text-theme-muted/40'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                            </svg>
+                            <span className={`text-[11px] font-bold uppercase tracking-[0.15em] ${isClassic ? 'text-white/30' : 'text-theme-muted/60'}`}>Add scenarios to see comparison</span>
+                          </div>
+                        ) : overlayChart.ready ? (
                           <ResponsiveContainer width={overlayChart.width} height={overlayChart.height}>
                               <LineChart data={cfChartData}>
                                   <CartesianGrid strokeDasharray="6 6" stroke={chartPalette.grid} vertical={false} />
                                   <XAxis dataKey="month" stroke={chartPalette.text} fontSize={9} tickFormatter={(v) => v % 12 === 0 ? `Y${v/12}` : ''} axisLine={false} tickLine={false} />
                                   <YAxis stroke={chartPalette.text} fontSize={9} tickFormatter={(v) => `$${(v/1e6).toFixed(0)}M`} axisLine={false} tickLine={false} />
-                                  <Tooltip 
-                                    contentStyle={{ backgroundColor: chartPalette.surface, borderRadius: '12px', borderColor: chartPalette.border, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)' }} 
-                                    formatter={(val: number) => [`$${(val/1e6).toFixed(2)}MM`, '']} 
+                                  <Tooltip
+                                    contentStyle={{ backgroundColor: chartPalette.surface, borderRadius: '12px', borderColor: chartPalette.border, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)' }}
+                                    formatter={(val: number) => [`$${(val/1e6).toFixed(2)}MM`, '']}
                                   />
                                   <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '20px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em' }} iconType="circle" />
                                   {scenarios.map(s => <Line key={s.id} type="monotone" dataKey={s.id} name={s.name} stroke={s.color} strokeWidth={4} dot={false} animationDuration={2000} />)}

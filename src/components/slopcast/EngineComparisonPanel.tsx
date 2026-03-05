@@ -141,11 +141,32 @@ const EngineComparisonPanel: React.FC<EngineComparisonPanelProps> = ({
       {/* ── Expanded body ───────────────────────────────────── */}
       {expanded && (
         <div className={`border-t ${borderCls} px-4 py-4 space-y-5`}>
-          {/* Awaiting messages */}
+          {/* Loading spinner */}
+          {isLoading && (
+            <div className={`flex items-center justify-center py-8 ${surfaceCls} rounded-inner border-2 border-dashed ${borderCls}`}>
+              <div className="flex flex-col items-center gap-3">
+                <svg className={`w-6 h-6 animate-spin ${isClassic ? 'text-yellow-300' : 'text-theme-cyan'}`} fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                <span className={`text-[10px] font-bold uppercase tracking-[0.15em] ${mutedCls}`}>Running engines...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Empty state — no results yet */}
           {(!tsResult || !pyResult) && !isLoading && (
-            <div className={`text-[11px] ${mutedCls} space-y-1`}>
-              {!tsResult && <p>Awaiting TypeScript engine results...</p>}
-              {!pyResult && <p>Awaiting Python engine results...</p>}
+            <div className={`flex items-center justify-center py-8 ${surfaceCls} rounded-inner border-2 border-dashed ${borderCls}`}>
+              <div className="flex flex-col items-center gap-3">
+                <svg className={`w-6 h-6 ${mutedCls} opacity-40`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                </svg>
+                <span className={`text-[11px] font-bold uppercase tracking-[0.15em] ${mutedCls} opacity-60`}>No results yet — run economics to see engine comparison</span>
+                <div className={`text-[10px] ${mutedCls} opacity-40 space-y-0.5 text-center`}>
+                  {!tsResult && <p>TypeScript engine pending</p>}
+                  {!pyResult && <p>Python engine pending</p>}
+                </div>
+              </div>
             </div>
           )}
 
