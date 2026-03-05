@@ -19,7 +19,7 @@ const AcreageSearchBar: React.FC<AcreageSearchBarProps> = ({
   isClassic,
   onSearch,
   isLoading = false,
-  placeholder = 'Search acreage, operators, formations...',
+  placeholder = 'Search by basin, operator, or formation...',
 }) => {
   const [query, setQuery] = useState('');
   const [showExamples, setShowExamples] = useState(false);
