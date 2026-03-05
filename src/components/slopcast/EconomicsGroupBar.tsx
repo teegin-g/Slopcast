@@ -147,6 +147,10 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
     return { done, total: checks.length };
   };
 
+  const activeMetrics = activeGroup ? metricsById.get(activeGroup.id) : undefined;
+  const activeHealth = activeGroup ? groupHealth(activeGroup) : { done: 0, total: 3 };
+  const isActiveHealthy = activeHealth.done === activeHealth.total;
+
   return (
     <div
       ref={rootRef}
@@ -155,6 +159,13 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
         isClassic ? 'sc-panel' : 'rounded-panel bg-theme-surface1/65 border-theme-border shadow-card backdrop-blur-sm'
       }`}
     >
+      {/* Scope label */}
+      <div className={`text-[7px] font-black uppercase tracking-[0.2em] mb-1 ${
+        isClassic ? 'text-white/40' : 'text-theme-muted/50'
+      }`}>
+        Group
+      </div>
+
       <div className="flex items-center gap-1.5">
         <button
           type="button"
@@ -376,6 +387,54 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
           Clone Group
         </button>
       </div>
+
+      {/* Selection summary row */}
+      {activeGroup && (
+        <div className={`flex items-center gap-2 mt-1.5 pt-1.5 border-t theme-transition ${
+          isClassic ? 'border-black/15' : 'border-theme-border/30'
+        }`}>
+          {/* Active group name with color dot */}
+          <span className="flex items-center gap-1.5 min-w-0">
+            <span
+              className="w-2 h-2 rounded-full shrink-0"
+              style={{ backgroundColor: activeGroup.color || '#4F8BFF' }}
+            />
+            <span className={`text-[9px] font-bold truncate ${
+              isClassic ? 'text-white/80' : 'text-theme-text/80'
+            }`}>
+              {activeGroup.name}
+            </span>
+          </span>
+
+          {/* Compute status badge */}
+          <span className={`shrink-0 px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-[0.1em] ${
+            isActiveHealthy
+              ? 'bg-emerald-500/90 text-white'
+              : (isClassic ? 'bg-theme-warning/80 text-black' : 'bg-theme-warning/80 text-theme-bg')
+          }`}>
+            {isActiveHealthy ? 'Compute: Fresh' : 'Compute: Stale'}
+          </span>
+
+          {/* Wells count */}
+          <span className={`shrink-0 text-[8px] tabular-nums ${
+            isClassic ? 'text-white/50' : 'text-theme-muted/60'
+          }`}>
+            {activeGroup.wellIds.size} well{activeGroup.wellIds.size !== 1 ? 's' : ''}
+          </span>
+
+          {/* Spacer */}
+          <span className="flex-1" />
+
+          {/* NPV if available */}
+          {activeMetrics && (
+            <span className={`shrink-0 text-[9px] font-bold tabular-nums ${
+              isClassic ? 'text-white/70' : 'text-theme-cyan/70'
+            }`}>
+              NPV {formatMillions(activeMetrics.npv10)}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 };
