@@ -240,7 +240,8 @@ const PageHeader: React.FC<PageHeaderProps> = ({
         <div key={cls} className={`${cls} ${fxClass}`} />
       ))}
       <div className="relative z-10 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-3 md:gap-4 items-start md:items-center">
-        <div className="min-w-0 flex flex-col md:flex-row md:items-center gap-3 md:gap-10">
+        <div className="min-w-0 flex flex-col gap-2">
+          {/* Brand row */}
           <div className="flex items-center gap-3 md:gap-4 min-w-0">
             <div
               className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center theme-transition overflow-hidden shrink-0 ${
@@ -268,7 +269,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
               )}
             </div>
 
-            <div className={`flex flex-col pr-2 md:pr-8 min-w-0 ${isClassic ? 'md:border-r md:border-black/20' : 'md:border-r md:border-white/5'}`}>
+            <div className="flex flex-col min-w-0">
               <h1
                 className={`text-base md:text-xl leading-tight theme-transition tracking-tight ${
                   isClassic ? 'text-white font-black uppercase' : `text-theme-cyan ${theme.features.brandFont ? 'brand-title' : 'font-bold'}`
@@ -286,6 +287,10 @@ const PageHeader: React.FC<PageHeaderProps> = ({
             </div>
           </div>
 
+          {/* Separator between brand and nav */}
+          <div className={`border-t theme-transition ${isClassic ? 'border-black/15' : 'border-theme-border/40'}`} />
+
+          {/* Navigation tabs row */}
           <div className="flex items-center gap-2 w-full min-w-0 flex-nowrap">
             <div className={isClassic ? 'flex items-center gap-1.5 min-w-0 flex-nowrap' : 'flex items-center gap-1 p-1 rounded-panel border theme-transition bg-theme-bg border-theme-border min-w-0 flex-nowrap'}>
               <button

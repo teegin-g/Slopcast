@@ -21,17 +21,17 @@ const DesignWorkspaceTabs: React.FC<DesignWorkspaceTabsProps> = ({
 }) => {
   const buttonClass = (target: DesignWorkspace) => {
     if (isClassic) {
-      return `${compact ? 'px-2 sm:px-3 py-1.5 text-[8px] md:text-[9px]' : 'px-4 py-2 text-[10px]'} rounded-inner font-black uppercase tracking-[0.2em] border-2 transition-all whitespace-nowrap ${
+      return `${compact ? 'px-2 sm:px-3 py-1 text-[7px] md:text-[8px]' : 'px-4 py-2 text-[10px]'} rounded-inner font-bold uppercase tracking-[0.15em] border-2 transition-all whitespace-nowrap ${
         workspace === target
           ? 'bg-theme-warning text-black border-black/20'
-          : 'bg-black/15 text-white/90 border-black/25'
+          : 'bg-black/10 text-white/70 border-black/20'
       }`;
     }
 
-    return `${compact ? 'px-2 sm:px-3 py-1.5 text-[8px] md:text-[9px]' : 'px-4 py-2 text-[10px]'} rounded-inner font-black uppercase tracking-[0.2em] border transition-all whitespace-nowrap ${
+    return `${compact ? 'px-2 sm:px-3 py-1 text-[7px] md:text-[8px]' : 'px-4 py-2 text-[10px]'} rounded-inner font-bold uppercase tracking-[0.15em] border transition-all whitespace-nowrap ${
       workspace === target
-        ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
-        : 'bg-theme-bg text-theme-muted border-theme-border hover:text-theme-text'
+        ? 'bg-theme-cyan/80 text-theme-bg border-theme-cyan/60 shadow-sm'
+        : 'bg-theme-bg/50 text-theme-muted/70 border-theme-border/60 hover:text-theme-muted'
     }`;
   };
 
@@ -45,8 +45,8 @@ const DesignWorkspaceTabs: React.FC<DesignWorkspaceTabsProps> = ({
   return (
     <div
       data-testid="design-workspace-tabs"
-      className={`border ${compact ? 'p-1.5' : 'p-2'} theme-transition ${
-        isClassic ? 'sc-panel' : 'rounded-panel bg-theme-surface1/60 border-theme-border shadow-card backdrop-blur-sm'
+      className={`border ${compact ? 'p-1' : 'p-2'} theme-transition ${
+        isClassic ? 'sc-panel' : 'rounded-inner bg-theme-surface1/40 border-theme-border/50 shadow-sm backdrop-blur-sm'
       }`}
     >
       <div className={`grid grid-cols-2 ${compact ? 'gap-1' : 'gap-2'}`}>
