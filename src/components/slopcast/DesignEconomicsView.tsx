@@ -206,6 +206,9 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   const [showSetupInsights, setShowSetupInsights] = useState(hasReadinessBlocker);
   const [didAutoOpenInsights, setDidAutoOpenInsights] = useState(hasReadinessBlocker);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [taxOpen, setTaxOpen] = useState(false);
+  const [leverageOpen, setLeverageOpen] = useState(false);
+  const [reserveOpen, setReserveOpen] = useState(false);
 
   useEffect(() => {
     if (didAutoOpenInsights) return;
@@ -219,6 +222,13 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
     if (mobilePanel === 'RESULTS') return;
     onSetMobilePanel('RESULTS');
   }, [focusMode, mobilePanel, onSetMobilePanel]);
+
+  // Auto-collapse Setup Insights once all checks pass
+  useEffect(() => {
+    if (!hasReadinessBlocker && showSetupInsights) {
+      setShowSetupInsights(false);
+    }
+  }, [hasReadinessBlocker]); // eslint-disable-line react-hooks/exhaustive-deps
   const checklist = [
     { id: 'group', label: 'Choose active group', done: hasGroup },
     { id: 'wells', label: 'Assign wells to group', done: hasGroupWells },
@@ -351,7 +361,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
               onOpenSectionHandled={onControlsOpenHandled}
             />
 
-            {/* Tax & Fiscal Controls */}
+            {/* Tax & Fiscal Controls - Collapsible */}
             <div
               className={
                 isClassic
@@ -359,21 +369,41 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                   : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
               }
             >
-              <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
+              <button
+                type="button"
+                onClick={() => setTaxOpen(prev => !prev)}
+                className={`w-full px-4 py-2.5 flex items-center justify-between ${
+                  isClassic
+                    ? 'sc-panelTitlebar sc-titlebar--neutral hover:bg-black/10'
+                    : 'border-b border-theme-border/60 hover:bg-theme-surface2/30'
+                } transition-colors`}
+              >
                 <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
                   Tax &amp; Fiscal
                 </h2>
-              </div>
-              <div className="p-3">
-                <TaxControls
-                  isClassic={isClassic}
-                  tax={activeGroup.taxAssumptions || DEFAULT_TAX_ASSUMPTIONS}
-                  onChange={(tax) => onUpdateGroup({ ...activeGroup, taxAssumptions: tax })}
-                />
+                <span className={`transform transition-transform duration-300 text-xs ${taxOpen ? 'rotate-180' : ''} ${
+                  isClassic ? 'text-white/50' : 'text-theme-muted'
+                }`}>
+                  ▼
+                </span>
+              </button>
+
+              <div
+                className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                  taxOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+                }`}
+              >
+                <div className="p-3">
+                  <TaxControls
+                    isClassic={isClassic}
+                    tax={activeGroup.taxAssumptions || DEFAULT_TAX_ASSUMPTIONS}
+                    onChange={(tax) => onUpdateGroup({ ...activeGroup, taxAssumptions: tax })}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Leverage / Debt Controls */}
+            {/* Leverage / Debt Controls - Collapsible */}
             <div
               className={
                 isClassic
@@ -381,21 +411,41 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                   : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
               }
             >
-              <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
+              <button
+                type="button"
+                onClick={() => setLeverageOpen(prev => !prev)}
+                className={`w-full px-4 py-2.5 flex items-center justify-between ${
+                  isClassic
+                    ? 'sc-panelTitlebar sc-titlebar--neutral hover:bg-black/10'
+                    : 'border-b border-theme-border/60 hover:bg-theme-surface2/30'
+                } transition-colors`}
+              >
                 <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
                   Leverage
                 </h2>
-              </div>
-              <div className="p-3">
-                <DebtControls
-                  isClassic={isClassic}
-                  debt={activeGroup.debtAssumptions || DEFAULT_DEBT_ASSUMPTIONS}
-                  onChange={(debt) => onUpdateGroup({ ...activeGroup, debtAssumptions: debt })}
-                />
+                <span className={`transform transition-transform duration-300 text-xs ${leverageOpen ? 'rotate-180' : ''} ${
+                  isClassic ? 'text-white/50' : 'text-theme-muted'
+                }`}>
+                  ▼
+                </span>
+              </button>
+
+              <div
+                className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                  leverageOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+                }`}
+              >
+                <div className="p-3">
+                  <DebtControls
+                    isClassic={isClassic}
+                    debt={activeGroup.debtAssumptions || DEFAULT_DEBT_ASSUMPTIONS}
+                    onChange={(debt) => onUpdateGroup({ ...activeGroup, debtAssumptions: debt })}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Reserve Category Selector */}
+            {/* Reserve Category Selector - Collapsible */}
             <div
               className={
                 isClassic
@@ -403,26 +453,46 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                   : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
               }
             >
-              <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
+              <button
+                type="button"
+                onClick={() => setReserveOpen(prev => !prev)}
+                className={`w-full px-4 py-2.5 flex items-center justify-between ${
+                  isClassic
+                    ? 'sc-panelTitlebar sc-titlebar--neutral hover:bg-black/10'
+                    : 'border-b border-theme-border/60 hover:bg-theme-surface2/30'
+                } transition-colors`}
+              >
                 <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
                   Reserve Category
                 </h2>
-              </div>
-              <div className="p-3">
-                <select
-                  value={activeGroup.reserveCategory || 'PDP'}
-                  onChange={(e) => onUpdateGroup({ ...activeGroup, reserveCategory: e.target.value as ReserveCategory })}
-                  className={
-                    isClassic
-                      ? 'w-full rounded-md px-2 py-1 text-[10px] font-black sc-inputNavy'
-                      : 'w-full bg-theme-bg border border-theme-border rounded-lg px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition'
-                  }
-                >
-                  <option value="PDP">PDP (Proved Developed)</option>
-                  <option value="PUD">PUD (Proved Undeveloped)</option>
-                  <option value="PROBABLE">Probable</option>
-                  <option value="POSSIBLE">Possible</option>
-                </select>
+                <span className={`transform transition-transform duration-300 text-xs ${reserveOpen ? 'rotate-180' : ''} ${
+                  isClassic ? 'text-white/50' : 'text-theme-muted'
+                }`}>
+                  ▼
+                </span>
+              </button>
+
+              <div
+                className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                  reserveOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+                }`}
+              >
+                <div className="p-3">
+                  <select
+                    value={activeGroup.reserveCategory || 'PDP'}
+                    onChange={(e) => onUpdateGroup({ ...activeGroup, reserveCategory: e.target.value as ReserveCategory })}
+                    className={
+                      isClassic
+                        ? 'w-full rounded-md px-2 py-1 text-[10px] font-black sc-inputNavy'
+                        : 'w-full bg-theme-bg border border-theme-border rounded-lg px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition'
+                    }
+                  >
+                    <option value="PDP">PDP (Proved Developed)</option>
+                    <option value="PUD">PUD (Proved Undeveloped)</option>
+                    <option value="PROBABLE">Probable</option>
+                    <option value="POSSIBLE">Possible</option>
+                  </select>
+                </div>
               </div>
             </div>
 
@@ -619,6 +689,43 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
           )}
         </section>
       </div>
+
+      {/* Mobile Sticky Action Strip */}
+      {!focusMode && (
+        <div
+          className={`fixed bottom-0 left-0 right-0 z-40 backdrop-blur-md lg:hidden px-4 py-3 border-t ${
+            isClassic
+              ? 'bg-black/70 border-white/10'
+              : 'bg-theme-bg/80 border-theme-border/60'
+          }`}
+        >
+          {mobilePanel === 'SETUP' ? (
+            <button
+              type="button"
+              onClick={() => onSetMobilePanel('RESULTS')}
+              className={`w-full py-2.5 rounded-inner text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${
+                isClassic
+                  ? 'bg-theme-warning text-black border-2 border-black/20 shadow-card'
+                  : 'bg-theme-cyan text-theme-bg border border-theme-cyan shadow-glow-cyan'
+              }`}
+            >
+              View Results &rarr;
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onSetMobilePanel('SETUP')}
+              className={`w-full py-2.5 rounded-inner text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${
+                isClassic
+                  ? 'bg-black/30 text-white/90 border-2 border-black/25 shadow-card'
+                  : 'bg-theme-surface1 text-theme-text border border-theme-border'
+              }`}
+            >
+              &larr; Edit Setup
+            </button>
+          )}
+        </div>
+      )}
     </>
   );
 };
