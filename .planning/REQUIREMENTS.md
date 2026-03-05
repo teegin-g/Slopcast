@@ -132,50 +132,50 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SEC-01 | TBD | Pending |
-| SEC-02 | TBD | Pending |
-| SEC-03 | TBD | Pending |
-| SEC-04 | TBD | Pending |
-| SEC-05 | TBD | Pending |
-| WELL-01 | TBD | Pending |
-| WELL-02 | TBD | Pending |
-| WELL-03 | TBD | Pending |
-| WELL-04 | TBD | Pending |
-| GRP-01 | TBD | Pending |
-| GRP-02 | TBD | Pending |
-| GRP-03 | TBD | Pending |
-| GRP-04 | TBD | Pending |
-| GRP-05 | TBD | Pending |
-| GRP-06 | TBD | Pending |
-| GRP-07 | TBD | Pending |
-| GRP-08 | TBD | Pending |
-| SCEN-01 | TBD | Pending |
-| SCEN-02 | TBD | Pending |
-| SCEN-03 | TBD | Pending |
-| SCEN-04 | TBD | Pending |
-| SCEN-05 | TBD | Pending |
-| SCEN-06 | TBD | Pending |
-| DEAL-01 | TBD | Pending |
-| DEAL-02 | TBD | Pending |
-| DEAL-03 | TBD | Pending |
-| DEAL-04 | TBD | Pending |
-| AUTO-01 | TBD | Pending |
-| AUTO-02 | TBD | Pending |
-| AUTO-03 | TBD | Pending |
-| AUTO-04 | TBD | Pending |
-| AUTO-05 | TBD | Pending |
-| MIG-01 | TBD | Pending |
-| MIG-02 | TBD | Pending |
-| MIG-03 | TBD | Pending |
-| MIG-04 | TBD | Pending |
-| MIG-05 | TBD | Pending |
-| MIG-06 | TBD | Pending |
+| SEC-01 | Phase 1 | Pending |
+| SEC-02 | Phase 1 | Pending |
+| SEC-03 | Phase 1 | Pending |
+| SEC-04 | Phase 1 | Pending |
+| SEC-05 | Phase 1 | Pending |
+| WELL-01 | Phase 3 | Pending |
+| WELL-02 | Phase 3 | Pending |
+| WELL-03 | Phase 3 | Pending |
+| WELL-04 | Phase 3 | Pending |
+| GRP-01 | Phase 3 | Pending |
+| GRP-02 | Phase 3 | Pending |
+| GRP-03 | Phase 3 | Pending |
+| GRP-04 | Phase 3 | Pending |
+| GRP-05 | Phase 3 | Pending |
+| GRP-06 | Phase 3 | Pending |
+| GRP-07 | Phase 3 | Pending |
+| GRP-08 | Phase 3 | Pending |
+| SCEN-01 | Phase 3 | Pending |
+| SCEN-02 | Phase 3 | Pending |
+| SCEN-03 | Phase 3 | Pending |
+| SCEN-04 | Phase 3 | Pending |
+| SCEN-05 | Phase 3 | Pending |
+| SCEN-06 | Phase 3 | Pending |
+| DEAL-01 | Phase 3 | Pending |
+| DEAL-02 | Phase 3 | Pending |
+| DEAL-03 | Phase 3 | Pending |
+| DEAL-04 | Phase 3 | Pending |
+| AUTO-01 | Phase 2 | Pending |
+| AUTO-02 | Phase 2 | Pending |
+| AUTO-03 | Phase 2 | Pending |
+| AUTO-04 | Phase 2 | Pending |
+| AUTO-05 | Phase 2 | Pending |
+| MIG-01 | Phase 2 | Pending |
+| MIG-02 | Phase 2 | Pending |
+| MIG-03 | Phase 2 | Pending |
+| MIG-04 | Phase 2 | Pending |
+| MIG-05 | Phase 2 | Pending |
+| MIG-06 | Phase 2 | Pending |
 
 **Coverage:**
 - v1 requirements: 41 total
-- Mapped to phases: 0 (awaiting roadmap)
-- Unmapped: 41
+- Mapped to phases: 41/41 (100%)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-05*
-*Last updated: 2026-03-05 after initial definition*
+*Last updated: 2026-03-05 after roadmap creation*
