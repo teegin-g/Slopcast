@@ -88,7 +88,7 @@ const slate: ThemeMeta = {
   label: 'Slate',
   icon: '🏢',
   description: 'Corporate blue-gray',
-  appName: 'StrataValuator',
+  appName: 'SLOPCAST',
   appSubtitle: 'Deal Intelligence',
   chartPalette: {
     oil: '#3b82f6',
