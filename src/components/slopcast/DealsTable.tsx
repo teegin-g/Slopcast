@@ -132,10 +132,42 @@ const DealsTable: React.FC<DealsTableProps> = ({ isClassic, deals, onSelectDeal,
       </div>
 
       {sortedDeals.length === 0 ? (
-        <div className="p-8 text-center">
-          <p className={`text-[11px] ${isClassic ? 'text-white/50' : 'text-theme-muted'}`}>
-            No deals found. Create one to get started.
+        <div className="p-10 text-center flex flex-col items-center gap-3">
+          {/* Empty state icon */}
+          <svg
+            width="36"
+            height="36"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={isClassic ? 'text-white/25' : 'text-theme-muted/30'}
+          >
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="12" y1="18" x2="12" y2="12" />
+            <line x1="9" y1="15" x2="15" y2="15" />
+          </svg>
+          <p className={`text-[12px] font-bold ${isClassic ? 'text-white/60' : 'text-theme-muted'}`}>
+            No saved deals yet
           </p>
+          <p className={`text-[10px] max-w-xs ${isClassic ? 'text-white/35' : 'text-theme-muted/60'}`}>
+            Create your first deal to start evaluating economics.
+          </p>
+          {onCreateDeal && (
+            <button
+              onClick={onCreateDeal}
+              className={`mt-1 px-4 py-2 rounded-inner text-[10px] font-black uppercase tracking-widest transition-all ${
+                isClassic
+                  ? 'bg-theme-cyan text-white border border-theme-magenta/40 hover:bg-theme-cyan/90'
+                  : 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan'
+              }`}
+            >
+              + New Deal
+            </button>
+          )}
         </div>
       ) : (
         <div className="overflow-x-auto">

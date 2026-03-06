@@ -115,10 +115,10 @@ const LandingPage: React.FC<LandingPageProps> = ({
       )}
 
       {/* Hero section */}
-      <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-12 md:pt-20">
-        <div className="text-center mb-8 md:mb-12">
+      <div className="relative z-10 max-w-[1400px] mx-auto px-4 md:px-8 pt-10 md:pt-16">
+        <div className="text-center mb-6 md:mb-8">
           <h1
-            className={`text-3xl md:text-5xl lg:text-6xl leading-tight mb-4 ${
+            className={`text-3xl md:text-5xl lg:text-6xl leading-tight mb-3 ${
               isClassic
                 ? 'text-white font-black uppercase'
                 : `text-theme-text font-black tracking-tight ${theme.features.brandFont ? 'brand-title' : ''}`
@@ -127,7 +127,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
             {theme.appName}
           </h1>
           <p
-            className={`text-sm md:text-base max-w-xl mx-auto mb-8 ${
+            className={`text-sm md:text-base max-w-xl mx-auto mb-6 ${
               isClassic ? 'text-white/70' : 'text-theme-muted'
             }`}
           >
@@ -151,24 +151,24 @@ const LandingPage: React.FC<LandingPageProps> = ({
         {/* Quick actions strip */}
         <div className="flex items-center justify-center gap-3 mb-8">
           <button
-            onClick={onEnterWorkspace}
-            className={`px-5 py-2.5 rounded-panel text-[10px] font-black uppercase tracking-widest transition-all ${
+            onClick={onCreateDeal}
+            className={`px-6 py-3 rounded-panel text-[11px] font-black uppercase tracking-widest transition-all ${
               isClassic
                 ? 'bg-theme-cyan text-white border border-theme-magenta/40 shadow-card hover:bg-theme-cyan/90'
                 : 'bg-theme-cyan text-theme-bg shadow-glow-cyan hover:scale-[1.02]'
             }`}
           >
-            Open Blank Workspace
+            New Deal
           </button>
           <button
-            onClick={onCreateDeal}
+            onClick={onEnterWorkspace}
             className={`px-5 py-2.5 rounded-panel text-[10px] font-black uppercase tracking-widest transition-all border ${
               isClassic
                 ? 'bg-black/20 text-white border-black/30 hover:bg-black/30'
                 : 'bg-theme-bg text-theme-muted border-theme-border hover:text-theme-text hover:border-theme-cyan'
             }`}
           >
-            New Deal
+            Open Blank Workspace
           </button>
         </div>
 
