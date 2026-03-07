@@ -28,12 +28,15 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can see the current section indicated in the sidebar and URL updates to reflect navigation (browser back/forward works)
   4. User sees animated canvas backgrounds visible through semi-transparent glass panels across all 6 themes
   5. User on mobile sees sidebar collapsed to a drawer or bottom nav with equivalent navigation capability
-**Plans:** 1/3 plans executed
+**Plans:** 2/6 plans executed
 
 Plans:
-- [ ] 01-01-PLAN.md -- Tailwind v4 migration, glassmorphism token system, GlassPanel/GlassCard/Vignette components
-- [ ] 01-02-PLAN.md -- Sidebar navigation shell, URL state sync, responsive AppShell layout, mobile drawer
+- [x] 01-01-PLAN.md -- Tailwind v4 migration, glassmorphism token system, GlassPanel/GlassCard/Vignette components
+- [x] 01-02-PLAN.md -- Sidebar navigation shell, URL state sync, responsive AppShell layout, mobile drawer
 - [ ] 01-03-PLAN.md -- Spacing/typography/interaction state polish, visual verification across all themes
+- [ ] 01-04-PLAN.md -- (gap closure) Remove duplicate theme selector from sidebar
+- [ ] 01-05-PLAN.md -- (gap closure) Replace hardcoded colors with theme tokens in 14 high-impact components
+- [ ] 01-06-PLAN.md -- (gap closure) Replace hardcoded colors in remaining 15 components + chart inline styles
 
 ### Phase 2: Content Migration and Data Tables
 **Goal**: Users interact with Wells and Economics data through sortable, filterable tables inside the new app shell, with smooth transitions between views
@@ -69,6 +72,6 @@ Phases execute in numeric order: 1 -> 2 -> 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Styling Foundation and App Shell | 1/3 | In Progress|  |
+| 1. Styling Foundation and App Shell | 2/6 | In Progress|  |
 | 2. Content Migration and Data Tables | 0/2 | Not started | - |
 | 3. Inline Editing | 0/1 | Not started | - |
