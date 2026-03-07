@@ -1,261 +1,140 @@
-# Feature Research
+# Feature Landscape
 
-**Domain:** Multi-tenant SaaS persistence for oil & gas economics modeling
-**Researched:** 2026-03-05
-**Confidence:** MEDIUM
+**Domain:** Data-heavy SaaS workspace UI (oil & gas economics modeling)
+**Researched:** 2026-03-06 (updated with stack verification)
+**Confidence:** MEDIUM (training data only -- web search unavailable; patterns based on direct knowledge of Linear, Stripe, Databricks, Apple apps)
 
-## Feature Landscape
+## Reference Products Studied
 
-### Table Stakes (Users Expect These)
+| Product | Relevance | What to Learn |
+|---------|-----------|---------------|
+| **Databricks** | Data-heavy workspace with sidebar nav | Navigation patterns, workspace switching, notebook-style layout |
+| **Linear** | Keyboard-first, snappy SaaS | Command palette, keyboard nav, view switching, minimal chrome |
+| **Stripe Dashboard** | Dense financial data, inline editing | Table patterns, detail panels, settings organization |
+| **Apple (Finder/Settings)** | Inspector panels, clean hierarchy | Source list + detail, section cards, typography hierarchy |
+| **Figma** | Canvas-based with layered UI panels | Floating panels over canvas, toolbar patterns |
+| **Notion** | Sidebar + content area with inline editing | Sidebar tree nav, inline property editing, slash commands |
 
-Features users assume exist. Missing these = product feels incomplete.
+---
+
+## Table Stakes
+
+Features users expect from any modern SaaS workspace. Missing = product feels unfinished or dated.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| **User authentication & authorization** | Can't have multi-tenant without auth | LOW | Supabase auth already integrated |
-| **Organization/tenant isolation** | Business requirement for SaaS | MEDIUM | RLS policies + tenant_id foreign keys |
-| **CRUD operations on all entities** | Basic data persistence (wells, groups, scenarios) | MEDIUM | Repository pattern + Supabase client |
-| **Data saves automatically** | Users expect "save" to be implicit like Google Docs | LOW | Auto-save on debounced changes |
-| **Data loads on login** | Retrieve my work from any device | LOW | Fetch on auth, populate workspace |
-| **Soft delete / archive** | Users accidentally delete, need recovery | LOW | deleted_at timestamp + filter queries |
-| **Basic sharing within org** | Team members view/edit same deals | MEDIUM | Tenant-scoped access via RLS |
-| **Data validation** | Prevent bad data (negative NPV inputs, invalid dates) | LOW | Schema constraints + client validation |
-| **Performance for typical datasets** | Load 100-500 wells without lag | MEDIUM | Indexed queries, pagination if needed |
-| **LocalStorage migration** | Don't lose existing user work | MEDIUM | One-time import on first auth |
+| **Working utility CSS (Tailwind)** | The codebase has 50+ components referencing Tailwind utility classes that are not compiled. This is broken styling. | Low | Install Tailwind v4 + wire up @theme with existing CSS custom properties. Many "visual bugs" may self-resolve. |
+| **Persistent sidebar navigation** | Every modern workspace app (Linear, Databricks, Notion, Figma) uses a collapsible sidebar. Tab bars across the top feel like 2015. Users expect to always see where they are. | Medium | Replace current WELLS/ECONOMICS tab switcher with a sidebar. Collapsible to icons on smaller screens. |
+| **Consistent spacing and alignment** | Stripe and Linear set the bar: 4px/8px grid, consistent padding, aligned labels. Inconsistent spacing is the #1 signal of "not polished." | Low | Audit all padding/margin values. Establish spacing tokens (4, 8, 12, 16, 24, 32, 48). |
+| **Typography hierarchy** | Users scan, not read. Need clear H1/H2/body/caption/label tiers. Apple excels at this. | Low | Define 5-6 type scale levels. Current mix of arbitrary `text-[11px]` etc. needs standardizing. |
+| **Unified card/panel styling with glassmorphism** | One card style for outer containers, one for nested content. Inconsistent card styles break visual rhythm. | Low | Audit and enforce. Ensure backdrop-blur and transparency work with canvas backgrounds. |
+| **Breadcrumb / location awareness** | User must always know: What page am I on? What group am I editing? What section is active? | Low | Add section breadcrumb or active-section indicator in sidebar. |
+| **Responsive layout (desktop + mobile)** | Already exists but must not regress. Mobile should collapse sidebar to bottom tab bar or hamburger. | Medium | Preserve existing `viewportLayout` / `mobilePanel` patterns. Sidebar becomes drawer on mobile. |
+| **Loading and empty states** | Every data panel needs: loading skeleton, empty state with CTA, error state. | Medium | Add skeleton components for KPI grid, charts, tables. |
+| **Hover and focus states on all interactive elements** | Buttons, table rows, sidebar items, inputs all need visible hover/focus feedback. | Low | Audit all interactive elements for consistent `:hover` and `:focus-visible` styles. |
+| **Settings/preferences accessible from sidebar** | Theme switcher, engine toggle should be in a settings section, not scattered in the header. | Low | Move theme/engine/mode controls to sidebar settings section. |
 
-### Differentiators (Competitive Advantage)
+---
 
-Features that set the product apart. Not required, but valuable.
+## Differentiators
+
+Features that set the product apart. Not expected, but valued when present.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| **Demo/Live mode toggle** | Try with mock data, switch to real data without re-auth | MEDIUM | State flag + conditional data source |
-| **Version history / audit trail** | See who changed assumptions, when, revert mistakes | HIGH | Event log table, snapshot diffs, UI for browsing |
-| **Scenario comparison view** | Side-by-side NPV/IRR across multiple scenarios | MEDIUM | Already calculated, UI layout challenge |
-| **Deal templates / presets** | Save common assumption sets (Permian basin defaults, etc.) | MEDIUM | Template table + clone operation |
-| **Bulk import from Excel/CSV** | Import 1000+ wells from existing spreadsheets | HIGH | Parser, validation, mapping UI, error handling |
-| **Real-time collaboration** | Multiple users editing same deal simultaneously | HIGH | WebSocket, CRDT, conflict resolution |
-| **Comments & annotations** | Team discusses assumptions inline | MEDIUM | Comment table, threading, notifications |
-| **Approval workflows** | Deal requires VP sign-off before execution | HIGH | State machine, role-based approvals, notifications |
-| **Advanced filters & saved views** | "Show all Permian Basin wells with EUR > 200 MBO" | MEDIUM | Filter builder UI + query construction |
-| **API for integrations** | Connect to Enverus, DrillingInfo, other data sources | HIGH | External data model + sync jobs |
-| **Calculated results caching** | Store NPV/IRR instead of recalculating every load | MEDIUM | Trade-off: storage cost vs compute, invalidation logic |
-| **Offline mode** | Work without internet, sync when online | HIGH | Service worker, IndexedDB, conflict resolution |
-| **Export to Excel/PDF** | Generate formatted reports for executives | MEDIUM | Template engine, PDF generation library |
-| **Role-based permissions** | Admin vs Analyst vs Viewer access levels | MEDIUM | Roles table, RLS policy complexity increases |
+| **Animated background themes visible through UI** | This IS Slopcast's brand identity. No competitor has immersive canvas backgrounds as a core feature. | Medium | Use `backdrop-blur` + semi-transparent backgrounds on cards. Test against all 9+ themes. |
+| **Command palette (Cmd+K)** | Linear popularized this. Jump to any group, section, or action by typing. | Medium | `useKeyboardShortcuts` hook already exists. Use cmdk library. |
+| **Inline assumption editing** | Edit type curve / CAPEX / OPEX where you see the data, not in a separate panel. Apple's inspector pattern. | High | Refactor to inline-editable fields within the economics view cards. Click a KPI to edit its driver. |
+| **Contextual detail panel (inspector)** | Select a well group and a right-side panel shows all its details. Apple Finder's inspector, Figma's right panel. | High | Would replace current accordion-based Controls panel. |
+| **Smooth transitions between views** | Linear and Stripe use subtle slide/fade transitions when switching views. | Low | motion library for layout animations and AnimatePresence for exit transitions. |
+| **Data tables with sorting, filtering, column resize** | TanStack Table for wells list, cash flow, and deals table. Headless = full styling control. | Medium | Replaces current custom table implementations with consistent, accessible tables. |
+| **Keyboard-first navigation** | Tab through sidebar items, arrow keys in tables, Escape to close panels. | Medium | Radix primitives handle keyboard interaction by default. |
+| **Glassmorphism design system** | Frosted glass panels over animated backgrounds. macOS Sonoma / iOS aesthetic. | Medium | Requires careful `backdrop-filter: blur()` tuning per theme. Performance-sensitive. |
+| **Drag-to-reorder sidebar items** | Drag well groups to reorder priority. Small touch but signals polish. | Low | Use native drag events. Only for sidebar group list. |
+| **Snapshot/version indicator** | Show "last saved 2 min ago." `snapshotHistory` already exists in the codebase. | Low | Already has data. Add a small indicator. |
 
-### Anti-Features (Commonly Requested, Often Problematic)
+---
 
-Features that seem good but create problems.
+## Anti-Features
 
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|-----------------|-------------|
-| **Public well data registry** | "Let's share wells across all customers" | Competitive intel leakage, data quality chaos | Tenant-private wells only; external integrations later |
-| **Blockchain for audit trail** | Sounds impressive, "immutable" | Massive complexity, slow, expensive, overkill | Postgres append-only log + signed timestamps |
-| **Real-time calculations** | "Update NPV as I type" | CPU thrashing, battery drain, poor UX on lag | Debounced recalc (300ms), optimistic UI updates |
-| **Unlimited undo/redo** | "Let me undo 100 steps back" | Memory explosion, state complexity | Soft delete + version snapshots (manual), not full history |
-| **Full-text search on everything** | "Search across all fields" | Index bloat, slow writes, maintenance cost | Targeted search on key fields (well name, operator) |
-| **Custom fields on all entities** | "Every customer has unique needs" | Schema explosion, query complexity, validation nightmare | Fixed schema + JSON metadata field for edge cases |
-| **Drag-and-drop everything** | "Make it like Notion" | Accessibility issues, mobile nightmare, over-engineering | Use drag-drop sparingly (reorder lists), not for data entry |
-| **AI-generated assumptions** | "AI predicts type curves" | Liability risk, unpredictable, hard to validate | User-defined assumptions + template library |
+Features to explicitly NOT build during this UI revamp.
+
+| Anti-Feature | Why Avoid | What to Do Instead |
+|--------------|-----------|-------------------|
+| **Multi-level nested navigation** | Slopcast has ~4 sections. Deep nav trees add complexity without value at this scale. | Flat sidebar: Wells, Economics, Analysis, Settings. No nesting deeper than one level. |
+| **Floating toolbar / ribbon** | Too much chrome, fights with the canvas background aesthetic. | Contextual actions in section header or inline. |
+| **Dashboard customization / widget grid** | Draggable tiles are over-engineering for a focused economics tool. | Fixed, well-designed layout. |
+| **Dark/light mode toggle** | The app is inherently dark (animated backgrounds). Light mode would require rewriting all themes. | Keep dark-only. Themes provide variety. |
+| **Notification center / bell icon** | Single-user modeling tool, not a collaboration platform. | Toast notifications (sonner) for in-session feedback only. |
+| **Tabs within tabs** | Current WELLS/ECONOMICS tabs plus sub-tabs creates confusing nesting. | Sidebar for primary nav. Single content area with sections. |
+| **Overly animated transitions** | Competing with the canvas background. | Keep transitions under 200ms. Reserve visual drama for backgrounds. |
+
+---
 
 ## Feature Dependencies
 
 ```
-Authentication & Authorization
-    └──requires──> Organization/Tenant Model
-                       └──requires──> Row-Level Security Policies
-                                          └──requires──> CRUD Operations
-
-Data Persistence (CRUD)
-    └──enables──> Auto-Save
-    └──enables──> Soft Delete
-    └──enables──> Sharing Within Org
-
-LocalStorage Migration
-    └──requires──> Data Persistence (CRUD)
-    └──requires──> Authentication
-
-Demo/Live Mode Toggle
-    └──requires──> Data Persistence (dual source)
-    └──enhances──> User Onboarding
-
-Version History
-    └──requires──> CRUD Operations
-    └──requires──> Event Log / Audit Table
-    └──enhances──> Soft Delete (better recovery)
-
-Scenario Comparison
-    └──requires──> Multiple Scenarios Persistence
-    └──enhances──> Economics Calculations
-
-Deal Templates
-    └──requires──> CRUD Operations
-    └──enhances──> User Productivity
-
-Bulk Import
-    └──requires──> CRUD Operations
-    └──requires──> Data Validation
-    └──conflicts──> Real-Time Collaboration (import locks)
-
-Real-Time Collaboration
-    └──requires──> WebSocket Infrastructure
-    └──requires──> Conflict Resolution
-    └──conflicts──> Bulk Import (locking issues)
-
-API Integrations
-    └──requires──> External Data Model
-    └──requires──> Authentication (API keys)
-    └──enhances──> Bulk Import
-
-Role-Based Permissions
-    └──requires──> Authentication & Authorization
-    └──enhances──> Sharing Within Org
+Tailwind CSS v4 installation  -->  All visual features (makes existing classNames work)
+  |
+  +--> Glass token system  -->  Sidebar navigation (glass chrome)
+  |                         --> Card components (glass panels)
+  |                         --> Inspector panel (glass overlay)
+  |
+  +--> Radix UI primitives  -->  Inline editing (popovers, dialogs)
+  |                          --> Dropdown menus
+  |                          --> Tooltips
+  |                          --> Accessible keyboard nav
+  |
+  +--> TanStack Table  -->  Well list table
+  |                     --> Cash flow table
+  |                     --> Deals table
+  |
+  +--> motion  -->  Sidebar transitions
+               --> Panel animations
+               --> View crossfade
 ```
 
-### Dependency Notes
+**Critical path:** Tailwind installation --> Glass tokens --> Sidebar nav --> Content migration --> Inspector panel
 
-- **Authentication requires Organization Model:** Can't isolate tenants without knowing which org a user belongs to.
-- **RLS requires Organization Model:** Policies filter by tenant_id, must exist in schema.
-- **LocalStorage Migration requires Auth:** Don't know which user's data to import until logged in.
-- **Demo/Live Mode requires dual source:** Must handle both mock data (constants.ts) and DB queries.
-- **Version History enhances Soft Delete:** Instead of just "undelete," restore to specific version.
-- **Real-Time Collaboration conflicts with Bulk Import:** Locking large imports blocks live editors; defer real-time.
-- **API Integrations enhance Bulk Import:** External data sources feed import pipeline.
+**Independent tracks (after Tailwind):**
+- Command palette (after sidebar exists)
+- Loading/empty states (anytime)
+- Keyboard navigation (anytime, extends existing hook)
+- Data tables with TanStack (anytime)
 
-## MVP Definition
+---
 
-### Launch With (v1)
+## MVP Recommendation
 
-Minimum viable product — what's needed to validate the concept.
+### Phase 1: Foundation
+Prioritize:
+1. **Install Tailwind v4 + wire theme tokens** -- makes 50+ components' classNames actually work
+2. **Glass token system** -- `--glass-sidebar`, `--glass-panel`, etc. in theme.css
+3. **Persistent sidebar navigation** -- single biggest UX upgrade
+4. **Spacing and typography audit** -- standardize with Tailwind scale
 
-- [x] **User authentication** — Already integrated (Supabase)
-- [ ] **Organization/tenant data model** — Schema with tenant_id on all tables
-- [ ] **Row-level security policies** — Postgres RLS for data isolation
-- [ ] **CRUD operations for core entities** — Wells, WellGroups, Scenarios, DealRecords
-- [ ] **Auto-save on changes** — Debounced persistence (300ms idle)
-- [ ] **Data loads on login** — Fetch tenant data, populate workspace
-- [ ] **Soft delete / archive** — deleted_at timestamp, filter deleted by default
-- [ ] **Basic sharing within org** — All org members see org data (no fine-grained permissions yet)
-- [ ] **LocalStorage migration** — One-time import on first auth
-- [ ] **Demo/Live mode toggle** — Switch between mock data and real DB
-- [ ] **Data validation** — Schema constraints + client checks (non-negative NPV inputs)
+### Phase 2: Components + Polish
+5. **Unified card/panel components** with glassmorphism
+6. **Data tables** with TanStack Table (wells, cash flow, deals)
+7. **Loading and empty states**
+8. **Hover/focus states audit**
+9. **Smooth view transitions** with motion
+10. **Settings consolidated in sidebar**
 
-**Rationale:** These are non-negotiable. Without auth, isolation, and basic CRUD, the product is not a multi-tenant SaaS. Demo/Live mode is critical for onboarding and demos (per PROJECT.md). LocalStorage migration prevents losing existing users' work.
+### Phase 3: Differentiation
+11. **Command palette (Cmd+K)** with cmdk
+12. **Inspector panel** for inline assumption editing
+13. **Keyboard-first navigation**
 
-### Add After Validation (v1.x)
+**Defer:**
+- Drag-to-reorder: Nice but not impactful enough to prioritize
+- Snapshot timeline: Already have the data; can surface later with low effort
 
-Features to add once core is working and users validate the value.
-
-- [ ] **Deal templates / presets** — Add when users request "save my standard Permian assumptions"
-- [ ] **Scenario comparison view** — Add when users have 3+ scenarios and need to compare
-- [ ] **Calculated results caching** — Add if performance degrades with large well sets (500+ wells)
-- [ ] **Export to Excel/PDF** — Add when users need to present to executives
-- [ ] **Advanced filters & saved views** — Add when users manage 1000+ wells
-- [ ] **Version history / audit trail** — Add when users request "who changed this?" or "undo yesterday's edit"
-- [ ] **Comments & annotations** — Add when teams request inline discussions
-
-**Trigger for adding:** User feedback or measurable friction (performance issues, feature requests from 3+ customers).
-
-### Future Consideration (v2+)
-
-Features to defer until product-market fit is established.
-
-- [ ] **Bulk import from Excel/CSV** — Defer until customers have large datasets (1000+ wells)
-- [ ] **Real-time collaboration** — Defer until multiple users editing same deal simultaneously is a pain point
-- [ ] **API for integrations** — Defer until customers request Enverus/DrillingInfo connections
-- [ ] **Offline mode** — Defer until users report "I work in the field without internet"
-- [ ] **Approval workflows** — Defer until enterprise customers request formal sign-offs
-- [ ] **Role-based permissions** — Defer until orgs request "Analysts can edit, Viewers can't"
-
-**Why defer:** High complexity, unclear demand, or requires infrastructure not yet built. Focus on core persistence first.
-
-## Feature Prioritization Matrix
-
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Authentication & Authorization | HIGH | LOW (done) | P1 |
-| Organization/Tenant Model | HIGH | MEDIUM | P1 |
-| Row-Level Security | HIGH | MEDIUM | P1 |
-| CRUD Operations | HIGH | MEDIUM | P1 |
-| Auto-Save | HIGH | LOW | P1 |
-| Data Loads on Login | HIGH | LOW | P1 |
-| Soft Delete | HIGH | LOW | P1 |
-| Basic Sharing Within Org | HIGH | LOW | P1 |
-| LocalStorage Migration | HIGH | MEDIUM | P1 |
-| Demo/Live Mode Toggle | HIGH | MEDIUM | P1 |
-| Data Validation | MEDIUM | LOW | P1 |
-| Deal Templates | MEDIUM | MEDIUM | P2 |
-| Scenario Comparison | MEDIUM | MEDIUM | P2 |
-| Calculated Results Caching | MEDIUM | MEDIUM | P2 |
-| Export to Excel/PDF | MEDIUM | MEDIUM | P2 |
-| Advanced Filters | MEDIUM | MEDIUM | P2 |
-| Version History | MEDIUM | HIGH | P2 |
-| Comments & Annotations | LOW | MEDIUM | P2 |
-| Bulk Import | HIGH | HIGH | P3 |
-| Real-Time Collaboration | LOW | HIGH | P3 |
-| API Integrations | MEDIUM | HIGH | P3 |
-| Offline Mode | LOW | HIGH | P3 |
-| Approval Workflows | LOW | HIGH | P3 |
-| Role-Based Permissions | MEDIUM | MEDIUM | P3 |
-
-**Priority key:**
-- P1: Must have for launch (MVP)
-- P2: Should have, add when validated
-- P3: Nice to have, future consideration
-
-## Competitor Feature Analysis
-
-| Feature | Aries (IHS) | PHDWin (Schlumberger) | Combocurve | Our Approach (Slopcast) |
-|---------|-------------|----------------------|------------|-------------------------|
-| **Multi-tenancy** | Enterprise single-tenant | Enterprise single-tenant | True multi-tenant SaaS | True multi-tenant SaaS (Supabase RLS) |
-| **Data persistence** | SQL Server | Oracle | PostgreSQL + cloud | PostgreSQL (Supabase) |
-| **Authentication** | Windows AD / SSO | SAML / SSO | Auth0 / email | Supabase Auth (email, OAuth) |
-| **Collaboration** | File-based, email exports | Shared DB, no real-time | Real-time (limited) | Org-scoped, no real-time yet |
-| **Demo mode** | Trial license, full data | Demo datasets, separate install | Sandbox account | Demo/Live toggle in-app |
-| **Versioning** | Manual file versions | Snapshot feature | Audit log (enterprise tier) | Soft delete initially, versioning later |
-| **Bulk import** | Excel import, complex | CSV import, templates | API + CSV import | Defer to v1.x+ |
-| **Export** | Excel, PDF, custom reports | PDF, Word, templates | PDF, CSV | Excel/PDF in v1.x |
-| **Mobile access** | Windows desktop only | Desktop only | Web responsive | Web responsive (already) |
-| **Pricing model** | Per-seat perpetual license | Per-seat annual | Per-seat SaaS | Per-seat SaaS (future) |
-
-**Key differentiators for Slopcast:**
-1. **Demo/Live mode toggle** — Competitors require separate accounts/installs for demos; we switch in-app.
-2. **Lightweight onboarding** — Aries/PHDWin are desktop installs with steep learning curves; we're web-first.
-3. **Modern stack** — Competitors use legacy tech (Oracle, Windows-only); we use React + Supabase.
-4. **Mobile-friendly** — Competitors are desktop-only; we're responsive from day one.
-
-**What we explicitly avoid:**
-- Complex desktop installs (web-only)
-- Real-time collaboration initially (adds complexity, unclear demand)
-- Public well registry (competitive intel risk)
-- Custom fields everywhere (schema stability)
+---
 
 ## Sources
 
-**Note:** Research conducted primarily from training data (January 2025 knowledge cutoff) due to WebSearch/WebFetch limitations. Confidence level: MEDIUM.
-
-### Training Data Sources (Cannot verify against current docs)
-- Multi-tenant SaaS patterns: Standard industry practices for RLS, tenant isolation, soft delete
-- Oil & gas software landscape: Knowledge of Aries (IHS Markit), PHDWin (Schlumberger), Combocurve
-- Supabase patterns: RLS documentation, multi-tenancy guides (as of Jan 2025)
-
-### Project Context (HIGH confidence)
-- `/home/groveste/Slopcast/.planning/PROJECT.md` — Requirements, constraints, existing architecture
-- `/home/groveste/Slopcast/CLAUDE.md` — Current codebase structure, types, patterns
-
-### Limitations
-- Could not verify current Supabase best practices (2026) due to WebFetch unavailability
-- Could not verify current oil & gas software feature sets (2026) due to WebSearch errors
-- Competitor analysis based on 2024-2025 knowledge; pricing/features may have changed
-
-### Recommendations for Validation
-- Review current Supabase RLS documentation for 2026 updates
-- Survey target users (oil & gas professionals) for feature expectations
-- Audit Combocurve (closest competitor) for recent feature additions
-- Test LocalStorage migration with real user data before launch
-
----
-*Feature research for: Multi-tenant SaaS persistence (oil & gas economics modeling)*
-*Researched: 2026-03-05*
-*Confidence: MEDIUM (training data + project context, external verification limited)*
+- Training data analysis of Databricks, Linear, Stripe Dashboard, Apple apps, Figma, Notion (MEDIUM confidence)
+- Direct codebase analysis: 50+ TSX files using Tailwind utility classes without Tailwind installed (HIGH confidence)
+- npm registry version verification for recommended libraries (HIGH confidence)
+- PROJECT.md scope and constraints definition

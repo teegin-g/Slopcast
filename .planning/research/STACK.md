@@ -1,213 +1,234 @@
-# Technology Stack
+# Technology Stack: UI Revamp
 
-**Project:** Slopcast Multi-Tenant SaaS Persistence
-**Domain:** Multi-tenant SaaS data persistence with Supabase/Postgres
-**Researched:** 2026-03-05
-**Confidence:** HIGH
+**Project:** Slopcast UI Revamp
+**Researched:** 2026-03-06
+**Mode:** Ecosystem (SaaS UI stack for data-heavy workspace)
 
-## Executive Summary
+## Current State Assessment
 
-The standard 2025-2026 stack for multi-tenant SaaS with Supabase centers on `@supabase/supabase-js` v2.98+ for client-side access, native Postgres Row-Level Security (RLS) for tenant isolation, Supabase CLI for migrations, and TypeScript type generation from the database schema. This architecture leverages Postgres's built-in multi-tenancy features rather than application-level isolation, resulting in better security guarantees and simpler code.
+The codebase has a split personality. Components use two styling paths:
 
-The project already has a solid foundation: Supabase client integration, migrations infrastructure, RLS policies in place, and TypeScript types generated from the schema. The recommended stack builds on this existing foundation with minimal additions.
+1. **`isClassic` path** -- uses `sc-panel`, `sc-panelTitlebar`, etc. defined in `theme.css` (2419 lines). These work.
+2. **Modern path** -- references Tailwind utility classes (`px-4`, `bg-theme-surface1/70`, `backdrop-blur-md`, `rounded-panel`) that are **not compiled by any tool**. There is no Tailwind installed, no `tailwind.config`, no PostCSS config. These classes are dead code.
+
+This means the "modern" design intent was never realized. The revamp must fix this foundational gap first.
 
 ## Recommended Stack
 
-### Core Technologies
+### Styling Foundation
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| **@supabase/supabase-js** | 2.98.0+ | JavaScript/TypeScript client for Supabase | Official client with full feature support. V2.98 is current stable (Jan 2026). Handles auth, realtime, storage, and PostgREST queries with excellent TypeScript support. |
-| **Supabase CLI** | 2.76.17+ | Local development, migrations, type generation | Essential for schema management. Enables local Postgres + API + Auth + Studio. Generates TypeScript types directly from schema with `supabase gen types`. |
-| **PostgreSQL** | 17+ | Relational database with native multi-tenancy via RLS | Postgres 17 (released 2024) is the current major version. Native RLS provides database-level tenant isolation. JSONB for flexible schema. |
-| **TypeScript** | 5.8+ | Type safety for database operations | Already in project at 5.8.2. Generated types from Supabase ensure compile-time safety for all database operations. |
+| Technology | Version | Purpose | Why | Confidence |
+|------------|---------|---------|-----|------------|
+| Tailwind CSS | ^4.2.1 | Utility-first CSS framework | The codebase already uses Tailwind conventions in 50+ components. Installing Tailwind makes existing class names work instead of rewriting them. v4 uses CSS-native `@import "tailwindcss"` -- no PostCSS config needed, works with Vite out of the box. | HIGH |
+| tailwind-merge | ^3.5.0 | Merge conflicting Tailwind classes | Essential for component composition -- when passing className props, prevents `p-4 p-2` conflicts | HIGH |
+| clsx | ^2.1.1 | Conditional class joining | Lightweight, standard pattern for `clsx('base', { 'active': isActive })`. Already the community default. | HIGH |
+| class-variance-authority (CVA) | ^0.7.1 | Component variant definitions | Defines button/card/input variants as typed objects. Pairs with Tailwind for consistent variant APIs across the design system. | HIGH |
 
-### Multi-Tenancy Pattern
+**Tailwind v4 rationale:** v4 (released Jan 2025) eliminates `tailwind.config.js` entirely. Configuration moves into CSS with `@theme` blocks. This is ideal because the project already has a rich `theme.css` with CSS custom properties -- those can be mapped directly into Tailwind's theme via `@theme` directives. No config file, no PostCSS plugin, just `@import "tailwindcss"` in the CSS entry point. The existing `--bg-deep`, `--surface-1`, `--border` tokens can be exposed as `bg-deep`, `surface-1` etc. in Tailwind classes.
 
-| Component | Approach | Rationale |
-|-----------|----------|-----------|
-| **Tenant Isolation** | Postgres Row-Level Security (RLS) policies | Database-enforced isolation prevents application bugs from leaking data. More secure than app-level filtering. |
-| **Authentication** | Supabase Auth (`auth.users`) | Already integrated. Provides JWT tokens with `auth.uid()` function for RLS policies. |
-| **Authorization** | Helper functions (`current_project_role`, `has_project_access`) | Security definer functions encapsulate permission logic. Reusable across policies. |
-| **Tenant Scoping** | `owner_user_id` + `project_members` join table | Owner has full control, members have role-based access (owner/editor/viewer). Pattern already implemented in migrations. |
+### Component Primitives
 
-### Schema Management
+| Technology | Version | Purpose | Why | Confidence |
+|------------|---------|---------|-----|------------|
+| Radix UI Primitives | ^1.1.x | Headless accessible components (Dialog, Popover, Dropdown, Tooltip, Tabs, Accordion) | Unstyled, composable, WAI-ARIA compliant. The standard for building custom-styled components in 2025/2026. Does NOT impose visual opinions -- critical since the app has custom glass/transparency aesthetics. | HIGH |
 
-| Tool | Version | Purpose | When to Use |
-|------|---------|---------|-------------|
-| **Supabase CLI migrations** | Built-in | Version-controlled SQL migrations | All schema changes. Already using this pattern (`supabase/migrations/*.sql`). |
-| **`supabase gen types typescript`** | Built-in | Generate TypeScript types from schema | After every migration. Creates `Database` type with all tables/views/functions. |
-| **Database functions** | Native SQL | Permission helpers, triggers, computed values | Complex authorization logic (`current_project_role`), audit triggers (`set_updated_at`). |
+**Use individual packages, not `@radix-ui/themes`**. The Themes package imposes its own design system with opaque CSS -- incompatible with the custom theme.css approach. Install only what you need:
 
-### Supporting Libraries
+```
+@radix-ui/react-dialog
+@radix-ui/react-dropdown-menu
+@radix-ui/react-popover
+@radix-ui/react-tooltip
+@radix-ui/react-tabs
+@radix-ui/react-accordion
+@radix-ui/react-toggle-group
+@radix-ui/react-scroll-area
+@radix-ui/react-separator
+@radix-ui/react-slot
+```
 
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| **Zod** | 4.3.6+ | Runtime validation + TypeScript inference | Validate user input before database operations. Not needed for database types (already generated), but useful for form validation and API boundaries. |
-| **@faker-js/faker** | 10.3.0+ | Generate realistic test data | Seed scripts, test fixtures. Better than hand-written test data for wells, deals, users. |
+**Why not shadcn/ui directly:** shadcn/ui is a code-generation tool that copies Radix + Tailwind component files into your project. It is excellent for greenfield apps. For Slopcast, the components need to integrate with the existing theme token system (`--surface-1`, `--border`, etc.) and the glass/transparency aesthetic. Copying shadcn components and then rewriting their styles defeats the purpose. Instead, use Radix primitives directly and style them with Tailwind + the existing theme tokens. You can reference shadcn/ui's source code as implementation patterns without adopting its CLI or conventions.
 
-### Development Tools
+### Data Display
 
-| Tool | Purpose | Notes |
-|------|---------|-------|
-| **Supabase Studio** | Local database GUI | Runs at localhost:54323 via `supabase start`. Visual query builder, table editor, RLS policy tester. |
-| **Supabase Local Dev** | Full local stack | Postgres + API + Auth + Realtime + Storage. Configured in `supabase/config.toml`. No cloud dependency during dev. |
-| **Vitest** | Unit testing | Already in project (4.0.18). Test economics calculations, repository methods, RLS policies (via `supabase db test`). |
+| Technology | Version | Purpose | Why | Confidence |
+|------------|---------|---------|-----|------------|
+| @tanstack/react-table | ^8.21.3 | Headless table logic (sorting, filtering, grouping, column resizing) | The standard for data-heavy React apps. Headless = full control over rendering, which is necessary for glass-panel table rows and custom cell editors. Already used by Databricks, Linear, and most data SaaS products. | HIGH |
+| @tanstack/react-virtual | ^3.13.21 | Virtualized scrolling for large lists/tables | Essential for well lists and cash flow tables that can have hundreds of rows. Renders only visible rows. Pairs naturally with react-table. | HIGH |
+
+**Why not AG Grid / MUI DataGrid:** Both impose heavy visual opinions and are difficult to make transparent/glass-styled. AG Grid is 200KB+ gzipped. For a workspace that needs to show animated backgrounds through table surfaces, headless is the only viable approach.
+
+### Animation and Transitions
+
+| Technology | Version | Purpose | Why | Confidence |
+|------------|---------|---------|-----|------------|
+| motion (framer-motion) | ^12.35.0 | Layout animations, sidebar transitions, panel enter/exit | The dominant React animation library. `AnimatePresence` for exit animations, `layout` prop for sidebar collapse/expand, spring physics for polished feel. The package is now published as `motion` (formerly `framer-motion`). | HIGH |
+
+**Scope discipline:** Use motion ONLY for:
+- Sidebar expand/collapse transitions
+- Panel mount/unmount animations
+- Tab content crossfade
+- Tooltip/popover enter/exit
+
+Do NOT use it for: scroll-driven animations (use CSS), hover effects (use CSS transitions), the canvas backgrounds (already custom).
+
+### Icons
+
+| Technology | Version | Purpose | Why | Confidence |
+|------------|---------|---------|-----|------------|
+| lucide-react | ^0.577.0 | Icon library | Tree-shakeable, consistent 24x24 stroke icons, 1500+ icons. The standard pairing with Radix/Tailwind stacks. Each icon is an individual ESM import -- no bundle bloat. | HIGH |
+
+### Utility Components
+
+| Technology | Version | Purpose | Why | Confidence |
+|------------|---------|---------|-----|------------|
+| cmdk | ^1.1.1 | Command palette (Cmd+K) | Composable, accessible, unstyled command menu. Natural fit for navigating wells, groups, scenarios, and settings. Already mentioned in project keyboard shortcuts. | MEDIUM |
+| vaul | ^1.1.2 | Mobile drawer component | Radix-compatible drawer for mobile sidebar. Handles touch gestures, snap points, and nested scrolling correctly -- very hard to build from scratch. | MEDIUM |
+| sonner | ^2.0.7 | Toast notifications | Minimal, beautiful toasts. 3KB. Drop-in with zero config. Replaces any custom notification system. | MEDIUM |
+
+## What NOT to Use
+
+| Technology | Why Not |
+|------------|---------|
+| **@radix-ui/themes** | Imposes its own design system. Conflicts with custom theme tokens and glass aesthetics. Use primitives instead. |
+| **shadcn/ui CLI** | Code generation adds maintenance burden. The components it generates would need heavy modification for glass/transparency. Reference its patterns, don't install it. |
+| **Chakra UI** | Runtime CSS-in-JS (Emotion). Heavier than Tailwind, harder to achieve glass effects, worse performance for data-heavy views. |
+| **Material UI (MUI)** | Massive bundle, Google Material design opinions are wrong aesthetic for this app. DataGrid is expensive and opinionated. |
+| **Ant Design** | Enterprise Chinese design system. Wrong aesthetic, massive bundle, difficult to customize deeply. |
+| **Mantine** | Good library but overlaps with Radix primitives. Adding both creates confusion about which to use. Mantine's styling uses CSS modules which conflicts with Tailwind approach. |
+| **styled-components / Emotion** | Runtime CSS-in-JS is a dead-end in 2025/2026. Tailwind utility classes are faster (zero runtime), more maintainable, and the codebase already uses the convention. |
+| **CSS Modules** | Would require renaming every className reference. The codebase is already committed to utility classes. Adding CSS Modules creates a third styling approach. |
+| **AG Grid** | 200KB+ gzipped, opaque styling, difficult to make transparent. Overkill for the table needs here. TanStack Table is sufficient and headless. |
+| **Tailwind v3** | v4 is stable and superior for this project: no config file, CSS-native theme, better Vite integration. No reason to use v3. |
+
+## Glass/Transparency Strategy
+
+The core visual challenge: UI surfaces must be semi-transparent so animated canvas backgrounds show through.
+
+**Approach:** Tailwind v4 + CSS custom properties + `backdrop-filter`.
+
+```css
+/* In theme.css, extend with glass tokens */
+@theme {
+  --color-surface-glass: rgb(var(--surface-1) / 0.7);
+  --color-surface-glass-heavy: rgb(var(--surface-1) / 0.85);
+}
+```
+
+```html
+<!-- Glass panel component -->
+<div class="bg-surface-glass backdrop-blur-md border border-white/10 rounded-xl shadow-lg">
+  <!-- Content remains crisp, background is blurred -->
+</div>
+```
+
+**Browser support:** `backdrop-filter` is supported in all modern browsers (Chrome 76+, Firefox 103+, Safari 9+). No polyfill needed.
+
+**Performance note:** `backdrop-filter: blur()` can cause GPU compositing overhead when many layers stack. Limit blur to 2-3 simultaneous layers max. The sidebar, main content area, and floating panels is the practical limit.
+
+## Tailwind v4 Integration with Existing Theme
+
+The existing `theme.css` uses RGB channel format (`--bg-deep: 15 23 42`) specifically designed for Tailwind opacity modifiers. The migration path:
+
+```css
+/* src/styles/theme.css -- add at top */
+@import "tailwindcss";
+
+@theme {
+  /* Map existing CSS custom properties to Tailwind theme */
+  --color-bg-deep: rgb(var(--bg-deep));
+  --color-surface-1: rgb(var(--surface-1));
+  --color-surface-2: rgb(var(--surface-2));
+  --color-border: rgb(var(--border));
+  --color-theme-cyan: rgb(var(--cyan));
+  --color-theme-magenta: rgb(var(--magenta));
+  --color-theme-text: rgb(var(--text));
+  --color-theme-muted: rgb(var(--muted));
+  --color-theme-success: rgb(var(--success));
+  --color-theme-warning: rgb(var(--warning));
+  --color-theme-danger: rgb(var(--danger));
+}
+```
+
+This makes `bg-surface-1`, `text-theme-cyan`, `border-border` available as Tailwind classes. Because the CSS custom properties change per `[data-theme]`, the Tailwind classes automatically adapt to theme changes -- zero JavaScript needed.
 
 ## Installation
 
 ```bash
-# Core (already installed)
-npm install @supabase/supabase-js@^2.98.0
-npm install typescript@~5.8.2
+# Styling foundation
+npm install tailwindcss@^4.2.1 @tailwindcss/vite@^4.2.1
+npm install tailwind-merge@^3.5.0 clsx@^2.1.1 class-variance-authority@^0.7.1
 
-# Recommended additions
-npm install zod@^4.3.6                    # Runtime validation
-npm install -D @faker-js/faker@^10.3.0   # Test data generation
+# Component primitives (install as needed)
+npm install @radix-ui/react-dialog @radix-ui/react-dropdown-menu \
+  @radix-ui/react-popover @radix-ui/react-tooltip @radix-ui/react-tabs \
+  @radix-ui/react-accordion @radix-ui/react-scroll-area @radix-ui/react-slot \
+  @radix-ui/react-separator @radix-ui/react-toggle-group
 
-# Supabase CLI (global or project)
-npm install -D supabase@^2.76.17
-# OR install globally: npm install -g supabase
+# Data display
+npm install @tanstack/react-table@^8.21.3 @tanstack/react-virtual@^3.13.21
+
+# Animation
+npm install motion@^12.35.0
+
+# Icons
+npm install lucide-react@^0.577.0
+
+# Utility components (install when needed)
+npm install cmdk@^1.1.1 vaul@^1.1.2 sonner@^2.0.7
 ```
 
-## Type Generation Workflow
+**Vite config addition:**
+```typescript
+// vite.config.ts
+import tailwindcss from '@tailwindcss/vite';
 
-```bash
-# 1. Create migration
-npx supabase migration new feature_name
-
-# 2. Edit SQL file in supabase/migrations/
-
-# 3. Apply locally
-npx supabase db reset
-
-# 4. Generate TypeScript types
-npx supabase gen types typescript --local > supabase/types/database.ts
-
-# 5. Import in code
-import type { Database } from '../../supabase/types/database';
-type WellRow = Database['public']['Tables']['wells']['Row'];
+export default defineConfig({
+  plugins: [
+    tailwindcss(),
+    react(),
+    // ...existing plugins
+  ],
+});
 ```
 
-## RLS Policy Pattern (Already Implemented)
+## Estimated Bundle Impact
 
-**Key insight from existing migrations:** The project uses a **project-based multi-tenancy** model, not organization-based. Each project has an owner and optional members with roles.
+| Package | Gzipped Size | Notes |
+|---------|-------------|-------|
+| Tailwind CSS | ~0KB runtime | Compiles to static CSS at build time |
+| Radix primitives (10 packages) | ~15-25KB | Tree-shakeable, only ships used components |
+| motion | ~18KB | Can use `motion/mini` (~5KB) for simple animations |
+| TanStack Table | ~14KB | Headless, no styles |
+| TanStack Virtual | ~3KB | Tiny |
+| lucide-react (50 icons) | ~5KB | Per-icon tree shaking |
+| cmdk + vaul + sonner | ~8KB | Combined |
+| **Total new JS** | **~65-75KB gzipped** | Reasonable for the functionality gained |
 
-```sql
--- Pattern 1: Helper functions (security definer)
-create function public.has_project_access(target_project_id uuid)
-returns boolean
-language sql stable security definer
-set search_path = public
-as $$
-  select exists (
-    select 1 from public.projects p
-    left join public.project_members pm on pm.project_id = p.id
-    where p.id = target_project_id
-      and (p.owner_user_id = auth.uid() or pm.user_id = auth.uid())
-  );
-$$;
-
--- Pattern 2: Read policies (using helper)
-create policy projects_read_access on public.projects
-for select using (public.has_project_access(id));
-
--- Pattern 3: Write policies (role-based)
-create policy projects_update_editor on public.projects
-for update
-using (public.current_project_role(id) in ('owner', 'editor'))
-with check (public.current_project_role(id) in ('owner', 'editor'));
-```
-
-**Why this pattern:**
-- `security definer` functions run with elevated privileges, allowing complex joins
-- Centralized permission logic (change once, affects all policies)
-- Performance: Postgres can optimize these functions
-- Already implemented in `20260220164000_slopcast_v1.sql`
+The current app already bundles recharts (~45KB), d3 (~30KB), and mapbox-gl (~200KB). The new additions are modest in comparison.
 
 ## Alternatives Considered
 
-| Category | Recommended | Alternative | When to Use Alternative |
-|----------|-------------|-------------|-------------------------|
-| **Database Client** | `@supabase/supabase-js` | Raw `pg` (node-postgres) | Never for this project. Supabase client handles auth integration, RLS context, and PostgREST queries. Raw `pg` requires manual JWT parsing and RLS context setting. |
-| **Query Builder** | PostgREST (via Supabase client) | Drizzle ORM (0.45.1), Kysely (0.28.11) | Only if you need complex joins or transactions that PostgREST can't handle. For most SaaS CRUD, PostgREST's chainable query builder is simpler and type-safe. |
-| **Migrations** | Supabase CLI migrations | Drizzle Kit (0.31.9) | Use Drizzle Kit only if you adopt Drizzle ORM fully. Mixing migration tools causes confusion. Stick with Supabase CLI for consistency. |
-| **Validation** | Zod | Valibot (1.2.0), AJV (8.18.0) | Valibot if bundle size critical (<1KB vs Zod's ~50KB). AJV for JSON Schema compliance. Zod has best TypeScript integration and developer experience. |
-| **Type Generation** | Supabase CLI | `typescript-json-schema`, manual types | Never. Supabase's built-in generation is authoritative and up-to-date. Manual types drift from schema. |
-
-## What NOT to Use
-
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| **Application-level tenant filtering** (e.g., `where tenant_id = currentTenant`) | Easy to forget, causes data leaks. Bugs can expose other tenants' data. | Postgres RLS policies. Database-enforced, impossible to bypass. |
-| **Prisma with Supabase** | Prisma doesn't understand RLS, bypasses policies, generates its own migrations. | Supabase CLI + PostgREST queries. Native RLS support. |
-| **@supabase/auth-helpers-react** (0.15.0) | Deprecated in favor of built-in `@supabase/supabase-js` v2 hooks. | Direct use of `supabase.auth` methods. Project already uses this pattern. |
-| **Storing calculated results in database** (for this project) | Economics calculations are fast (client-side TypeScript). Storage adds complexity, staleness issues. | Calculate on-demand. Already implemented in `utils/economics.ts`. Store only inputs (groups, scenarios, assumptions). |
-| **GraphQL layer** | PostgREST (built into Supabase) already provides auto-generated REST API with filtering, ordering, pagination. GraphQL adds complexity without benefit. | PostgREST via Supabase client. Type-safe, auto-generated from schema. |
-| **Global shared `wells` table without RLS** | Violates multi-tenancy. One tenant's wells shouldn't be visible to others. | Tenant-scoped wells or per-project wells. Current schema uses public wells (all authenticated users can read) — see PITFALLS.md. |
-
-## Stack Patterns by Use Case
-
-**If you need complex multi-table transactions:**
-- Use Postgres functions (SQL) with `security definer`
-- Call via `.rpc('function_name', params)`
-- Return JSON for complex results
-- Example: Bulk well import with validation
-
-**If you need real-time updates:**
-- Use `supabase.channel().on('postgres_changes', ...)`
-- Already enabled in `supabase/config.toml` (realtime: enabled)
-- Subscribe to table changes, broadcast custom events
-
-**If you need full-text search:**
-- Use Postgres `tsvector` columns + GIN indexes
-- Query via PostgREST: `.textSearch('column', 'query')`
-- Example: Search well names, operators, formations
-
-**If you need file uploads (well data CSVs, documents):**
-- Use Supabase Storage buckets
-- RLS policies on `storage.objects` for tenant isolation
-- Already configured in `supabase/config.toml`
-
-## Version Compatibility
-
-| Package | Compatible With | Notes |
-|---------|-----------------|-------|
-| `@supabase/supabase-js@2.98.0` | Postgres 12-17 | Works with all recent Postgres versions. V2.x is stable. |
-| `@supabase/supabase-js@2.98.0` | React 18-19 | No direct React dependency, but works with all modern React versions. Project uses React 19.2.3. |
-| `supabase CLI@2.76.17` | Postgres 17 | Configured in `supabase/config.toml`: `major_version = 17`. Match your production version. |
-| `zod@4.x` | TypeScript 5.8+ | Requires TypeScript 4.5+. Works great with TS 5.8. |
-
-## Project-Specific Decisions
-
-| Decision | Rationale | Status |
-|----------|-----------|--------|
-| **Project-based multi-tenancy** (not org-based) | Each project is the tenant unit. Users can own multiple projects, be members of others. More flexible than single-org-per-user. | ✅ Implemented in migrations |
-| **JSONB for assumptions** (`type_curve`, `capex`, `opex`, `ownership`) | Assumption structures evolve. JSONB allows schema flexibility without migrations. TypeScript ensures client-side safety. | ✅ Implemented in `project_groups` table |
-| **Calculate economics on-demand** (don't store results) | Economics are deterministic and fast (<100ms for 40 wells). Storing creates staleness issues. | ✅ Implemented in `utils/economics.ts` |
-| **Security definer functions** for permissions | Centralized logic, better performance than complex policies with subqueries. | ✅ Implemented: `has_project_access`, `current_project_role` |
-| **Updated_at triggers** for audit trail | Automatic timestamp updates on all mutable tables. | ✅ Implemented: `set_updated_at()` function + triggers |
-| **Public wells table** with read-all access | Current approach: any authenticated user can read all wells. | ⚠️ See PITFALLS.md — may need tenant scoping |
+| Category | Recommended | Alternative | Why Not |
+|----------|-------------|-------------|---------|
+| Styling | Tailwind CSS v4 | Vanilla CSS (status quo) | Codebase already uses Tailwind conventions in 50+ files. Making them work is less effort than rewriting to a different pattern. |
+| Styling | Tailwind CSS v4 | Tailwind v3 | v4 is stable, has better Vite integration (native plugin), and CSS-native `@theme` is perfect for existing custom property architecture. |
+| Components | Radix Primitives | Headless UI | Headless UI has fewer components, less active development, and no equivalent to Radix's Scroll Area or Accordion. |
+| Components | Radix Primitives | React Aria | More verbose API, Adobe design opinions leak through, steeper learning curve for the same result. |
+| Tables | TanStack Table | Radix Table | Radix has no table primitive. TanStack is the only serious headless table for React. |
+| Animation | motion | React Spring | React Spring has fragmented API (v9 rewrite), smaller community, and `AnimatePresence` (exit animations) has no equivalent. |
+| Animation | motion | CSS only | CSS cannot do layout animations (sidebar collapse with content reflow) or exit animations without JS. |
+| Icons | lucide-react | heroicons | Fewer icons, less consistent sizing. Lucide is the successor to Feather Icons with better React integration. |
+| Icons | lucide-react | react-icons | Bundles ALL icons from every set. Massive import. Not tree-shakeable by default. |
 
 ## Sources
 
-**HIGH Confidence:**
-- npm registry (direct queries) — versions verified 2026-03-05
-- Existing project code — migrations, config, types reviewed
-- Supabase config.toml — Postgres 17, local dev setup confirmed
-- Package.json — current dependencies: `@supabase/supabase-js@2.95.3` (2.98.0 available)
-
-**MEDIUM Confidence:**
-- Supabase patterns — inferred from existing migrations and RLS policies
-- Multi-tenancy patterns — standard Postgres RLS approach, validated against project schema
-
-**Verification Notes:**
-- Could not fetch live Supabase documentation (WebFetch model issue)
-- Relied on npm registry + existing codebase analysis
-- All version numbers verified via `npm view` on 2026-03-05
-- Architecture patterns validated against existing migrations (20+ RLS policies found)
+- npm registry: version numbers verified via `npm view [package] version` on 2026-03-06
+- Tailwind CSS v4: CSS-native configuration via `@theme` blocks (verified in project documentation references in existing theme.css comments mentioning Tailwind opacity modifier syntax)
+- Radix UI: Headless primitive approach (individual packages, not Themes)
+- Codebase analysis: `src/styles/theme.css` (2419 lines), 50+ TSX files using Tailwind-style class names without Tailwind installed
+- `backdrop-filter` browser support: baseline across all modern browsers since 2022
 
 ---
-*Stack research for: Slopcast Multi-Tenant SaaS Persistence*
-*Researched: 2026-03-05*
-*Confidence: HIGH (based on npm registry + existing codebase + established patterns)*
+
+*Stack research: 2026-03-06*
