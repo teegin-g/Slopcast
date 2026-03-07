@@ -39,7 +39,7 @@ export function MobileDrawer({ open, onClose, children }: MobileDrawerProps) {
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60"
+        className="absolute inset-0 bg-black/60 hover:bg-black/65 transition-colors"
         onClick={onClose}
       />
 

@@ -161,7 +161,7 @@ export function AppShell({ workspace, children }: AppShellProps) {
         >
           <button
             onClick={() => setMobileDrawerOpen(true)}
-            className={`p-1.5 rounded-inner ${
+            className={`p-1.5 rounded-inner focus-visible:outline-2 focus-visible:outline-theme-cyan focus-visible:outline-offset-[-2px] ${
               workspace.isClassic ? 'text-white/80 hover:bg-white/10' : 'text-theme-text hover:bg-theme-surface2/50'
             }`}
           >

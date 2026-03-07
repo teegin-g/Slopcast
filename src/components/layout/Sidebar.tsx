@@ -54,10 +54,10 @@ export function Sidebar({
   return (
     <div className="flex flex-col h-full">
       {/* Toggle button */}
-      <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-3`}>
+      <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} px-3 py-2`}>
         {!collapsed && (
           <span
-            className={`text-xs font-bold uppercase tracking-widest theme-transition ${
+            className={`typo-label font-bold tracking-widest theme-transition ${
               isClassic ? 'text-theme-warning' : 'text-theme-cyan'
             }`}
           >
@@ -67,7 +67,7 @@ export function Sidebar({
         <button
           onClick={onToggleCollapse}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className={`p-1 rounded-inner theme-transition ${
+          className={`p-1 rounded-inner theme-transition focus-visible:outline-2 focus-visible:outline-theme-cyan focus-visible:outline-offset-[-2px] ${
             isClassic
               ? 'text-white/60 hover:text-white/90 hover:bg-white/10'
               : 'text-theme-muted hover:text-theme-text hover:bg-theme-surface2/50'
@@ -116,7 +116,7 @@ export function Sidebar({
                 key={t.id}
                 onClick={() => onSetThemeId(t.id)}
                 title={t.label}
-                className={`w-5 h-5 rounded-full text-[10px] flex items-center justify-center theme-transition ${
+                className={`w-5 h-5 rounded-full text-[10px] flex items-center justify-center theme-transition focus-visible:outline-2 focus-visible:outline-theme-cyan focus-visible:outline-offset-1 ${
                   t.id === themeId
                     ? isClassic
                       ? 'ring-1 ring-theme-warning ring-offset-1 ring-offset-transparent'

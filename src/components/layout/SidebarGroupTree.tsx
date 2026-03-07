@@ -40,7 +40,7 @@ export function SidebarGroupTree({
     <div className="px-2 py-1">
       <button
         onClick={() => setOpen(prev => !prev)}
-        className={`flex items-center gap-1.5 w-full px-2 py-1 text-[10px] uppercase font-bold tracking-widest theme-transition ${
+        className={`flex items-center gap-1.5 w-full px-2 py-1 typo-label font-bold tracking-widest rounded-inner theme-transition focus-visible:outline-2 focus-visible:outline-theme-cyan focus-visible:outline-offset-[-2px] ${
           isClassic ? 'text-white/50 hover:text-white/70' : 'text-theme-muted hover:text-theme-text'
         }`}
       >
@@ -57,13 +57,13 @@ export function SidebarGroupTree({
               : 'bg-theme-cyan/10 text-theme-cyan';
             const inactiveStyles = isClassic
               ? 'text-white/60 hover:bg-white/5 hover:text-white/80'
-              : 'text-theme-muted hover:bg-theme-surface2/40 hover:text-theme-text';
+              : 'text-theme-muted hover:bg-theme-cyan/10 hover:text-theme-text';
 
             return (
               <button
                 key={group.id}
                 onClick={() => onActivateGroup(group.id)}
-                className={`flex items-center gap-2 px-3 py-1 rounded-inner text-xs theme-transition ${
+                className={`flex items-center gap-2 px-3 py-1 rounded-inner typo-body text-xs theme-transition focus-visible:outline-2 focus-visible:outline-theme-cyan focus-visible:outline-offset-[-2px] ${
                   isActive ? activeStyles : inactiveStyles
                 }`}
               >
@@ -73,8 +73,8 @@ export function SidebarGroupTree({
                 />
                 <span className="truncate flex-1 text-left">{group.name}</span>
                 <span
-                  className={`text-[10px] tabular-nums ${
-                    isClassic ? 'text-white/40' : 'text-theme-muted'
+                  className={`typo-caption tabular-nums ${
+                    isClassic ? 'text-white/40' : ''
                   }`}
                 >
                   {group.wellIds.size}

@@ -62,14 +62,14 @@ export function SidebarNav({
           : 'bg-theme-cyan/15 text-theme-cyan border-l-2 border-theme-cyan';
         const inactiveStyles = isClassic
           ? 'text-white/70 hover:bg-white/5 hover:text-white/90 border-l-2 border-transparent'
-          : 'text-theme-muted hover:bg-theme-surface2/50 hover:text-theme-text border-l-2 border-transparent';
+          : 'text-theme-muted hover:bg-theme-cyan/10 hover:text-theme-text border-l-2 border-transparent';
 
         return (
           <button
             key={id}
             onClick={() => onSetSection(id)}
             title={collapsed ? label : undefined}
-            className={`relative flex items-center gap-2.5 py-2 rounded-inner theme-transition text-sm font-medium ${
+            className={`relative flex items-center gap-2.5 py-1.5 rounded-inner theme-transition text-sm font-medium focus-visible:outline-2 focus-visible:outline-theme-cyan focus-visible:outline-offset-[-2px] ${
               collapsed ? 'justify-center px-2' : 'px-3'
             } ${isActive ? activeStyles : inactiveStyles}`}
           >

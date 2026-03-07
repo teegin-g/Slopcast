@@ -22,7 +22,7 @@ export function GlassCard({ isClassic, children, className = '' }: GlassCardProp
 
   return (
     <div
-      className={`rounded-inner theme-transition ${className}`}
+      className={`rounded-inner theme-transition hover:[background:var(--glass-card-bg-hover)] ${className}`}
       style={{
         background: 'var(--glass-card-bg)',
         border: '1px solid var(--glass-card-border)',

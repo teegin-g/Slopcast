@@ -22,7 +22,7 @@ export function GlassPanel({ isClassic, children, className = '', hover = false 
   }
 
   const hoverClasses = hover
-    ? 'hover:brightness-110 hover:scale-[1.005] transition-all duration-200'
+    ? 'hover:brightness-110 hover:scale-[1.005] focus-visible:outline-2 focus-visible:outline-theme-cyan transition-all duration-200'
     : '';
 
   return (
