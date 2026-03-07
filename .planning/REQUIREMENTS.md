@@ -83,31 +83,31 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| STYLE-01 | TBD | Pending |
-| STYLE-02 | TBD | Pending |
-| STYLE-03 | TBD | Pending |
-| STYLE-04 | TBD | Pending |
-| STYLE-05 | TBD | Pending |
-| STYLE-06 | TBD | Pending |
-| NAV-01 | TBD | Pending |
-| NAV-02 | TBD | Pending |
-| NAV-03 | TBD | Pending |
-| NAV-04 | TBD | Pending |
-| COMP-01 | TBD | Pending |
-| COMP-02 | TBD | Pending |
-| COMP-03 | TBD | Pending |
-| DATA-01 | TBD | Pending |
-| DATA-02 | TBD | Pending |
-| DATA-03 | TBD | Pending |
-| DATA-04 | TBD | Pending |
-| RESP-01 | TBD | Pending |
-| RESP-02 | TBD | Pending |
+| STYLE-01 | Phase 1 | Pending |
+| STYLE-02 | Phase 1 | Pending |
+| STYLE-03 | Phase 1 | Pending |
+| STYLE-04 | Phase 1 | Pending |
+| STYLE-05 | Phase 1 | Pending |
+| STYLE-06 | Phase 1 | Pending |
+| NAV-01 | Phase 1 | Pending |
+| NAV-02 | Phase 1 | Pending |
+| NAV-03 | Phase 1 | Pending |
+| NAV-04 | Phase 1 | Pending |
+| COMP-01 | Phase 1 | Pending |
+| COMP-02 | Phase 1 | Pending |
+| COMP-03 | Phase 2 | Pending |
+| DATA-01 | Phase 2 | Pending |
+| DATA-02 | Phase 2 | Pending |
+| DATA-03 | Phase 3 | Pending |
+| DATA-04 | Phase 3 | Pending |
+| RESP-01 | Phase 1 | Pending |
+| RESP-02 | Phase 1 | Pending |
 
 **Coverage:**
 - v1 requirements: 19 total
-- Mapped to phases: 0
-- Unmapped: 19
+- Mapped to phases: 19
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-06*
-*Last updated: 2026-03-06 after initial definition*
+*Last updated: 2026-03-06 after roadmap creation*

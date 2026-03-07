@@ -1,71 +1,63 @@
-# Project State: Slopcast Data Persistence Layer
-
-**Last updated:** 2026-03-05
-**Status:** Planning
-**Mode:** YOLO
+# Project State
 
 ## Project Reference
 
-**Core Value:** All user work—well groups, economic assumptions, scenarios, and calculated results—persists reliably and is accessible to authorized users within their tenant, never lost to browser storage limitations.
+See: .planning/PROJECT.md (updated 2026-03-06)
 
-**Current Focus:** Roadmap created, ready for phase planning.
+**Core value:** Users can navigate the workspace intuitively -- always knowing where they are, what they can do, and how to find settings -- without the UI getting in the way of the animated themes underneath.
+**Current focus:** Phase 1: Styling Foundation and App Shell
 
 ## Current Position
 
-**Phase:** None (planning stage)
-**Plan:** None
-**Status:** Roadmap complete, awaiting plan-phase
-**Progress:** [░░░░░░░░░░] 0% (0/3 phases)
+Phase: 1 of 3 (Styling Foundation and App Shell)
+Plan: 0 of 3 in current phase
+Status: Ready to plan
+Last activity: 2026-03-06 -- Roadmap created
+
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
-**Velocity:** N/A (no phases completed)
-**Quality:** N/A (no validation runs)
-**Efficiency:** N/A (no work started)
+**Velocity:**
+- Total plans completed: 0
+- Average duration: -
+- Total execution time: 0 hours
+
+**By Phase:**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| - | - | - | - |
+
+**Recent Trend:**
+- Last 5 plans: none
+- Trend: N/A
+
+*Updated after each plan completion*
 
 ## Accumulated Context
 
-### Key Decisions
+### Decisions
 
-| Date | Decision | Rationale |
-|------|----------|-----------|
-| 2026-03-05 | Use coarse granularity (3 phases) | Config setting, compress research's 6 phases into natural delivery boundaries |
-| 2026-03-05 | Security-first phase ordering | RLS policies must be correct from day one, can't be retrofitted safely |
-| 2026-03-05 | Migration before CRUD | Preserve existing user work in localStorage, prevent churn on first login |
+Decisions are logged in PROJECT.md Key Decisions table.
+Recent decisions affecting current work:
 
-### Active TODOs
+- [Roadmap]: 3-phase coarse roadmap -- Phase 1 is largest (14 reqs) because styling infra + shell are tightly coupled prerequisites
+- [Roadmap]: Sidebar nav driven by URL search params (not React Router routes) to preserve useSlopcastWorkspace state architecture
+- [Research]: Limit backdrop-filter to 3-4 panels with small blur radius; use semi-transparent solids for large surfaces
+- [Research]: Build sidebar as adapter layer on top of god hook; do NOT refactor useSlopcastWorkspace during revamp
 
-- [ ] Run `/gsd:plan-phase 1` to decompose Schema & Security Foundation
-- [ ] Decide: Wells scoped to organization, project, or user? (see research gap)
-- [ ] Decide: Store calculated results or recalculate on-demand? (recommend recalculate for MVP)
+### Pending Todos
 
-### Known Blockers
+None yet.
 
-None currently.
+### Blockers/Concerns
 
-### Research Insights
-
-Research completed 2026-03-05 with MEDIUM-HIGH confidence. Key findings:
-- Standard Supabase RLS patterns apply, existing migrations provide strong foundation
-- Critical pitfalls identified: RLS bypass via service role, missing junction table policies, migration race conditions, demo mode data loss
-- Wells table currently allows global read access (violates multi-tenancy) - must fix in Phase 1
-- Recommend NOT storing calculated results for MVP (recalculate with useMemo)
-- Performance optimization (Phase 5 in research) deferred - document 100-well limit for MVP
+- backdrop-filter performance over animated canvas needs spike test early in Phase 1 (per research)
+- Theme token fragmentation: test every visual PR in at least Slate + Mario + Synthwave
 
 ## Session Continuity
 
-**What we know:**
-- 41 v1 requirements across 6 categories (SEC, WELL, GRP, SCEN, DEAL, AUTO, MIG)
-- Existing architecture has strong foundations: RLS policies, repository pattern, TypeScript types, economics engine
-- Coarse granularity targets 3-5 phases, we derived 3 natural phases
-- Security must come first, migration preserves user work, CRUD builds on solid foundation
-
-**What we need:**
-- Detailed plans for Phase 1 (schema tables, RLS policies, helper functions, validation rules)
-- Decision on wells table scoping (organization vs project vs user)
-- Test strategy for RLS policy coverage and migration race conditions
-
-**Next step:** `/gsd:plan-phase 1`
-
----
-*State initialized: 2026-03-05*
+Last session: 2026-03-06
+Stopped at: Roadmap created, ready to plan Phase 1
+Resume file: None
