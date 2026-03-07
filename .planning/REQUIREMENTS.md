@@ -9,12 +9,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Styling Foundation
 
-- [ ] **STYLE-01**: Tailwind CSS v4 installed and wired with existing CSS custom properties via @theme
+- [x] **STYLE-01**: Tailwind CSS v4 installed and wired with existing CSS custom properties via @theme
 - [ ] **STYLE-02**: Spacing tokens standardized on 4/8/12/16/24/32/48px grid across all workspace components
 - [ ] **STYLE-03**: Typography hierarchy defined with 5-6 levels (H1, H2, H3, body, caption, label) using Tailwind utilities
 - [ ] **STYLE-04**: Hover and focus-visible states present on all interactive elements (buttons, table rows, sidebar items, inputs)
-- [ ] **STYLE-05**: Glassmorphism token system established (--glass-sidebar, --glass-panel, --glass-card) with backdrop-blur + semi-transparent backgrounds
-- [ ] **STYLE-06**: Animated canvas backgrounds remain visible and prominent through the glass UI shell across all themes
+- [x] **STYLE-05**: Glassmorphism token system established (--glass-sidebar, --glass-panel, --glass-card) with backdrop-blur + semi-transparent backgrounds
+- [x] **STYLE-06**: Animated canvas backgrounds remain visible and prominent through the glass UI shell across all themes
 
 ### Navigation
 
@@ -25,8 +25,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Components
 
-- [ ] **COMP-01**: Unified outer card component with glass styling used consistently across workspace
-- [ ] **COMP-02**: Unified inner card component for nested content tiles used consistently
+- [x] **COMP-01**: Unified outer card component with glass styling used consistently across workspace
+- [x] **COMP-02**: Unified inner card component for nested content tiles used consistently
 - [ ] **COMP-03**: Smooth view transitions (slide/fade) when switching between sections via sidebar
 
 ### Data & Editing
@@ -83,18 +83,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| STYLE-01 | Phase 1 | Pending |
+| STYLE-01 | Phase 1 | Complete |
 | STYLE-02 | Phase 1 | Pending |
 | STYLE-03 | Phase 1 | Pending |
 | STYLE-04 | Phase 1 | Pending |
-| STYLE-05 | Phase 1 | Pending |
-| STYLE-06 | Phase 1 | Pending |
+| STYLE-05 | Phase 1 | Complete |
+| STYLE-06 | Phase 1 | Complete |
 | NAV-01 | Phase 1 | Pending |
 | NAV-02 | Phase 1 | Pending |
 | NAV-03 | Phase 1 | Pending |
 | NAV-04 | Phase 1 | Pending |
-| COMP-01 | Phase 1 | Pending |
-| COMP-02 | Phase 1 | Pending |
+| COMP-01 | Phase 1 | Complete |
+| COMP-02 | Phase 1 | Complete |
 | COMP-03 | Phase 2 | Pending |
 | DATA-01 | Phase 2 | Pending |
 | DATA-02 | Phase 2 | Pending |
