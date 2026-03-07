@@ -11,15 +11,15 @@
   --glass-sidebar-blur: 12px;
   --glass-sidebar-border: rgba(59, 130, 246, 0.12);
 
-  /* Content panels: 65% opacity -- readable content with visible theme tint */
-  --glass-panel-bg: rgba(30, 41, 59, 0.65);
+  /* Content panels: high opacity -- readable content with visible theme tint, background peeks through */
+  --glass-panel-bg: rgba(30, 41, 59, 0.82);
   --glass-panel-blur: 18px;
   --glass-panel-border: rgba(59, 130, 246, 0.10);
   --glass-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 12px rgba(59, 130, 246, 0.05);
 
   /* Inner cards: subtler layer */
-  --glass-card-bg: rgba(51, 65, 85, 0.45);
-  --glass-card-bg-hover: rgba(51, 65, 85, 0.55);
+  --glass-card-bg: rgba(51, 65, 85, 0.70);
+  --glass-card-bg-hover: rgba(51, 65, 85, 0.80);
   --glass-card-blur: 8px;
   --glass-card-border: rgba(71, 85, 105, 0.15);
 }
@@ -30,13 +30,13 @@
   --glass-sidebar-blur: 12px;
   --glass-sidebar-border: rgba(229, 102, 218, 0.14);
 
-  --glass-panel-bg: rgba(35, 37, 88, 0.65);
+  --glass-panel-bg: rgba(35, 37, 88, 0.82);
   --glass-panel-blur: 18px;
   --glass-panel-border: rgba(229, 102, 218, 0.12);
   --glass-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 14px rgba(229, 102, 218, 0.08);
 
-  --glass-card-bg: rgba(47, 56, 135, 0.45);
-  --glass-card-bg-hover: rgba(47, 56, 135, 0.55);
+  --glass-card-bg: rgba(47, 56, 135, 0.70);
+  --glass-card-bg-hover: rgba(47, 56, 135, 0.80);
   --glass-card-blur: 8px;
   --glass-card-border: rgba(96, 83, 160, 0.18);
 }
@@ -47,13 +47,13 @@
   --glass-sidebar-blur: 12px;
   --glass-sidebar-border: rgba(45, 212, 191, 0.12);
 
-  --glass-panel-bg: rgba(30, 50, 60, 0.65);
+  --glass-panel-bg: rgba(30, 50, 60, 0.82);
   --glass-panel-blur: 18px;
   --glass-panel-border: rgba(45, 212, 191, 0.10);
   --glass-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 12px rgba(45, 212, 191, 0.06);
 
-  --glass-card-bg: rgba(42, 72, 82, 0.45);
-  --glass-card-bg-hover: rgba(42, 72, 82, 0.55);
+  --glass-card-bg: rgba(42, 72, 82, 0.70);
+  --glass-card-bg-hover: rgba(42, 72, 82, 0.80);
   --glass-card-blur: 8px;
   --glass-card-border: rgba(45, 212, 191, 0.12);
 }
@@ -64,13 +64,13 @@
   --glass-sidebar-blur: 12px;
   --glass-sidebar-border: rgba(103, 195, 238, 0.10);
 
-  --glass-panel-bg: rgba(14, 26, 48, 0.65);
+  --glass-panel-bg: rgba(14, 26, 48, 0.82);
   --glass-panel-blur: 18px;
   --glass-panel-border: rgba(103, 195, 238, 0.08);
   --glass-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 12px rgba(103, 195, 238, 0.04);
 
-  --glass-card-bg: rgba(24, 38, 66, 0.45);
-  --glass-card-bg-hover: rgba(24, 38, 66, 0.55);
+  --glass-card-bg: rgba(24, 38, 66, 0.70);
+  --glass-card-bg-hover: rgba(24, 38, 66, 0.80);
   --glass-card-blur: 8px;
   --glass-card-border: rgba(76, 104, 145, 0.15);
 }
@@ -81,13 +81,13 @@
   --glass-sidebar-blur: 12px;
   --glass-sidebar-border: rgba(155, 196, 255, 0.10);
 
-  --glass-panel-bg: rgba(20, 33, 56, 0.65);
+  --glass-panel-bg: rgba(20, 33, 56, 0.82);
   --glass-panel-blur: 18px;
   --glass-panel-border: rgba(155, 196, 255, 0.08);
   --glass-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 12px rgba(155, 196, 255, 0.04);
 
-  --glass-card-bg: rgba(33, 52, 82, 0.45);
-  --glass-card-bg-hover: rgba(33, 52, 82, 0.55);
+  --glass-card-bg: rgba(33, 52, 82, 0.70);
+  --glass-card-bg-hover: rgba(33, 52, 82, 0.80);
   --glass-card-blur: 8px;
   --glass-card-border: rgba(82, 107, 148, 0.15);
 }
@@ -116,13 +116,13 @@
   --glass-sidebar-blur: 12px;
   --glass-sidebar-border: rgba(56, 189, 248, 0.10);
 
-  --glass-panel-bg: rgba(32, 52, 80, 0.65);
+  --glass-panel-bg: rgba(32, 52, 80, 0.82);
   --glass-panel-blur: 18px;
   --glass-panel-border: rgba(56, 189, 248, 0.08);
   --glass-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 12px rgba(56, 189, 248, 0.04);
 
-  --glass-card-bg: rgba(44, 67, 101, 0.45);
-  --glass-card-bg-hover: rgba(44, 67, 101, 0.55);
+  --glass-card-bg: rgba(44, 67, 101, 0.70);
+  --glass-card-bg-hover: rgba(44, 67, 101, 0.80);
   --glass-card-blur: 8px;
   --glass-card-border: rgba(90, 108, 135, 0.15);
 }
