@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./styles/theme.css";
+@import "./styles/glass.css";
 
 /* @theme inline prevents Tailwind from generating its own --color-* variables,
    allowing dynamic theme switching via data-theme attribute to work. */

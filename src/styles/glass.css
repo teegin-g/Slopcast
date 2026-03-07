@@ -1,0 +1,121 @@
+/* ==========================================================================
+   Glassmorphism Token System
+   Semi-transparent surfaces that let animated canvas backgrounds show through.
+   Tokens adapt per theme via CSS custom properties on [data-theme].
+   ========================================================================== */
+
+/* ---------- Default: Slate ---------- */
+:root {
+  /* Sidebar: nearly opaque, solid anchor */
+  --glass-sidebar-bg: rgba(15, 23, 42, 0.92);
+  --glass-sidebar-blur: 12px;
+  --glass-sidebar-border: rgba(59, 130, 246, 0.12);
+
+  /* Content panels: 60-70% opacity -- backgrounds are the star */
+  --glass-panel-bg: rgba(30, 41, 59, 0.35);
+  --glass-panel-blur: 18px;
+  --glass-panel-border: rgba(59, 130, 246, 0.10);
+  --glass-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 12px rgba(59, 130, 246, 0.05);
+
+  /* Inner cards: subtler layer */
+  --glass-card-bg: rgba(51, 65, 85, 0.25);
+  --glass-card-blur: 8px;
+  --glass-card-border: rgba(71, 85, 105, 0.15);
+}
+
+/* ---------- Synthwave ---------- */
+[data-theme='synthwave'] {
+  --glass-sidebar-bg: rgba(14, 6, 26, 0.94);
+  --glass-sidebar-blur: 12px;
+  --glass-sidebar-border: rgba(229, 102, 218, 0.14);
+
+  --glass-panel-bg: rgba(35, 37, 88, 0.35);
+  --glass-panel-blur: 18px;
+  --glass-panel-border: rgba(229, 102, 218, 0.12);
+  --glass-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 14px rgba(229, 102, 218, 0.08);
+
+  --glass-card-bg: rgba(47, 56, 135, 0.25);
+  --glass-card-blur: 8px;
+  --glass-card-border: rgba(96, 83, 160, 0.18);
+}
+
+/* ---------- Tropical ---------- */
+[data-theme='tropical'] {
+  --glass-sidebar-bg: rgba(18, 28, 40, 0.92);
+  --glass-sidebar-blur: 12px;
+  --glass-sidebar-border: rgba(45, 212, 191, 0.12);
+
+  --glass-panel-bg: rgba(30, 50, 60, 0.35);
+  --glass-panel-blur: 18px;
+  --glass-panel-border: rgba(45, 212, 191, 0.10);
+  --glass-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 12px rgba(45, 212, 191, 0.06);
+
+  --glass-card-bg: rgba(42, 72, 82, 0.25);
+  --glass-card-blur: 8px;
+  --glass-card-border: rgba(45, 212, 191, 0.12);
+}
+
+/* ---------- Nocturne (League / Moonlit Alpine) ---------- */
+[data-theme='league'] {
+  --glass-sidebar-bg: rgba(3, 8, 16, 0.94);
+  --glass-sidebar-blur: 12px;
+  --glass-sidebar-border: rgba(103, 195, 238, 0.10);
+
+  --glass-panel-bg: rgba(14, 26, 48, 0.35);
+  --glass-panel-blur: 18px;
+  --glass-panel-border: rgba(103, 195, 238, 0.08);
+  --glass-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 12px rgba(103, 195, 238, 0.04);
+
+  --glass-card-bg: rgba(24, 38, 66, 0.25);
+  --glass-card-blur: 8px;
+  --glass-card-border: rgba(76, 104, 145, 0.15);
+}
+
+/* ---------- Stormwatch ---------- */
+[data-theme='stormwatch'] {
+  --glass-sidebar-bg: rgba(7, 11, 22, 0.94);
+  --glass-sidebar-blur: 12px;
+  --glass-sidebar-border: rgba(155, 196, 255, 0.10);
+
+  --glass-panel-bg: rgba(20, 33, 56, 0.35);
+  --glass-panel-blur: 18px;
+  --glass-panel-border: rgba(155, 196, 255, 0.08);
+  --glass-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 12px rgba(155, 196, 255, 0.04);
+
+  --glass-card-bg: rgba(33, 52, 82, 0.25);
+  --glass-card-blur: 8px;
+  --glass-card-border: rgba(82, 107, 148, 0.15);
+}
+
+/* ---------- Mario (Slopcast Classic) ----------
+   No glass, no blur, no transparency. Solid retro panels. */
+[data-theme='mario'] {
+  --glass-sidebar-bg: rgba(15, 29, 48, 1);
+  --glass-sidebar-blur: 0px;
+  --glass-sidebar-border: rgba(201, 177, 139, 0.3);
+
+  --glass-panel-bg: rgba(15, 29, 48, 1);
+  --glass-panel-blur: 0px;
+  --glass-panel-border: rgba(201, 177, 139, 0.25);
+  --glass-panel-shadow: 0 6px 12px rgba(0, 0, 0, 0.35);
+
+  --glass-card-bg: rgba(21, 41, 68, 1);
+  --glass-card-blur: 0px;
+  --glass-card-border: rgba(201, 177, 139, 0.2);
+}
+
+/* ---------- Hyperborea ---------- */
+[data-theme='hyperborea'] {
+  --glass-sidebar-bg: rgba(11, 19, 32, 0.93);
+  --glass-sidebar-blur: 12px;
+  --glass-sidebar-border: rgba(56, 189, 248, 0.10);
+
+  --glass-panel-bg: rgba(32, 52, 80, 0.35);
+  --glass-panel-blur: 18px;
+  --glass-panel-border: rgba(56, 189, 248, 0.08);
+  --glass-panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 12px rgba(56, 189, 248, 0.04);
+
+  --glass-card-bg: rgba(44, 67, 101, 0.25);
+  --glass-card-blur: 8px;
+  --glass-card-border: rgba(90, 108, 135, 0.15);
+}
