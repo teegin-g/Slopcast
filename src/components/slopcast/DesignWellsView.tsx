@@ -374,7 +374,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
           ) : (
             <div className={`w-full shrink-0 min-h-[360px] ${mapHeightClass} ${isMobileMap ? 'mb-24' : ''} rounded-panel border shadow-card relative overflow-hidden group theme-transition bg-theme-bg border-theme-border`}>
               <div className="absolute inset-0 bg-gradient-to-t from-theme-bg via-transparent to-transparent pointer-events-none"></div>
-              <div className="flex justify-between items-center px-4 py-3 relative z-10 bg-black/10 backdrop-blur-sm border-b border-white/5">
+              <div className="flex justify-between items-center px-4 py-3 relative z-10 bg-theme-surface1/30 backdrop-blur-sm border-b border-theme-border/20">
                 <h2 className="text-[11px] font-bold uppercase tracking-[0.3em] flex items-center gap-2 theme-transition text-theme-cyan">
                   <span className="w-2 h-2 rounded-full animate-pulse bg-theme-cyan"></span>
                   Basin Visualizer
