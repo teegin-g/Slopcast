@@ -1,159 +1,153 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-03-05
+**Analysis Date:** 2026-03-06
 
 ## Tech Debt
 
-**God Hook: `useSlopcastWorkspace` (862 lines, 64 hook calls)**
-- Issue: Single hook manages ALL workspace state: theme, view mode, groups, scenarios, wells, filters, economics, persistence, keyboard shortcuts, workflow steps, and UI state. Returns 80+ values. Contains 64 combined `useState`/`useEffect`/`useMemo`/`useCallback` invocations.
+**Monolithic Workspace Hook (862 lines):**
+- Issue: `useSlopcastWorkspace` is a single hook that manages nearly all app state -- groups, scenarios, wells, economics, filters, UI panels, persistence, keyboard shortcuts, CSV export, and workflow logic. Returns 60+ values.
 - Files: `src/hooks/useSlopcastWorkspace.ts`
-- Impact: Any change to any workspace concern risks regressions in unrelated features. Impossible to test individual behaviors in isolation. Every re-render triggered by any state change flows through the entire hook.
-- Fix approach: Decompose into focused hooks: `useWellFilters`, `useGroupManagement`, `useScenarioManagement`, `useWorkflowState`, `useEconomicsComputation`. Compose them in a thin orchestrator hook. Each sub-hook becomes independently testable.
+- Impact: Any change risks regression across unrelated features. Difficult to test in isolation. Slow to understand for new contributors.
+- Fix approach: Extract cohesive sub-hooks (e.g., `useWellFiltering`, `useEconomicsState`, `useExportActions`, `useWorkflowSteps`) and compose them. Each sub-hook becomes independently testable.
 
-**Pervasive `any` types in data layer (30+ occurrences)**
-- Issue: All Supabase row mappers use `(row: any)` casts instead of typed responses. This eliminates compile-time safety for the entire persistence boundary.
-- Files: `src/services/projectRepository.ts` (lines 115, 161, 171, 176, 181, 203, 217, 260, 355, 464, 553, 598), `src/services/dealRepository.ts` (lines 176, 264, 273, 283, 299, 313, 323, 335), `src/services/integrationService.ts` (lines 58, 73), `src/services/profileRepository.ts` (line 17), `src/components/ScenarioDashboard.tsx` (lines 139, 190), `src/components/ScenarioComparison.tsx` (line 40)
-- Impact: Schema changes in Supabase silently break row mapping at runtime. No compile-time protection for misspelled column names or changed types.
-- Fix approach: Use Supabase generated types from `supabase/types/database.ts` to type query results. Replace `(row: any)` with `(row: Tables<'projects'>)` etc. The generated types already exist in the project.
+**Duplicated Supabase Utility Functions:**
+- Issue: `requireSupabase()`, `requireUserId()`, `makeUuid()`, `normalizeRole()`, `isUuid()`, and `toJson()` are copy-pasted identically across four repository files.
+- Files: `src/services/projectRepository.ts`, `src/services/dealRepository.ts`, `src/services/integrationService.ts`, `src/services/profileRepository.ts`
+- Impact: Bug fixes or behavior changes must be applied in four places. Easy to miss one.
+- Fix approach: Extract a shared `src/services/supabaseHelpers.ts` module exporting these utilities. Import from all repositories.
 
-**Duplicated utility code across repositories**
-- Issue: `projectRepository.ts`, `dealRepository.ts`, and `integrationService.ts` each independently define identical `requireSupabase()`, `requireUserId()`, `makeUuid()`, `normalizeRole()`, `isUuid()`, and `toJson()` helpers.
-- Files: `src/services/projectRepository.ts` (lines 12-30, 86-102), `src/services/dealRepository.ts` (lines 14-32), `src/services/integrationService.ts` (lines 40-56)
-- Impact: Bug fixes or auth behavior changes must be applied in 3 places. Drift between implementations is inevitable.
-- Fix approach: Extract shared helpers to `src/services/supabaseHelpers.ts`. Import from all three repositories.
+**Pervasive `any` Types in Repository Layer:**
+- Issue: All Supabase query results are typed as `any` in `.map()` callbacks (e.g., `(row: any) => ({...})`). At least 25+ occurrences across service files.
+- Files: `src/services/projectRepository.ts` (12+ occurrences), `src/services/dealRepository.ts` (8+ occurrences), `src/services/integrationService.ts` (2 occurrences), `src/services/profileRepository.ts` (1 occurrence)
+- Impact: No compile-time safety on database row shapes. Typos in column names (e.g., `row.owner_user_id` vs `row.ownerUserId`) silently produce `undefined`. Refactoring database schema won't surface breakage.
+- Fix approach: Generate Supabase types from `supabase/types/database.ts` (already present) and use typed `.select()` or cast rows to generated types instead of `any`.
 
-**Background theme components total 4,039 lines**
-- Issue: Six decorative background components consume significant code surface area. Each is a standalone canvas/SVG animation with no shared abstractions.
+**Python Engine Feature Parity Gap:**
+- Issue: The Python backend receives a simplified `PricingAssumptions` shape that drops OPEX segments, ownership JV agreements, GOR, and tax/debt layers. The `aggregateEconomics` call hardcodes pricing (`$75 oil, $3.25 gas`) instead of using actual scenario values.
+- Files: `src/services/economicsEngine.ts` (lines 100-167), `backend/models.py`, `backend/economics.py`
+- Impact: Switching to the Python engine produces different (incorrect) results vs TypeScript. Users cannot trust engine comparison. The hardcoded pricing in `pyEngine.aggregateEconomics` is a data bug.
+- Fix approach: Extend Python backend models to accept full OPEX/ownership/GOR structures. Pass actual scenario pricing in `aggregateEconomics`. Add parity tests.
+
+**Gemini Service Uses `process.env` in Browser Code:**
+- Issue: `geminiService.ts` reads `process.env.GEMINI_API_KEY` which is not available in Vite browser bundles (Vite uses `import.meta.env`). The service silently returns a fallback string.
+- Files: `src/services/geminiService.ts` (lines 6-7)
+- Impact: AI deal analysis feature is always broken in production builds. The key would need to be `VITE_GEMINI_API_KEY` via `import.meta.env`, or the call should be proxied through the backend to avoid exposing the API key client-side.
+- Fix approach: Proxy Gemini calls through the FastAPI backend, or at minimum switch to `import.meta.env.VITE_GEMINI_API_KEY`. Exposing the key client-side is a security risk regardless.
+
+**Background Component Bloat:**
+- Issue: Five animated canvas background components (~3,500 lines total) are included in the main bundle. Each is 400-1000+ lines of inline Canvas rendering code.
 - Files: `src/components/HyperboreaBackground.tsx` (1017 lines), `src/components/TropicalBackground.tsx` (950 lines), `src/components/StormDuskBackground.tsx` (770 lines), `src/components/MoonlightBackground.tsx` (461 lines), `src/components/SynthwaveBackground.tsx` (438 lines), `src/components/MarioOverworldBackground.tsx` (403 lines)
-- Impact: Large bundle size for purely decorative features. Any shared animation improvement must be applied to all six files independently.
-- Fix approach: Extract common canvas animation utilities (particle systems, gradient helpers, requestAnimationFrame lifecycle) into a shared module. Each theme becomes a configuration over the shared engine.
-
-**Python engine adapter uses hardcoded pricing fallback**
-- Issue: `pyEngine.aggregateEconomics()` hardcodes pricing values `{ oilPrice: 75, gasPrice: 3.25, ... }` instead of using actual scenario pricing, because the Python API shape differs from the TypeScript side.
-- Files: `src/services/economicsEngine.ts` (lines 144-148)
-- Impact: Python engine aggregate economics always uses $75 oil / $3.25 gas regardless of user-configured scenario pricing. Results will silently diverge from the TypeScript engine.
-- Fix approach: Thread actual scenario pricing through the aggregate call, or align the Python backend API to accept per-group pricing.
-
-**Python engine strips OPEX/ownership detail**
-- Issue: `toPyPricing()` flattens multi-segment OPEX into only the first segment's `fixedPerWellPerMonth` and ignores variable costs, JV agreements, and multiple OPEX segments entirely.
-- Files: `src/services/economicsEngine.ts` (lines 100-113, comment on line 115)
-- Impact: Python engine results diverge from TypeScript engine when users configure multi-segment OPEX, variable costs, or JV ownership. Users comparing engines see unexplained differences.
-- Fix approach: Extend the Python backend to accept the full OPEX/ownership shape, or clearly warn users about the feature gap in the engine comparison UI.
+- Impact: ~4,000 lines of purely cosmetic code in bundle. No lazy-loading detected. Increases initial load time.
+- Fix approach: Lazy-load backgrounds with `React.lazy()` and `Suspense`. Consider extracting to a separate chunk or web worker for Canvas rendering.
 
 ## Security Considerations
 
-**Gemini API key uses `process.env` in browser code**
-- Risk: `src/services/geminiService.ts` reads `process.env.GEMINI_API_KEY` and `process.env.API_KEY`. In a Vite browser build, `process.env` is undefined unless polyfilled. If a bundler exposes it, the API key gets embedded in the client bundle.
-- Files: `src/services/geminiService.ts` (lines 5-8)
-- Current mitigation: The code likely fails silently (returns null) since Vite does not polyfill `process.env`. The function appears unreachable in production.
-- Recommendations: Move Gemini calls to the Python backend and proxy through `/api`. Use `import.meta.env.VITE_*` only for public keys. Never embed secret API keys in frontend bundles.
+**API Key Exposure Risk (Gemini):**
+- Risk: `geminiService.ts` attempts to use a Gemini API key client-side. If `VITE_GEMINI_API_KEY` were set, it would be embedded in the JavaScript bundle visible to any user.
+- Files: `src/services/geminiService.ts`
+- Current mitigation: The `process.env` reference doesn't work in Vite, so the key is never actually exposed. But the code pattern invites someone to "fix" it by switching to `import.meta.env`, which would expose the key.
+- Recommendations: Route all Gemini API calls through the FastAPI backend. Never expose LLM API keys in frontend bundles.
 
-**Integration connection params stored as opaque JSON**
-- Risk: `connectionParams: Record<string, unknown>` may contain database passwords, API keys, or connection strings that flow through the Supabase `integration_configs` table.
-- Files: `src/services/integrationService.ts` (line 16, 64), `src/pages/IntegrationsPage.tsx`
-- Current mitigation: Supabase RLS presumably restricts access to owner's rows.
-- Recommendations: Encrypt sensitive connection params server-side before storage. Never return raw credentials in list queries. Mask values in the UI.
+**Integration Connection Params Stored in Supabase JSON:**
+- Risk: `connectionParams` for database integrations (postgres/sqlserver connection strings, credentials) are stored as JSON in the `integration_configs` table. If RLS is misconfigured, other users could read connection credentials.
+- Files: `src/services/integrationService.ts`, `supabase/migrations/20260227190000_integrations.sql`
+- Current mitigation: RLS is enabled on `integration_configs` table.
+- Recommendations: Encrypt connection params at rest. Audit RLS policies to confirm only `owner_user_id` can read their own configs.
 
-**MapBox token accessed via `any` cast**
-- Risk: `(import.meta as any).env?.VITE_MAPBOX_TOKEN` bypasses type safety. Minor concern, but the `any` cast is unnecessary.
-- Files: `src/components/MapVisualizer.tsx` (line 28)
-- Current mitigation: Token is a public client-side token (standard for Mapbox GL).
-- Recommendations: Use `import.meta.env.VITE_MAPBOX_TOKEN` directly without casting. Ensure Mapbox token is domain-restricted in the Mapbox dashboard.
+**CORS Allows All Methods/Headers on Backend:**
+- Risk: FastAPI backend uses `allow_methods=["*"]` and `allow_headers=["*"]` which is overly permissive.
+- Files: `backend/main.py` (lines 20-29)
+- Current mitigation: Origins are restricted to localhost:3000.
+- Recommendations: Restrict to specific methods (GET, POST, OPTIONS) and specific headers. Update allowed origins for production deployment.
 
 ## Performance Bottlenecks
 
-**Economics recomputation on every state change**
-- Problem: `processedGroups` useMemo in `useSlopcastWorkspace` recalculates economics for ALL groups whenever `groups` or `scenarios` changes. The `cachedCalculateEconomics` LRU cache (100 entries) mitigates repeat calculations, but any group modification (name change, color change) invalidates the dependency array.
-- Files: `src/hooks/useSlopcastWorkspace.ts` (lines 228-253), `src/utils/economics.ts` (lines 6-50)
-- Cause: The `groups` array reference changes on any group property update, triggering useMemo for all groups even if only one changed.
-- Improvement path: Normalize group state so individual group updates only change that group's reference. Use per-group memoization. The LRU cache key already handles this partially but the useMemo still re-runs the loop.
+**Economics Recalculation on Every State Change:**
+- Problem: Economics are recalculated via `useMemo` chains in `useSlopcastWorkspace` whenever any dependency changes. With many well groups and scenarios, this triggers the full `aggregateEconomics` + `applyTaxLayer` + `applyDebtLayer` pipeline.
+- Files: `src/hooks/useSlopcastWorkspace.ts`, `src/utils/economics.ts`
+- Cause: The LRU cache (`econCache` with 100 entries) in `economics.ts` helps but the cache key is based on serialized parameters -- any tiny change (e.g., UI-only state) that triggers a re-render recalculates.
+- Improvement path: Move economics calculation to a Web Worker or use `useDeferredValue`. Separate UI state changes from economics-triggering state changes.
 
-**4,039 lines of canvas animation code loaded eagerly**
-- Problem: All six background components are likely imported at module level via the theme system, adding significant JavaScript to the initial bundle.
-- Files: `src/components/*Background.tsx` (6 files, 4039 lines total)
-- Cause: Theme system references `BackgroundComponent` directly.
-- Improvement path: Lazy-load background components with `React.lazy()`. Only the active theme's background needs to be loaded.
+**Supabase N+1 Query Pattern in `getProject`:**
+- Problem: Loading a project makes sequential queries: project -> groups + scenarios -> group_wells -> wells (by ID list). Four round-trips minimum.
+- Files: `src/services/projectRepository.ts` (lines 127-230)
+- Cause: Supabase JS client doesn't support JOINs natively; queries are done in sequence with results feeding subsequent queries.
+- Improvement path: Create a Postgres function (`get_project_bundle`) that returns all data in a single RPC call. Already using `rpc('current_project_role')` pattern elsewhere.
+
+**MapVisualizer Mapbox Dynamic Import:**
+- Problem: Mapbox GL is dynamically imported with `@ts-ignore` and cast through `(mapboxgl as any).default`. The fallback SVG map is rebuilt on every render when Mapbox is unavailable.
+- Files: `src/components/MapVisualizer.tsx` (lines 28, 160-165)
+- Cause: Mapbox ESM/CJS module compatibility issue worked around with casts.
+- Improvement path: Use a proper dynamic import with `React.lazy` or a dedicated `useMapbox` hook that handles the module resolution cleanly.
 
 ## Fragile Areas
 
-**Project persistence hydration race condition**
+**Persistence Layer Hydration Race Condition:**
 - Files: `src/components/slopcast/hooks/useProjectPersistence.ts` (lines 219-320)
-- Why fragile: The hydration guard (`isHydratingRef.current`) uses a `queueMicrotask` to reset, creating a narrow timing window. The auto-save effect triggers on `snapshot` changes with a 1-second debounce. If hydration from Supabase triggers state updates that change the snapshot before the microtask fires, the hook may immediately save back the partially-hydrated state, overwriting the server copy.
-- Safe modification: Always test persistence changes with: (1) fresh load with existing Supabase project, (2) modify state immediately after load, (3) verify no data loss on reload.
-- Test coverage: Zero automated tests for this hook.
+- Why fragile: Uses `isHydratingRef` flag and `queueMicrotask` to prevent save-during-load races. The auto-save triggers on a 1-second debounce after any state change. If the load completes but `queueMicrotask` fires late, auto-save could overwrite remote state with stale local state.
+- Safe modification: Any change to the save/load flow must be tested with both fast and slow network conditions. Add integration tests that verify load -> modify -> save ordering.
+- Test coverage: No automated tests for `useProjectPersistence`.
 
-**MapBox/D3 fallback visualization**
-- Files: `src/components/MapVisualizer.tsx` (574 lines)
-- Why fragile: The component manages three rendering paths: Mapbox GL (external API), D3 SVG overlay, and a pure-SVG offline fallback. The Mapbox initialization uses `@ts-ignore` and `as any` casts to work around module default export issues. If MapBox GL changes its export shape, the component silently falls back to the offline SVG map with no error surfaced to users.
-- Safe modification: Test with Mapbox token present AND absent. Verify lasso/rectangle selection tools work in both D3 and Mapbox modes.
-- Test coverage: No automated tests.
+**Economics Engine Type Adapters:**
+- Files: `src/services/economicsEngine.ts` (lines 100-168)
+- Why fragile: `toPyPricing` and `toPyTypeCurve` manually convert TS types to Python API shapes. Adding a new field to `TypeCurveParams` or `OpexAssumptions` requires updating these adapters manually -- no compile-time check ensures parity.
+- Safe modification: Add a shared JSON schema or contract test that validates both engines accept the same input shapes.
+- Test coverage: No tests for the Python engine adapter.
 
-**The `handleSelectDeal` callback is a no-op**
-- Files: `src/hooks/useSlopcastWorkspace.ts` (lines 145-147)
-- Why fragile: `handleSelectDeal` receives a `dealId` parameter but only calls `setPageMode('workspace')` without loading the deal data. This appears to be an incomplete feature. Users clicking a saved deal in the landing page get switched to the workspace but see stale/default data, not the selected deal.
-- Safe modification: Implement deal loading or remove the affordance.
-- Test coverage: None.
-
-## Scaling Limits
-
-**LRU economics cache fixed at 100 entries**
-- Current capacity: 100 cached results in `econCache` Map.
-- Limit: With multiple groups and scenarios, the combinatorial space exceeds 100 quickly. Cache thrashing occurs when users have > ~10 groups with varying scenario parameters.
-- Files: `src/utils/economics.ts` (lines 6-8)
-- Scaling path: Increase cache size or switch to a WeakRef-based cache. Consider Web Workers for economics calculation to avoid blocking the main thread.
-
-**All wells are mock data (`MOCK_WELLS`)**
-- Current capacity: 40 hardcoded wells in `src/constants.ts`.
-- Limit: The `useSlopcastWorkspace` hook references `MOCK_WELLS` directly throughout (lines 173, 232, 261, 265, 269, 273, 287). Switching to real well data requires replacing every `MOCK_WELLS` reference.
-- Files: `src/hooks/useSlopcastWorkspace.ts`, `src/constants.ts`
-- Scaling path: Abstract well data source behind a provider/service. Load wells from Supabase when authenticated, fall back to mock data for demos.
-
-## Dependencies at Risk
-
-**`canvas` package (v3.2.1) in production dependencies**
-- Risk: `canvas` is a native Node.js module (requires C++ compilation) listed in `dependencies` instead of `devDependencies`. It is likely only used for server-side rendering or Playwright testing, not in the browser bundle.
-- Files: `package.json` (line 31)
-- Impact: Increases install time, causes build failures on platforms without native build tools, and bloats `node_modules`.
-- Migration plan: Move to `devDependencies` if only used in scripts/tests. Verify it is not imported anywhere in `src/`.
-
-**`@vitejs/plugin-react` in production dependencies**
-- Risk: Build tool plugin listed in `dependencies` instead of `devDependencies`.
-- Files: `package.json` (line 30)
-- Impact: Unnecessarily included in production installs.
-- Migration plan: Move to `devDependencies` along with `typescript` and `vite`.
+**useSlopcastWorkspace Dependency Arrays:**
+- Files: `src/hooks/useSlopcastWorkspace.ts` (lines 759-794)
+- Why fragile: The `operationsProps` `useMemo` has a 14-item dependency array. Missing a dependency causes stale closures; adding extras causes unnecessary re-renders. Three `eslint-disable-line react-hooks/exhaustive-deps` comments suppress warnings elsewhere.
+- Safe modification: Extract `operationsProps` computation into a separate hook with its own state management.
+- Test coverage: No unit tests for this hook.
 
 ## Test Coverage Gaps
 
-**Only 1 test file exists for the entire frontend**
-- What's not tested: All React components, all hooks, all services, all repository layers, auth adapters, theme system, persistence logic, keyboard shortcuts, CSV export, AI assistant.
-- Files: `src/utils/economics.test.ts` (457 lines, 20 tests) is the only test file.
-- Risk: Any refactoring to the 862-line workspace hook, persistence layer, or data repositories has zero safety net. Regressions are caught only by manual testing or Playwright UI snapshots.
-- Priority: **High** - The economics calculator is well-tested, but the entire application layer around it has zero unit/integration test coverage.
+**Single Test File for Entire Codebase:**
+- What's not tested: Only `src/utils/economics.test.ts` (457 lines) exists. Zero tests for: all service repositories, all React components, all hooks, auth adapters, theme system, integration service, assistant service.
+- Files: `src/utils/economics.test.ts` is the only test file out of 91 source files.
+- Risk: Any refactoring of the persistence layer, auth flow, or UI components has zero safety net. Regressions in economics aggregation across groups, tax/debt layers, or scenario comparison are possible.
+- Priority: High -- at minimum, add tests for `src/services/projectRepository.ts` (data integrity), `src/components/slopcast/hooks/useProjectPersistence.ts` (race conditions), and `src/services/economicsEngine.ts` (engine parity).
 
-**No integration tests for Supabase persistence**
-- What's not tested: `projectRepository.ts` (674 lines), `dealRepository.ts` (481 lines), `integrationService.ts`, `useProjectPersistence.ts` (389 lines).
-- Files: All files in `src/services/`, `src/components/slopcast/hooks/useProjectPersistence.ts`
-- Risk: Schema migrations, RLS policy changes, or Supabase SDK upgrades can silently break persistence without detection.
-- Priority: **High** - Data loss from persistence bugs is the highest-impact failure mode.
+**No Backend Tests:**
+- What's not tested: Python FastAPI backend has no test files. Economics calculations, sensitivity matrix generation, and API endpoint validation are untested.
+- Files: `backend/economics.py`, `backend/sensitivity.py`, `backend/main.py`
+- Risk: Python and TypeScript economics engines could silently diverge. API contract changes break the frontend with no warning.
+- Priority: High -- add pytest suite with parity tests against known TypeScript outputs.
 
-**No tests for auth adapter pattern**
-- What's not tested: `DevBypassAdapter`, `SupabaseAdapter`, `AuthProvider` session lifecycle, `ProtectedRoute`.
-- Files: `src/auth/AuthProvider.tsx`, `src/auth/adapters/devBypassAdapter.ts`, `src/auth/adapters/supabaseAdapter.ts`
-- Risk: Auth regressions (stuck loading states, failed refreshes) block all authenticated functionality.
-- Priority: **Medium** - Auth adapter is simple but critical path.
+**Playwright Tests Exist but Are Not in CI:**
+- What's not tested: UI flow verification scripts exist (`scripts/ui-verify-flow.mjs`, `scripts/ui-snapshots.mjs`) but no CI pipeline configuration was found.
+- Files: `playground/*.spec.ts`, `scripts/ui-verify-flow.mjs`
+- Risk: UI regressions can ship without detection.
+- Priority: Medium -- set up CI pipeline to run at minimum `npm run build` and `npm test`.
+
+## Dependencies at Risk
+
+**`canvas` npm Package in Frontend:**
+- Risk: The `canvas` package (native C++ addon) is listed as a production dependency. It requires native build tools (Cairo, Pango) and is typically a Node.js-only package. It likely fails to install on systems without build tools and adds nothing to the Vite browser bundle.
+- Impact: Breaks `npm install` on clean machines without native build prerequisites. Increases install time.
+- Migration plan: Move to `devDependencies` if only used for Playwright/testing, or remove entirely if unused.
+
+**`@vitejs/plugin-react` in Dependencies (not devDependencies):**
+- Risk: Build tool listed as production dependency. Same for `typescript` and `vite` itself.
+- Impact: Inflated production `node_modules` if `npm install --production` is used. Not a runtime issue but indicates sloppy dependency management.
+- Migration plan: Move `@vitejs/plugin-react`, `typescript`, and `vite` to `devDependencies`.
 
 ## Missing Critical Features
 
-**Deal loading is not implemented**
-- Problem: `handleSelectDeal` in `useSlopcastWorkspace.ts` accepts a `dealId` but does not load deal data. The landing page shows saved deals but clicking one only switches the page mode without hydrating the workspace.
-- Files: `src/hooks/useSlopcastWorkspace.ts` (lines 145-147)
-- Blocks: Users cannot resume work on previously saved deals from the landing page.
+**No Input Validation on Economics Parameters:**
+- Problem: `calculateEconomics` in `src/utils/economics.ts` accepts raw number parameters (qi, di, b-factor, prices) with only a `clamp01` helper for percentages. No validation for negative prices, zero decline rates, or extreme values that could cause infinite loops or NaN propagation.
+- Blocks: Production readiness. Bad user input could produce nonsensical results silently.
 
-**Acreage search is a stub**
-- Problem: `handleAcreageSearch` logs the query to console and does nothing.
-- Files: `src/hooks/useSlopcastWorkspace.ts` (lines 153-155)
-- Blocks: Search functionality in the landing page is non-functional.
+**No Error Boundary in React Tree:**
+- Problem: No `ErrorBoundary` component wrapping the app or major sections. A runtime error in any component (e.g., economics chart with bad data) crashes the entire app with a white screen.
+- Files: `src/index.tsx`, `src/App.tsx`
+- Blocks: Production readiness. Users lose all work on any unhandled exception.
+
+**No Rate Limiting on Backend:**
+- Problem: FastAPI backend has no rate limiting or authentication. Anyone who can reach the server can call economics endpoints unlimited times.
+- Files: `backend/main.py`
+- Blocks: Safe public deployment.
 
 ---
 
-*Concerns audit: 2026-03-05*
+*Concerns audit: 2026-03-06*

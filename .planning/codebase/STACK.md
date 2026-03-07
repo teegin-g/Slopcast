@@ -1,142 +1,125 @@
 # Technology Stack
 
-**Analysis Date:** 2026-03-05
+**Analysis Date:** 2026-03-06
 
 ## Languages
 
 **Primary:**
-- TypeScript ~5.8.2 - Frontend application (`src/`), build config, test config
+- TypeScript ~5.8.2 - Frontend SPA, all `src/` code, type definitions
 - Python 3.x - Backend economics engine (`backend/`)
 
 **Secondary:**
-- JavaScript (ESM) - Production server (`server.js`), utility scripts (`scripts/*.mjs`)
-- CSS - Theme system (`src/styles/theme.css`), Tailwind via CDN in `index.html`
-- SQL - Supabase migrations (`supabase/migrations/`)
+- JavaScript (ESM) - Production server (`server.js`), build scripts (`scripts/*.mjs`)
+- SQL - Supabase migrations (`supabase/migrations/*.sql`)
 
 ## Runtime
 
 **Environment:**
 - Node.js (ESM modules, `"type": "module"` in `package.json`)
-- Python with virtualenv (`.venv/` convention, activated by `scripts/start-backend.sh`)
+- Python with uvicorn ASGI server for backend
 
 **Package Manager:**
-- npm (lockfile: `package-lock.json` expected)
-- pip via `requirements.txt` for Python backend
+- npm
+- Lockfile: `package-lock.json` (present)
+- Python deps: `backend/requirements.txt` (fastapi, uvicorn[standard], pytest)
 
 ## Frameworks
 
 **Core:**
-- React 19.2.3 - UI framework (`src/`)
-- React Router DOM 7.13.0 - Client-side routing (`src/App.tsx`)
-- Vite 6.2.0 - Dev server + bundler (`vite.config.ts`)
-- FastAPI - Python backend REST API (`backend/main.py`)
+- React ^19.2.3 - UI framework
+- React Router DOM ^7.13.0 - Client-side routing
+- Vite ^6.2.0 - Dev server and bundler
+- FastAPI 0.1.0 - Python backend API (`backend/main.py`)
 
 **Testing:**
-- Vitest 4.0.18 - Unit test runner (`vitest.config.ts`)
-- Playwright 1.58.2 - E2E / UI snapshot tests (`playground/`)
-- Testing Library (React 16.3.2, jest-dom 6.9.1) - Component test utilities
-- jsdom 28.1.0 - Browser environment for Vitest
+- Vitest ^4.0.18 - Unit test runner (`vitest.config.ts`)
+- Playwright ^1.58.2 - E2E/UI snapshot testing
+- @testing-library/react ^16.3.2 - React component testing
+- @testing-library/jest-dom ^6.9.1 - DOM matchers
 - pytest - Python backend tests (`backend/tests/`)
 
 **Build/Dev:**
-- Vite 6.2.0 - Dev server (port 3000), HMR, production builds to `dist/`
-- @vitejs/plugin-react 5.0.0 - React Fast Refresh
-- Custom `vite-plugin-debug-logger` (`vite-plugin-debug-logger.ts` at root)
-- Tailwind CSS (CDN) - Utility classes via `<script src="https://cdn.tailwindcss.com">`
+- Vite ^6.2.0 - Dev server (port 3000), HMR, production bundler
+- @vitejs/plugin-react ^5.0.0 - React Fast Refresh
+- Express ^4.22.1 - Production static server with API proxy (`server.js`)
+- Custom Vite plugin: `vite-plugin-debug-logger` (`./vite-plugin-debug-logger`)
 
 ## Key Dependencies
 
 **Critical:**
-- `@supabase/supabase-js` ^2.95.3 - Database client, auth, RPC calls (`src/services/supabaseClient.ts`)
-- `react` ^19.2.3 + `react-dom` ^19.2.3 - UI rendering
-- `react-router-dom` ^7.13.0 - SPA routing
-
-**Visualization:**
-- `recharts` ^3.7.0 - Chart components for economics visualization
-- `d3` ^7.9.0 - Data-driven visualizations, used alongside Recharts
-- `mapbox-gl` ^3.18.1 - Interactive well maps (`src/components/MapVisualizer.tsx`)
-
-**AI:**
-- `@google/genai` ^1.38.0 - Google Gemini API for deal analysis (`src/services/geminiService.ts`)
-  - Model: `gemini-3-flash-preview`
-  - Gracefully degrades when API key is missing
+- @supabase/supabase-js ^2.95.3 - Database client, auth, RLS (all persistence flows)
+- mapbox-gl ^3.18.1 - Interactive well map visualization
+- recharts ^3.7.0 - Charts for economics/cash flow visualization
+- d3 ^7.9.0 - Data visualization utilities (used alongside recharts)
+- @google/genai ^1.38.0 - Gemini AI for deal analysis summaries
 
 **Infrastructure:**
-- `express` ^4.22.1 - Production static server + API proxy (`server.js`)
-- `canvas` ^3.2.1 - Server-side canvas rendering (screenshot/image generation)
-- `uvicorn[standard]` - ASGI server for FastAPI backend
+- express ^4.22.1 - Production server with SPA fallback and Python API proxy
+- canvas ^3.2.1 - Server-side canvas rendering (used by scripts/testing)
 
-**Dev Only:**
-- `pixelmatch` ^7.1.0 + `pngjs` ^7.0.0 - Visual regression testing
-- `@types/mapbox-gl` ^3.4.1, `@types/node` ^22.14.0 - TypeScript type definitions
+**Dev Tooling:**
+- jsdom ^28.1.0 - Test environment for Vitest
+- pixelmatch ^7.1.0 - Visual regression pixel comparison
+- pngjs ^7.0.0 - PNG processing for UI snapshots
 
 ## Configuration
 
-**TypeScript:**
-- Config: `tsconfig.json`
-- Target: ES2022, Module: ESNext, JSX: react-jsx
+**TypeScript (`tsconfig.json`):**
+- Target: ES2022
+- Module: ESNext with bundler resolution
+- JSX: react-jsx
 - Path alias: `@/*` maps to `./src/*`
-- Includes: `src/` and `supabase/` directories
-- Strict mode: not explicitly enabled (default loose)
+- Strict mode: not explicitly enabled
+- `noEmit: true` (Vite handles compilation)
 
-**Vite:**
-- Config: `vite.config.ts`
+**Vite (`vite.config.ts`):**
 - Dev server: port 3000, host 0.0.0.0
 - API proxy: `/api` -> `http://127.0.0.1:8001` (Python backend)
+- Build output: `dist/`
 - Manual chunks: `vendor-react` (react, react-dom, react-router-dom), `vendor-charts` (recharts, d3)
-- Resolve alias: `@` -> `./src`
-- `process.env.GEMINI_API_KEY` injected at build time via `define`
+- Path alias: `@` -> `src/`
+- Defines: `process.env.GEMINI_API_KEY` injected at build time from env
 
-**Vitest:**
-- Config: `vitest.config.ts`
+**Vitest (`vitest.config.ts`):**
 - Environment: jsdom
-- Test pattern: `src/**/*.test.{ts,tsx}`
-- Resolve alias: same `@` -> `./src`
+- Test include: `src/**/*.test.{ts,tsx}`
+- Path alias: `@` -> `src/`
 
-**Environment Variables (existence only):**
-- `VITE_SUPABASE_URL` - Supabase project URL
-- `VITE_SUPABASE_ANON_KEY` / `VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY` - Supabase anon key
-- `VITE_AUTH_PROVIDER` - Auth adapter selection (`supabase` or `dev-bypass`, default: `dev-bypass`)
-- `GEMINI_API_KEY` - Google Gemini API key (injected at build time)
-- `PORT` - Production server port (default: 8000)
-- `PYTHON_API_PORT` - FastAPI backend port (default: 8001)
-- `MAPBOX_TOKEN` - Mapbox GL access token (for map rendering)
-
-## Build Pipeline
-
-**Development:**
-```bash
-npm run dev              # Vite dev server at localhost:3000
-npm run dev:full         # Vite + Python FastAPI backend together
-```
-
-**Production Build:**
-```bash
-npm run build            # Vite build to dist/
-npm run start            # Express static server (serves dist/ + proxies /api/engine to Python)
-```
-
-**Validation:**
-```bash
-npm run typecheck        # tsc --noEmit
-npm test                 # vitest run
-npm run ui:audit         # Custom CSS/style drift checker
-npm run ui:shots         # Playwright UI screenshots
-npm run ui:verify        # Playwright flow verification
-```
+**Environment:**
+- `.env.example` present (template for required env vars)
+- Required Vite env vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (or `VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY`)
+- Optional: `GEMINI_API_KEY` (AI deal analysis)
+- Backend port: `PYTHON_API_PORT` (default 8001)
+- Production port: `PORT` (default 8000)
 
 ## Platform Requirements
 
 **Development:**
-- Node.js (ESM support required, likely 18+)
-- Python 3.x with virtualenv for backend
-- Optional: Supabase CLI for local DB (`supabase/config.toml`)
+- Node.js (ESM support required)
+- Python 3.x with virtualenv (`.venv/`) for backend
+- Mapbox GL access token (for map component)
+- Supabase project (optional; falls back to localStorage without it)
 
 **Production:**
 - Node.js for Express static server (`server.js`)
-- Python + uvicorn for FastAPI backend (optional, TS engine works standalone)
-- Supabase hosted instance for database/auth
+- Python + uvicorn for FastAPI backend
+- Supabase hosted project (database + auth)
+- Single `dist/` directory served as SPA with fallback
+
+**Commands:**
+```bash
+npm run dev              # Vite dev server at localhost:3000
+npm run dev:full         # Vite + Python backend together
+npm run build            # Production build to dist/
+npm run start            # Express production server
+npm run typecheck        # tsc --noEmit
+npm test                 # Vitest run
+npm run test:watch       # Vitest watch mode
+npm run ui:audit         # Check for forbidden CSS classnames
+npm run ui:shots         # Playwright UI snapshots
+npm run ui:verify        # Playwright UI flow verification
+```
 
 ---
 
-*Stack analysis: 2026-03-05*
+*Stack analysis: 2026-03-06*

@@ -1,59 +1,58 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-03-05
+**Analysis Date:** 2026-03-06
 
 ## Test Framework
 
 **Runner:**
 - Vitest 4.x (unit tests)
-- Playwright 1.58.x (UI screenshots and flow verification)
-- Config: `vitest.config.ts` (unit), `playground/scripts/ui-snapshots.spec.ts` (Playwright)
+- Config: `vitest.config.ts`
 
 **Assertion Library:**
-- Vitest built-in `expect` (compatible with Jest matchers)
-- `@testing-library/jest-dom` 6.x (available but not currently used in test files)
-- `@testing-library/react` 16.x (available for component testing, not currently used)
+- Vitest built-in (`expect`, `describe`, `it`)
+- `@testing-library/jest-dom` (available, for DOM assertions)
+- `@testing-library/react` (available, for component rendering)
+
+**E2E/Visual:**
+- Playwright (via `@playwright/test` 1.58.x)
+- Custom scripts in `scripts/` (not a standard Playwright config file)
 
 **Run Commands:**
 ```bash
-npm test                # Run all Vitest unit tests (vitest run)
-npm run test:watch      # Vitest in watch mode (vitest)
-npm run ui:audit        # Custom CSS classname lint (scripts/ui-audit.mjs)
-npm run ui:shots        # Playwright UI baseline screenshots (scripts/ui-snapshots.mjs)
-npm run ui:verify       # Playwright UI flow verification (scripts/ui-verify-flow.mjs)
-npm run typecheck       # tsc --noEmit (not tests, but part of validation gate)
+npm test              # Run all Vitest unit tests (vitest run)
+npm run test:watch    # Watch mode (vitest)
+npm run typecheck     # Type-check with tsc --noEmit
+npm run ui:audit      # Check for forbidden CSS classnames
+npm run ui:shots      # Playwright UI baseline screenshots
+npm run ui:verify     # Playwright UI flow verification
 ```
 
 ## Test File Organization
 
 **Location:**
-- Unit tests are co-located with source files in `src/`
-- Playwright specs live in `playground/scripts/`
+- Co-located with source files (test file next to implementation)
 
 **Naming:**
-- Unit tests: `{module}.test.ts` (e.g., `src/utils/economics.test.ts`)
-- Playwright specs: `{name}.spec.ts` (e.g., `playground/scripts/ui-snapshots.spec.ts`)
+- `*.test.ts` pattern (e.g., `src/utils/economics.test.ts`)
+- Playwright specs: `*.spec.ts` (e.g., `playground/scripts/ui-snapshots.spec.ts`)
 
 **Structure:**
 ```
 src/
   utils/
-    economics.ts          # Source
-    economics.test.ts     # Co-located unit test
+    economics.ts           # Implementation
+    economics.test.ts      # Unit tests (co-located)
 playground/
   scripts/
-    ui-snapshots.spec.ts  # Playwright screenshot spec
-  ui_screenshots/         # Screenshot output directory
+    ui-snapshots.spec.ts   # Playwright visual tests
 ```
+
+**Current test file count:** 1 unit test file (`src/utils/economics.test.ts` -- 457 lines)
 
 ## Vitest Configuration
 
-**File:** `vitest.config.ts`
-
 ```typescript
-import path from 'path';
-import { defineConfig } from 'vitest/config';
-
+// vitest.config.ts
 export default defineConfig({
   resolve: {
     alias: {
@@ -67,92 +66,91 @@ export default defineConfig({
 });
 ```
 
-**Key settings:**
-- Environment: `jsdom` (browser-like DOM for React component tests)
-- Path alias `@` resolves to `src/` (matches `vite.config.ts`)
-- Test discovery: `src/**/*.test.{ts,tsx}`
+- Environment: `jsdom` (for browser API simulation)
+- Path alias: `@/` resolves to `src/`
+- Include pattern: `src/**/*.test.{ts,tsx}`
 
 ## Test Structure
 
 **Suite Organization:**
 ```typescript
-// From src/utils/economics.test.ts
 import { describe, it, expect } from 'vitest';
-import { calculateEconomics, applyTaxLayer, ... } from './economics';
-import { DEFAULT_TYPE_CURVE, DEFAULT_CAPEX, ... } from '../constants';
-import type { Well, WellGroup, DebtAssumptions } from '../types';
+import { calculateEconomics, applyTaxLayer } from './economics';
+import { DEFAULT_TYPE_CURVE, DEFAULT_CAPEX, /* ... */ } from '../constants';
 
-// Small test well sets reused across suites
+// Shared test fixtures at module level
 const TEST_WELLS: Well[] = MOCK_WELLS.slice(0, 3);
 const SINGLE_WELL: Well[] = [MOCK_WELLS[0]];
 
-// Section dividers for visual grouping
+// Section divider comments for each function under test
 // ─── calculateEconomics ────────────────────────────────────────────
 
 describe('calculateEconomics', () => {
   it('returns zeros for empty wells', () => {
-    const { flow, metrics } = calculateEconomics([], ...defaults);
+    const { flow, metrics } = calculateEconomics(/* ... */);
     expect(flow).toHaveLength(0);
     expect(metrics.totalCapex).toBe(0);
   });
 
   it('produces positive NPV for a single well with defaults', () => {
-    const { flow, metrics } = calculateEconomics(SINGLE_WELL, ...defaults);
-    expect(metrics.npv10).toBeGreaterThan(0);
+    // ...
   });
 });
 ```
 
 **Patterns:**
-- Group tests by exported function name using `describe()`
-- Use visual section dividers (`// ─── functionName ───`) between describe blocks
-- Test names describe the behavior: `'capex scalar affects totalCapex proportionally'`
-- Each test is self-contained with clear arrange/act/assert
+- Top-level `describe` blocks per exported function
+- ASCII divider comments between `describe` blocks
+- `it` descriptions are human-readable assertions (e.g., "capex scalar affects totalCapex proportionally")
+- No `beforeEach`/`afterEach` -- shared fixtures are module-level constants
+- Some `describe` blocks compute shared base results at the block level for reuse
 
-## Test Data
-
-**Shared constants from production code:**
-- Tests import `DEFAULT_TYPE_CURVE`, `DEFAULT_CAPEX`, `DEFAULT_COMMODITY_PRICING`, `DEFAULT_OPEX`, `DEFAULT_OWNERSHIP` from `src/constants.ts`
-- Tests import `DEFAULT_TAX_ASSUMPTIONS`, `DEFAULT_DEBT_ASSUMPTIONS`, `TAX_PRESETS` from `src/types.ts`
-- Tests import `MOCK_WELLS` (40 generated wells) and slice for smaller test sets
-
-**Test-local fixtures:**
 ```typescript
-// Defined at top of test file
-const TEST_WELLS: Well[] = MOCK_WELLS.slice(0, 3);
-const SINGLE_WELL: Well[] = [MOCK_WELLS[0]];
+describe('applyTaxLayer', () => {
+  // Shared computation for all tests in this block
+  const baseResult = calculateEconomics(TEST_WELLS, /* ... */);
+
+  it('severance tax reduces after-tax NPV below pre-tax NPV', () => {
+    const { metrics } = applyTaxLayer(baseResult.flow, baseResult.metrics, DEFAULT_TAX_ASSUMPTIONS);
+    expect(metrics.afterTaxNpv10!).toBeLessThan(metrics.npv10);
+  });
+});
 ```
 
-**Inline test data for specific cases:**
-```typescript
-// Override specific fields using spread
-const enabledDebt: DebtAssumptions = {
-  ...DEFAULT_DEBT_ASSUMPTIONS,
-  enabled: true,
-  termLoanAmount: 5_000_000,
-};
+## Test Data Strategy
 
-const zeroTax = {
-  severanceTaxPct: 0,
-  adValoremTaxPct: 0,
-  federalTaxRate: 0,
-  depletionAllowancePct: 0,
-  stateTaxRate: 0,
-};
+**Fixtures:**
+- Reuse production constants from `src/constants.ts` (`DEFAULT_TYPE_CURVE`, `DEFAULT_CAPEX`, etc.)
+- Reuse production types from `src/types.ts` (`DEFAULT_TAX_ASSUMPTIONS`, `TAX_PRESETS`, `DEFAULT_DEBT_ASSUMPTIONS`)
+- Small well subsets sliced from `MOCK_WELLS` for speed: `MOCK_WELLS.slice(0, 3)`, `[MOCK_WELLS[0]]`
+
+**Inline overrides:**
+```typescript
+// Spread default with overrides for specific test scenarios
+const { metrics } = calculateEconomics(
+  TEST_WELLS,
+  DEFAULT_TYPE_CURVE,
+  DEFAULT_CAPEX,
+  { ...DEFAULT_COMMODITY_PRICING, oilPrice: 90 },  // Override one field
+  DEFAULT_OPEX,
+  DEFAULT_OWNERSHIP,
+);
 ```
 
-**Pattern:** Reuse `DEFAULT_*` constants as the base, override specific fields with spread syntax for test variants.
+**Location:**
+- No dedicated fixtures directory -- test data is defined inline or from constants
+- `src/constants.ts` serves as the shared fixture source
 
 ## Assertion Patterns
 
-**Exact values:**
+**Exact equality:**
 ```typescript
 expect(flow).toHaveLength(120);
-expect(metrics.wellCount).toBe(1);
+expect(metrics.wellCount).toBe(3);
 expect(metrics.totalCapex).toBe(0);
 ```
 
-**Approximate values (floating point):**
+**Approximate equality (for floating-point):**
 ```typescript
 expect(doubled.metrics.totalCapex).toBeCloseTo(base.metrics.totalCapex * 2, 0);
 expect(risked.riskedEur).toBeCloseTo(baseMetrics.eur * 0.5, 2);
@@ -162,13 +160,7 @@ expect(risked.riskedEur).toBeCloseTo(baseMetrics.eur * 0.5, 2);
 ```typescript
 expect(metrics.npv10).toBeGreaterThan(0);
 expect(metrics.payoutMonths).toBeLessThanOrEqual(120);
-expect(highDeck.metrics.npv10).toBeGreaterThan(lowDeck.metrics.npv10);
-```
-
-**Reference equality:**
-```typescript
-expect(flow).toBe(baseResult.flow); // Same reference, not deep equal
-expect(metrics).toBe(baseResult.metrics);
+expect(reducedNri.metrics.npv10).toBeLessThan(fullNri.metrics.npv10);
 ```
 
 **Defined/undefined checks:**
@@ -177,108 +169,139 @@ expect(metrics.afterTaxNpv10).toBeDefined();
 expect(flow[5].severanceTax).toBeDefined();
 ```
 
+**Reference equality (for pass-through):**
+```typescript
+expect(flow).toBe(baseResult.flow);    // same reference = no transformation
+expect(metrics).toBe(baseResult.metrics);
+```
+
 ## Mocking
 
-**Framework:** None currently used
+**Framework:** None actively used
 
-**What is NOT mocked:**
-- Economics calculations are tested with real computation (pure functions)
-- Test data uses production constants (`DEFAULT_*` from `src/constants.ts`)
-- No network mocks, no Supabase mocks, no localStorage mocks
+**Current approach:**
+- Tests call real implementations directly -- no mocking of dependencies
+- Economics tests are pure function tests (deterministic input/output)
+- No service mocking, API mocking, or component mocking patterns established
 
-**Guidance for new tests:**
-- `@testing-library/react` 16.x is installed but unused; use it for component tests
-- `@testing-library/jest-dom` 6.x is installed for DOM assertions (`.toBeInTheDocument()`, etc.)
-- For service tests, mock `src/services/supabaseClient.ts` using `vi.mock()`
-- For hook tests, wrap in a test component or use `renderHook` from `@testing-library/react`
+**What to mock (when adding tests):**
+- Supabase client calls in repository tests
+- `localStorage` for persistence hook tests
+- `fetch` for Python engine tests
+- Auth adapters for protected route tests
 
-## Test Categories
+**What NOT to mock:**
+- Pure calculation functions (`src/utils/economics.ts`) -- test with real inputs
+- Type definitions and constants
 
-**Unit Tests (Vitest):**
-- **Scope:** Pure utility functions in `src/utils/economics.ts`
-- **Count:** 20 tests across 5 describe blocks
-- **Functions tested:**
-  - `calculateEconomics` (9 tests) - core NPV/IRR/EUR/payout calculations
-  - `applyTaxLayer` (3 tests) - severance, ad valorem, income tax
-  - `applyDebtLayer` (3 tests) - term loan, revolver, DSCR
-  - `applyReservesRisk` (5 tests) - PDP/PUD/PROBABLE/POSSIBLE risk factors
-  - `aggregateEconomics` (3 tests) - multi-group portfolio aggregation
-- **All deterministic:** No async, no side effects, no mocking needed
+## Playwright Visual Tests
 
-**UI Screenshot Tests (Playwright):**
-- **Scope:** Visual regression baseline for themes and views
-- **File:** `playground/scripts/ui-snapshots.spec.ts`
-- **Matrix:** 2 themes (mario, slate) x 2 views (DESIGN, SCENARIOS) x 2 viewports (desktop 1440x900, mobile 390x844) = 8 screenshots
-- **Serial execution:** `test.describe.configure({ mode: 'serial' })`
-- **Output:** PNG files to `playground/ui_screenshots/before/`
+**Location:** `playground/scripts/ui-snapshots.spec.ts`
 
-**UI Audit (Custom Script):**
-- **Scope:** CSS classname lint to prevent style drift
-- **File:** `scripts/ui-audit.mjs`
-- **Checks:** Forbidden patterns like `rounded-2xl`, `shadow-xl`, `sc-titlebar--brown`, undefined animation classes
-- **Runs:** `npm run ui:audit` (exits non-zero on violations)
+**Pattern:**
+```typescript
+import { test } from '@playwright/test';
 
-## Validation Gate
+const THEMES: ThemeCase[] = [
+  { id: 'mario', title: 'Classic' },
+  { id: 'slate', title: 'Slate' },
+];
+const VIEWS: ViewMode[] = ['DESIGN', 'SCENARIOS'];
 
-The project has an automated validation gate at `.agents/validation/gate.sh` that runs:
-1. `npm run typecheck` - TypeScript compilation
-2. `npm run build` - Vite production build
-3. `npm test` - Vitest unit tests
-4. `npm run ui:audit` - CSS classname lint
-5. `npm run ui:shots` - Playwright screenshots (optional)
+test.describe('UI baseline screenshots', () => {
+  test.describe.configure({ mode: 'serial' });
+
+  for (const theme of THEMES) {
+    for (const view of VIEWS) {
+      test(`desktop ${theme.id} ${view}`, async ({ page }) => {
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await page.goto(baseUrl, { waitUntil: 'domcontentloaded' });
+        await setTheme(page, theme);
+        await setView(page, view);
+        await page.screenshot({ path: `...`, fullPage: true });
+      });
+    }
+  }
+});
+```
+
+**Screenshot matrix:**
+- 2 themes (mario, slate) x 2 views (DESIGN, SCENARIOS) x 2 viewports (desktop 1440x900, mobile 390x844) = 8 screenshots
+- Output: `playground/ui_screenshots/before/`
+- No automated pixel-diff assertions (manual comparison)
 
 ## Coverage
 
-**Requirements:** None enforced (no coverage thresholds configured)
+**Requirements:** None enforced
 
-**View Coverage:**
-```bash
-npx vitest run --coverage    # Not configured, would need @vitest/coverage-v8
+**No coverage configuration detected.** No `--coverage` flag in scripts, no coverage thresholds in config.
+
+## Test Types Present
+
+**Unit Tests:**
+- Economics calculation functions only (`src/utils/economics.test.ts`)
+- Tests: `calculateEconomics`, `applyTaxLayer`, `applyDebtLayer`, `applyReservesRisk`, `aggregateEconomics`
+- 5 describe blocks, ~25 test cases total
+- Focus: boundary conditions, proportionality, algebraic relationships
+
+**Visual/Screenshot Tests:**
+- Playwright-based screenshot capture (not assertion-based comparison)
+- Custom scripts: `scripts/ui-snapshots.mjs`, `scripts/ui-verify-flow.mjs`
+
+**Integration Tests:**
+- None present
+
+**Component Tests:**
+- None present (despite `@testing-library/react` being installed)
+
+## Common Patterns
+
+**Proportionality Testing:**
+```typescript
+it('capex scalar affects totalCapex proportionally', () => {
+  const base = calculateEconomics(TEST_WELLS, /* ... */, { capex: 1, production: 1 });
+  const doubled = calculateEconomics(TEST_WELLS, /* ... */, { capex: 2, production: 1 });
+  expect(doubled.metrics.totalCapex).toBeCloseTo(base.metrics.totalCapex * 2, 0);
+});
 ```
 
-**Current state:** No coverage tooling installed or configured. Tests focus on the economics engine only.
+**Boundary/Edge Case Testing:**
+```typescript
+it('returns zeros for empty wells', () => {
+  const { flow, metrics } = calculateEconomics([], /* ... */);
+  expect(flow).toHaveLength(0);
+  expect(metrics.totalCapex).toBe(0);
+});
 
-## Test Gaps
+it('undefined category returns metrics unchanged', () => {
+  const risked = applyReservesRisk(baseMetrics, undefined);
+  expect(risked).toBe(baseMetrics);
+});
+```
 
-**Tested:**
-- `src/utils/economics.ts` - All 5 exported functions covered with 20 tests
+**Comparison Testing (two scenarios):**
+```typescript
+it('higher oil price increases project NPV', () => {
+  const lowDeck = calculateEconomics(TEST_WELLS, /* ... */, { oilPrice: 60 }, /* ... */);
+  const highDeck = calculateEconomics(TEST_WELLS, /* ... */, { oilPrice: 90 }, /* ... */);
+  expect(highDeck.metrics.npv10).toBeGreaterThan(lowDeck.metrics.npv10);
+});
+```
 
-**Not tested (unit):**
-- `src/services/projectRepository.ts` - All Supabase CRUD operations
-- `src/services/dealRepository.ts` - Deal management operations
-- `src/services/economicsEngine.ts` - Engine adapter layer
-- `src/hooks/useSlopcastWorkspace.ts` - Main workspace state (862 lines)
-- `src/hooks/useDerivedMetrics.ts` - Driver analysis computations
-- `src/auth/` - Auth adapters and provider
-- `src/theme/` - Theme provider
-- All React components in `src/components/`
+## Gaps and Recommendations
 
-**Not tested (integration):**
-- No API integration tests for Python backend
-- No Supabase integration tests
-- No auth flow integration tests
+**Not tested (high priority):**
+- React components (rendering, user interaction) -- `@testing-library/react` is installed but unused
+- Custom hooks (`useSlopcastWorkspace`, `useDerivedMetrics`, `useProjectPersistence`)
+- Service layer / repository functions (`projectRepository.ts`, `dealRepository.ts`)
+- Auth flow (`AuthProvider`, adapter selection)
+- Theme system (`ThemeProvider`, CSS variable application)
 
-## Adding New Tests
-
-**New unit test for a utility function:**
-1. Create `src/utils/{module}.test.ts` co-located with the source
-2. Import from `vitest`: `import { describe, it, expect } from 'vitest'`
-3. Import test data from `src/constants.ts` and `src/types.ts`
-4. Use `describe` per function, `it` per behavior
-5. Use section dividers between describe blocks
-
-**New component test:**
-1. Create `src/components/{component}.test.tsx` co-located with the component
-2. Use `@testing-library/react` for rendering: `import { render, screen } from '@testing-library/react'`
-3. Wrap in necessary providers (ThemeProvider, AuthProvider, BrowserRouter)
-4. Assert with `@testing-library/jest-dom` matchers
-
-**New Playwright test:**
-1. Add spec to `playground/scripts/`
-2. Use `@playwright/test` imports
-3. Follow serial execution pattern for stateful flows
-4. Output screenshots to `playground/ui_screenshots/`
+**Not tested (medium priority):**
+- Python engine proxy (`pyEngine` in `economicsEngine.ts`)
+- LRU cache behavior in `cachedCalculateEconomics`
+- Data transformation (Supabase row mapping snake_case -> camelCase)
 
 ---
 
-*Testing analysis: 2026-03-05*
+*Testing analysis: 2026-03-06*

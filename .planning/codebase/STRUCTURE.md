@@ -1,289 +1,325 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-03-05
+**Analysis Date:** 2026-03-06
 
 ## Directory Layout
 
 ```
 Slopcast/
-├── src/                        # All frontend source code
-│   ├── App.tsx                 # Router / route definitions
-│   ├── index.tsx               # React root with provider stack
-│   ├── types.ts                # All TypeScript interfaces (484 lines)
-│   ├── constants.ts            # Mock wells, default assumptions
-│   ├── constants/              # Extended constants
+├── src/                        # Frontend source (React + TypeScript)
+│   ├── App.tsx                 # Route definitions (React Router)
+│   ├── index.tsx               # React root (provider composition)
+│   ├── types.ts                # All TypeScript interfaces/types
+│   ├── constants.ts            # Mock data, default assumptions
+│   ├── constants/
 │   │   └── templates.ts        # Assumption template presets (Wolfcamp A, Bone Spring, etc.)
-│   ├── auth/                   # Auth adapter pattern
-│   │   ├── AuthProvider.tsx    # Context + useAuth() hook
-│   │   ├── types.ts            # AuthUser, AuthSession, AuthState
-│   │   ├── provider.ts         # AuthAdapter interface
-│   │   └── adapters/           # Concrete adapters
+│   ├── auth/                   # Auth adapter system
+│   │   ├── AuthProvider.tsx    # Context provider + useAuth hook
+│   │   ├── provider.ts         # AuthAdapter interface + localStorage helpers
+│   │   ├── types.ts            # AuthSession, AuthUser, AuthState types
+│   │   └── adapters/           # Pluggable auth implementations
 │   │       ├── devBypassAdapter.ts
 │   │       └── supabaseAdapter.ts
 │   ├── theme/                  # Theme system
-│   │   ├── ThemeProvider.tsx   # Context + useTheme() hook
-│   │   └── themes.ts           # Theme definitions (colors, fonts, backgrounds)
-│   ├── hooks/                  # App-level hooks
-│   │   ├── useSlopcastWorkspace.ts  # Primary workspace state (862 lines)
-│   │   ├── useDerivedMetrics.ts     # Debounced driver sensitivity analysis
-│   │   ├── useKeyboardShortcuts.ts  # Global keyboard shortcuts
-│   │   └── usePerformanceMonitor.ts # Performance tracking
+│   │   ├── ThemeProvider.tsx   # Context provider + useTheme hook
+│   │   └── themes.ts          # Theme definitions (colors, backgrounds, metadata)
+│   ├── styles/
+│   │   └── theme.css           # CSS custom properties for themes
 │   ├── pages/                  # Route-level page components
-│   │   ├── SlopcastPage.tsx    # Main workspace (230 lines, thin JSX)
-│   │   ├── HubPage.tsx         # Multi-app launcher
-│   │   ├── AuthPage.tsx        # Sign-in page
-│   │   ├── IntegrationsPage.tsx # Data integrations
+│   │   ├── SlopcastPage.tsx    # Main workspace (wells + economics)
+│   │   ├── HubPage.tsx         # Module hub / dashboard
+│   │   ├── AuthPage.tsx        # Login/signup
+│   │   ├── IntegrationsPage.tsx # Data integration management
 │   │   └── NotFoundPage.tsx    # 404
-│   ├── components/             # Shared + feature components
-│   │   ├── slopcast/           # Slopcast workspace components (~30 files)
-│   │   │   ├── DesignWellsView.tsx
-│   │   │   ├── DesignEconomicsView.tsx
-│   │   │   ├── PageHeader.tsx
-│   │   │   ├── KpiGrid.tsx
-│   │   │   ├── EconomicsDriversPanel.tsx
-│   │   │   ├── ForecastGrid.tsx
-│   │   │   ├── LandingPage.tsx
-│   │   │   ├── AiAssistant.tsx
-│   │   │   ├── OnboardingTour.tsx
-│   │   │   ├── WorkflowStepper.tsx
-│   │   │   ├── OperationsConsole.tsx
+│   ├── components/             # UI components
+│   │   ├── auth/
+│   │   │   └── ProtectedRoute.tsx
+│   │   ├── debug/
+│   │   │   ├── DebugOverlay.tsx
+│   │   │   └── DebugProvider.tsx
+│   │   ├── integrations/
+│   │   │   ├── ConnectionForm.tsx
+│   │   │   └── SchemaMapper.tsx
+│   │   ├── slopcast/           # Workspace-specific components
 │   │   │   ├── hooks/          # Component-scoped hooks
 │   │   │   │   ├── useProjectPersistence.ts
-│   │   │   │   ├── useViewportLayout.ts
-│   │   │   │   └── useStableChartContainer.ts
-│   │   │   └── ...             # (20+ more components)
-│   │   ├── auth/               # Auth UI
-│   │   │   └── ProtectedRoute.tsx
-│   │   ├── debug/              # Dev-only debug tools
-│   │   │   ├── DebugProvider.tsx
-│   │   │   └── DebugOverlay.tsx
-│   │   ├── integrations/       # Integration UI components
-│   │   ├── Charts.tsx          # Recharts wrappers
-│   │   ├── Controls.tsx        # Form controls (inputs, sliders)
+│   │   │   │   ├── useStableChartContainer.ts
+│   │   │   │   └── useViewportLayout.ts
+│   │   │   ├── DesignWellsView.tsx      # Wells tab (map + filters + group list)
+│   │   │   ├── DesignEconomicsView.tsx  # Economics tab (controls + results)
+│   │   │   ├── DesignWorkspaceTabs.tsx  # WELLS / ECONOMICS tab switcher
+│   │   │   ├── EconomicsResultsTabs.tsx # SUMMARY / CHARTS / DRIVERS sub-tabs
+│   │   │   ├── EconomicsDriversPanel.tsx
+│   │   │   ├── EconomicsGroupBar.tsx
+│   │   │   ├── KpiGrid.tsx
+│   │   │   ├── ForecastGrid.tsx
+│   │   │   ├── GroupWellsTable.tsx
+│   │   │   ├── GroupComparisonStrip.tsx
+│   │   │   ├── PageHeader.tsx
+│   │   │   ├── LandingPage.tsx
+│   │   │   ├── AiAssistant.tsx
+│   │   │   ├── DealsTable.tsx
+│   │   │   ├── EngineComparisonPanel.tsx
+│   │   │   ├── EngineToggle.tsx
+│   │   │   ├── ProfileSelector.tsx
+│   │   │   ├── ReservesPanel.tsx
+│   │   │   ├── SensitivityMatrix.tsx    # (also at components/ level)
+│   │   │   ├── OnboardingTour.tsx
+│   │   │   ├── KeyboardShortcutsHelp.tsx
+│   │   │   ├── ProjectSharePanel.tsx
+│   │   │   ├── AuditLogPanel.tsx
+│   │   │   ├── CommentsPanel.tsx
+│   │   │   ├── OperationsConsole.tsx
+│   │   │   ├── MiniMapPreview.tsx
+│   │   │   ├── MobileScenarioCards.tsx
+│   │   │   ├── AcreageSearchBar.tsx
+│   │   │   ├── WaterfallChart.tsx
+│   │   │   ├── WorkflowStepper.tsx
+│   │   │   └── SectionCard.tsx
+│   │   ├── CapexControls.tsx           # Assumption editors (shared)
+│   │   ├── OpexControls.tsx
+│   │   ├── OwnershipControls.tsx
+│   │   ├── DebtControls.tsx
+│   │   ├── TaxControls.tsx
+│   │   ├── Controls.tsx                # Master controls panel
+│   │   ├── GroupList.tsx
+│   │   ├── Charts.tsx
+│   │   ├── MapVisualizer.tsx
+│   │   ├── ScenarioComparison.tsx
 │   │   ├── ScenarioDashboard.tsx
 │   │   ├── SensitivityMatrix.tsx
-│   │   ├── MapVisualizer.tsx   # Mapbox GL map
-│   │   ├── GroupList.tsx
-│   │   └── *Background.tsx     # Animated theme backgrounds (6 files)
-│   ├── services/               # Data access / adapters
-│   │   ├── supabaseClient.ts   # Singleton Supabase client
-│   │   ├── projectRepository.ts # Project CRUD + collaboration
-│   │   ├── dealRepository.ts   # Deal CRUD
-│   │   ├── economicsEngine.ts  # TS/Python engine adapter
-│   │   ├── profileRepository.ts # Profile/preset management
-│   │   ├── assistantService.ts # AI assistant integration
-│   │   ├── geminiService.ts    # Gemini API wrapper
-│   │   └── integrationService.ts # External data integrations
-│   ├── utils/                  # Pure logic / helpers
-│   │   ├── economics.ts        # Core economics calculations (661+ lines)
-│   │   ├── economics.test.ts   # 20 unit tests
-│   │   ├── debugLogger.ts      # Structured logging
-│   │   ├── localAccount.ts     # Local account helpers
-│   │   ├── mockDsuLayer.ts     # Mock DSU layer data
-│   │   └── overlapDetector.ts  # Well overlap detection
-│   ├── styles/
-│   │   └── theme.css           # CSS custom properties + theme tokens
-│   └── debug/
-│       └── DebugOverlay.tsx    # Dev debug overlay
+│   │   ├── HyperboreaBackground.tsx    # Themed animated canvas backgrounds
+│   │   ├── MarioOverworldBackground.tsx
+│   │   ├── MoonlightBackground.tsx
+│   │   ├── StormDuskBackground.tsx
+│   │   ├── SynthwaveBackground.tsx
+│   │   └── TropicalBackground.tsx
+│   ├── hooks/                  # App-level hooks
+│   │   ├── useSlopcastWorkspace.ts    # Master workspace state (~900 lines)
+│   │   ├── useDerivedMetrics.ts       # Economics shock/driver analysis
+│   │   ├── useKeyboardShortcuts.ts
+│   │   └── usePerformanceMonitor.ts
+│   ├── services/               # Data access / API adapters
+│   │   ├── supabaseClient.ts          # Supabase client singleton
+│   │   ├── projectRepository.ts       # Project CRUD (Supabase)
+│   │   ├── dealRepository.ts          # Deal CRUD (Supabase)
+│   │   ├── profileRepository.ts       # Assumption profile CRUD
+│   │   ├── economicsEngine.ts         # Engine adapter (TS vs Python)
+│   │   ├── integrationService.ts      # Data integration config/jobs
+│   │   ├── assistantService.ts        # AI assistant (Gemini)
+│   │   └── geminiService.ts           # Gemini API client
+│   └── utils/                  # Pure logic (no side effects)
+│       ├── economics.ts               # Core economics calculator (661+ lines)
+│       ├── economics.test.ts          # Unit tests for economics
+│       ├── overlapDetector.ts         # Well overlap detection
+│       ├── mockDsuLayer.ts            # Mock DSU layer data
+│       ├── localAccount.ts            # Local account helpers
+│       └── debugLogger.ts             # Debug logging utility
 ├── backend/                    # Python FastAPI backend
-│   ├── main.py                 # FastAPI app factory + routes
-│   ├── economics.py            # Python economics calculations
-│   ├── sensitivity.py          # Sensitivity matrix generation
+│   ├── main.py                 # FastAPI app factory + route definitions
+│   ├── economics.py            # Python economics calculator
 │   ├── models.py               # Pydantic request/response models
+│   ├── sensitivity.py          # Sensitivity matrix generation
 │   ├── requirements.txt        # Python dependencies
-│   └── tests/                  # Backend test files
-├── supabase/                   # Database schema + types
-│   ├── migrations/             # SQL migration files (7 migrations)
-│   │   ├── 20260220164000_slopcast_v1.sql
-│   │   ├── 20260223_audit_log.sql
-│   │   ├── 20260223_comments.sql
-│   │   ├── 20260223_project_invites.sql
-│   │   ├── 20260227170000_deals_v1.sql
-│   │   ├── 20260227180000_deal_extensions.sql
-│   │   └── 20260227190000_integrations.sql
-│   └── types/
-│       └── database.ts         # Generated Supabase types
+│   └── tests/
+│       └── test_rate_functions.py
+├── supabase/                   # Supabase configuration
+│   ├── config.toml             # Supabase project config
+│   ├── seed.sql                # Seed data
+│   ├── migrations/             # Database migrations
+│   └── types/                  # Generated TypeScript types
 ├── scripts/                    # Build/deploy/audit scripts
-│   └── synthetic-data/         # Seed data generators
-├── playground/                 # Playwright test specs + notebooks
-│   ├── tests/                  # Playwright test files
-│   ├── notebooks/              # Jupyter notebooks
-│   └── ui_screenshots/         # Screenshot comparison assets
-├── public/                     # Static assets
-│   └── assets/
-├── index.html                  # SPA entry point (Tailwind CDN config)
-├── vite.config.ts              # Vite build config (aliases, proxy, chunks)
+│   ├── start-backend.sh        # Start Python backend
+│   ├── ui-audit.mjs            # CSS/style drift checker
+│   ├── ui-snapshots.mjs        # Playwright screenshot capture
+│   ├── ui-verify-flow.mjs      # Playwright flow verification
+│   ├── seed-wells.mjs          # Seed wells to Supabase
+│   ├── deploy-supabase-storage.mjs
+│   ├── generate-synthetic-data.ts
+│   └── theme-fx-toggle.mjs
+├── playground/                 # Playwright test specs
+├── docs/                       # Project documentation (roadmap, requirements, research)
+├── .agents/                    # Multi-agent development system
+│   ├── roles/                  # Agent role definitions
+│   ├── workflows/              # Pipeline definitions
+│   ├── validation/             # gate.sh validation script
+│   ├── adapters/               # IDE-specific configs
+│   └── state/                  # Activity logs
+├── index.html                  # Vite HTML entry point
+├── vite.config.ts              # Vite config (proxy, aliases, chunks)
 ├── vitest.config.ts            # Vitest test runner config
 ├── tsconfig.json               # TypeScript config
-├── package.json                # Dependencies and scripts
-├── server.js                   # Express production server
-├── deploy.sh                   # Deployment script
-└── CLAUDE.md                   # AI agent conventions
+├── package.json                # npm scripts and dependencies
+├── server.js                   # Production Express server
+└── deploy.sh                   # Deployment script
 ```
 
 ## Directory Purposes
 
-**`src/hooks/`:**
-- Purpose: App-level custom hooks that own state and orchestrate logic
-- Contains: The primary workspace hook (`useSlopcastWorkspace.ts`) plus specialized hooks
-- Key files: `useSlopcastWorkspace.ts` is the single most important file -- all workspace state flows through it
+**`src/pages/`:**
+- Purpose: One component per route, acts as the "controller" wiring hooks to UI
+- Contains: 5 page components
+- Key files: `SlopcastPage.tsx` (main app), `HubPage.tsx` (module launcher)
 
 **`src/components/slopcast/`:**
-- Purpose: All UI components specific to the Slopcast workspace
-- Contains: ~30 React components for wells view, economics view, KPIs, charts, operations console, onboarding, etc.
-- Key files: `DesignEconomicsView.tsx`, `DesignWellsView.tsx`, `PageHeader.tsx`, `KpiGrid.tsx`
+- Purpose: All components specific to the Slopcast workspace
+- Contains: ~30 components + scoped hooks
+- Key files: `DesignEconomicsView.tsx` (economics workspace), `DesignWellsView.tsx` (wells workspace), `PageHeader.tsx` (navigation/theme controls)
 
-**`src/components/slopcast/hooks/`:**
-- Purpose: Hooks scoped to slopcast components (persistence, viewport, chart containers)
-- Contains: `useProjectPersistence.ts` (Supabase sync), `useViewportLayout.ts` (responsive breakpoints), `useStableChartContainer.ts`
+**`src/components/` (root level):**
+- Purpose: Shared components used across pages, plus assumption editors and themed backgrounds
+- Contains: Control panels (Capex, Opex, Ownership, Debt, Tax), visualization components, animated backgrounds
+- Key files: `Controls.tsx` (master controls), `MapVisualizer.tsx`, `ScenarioDashboard.tsx`
+
+**`src/hooks/`:**
+- Purpose: App-level state management hooks
+- Contains: 4 hooks
+- Key files: `useSlopcastWorkspace.ts` (the central state hook, ~900 lines)
 
 **`src/services/`:**
-- Purpose: Data access layer -- all external I/O goes through services
-- Contains: Repository pattern files for projects and deals, engine adapter, Supabase client singleton
-- Key files: `projectRepository.ts` (project CRUD + collaboration), `economicsEngine.ts` (engine adapter)
+- Purpose: All external data access -- Supabase repositories, API adapters, AI services
+- Contains: 8 service modules
+- Key files: `projectRepository.ts` (project persistence), `economicsEngine.ts` (engine adapter)
 
 **`src/utils/`:**
-- Purpose: Pure deterministic functions with no side effects or external dependencies
-- Contains: Core economics calculations, debug logging, overlap detection
-- Key files: `economics.ts` is the computational heart of the app -- all NPV, IRR, decline curves, tax, debt calculations
+- Purpose: Pure, deterministic calculation functions with no side effects
+- Contains: Economics calculator, overlap detection, mock data generators
+- Key files: `economics.ts` (core calculator, the most critical business logic file)
 
 **`src/auth/`:**
-- Purpose: Authentication adapter pattern with pluggable providers
-- Contains: AuthProvider context, adapter interface, two concrete adapters
-- Key files: `AuthProvider.tsx` exports both `AuthProvider` component and `useAuth()` hook
+- Purpose: Pluggable authentication system
+- Contains: Provider, adapter interface, two adapter implementations
+- Key files: `AuthProvider.tsx` (the context provider all consumers use)
 
 **`src/theme/`:**
 - Purpose: Multi-theme system with dark/light modes
-- Contains: ThemeProvider context and theme definitions
-- Key files: `themes.ts` defines all available themes with colors, fonts, and optional background components
+- Contains: Provider and theme definitions
+- Key files: `themes.ts` (all theme color palettes and metadata)
 
 **`backend/`:**
-- Purpose: Python-based alternative economics engine
-- Contains: FastAPI app, Pydantic models, economics/sensitivity calculation modules
-- Key files: `main.py` (3 API endpoints), `economics.py` (calculation logic)
-
-**`supabase/`:**
-- Purpose: Database schema and generated types for the Supabase backend
-- Contains: SQL migrations and TypeScript type definitions
-- Key files: `migrations/20260220164000_slopcast_v1.sql` (core schema), `types/database.ts` (generated)
+- Purpose: Python alternative economics engine (FastAPI)
+- Contains: 4 source files + tests
+- Key files: `economics.py` (Python calculator), `main.py` (API routes)
 
 ## Key File Locations
 
 **Entry Points:**
-- `index.html`: SPA shell with Tailwind CDN config and theme token setup
-- `src/index.tsx`: React root mount with provider hierarchy
-- `src/App.tsx`: Route definitions with lazy-loaded pages
-- `backend/main.py`: FastAPI application factory
+- `index.html`: Vite HTML shell, references `src/index.tsx`
+- `src/index.tsx`: React root, provider composition
+- `src/App.tsx`: Route definitions
+- `backend/main.py`: FastAPI app
 
 **Configuration:**
-- `vite.config.ts`: Dev server (port 3000), `/api` proxy to 8001, `@` path alias, chunk splitting
-- `tsconfig.json`: ES2022 target, bundler module resolution, `@/*` path alias
-- `vitest.config.ts`: Test runner configuration
-- `package.json`: All npm scripts, dependencies
+- `vite.config.ts`: Dev server (port 3000), `/api` proxy, path alias `@` -> `src/`
+- `vitest.config.ts`: Test runner config
+- `tsconfig.json`: TypeScript compiler options
+- `package.json`: Scripts, dependencies
+- `supabase/config.toml`: Supabase project configuration
+- `.env.example`: Required environment variables (existence noted only)
 
 **Core Logic:**
-- `src/utils/economics.ts`: All economics calculations (decline curves, NPV, IRR, tax, debt, reserves risk)
-- `src/hooks/useSlopcastWorkspace.ts`: All workspace state management (862 lines)
-- `src/services/projectRepository.ts`: Supabase persistence (projects, groups, scenarios, economics runs, collaboration)
-- `src/services/dealRepository.ts`: Deal-specific CRUD operations
+- `src/utils/economics.ts`: All economics calculations (decline curves, NPV, IRR, cash flows, tax, debt, reserves risk)
+- `src/hooks/useSlopcastWorkspace.ts`: Central workspace state management
+- `src/services/economicsEngine.ts`: Engine adapter (TypeScript vs Python)
+- `src/services/projectRepository.ts`: Project CRUD operations
 
 **Testing:**
-- `src/utils/economics.test.ts`: 20 unit tests for economics functions
-- `playground/tests/`: Playwright E2E/visual test specs
-- `backend/tests/`: Python backend tests
+- `src/utils/economics.test.ts`: Unit tests for economics functions
+- `backend/tests/test_rate_functions.py`: Python backend tests
+- `playground/`: Playwright E2E specs
 
 ## Naming Conventions
 
 **Files:**
-- Components: PascalCase (`DesignEconomicsView.tsx`, `KpiGrid.tsx`, `PageHeader.tsx`)
+- Components: PascalCase (`DesignEconomicsView.tsx`, `CapexControls.tsx`)
 - Hooks: camelCase with `use` prefix (`useSlopcastWorkspace.ts`, `useDerivedMetrics.ts`)
-- Services: camelCase with pattern suffix (`projectRepository.ts`, `economicsEngine.ts`, `supabaseClient.ts`)
-- Utils: camelCase (`economics.ts`, `debugLogger.ts`)
-- Types: camelCase (`types.ts`)
-- Tests: `*.test.ts` suffix co-located with source
+- Services: camelCase with descriptive suffix (`projectRepository.ts`, `economicsEngine.ts`)
+- Utils: camelCase (`economics.ts`, `overlapDetector.ts`)
+- Tests: same name as source + `.test.ts` suffix (`economics.test.ts`)
+- CSS: kebab-case (`theme.css`)
 
 **Directories:**
-- Lowercase, kebab-case for multi-word (`synthetic-data/`)
-- Feature-scoped nesting (`components/slopcast/hooks/`)
-
-**Exports:**
-- Components: default export matching filename (`export default SlopcastPage`)
-- Hooks: named export (`export function useSlopcastWorkspace()`)
-- Services: named exports of individual functions (`export async function saveProject()`)
-- Types: named exports from `src/types.ts`
+- All lowercase, descriptive (`pages/`, `components/`, `hooks/`, `services/`, `utils/`, `auth/`, `theme/`)
+- Feature-scoped subdirectories under components (`slopcast/`, `integrations/`, `auth/`, `debug/`)
 
 ## Where to Add New Code
 
-**New Page/Route:**
-1. Create page component in `src/pages/NewPage.tsx` (PascalCase, default export)
-2. Add lazy import and `<Route>` in `src/App.tsx`
-3. Wrap with `<ProtectedRoute>` if auth required
+**New Route/Page:**
+- Create page component: `src/pages/NewPage.tsx`
+- Add route in `src/App.tsx` (use `React.lazy()` for code-splitting)
+- Wrap with `<ProtectedRoute>` if auth is required
 
-**New Slopcast Feature Component:**
-1. Create component in `src/components/slopcast/NewComponent.tsx`
-2. If it needs its own hook, add to `src/components/slopcast/hooks/useNewFeature.ts`
-3. Wire into `SlopcastPage.tsx` and pass workspace data from `useSlopcastWorkspace`
+**New Slopcast Workspace Component:**
+- Component: `src/components/slopcast/NewComponent.tsx`
+- If it needs a scoped hook: `src/components/slopcast/hooks/useNewThing.ts`
+- Wire into `DesignEconomicsView.tsx` or `DesignWellsView.tsx` as appropriate
 
-**New Economics Calculation:**
-1. Add pure function to `src/utils/economics.ts`
-2. Export it and add unit test in `src/utils/economics.test.ts`
-3. If needed in the engine adapter, add to the `EconomicsEngine` interface in `src/services/economicsEngine.ts`
+**New Shared/Reusable Component:**
+- Place in `src/components/NewComponent.tsx`
+- If it is feature-scoped, create a subdirectory: `src/components/featureName/`
 
 **New Service/Repository:**
-1. Create `src/services/newRepository.ts`
-2. Follow the pattern in `projectRepository.ts`: `requireSupabase()` guard, `requireUserId()` for auth, snake_case DB columns mapped to camelCase TS interfaces
+- Add to `src/services/newService.ts`
+- Follow the pattern in `projectRepository.ts`: export standalone async functions, use `getSupabaseClient()` for Supabase calls
 
-**New TypeScript Interface:**
-1. Add to `src/types.ts` -- all domain types live in this single file
+**New Economics Feature:**
+- Pure calculation logic: add to `src/utils/economics.ts`
+- Add unit tests in `src/utils/economics.test.ts`
+- If it needs an engine adapter method: add to the `EconomicsEngine` interface in `src/services/economicsEngine.ts` and implement in both `tsEngine` and `pyEngine`
 
-**New Supabase Table:**
-1. Add migration in `supabase/migrations/` with timestamp prefix
-2. Update `supabase/types/database.ts` with generated types
+**New Type/Interface:**
+- Add to `src/types.ts` (all domain types live in this single file)
 
-**New Theme Background:**
-1. Create `src/components/NewBackground.tsx`
-2. Register in `src/theme/themes.ts` as `BackgroundComponent` on the theme definition
+**New Default Constants:**
+- Add to `src/constants.ts` (single values) or `src/constants/templates.ts` (template presets)
 
-**New Shared Hook:**
-- App-level: `src/hooks/useNewHook.ts`
-- Component-scoped: `src/components/slopcast/hooks/useNewHook.ts`
+**New Theme:**
+- Add theme definition to `src/theme/themes.ts`
+- Add corresponding CSS custom properties to `src/styles/theme.css`
+- Optionally add a canvas background component: `src/components/NewThemeBackground.tsx`
 
-**New Utility Function:**
-- Economics-related: `src/utils/economics.ts`
-- General purpose: new file in `src/utils/newUtil.ts`
+**New Backend Endpoint:**
+- Add Pydantic models to `backend/models.py`
+- Add business logic to `backend/economics.py` or new module
+- Add route in `backend/main.py`
+- Add corresponding `pyEngine` method in `src/services/economicsEngine.ts`
+
+**Utilities:**
+- Pure helpers: `src/utils/newUtil.ts`
+- Keep side-effect-free; only import from `src/types.ts`
 
 ## Special Directories
 
-**`node_modules/`:**
-- Purpose: NPM dependencies
-- Generated: Yes
-- Committed: No
+**`.agents/`:**
+- Purpose: Multi-agent development system (supervisor/implementer/validator roles)
+- Generated: No (manually authored)
+- Committed: Yes
+
+**`supabase/migrations/`:**
+- Purpose: Database schema migrations for Supabase
+- Generated: Via Supabase CLI
+- Committed: Yes
 
 **`dist/`:**
 - Purpose: Production build output
 - Generated: Yes (`npm run build`)
-- Committed: No
-
-**`output/playwright/`:**
-- Purpose: Playwright screenshot captures for visual regression
-- Generated: Yes (by UI scripts)
-- Committed: Mixed (some committed for comparison)
-
-**`.planning/`:**
-- Purpose: GSD planning documents and codebase analysis
-- Generated: By AI agents
-- Committed: Yes
-
-**`.agents/`:**
-- Purpose: Multi-agent development system configuration
-- Generated: No (hand-authored)
-- Committed: Yes
+- Committed: No (in `.gitignore`)
 
 **`playground/`:**
-- Purpose: Exploratory tests, notebooks, and screenshot fixtures
-- Generated: Mixed
+- Purpose: Playwright test specifications and UI flow tests
+- Generated: No
+- Committed: Yes
+
+**`.planning/`:**
+- Purpose: Codebase analysis and planning documents
+- Generated: By analysis agents
+- Committed: Yes
+
+**`scripts/`:**
+- Purpose: Build, deploy, data generation, and UI audit scripts
+- Generated: No
 - Committed: Yes
 
 ---
 
-*Structure analysis: 2026-03-05*
+*Structure analysis: 2026-03-06*

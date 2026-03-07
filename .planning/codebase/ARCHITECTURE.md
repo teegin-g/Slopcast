@@ -1,200 +1,200 @@
 # Architecture
 
-**Analysis Date:** 2026-03-05
+**Analysis Date:** 2026-03-06
 
 ## Pattern Overview
 
-**Overall:** Single-page application with a "fat hook" pattern -- one monolithic workspace hook owns all state and logic for the main page, and thin page components render JSX from its return value.
+**Overall:** Single-page React application with optional Python backend, using context-based state management and an adapter pattern for swappable services (auth, economics engine, persistence).
 
 **Key Characteristics:**
-- React SPA with client-side routing (React Router v7)
-- Provider-wrapped root: ThemeProvider > BrowserRouter > AuthProvider > App
-- All business logic concentrated in `useSlopcastWorkspace` hook (862 lines)
-- Economics calculations run entirely in-browser (TypeScript) with an optional Python FastAPI backend
-- Supabase for persistence when authenticated; localStorage fallback for anonymous/dev use
-- Lazy-loaded routes with code splitting at the page level
-- Adapter pattern for both Auth and Economics Engine, allowing runtime swapping
+- Client-heavy architecture: economics calculations run in-browser by default (TypeScript engine), with an optional Python FastAPI backend as an alternative engine
+- Adapter pattern used for auth (dev-bypass vs Supabase) and economics (TypeScript vs Python)
+- Context providers form a layered dependency tree: ThemeProvider > BrowserRouter > AuthProvider > App
+- All domain state for the main workspace lives in a single monolithic hook (`useSlopcastWorkspace`) rather than a global store
+- Supabase used as the persistence layer (optional -- falls back to localStorage when env vars are absent)
 
 ## Layers
 
-**Presentation (Pages):**
-- Purpose: Route-level components that compose UI from shared components
+**Providers (Context Layer):**
+- Purpose: Cross-cutting concerns injected via React Context
+- Location: `src/index.tsx` (composition root)
+- Contains: ThemeProvider, AuthProvider, BrowserRouter
+- Depends on: `src/theme/ThemeProvider.tsx`, `src/auth/AuthProvider.tsx`
+- Used by: All route-level pages and their descendants
+
+**Pages (Route Layer):**
+- Purpose: Top-level route components, one per URL path
 - Location: `src/pages/`
 - Contains: `SlopcastPage.tsx`, `HubPage.tsx`, `AuthPage.tsx`, `IntegrationsPage.tsx`, `NotFoundPage.tsx`
-- Depends on: hooks, components
-- Used by: `src/App.tsx` router
+- Depends on: hooks, components, services
+- Used by: `src/App.tsx` (route definitions)
 
-**State Management (Hooks):**
-- Purpose: Own all application state, computed values, and handler callbacks
+**Hooks (State/Logic Layer):**
+- Purpose: Encapsulate state management and derived computations
 - Location: `src/hooks/` (app-level), `src/components/slopcast/hooks/` (component-scoped)
-- Contains: `useSlopcastWorkspace.ts` (primary), `useDerivedMetrics.ts`, `useKeyboardShortcuts.ts`, `useProjectPersistence.ts`, `useViewportLayout.ts`
-- Depends on: services, utils, auth, theme, types
+- Contains: `useSlopcastWorkspace.ts` (master workspace state), `useDerivedMetrics.ts`, `useKeyboardShortcuts.ts`, `useProjectPersistence.ts`, `useViewportLayout.ts`
+- Depends on: services, utils, types, constants
+- Used by: pages and components
+
+**Components (UI Layer):**
+- Purpose: Reusable and feature-specific UI components
+- Location: `src/components/` (shared), `src/components/slopcast/` (workspace-specific)
+- Contains: Controls (CapexControls, OpexControls, etc.), visualizations (Charts, MapVisualizer, ScenarioDashboard), backgrounds (themed canvas backgrounds)
+- Depends on: hooks, types, theme
 - Used by: pages
 
-**Components:**
-- Purpose: Reusable UI elements, from atomic controls to composite views
-- Location: `src/components/` (shared), `src/components/slopcast/` (workspace-specific)
-- Contains: ~30 slopcast components, background theme components, auth/debug/integration components
-- Depends on: types, theme context
-- Used by: pages via hooks
-
-**Services:**
-- Purpose: Data access adapters -- Supabase CRUD, economics engine dispatch
+**Services (Data Access Layer):**
+- Purpose: External data operations and API adapters
 - Location: `src/services/`
-- Contains: `projectRepository.ts`, `dealRepository.ts`, `economicsEngine.ts`, `supabaseClient.ts`, `assistantService.ts`, `geminiService.ts`, `integrationService.ts`, `profileRepository.ts`
-- Depends on: Supabase client, utils/economics
-- Used by: hooks (via persistence hook), components
+- Contains: `projectRepository.ts`, `dealRepository.ts`, `profileRepository.ts`, `economicsEngine.ts`, `integrationService.ts`, `supabaseClient.ts`, `assistantService.ts`, `geminiService.ts`
+- Depends on: Supabase client, types
+- Used by: hooks
 
-**Utils (Pure Logic):**
-- Purpose: Deterministic business calculations with zero side effects
+**Utils (Pure Logic Layer):**
+- Purpose: Deterministic, side-effect-free calculations
 - Location: `src/utils/`
-- Contains: `economics.ts` (661+ lines), `debugLogger.ts`, `localAccount.ts`, `mockDsuLayer.ts`, `overlapDetector.ts`
+- Contains: `economics.ts` (core economics calculator), `overlapDetector.ts`, `mockDsuLayer.ts`, `localAccount.ts`, `debugLogger.ts`
 - Depends on: types only
-- Used by: services (economicsEngine wraps it), hooks (direct import for cached calculations)
+- Used by: services (economics engine), hooks (derived metrics)
 
-**Auth:**
-- Purpose: Authentication state management via adapter pattern
+**Auth (Authentication Layer):**
+- Purpose: Pluggable authentication via adapter pattern
 - Location: `src/auth/`
-- Contains: `AuthProvider.tsx` (context + hook), `types.ts`, `provider.ts` (adapter interface), `adapters/devBypassAdapter.ts`, `adapters/supabaseAdapter.ts`
-- Depends on: Supabase client (conditionally)
-- Used by: all protected routes, persistence logic
+- Contains: `AuthProvider.tsx`, `provider.ts` (adapter interface), `types.ts`, `adapters/devBypassAdapter.ts`, `adapters/supabaseAdapter.ts`
+- Depends on: Supabase client (for supabase adapter)
+- Used by: provider layer, ProtectedRoute component
 
-**Theme:**
-- Purpose: Multi-theme system with CSS custom properties and optional animated backgrounds
+**Theme (Theming Layer):**
+- Purpose: Multi-theme support with CSS custom properties
 - Location: `src/theme/`
-- Contains: `ThemeProvider.tsx` (context + hook), `themes.ts` (theme definitions)
-- Depends on: nothing (leaf)
-- Used by: all components via `useTheme()` hook and `isClassic` prop drilling
+- Contains: `ThemeProvider.tsx`, `themes.ts` (theme definitions)
+- Depends on: nothing (leaf dependency)
+- Used by: provider layer, components (for styling decisions)
 
-**Backend (Python):**
-- Purpose: Alternative economics engine with identical API surface
+**Backend (Python API):**
+- Purpose: Alternative economics engine; server-side calculation for validation/comparison
 - Location: `backend/`
-- Contains: `main.py` (FastAPI app), `economics.py`, `sensitivity.py`, `models.py`
-- Depends on: nothing (standalone)
-- Used by: frontend via `/api` proxy when Python engine is selected
+- Contains: `main.py` (FastAPI app), `economics.py`, `models.py`, `sensitivity.py`, `tests/`
+- Depends on: FastAPI, Pydantic
+- Used by: Frontend via `/api` proxy (Vite dev server proxies to `http://127.0.0.1:8001`)
 
 ## Data Flow
 
 **Economics Calculation (primary flow):**
 
-1. User modifies assumptions (type curve, CAPEX, OPEX, ownership) via UI controls in `DesignEconomicsView`
-2. `useSlopcastWorkspace` updates `groups` state via `handleUpdateGroup`
-3. `processedGroups` useMemo recomputes: for each group, calls `cachedCalculateEconomics()` from `src/utils/economics.ts` with base scenario pricing
-4. Optional tax/debt/reserves layers applied on top: `applyTaxLayer()`, `applyDebtLayer()`, `applyReservesRisk()`
-5. `aggregateEconomics()` combines all groups into portfolio-level `aggregateFlow` + `aggregateMetrics`
-6. `useDerivedMetrics` computes driver sensitivities (debounced) from processed groups
-7. Components receive metrics/flow as props and render KPIs, charts, tables
+1. User configures well groups with assumptions (type curve, CAPEX, OPEX, ownership) via Controls components in `src/components/slopcast/DesignEconomicsView.tsx`
+2. `useSlopcastWorkspace` hook (`src/hooks/useSlopcastWorkspace.ts`) holds all workspace state and triggers recalculation when assumptions change
+3. `useDerivedMetrics` hook (`src/hooks/useDerivedMetrics.ts`) calls `cachedCalculateEconomics()` from `src/utils/economics.ts` for each group
+4. Results (MonthlyCashFlow[] and DealMetrics) flow back through the hook to DesignEconomicsView, KpiGrid, Charts, ForecastGrid, and sensitivity panels
+5. Optional post-processing layers: `applyTaxLayer()`, `applyDebtLayer()`, `applyReservesRisk()` from `src/utils/economics.ts`
 
-**State Management:**
-- All workspace state lives in `useSlopcastWorkspace` hook as `useState` calls
-- No external state library (no Redux, Zustand, etc.)
-- Computed values derived via `useMemo` chains
-- `useCallback` wraps all handlers for referential stability
+**Project Persistence:**
 
-**Persistence Flow:**
-
-1. `useProjectPersistence` watches `groups`, `scenarios`, `activeGroupId`, `uiState` for changes
-2. When authenticated with Supabase: calls `saveProject()` RPC to persist bundle atomically
-3. When unauthenticated: falls back to `localStorage` for key UI preferences (workspace tab, results tab, theme)
-4. On load: attempts to hydrate from Supabase project, then falls back to defaults with mock data
+1. `useProjectPersistence` hook (`src/components/slopcast/hooks/useProjectPersistence.ts`) monitors groups/scenarios/UI state
+2. When authenticated with Supabase env vars present: auto-saves to Supabase via `projectRepository.ts` (`src/services/projectRepository.ts`)
+3. When unauthenticated or no Supabase: falls back to localStorage
+4. On load: attempts to restore from Supabase first, then localStorage
 
 **Auth Flow:**
 
-1. `AuthProvider` creates adapter based on `VITE_AUTH_PROVIDER` env var
-2. `DevBypassAdapter` auto-authenticates with fake session (local dev)
-3. `SupabaseAdapter` delegates to Supabase Auth (production)
-4. `useAuth()` exposes `{ status, session, signIn, signOut }`
-5. `ProtectedRoute` component guards `/slopcast` and `/hub/integrations`
+1. `AuthProvider` (`src/auth/AuthProvider.tsx`) selects adapter based on `VITE_AUTH_PROVIDER` env var
+2. `DevBypassAdapter` (`src/auth/adapters/devBypassAdapter.ts`): auto-authenticates with a mock user for local development
+3. `SupabaseAdapter` (`src/auth/adapters/supabaseAdapter.ts`): delegates to Supabase Auth
+4. `ProtectedRoute` (`src/components/auth/ProtectedRoute.tsx`) guards routes requiring authentication
+
+**State Management:**
+- No global store (no Redux, Zustand, etc.)
+- All workspace state centralized in `useSlopcastWorkspace` hook (~900 lines), which composes smaller hooks
+- Theme state in ThemeProvider context
+- Auth state in AuthProvider context
+- Persistence state in useProjectPersistence hook
+- UI preferences stored in localStorage with dedicated storage keys
 
 ## Key Abstractions
 
-**WellGroup:**
-- Purpose: Central domain object -- a named collection of wells with all economic assumptions attached
-- Examples: `src/types.ts` (interface), `src/hooks/useSlopcastWorkspace.ts` (state management)
-- Pattern: Immutable updates via spread + map in callbacks
+**Economics Engine (Adapter):**
+- Purpose: Swap between TypeScript (browser) and Python (server) calculation engines
+- Definition: `src/services/economicsEngine.ts` (interface `EconomicsEngine`)
+- Implementations: `tsEngine` (wraps `src/utils/economics.ts`), `pyEngine` (calls FastAPI via `/api` proxy)
+- Selection: persisted in localStorage (`slopcast_engine_id`), toggled via `EngineToggle` component
 
-**Scenario:**
-- Purpose: Pricing/schedule/scalar overlay applied across groups for comparison analysis
-- Examples: `src/types.ts`, `src/hooks/useSlopcastWorkspace.ts`
-- Pattern: Array of scenarios, one marked `isBaseCase`, base case pricing feeds into economics
+**Auth Adapter:**
+- Purpose: Swap between dev-bypass and Supabase authentication
+- Definition: `src/auth/provider.ts` (interface `AuthAdapter`)
+- Implementations: `src/auth/adapters/devBypassAdapter.ts`, `src/auth/adapters/supabaseAdapter.ts`
+- Selection: `VITE_AUTH_PROVIDER` env var (`dev-bypass` default, `supabase` for production)
 
-**EconomicsEngine (adapter):**
-- Purpose: Abstracts calculation backend (TypeScript browser vs Python FastAPI)
-- Examples: `src/services/economicsEngine.ts`
-- Pattern: Interface with `calculateEconomics`, `aggregateEconomics`, `generateSensitivityMatrix`; registry pattern with localStorage preference
+**WellGroup (Domain Model):**
+- Purpose: Central domain object grouping wells with all economics assumptions
+- Definition: `src/types.ts` (interface `WellGroup`)
+- Contains: wellIds, typeCurve, capex, opex, ownership, optional tax/debt/reserve settings, computed metrics/flow
+- Pattern: Groups are the unit of economics calculation; each group produces independent cash flows that can be aggregated
 
-**AuthAdapter:**
-- Purpose: Abstracts authentication provider
-- Examples: `src/auth/provider.ts` (interface), `src/auth/adapters/devBypassAdapter.ts`, `src/auth/adapters/supabaseAdapter.ts`
-- Pattern: Strategy pattern selected at boot time via env var
+**Scenario (Analysis Model):**
+- Purpose: Pricing/schedule/scalar overlays for what-if analysis
+- Definition: `src/types.ts` (interface `Scenario`)
+- Pattern: Base case + N alternate scenarios; ScenarioDashboard (`src/components/ScenarioDashboard.tsx`) compares them side-by-side
 
-**ThemeProvider:**
-- Purpose: Runtime theme switching with CSS custom properties
-- Examples: `src/theme/ThemeProvider.tsx`, `src/theme/themes.ts`
-- Pattern: React Context with `data-theme` and `data-mode` attributes on `<html>`, themes define color tokens + optional animated background components
+**Repository Pattern (Persistence):**
+- Purpose: CRUD operations against Supabase tables
+- Examples: `src/services/projectRepository.ts`, `src/services/dealRepository.ts`, `src/services/profileRepository.ts`
+- Pattern: Each repository exports standalone async functions (not classes); requires `getSupabaseClient()` from `src/services/supabaseClient.ts`
 
 ## Entry Points
 
-**Browser Entry:**
-- Location: `index.html` > `src/index.tsx`
-- Triggers: Page load
-- Responsibilities: Mounts React root with provider stack (ThemeProvider > BrowserRouter > AuthProvider > App), imports global CSS
+**Frontend:**
+- Location: `src/index.tsx`
+- Triggers: Browser loads `index.html` which mounts React root
+- Responsibilities: Composes provider tree (Theme > Router > Auth), renders `<App />`
 
 **Router:**
 - Location: `src/App.tsx`
-- Triggers: URL changes
-- Responsibilities: Lazy-loads page components, handles route guards via `ProtectedRoute`, redirects `/` to `/slopcast`
+- Routes:
+  - `/` -> redirects to `/slopcast`
+  - `/slopcast` -> `SlopcastPage` (protected)
+  - `/hub` -> `HubPage` (public)
+  - `/hub/integrations` -> `IntegrationsPage` (protected)
+  - `/auth` -> `AuthPage`
+  - `*` -> `NotFoundPage`
+- Uses `React.lazy()` for code-splitting all pages
 
-**Production Server:**
-- Location: `server.js`
-- Triggers: `npm start`
-- Responsibilities: Serves static `dist/` build, proxies `/api/engine/*` to Python backend on port 8001, SPA fallback
-
-**Backend API:**
+**Backend:**
 - Location: `backend/main.py`
-- Triggers: HTTP requests to `/api/*`
-- Responsibilities: Economics calculation and sensitivity analysis endpoints; mirrors TypeScript calculator logic
+- Triggers: `uvicorn backend.main:app --port 8001` (see `scripts/start-backend.sh`)
+- Endpoints:
+  - `GET /api/health`
+  - `POST /api/economics/calculate`
+  - `POST /api/economics/aggregate`
+  - `POST /api/sensitivity/matrix`
 
-**Vite Dev Server:**
+**Build/Dev:**
 - Location: `vite.config.ts`
-- Triggers: `npm run dev`
-- Responsibilities: HMR, proxies `/api` to `http://127.0.0.1:8001`
-
-## Routes
-
-| Path | Component | Auth Required | Purpose |
-|------|-----------|---------------|---------|
-| `/` | Redirect | No | Redirects to `/slopcast` |
-| `/slopcast` | `SlopcastPage` | Yes | Main workspace (wells + economics) |
-| `/hub` | `HubPage` | No | Multi-app launcher / command hub |
-| `/hub/integrations` | `IntegrationsPage` | Yes | Data integration management |
-| `/auth` | `AuthPage` | No | Sign-in page |
-| `*` | `NotFoundPage` | No | 404 fallback |
+- Dev server: port 3000, proxies `/api` to `http://127.0.0.1:8001`
+- Build output: `dist/`
 
 ## Error Handling
 
-**Strategy:** Defensive with silent fallbacks. Most errors are caught and logged to console or shown as transient action messages.
+**Strategy:** Mostly try/catch with silent fallbacks; no centralized error boundary or error reporting service.
 
 **Patterns:**
-- `try/catch` around all `localStorage` reads/writes (SSR/incognito safety)
-- Supabase errors bubble up through repository functions and are caught in persistence hook, displayed as `actionMessage` toast
-- Economics calculations are pure and do not throw; invalid inputs produce zero/NaN metrics
-- Python backend errors return HTTP error codes, caught by `pyFetch` wrapper in `economicsEngine.ts`
+- Auth adapter: catches initialization errors, falls back to `unauthenticated` state
+- localStorage reads: wrapped in try/catch, return defaults on failure
+- Supabase calls: check for `error` property on response, throw or return null
+- Python engine: `pyFetch` checks `res.ok`, throws with status text on failure
+- Economics calculations: no explicit error handling in the core calculator (assumes valid inputs)
 
 ## Cross-Cutting Concerns
 
-**Logging:** Console-only. `src/utils/debugLogger.ts` provides structured logging. `vite-plugin-debug-logger.ts` adds build-time instrumentation. Debug overlay available in dev mode via `src/components/debug/DebugProvider.tsx`.
+**Logging:** Custom debug logger (`src/utils/debugLogger.ts`) + Vite plugin (`vite-plugin-debug-logger.ts`). Debug overlay available in dev mode (`src/components/debug/DebugProvider.tsx`, `DebugOverlay.tsx`). Performance monitoring via `src/hooks/usePerformanceMonitor.ts`.
 
-**Validation:** Inline in `useSlopcastWorkspace` via `validationWarnings` useMemo. Checks for missing wells, invalid pricing, bad NRI ranges, missing CAPEX items. Displayed as warning badges in UI.
+**Validation:** Minimal client-side validation. Inputs mostly use controlled components with numeric constraints. No schema validation library (no Zod, Yup, etc.).
 
-**Authentication:** Adapter pattern in `src/auth/`. `ProtectedRoute` component wraps guarded routes. Dev bypass auto-authenticates locally.
+**Authentication:** Adapter-based via `src/auth/AuthProvider.tsx`. Route protection via `src/components/auth/ProtectedRoute.tsx`. Dev bypass auto-authenticates locally.
 
-**Responsive Layout:** `useViewportLayout` hook returns `'mobile' | 'mid' | 'desktop'` based on window width breakpoints (1024, 1320). Components switch between mobile panels and desktop side-by-side layouts.
+**Theming:** CSS custom properties driven by `data-theme` and `data-mode` attributes on `<html>`. Multiple themes defined in `src/theme/themes.ts`. Animated canvas backgrounds per theme (`src/components/*Background.tsx`).
 
-**Theming:** All color values use CSS custom properties (`--cyan`, `--magenta`, etc.) mapped through Tailwind's `theme-*` utility classes. Components receive `isClassic` boolean to branch between "mario" theme (retro) and modern themes. Some themes include animated WebGL/canvas background components.
-
-**Caching:** `src/utils/economics.ts` implements an LRU cache (max 100 entries) for `calculateEconomics` to avoid redundant computation on re-renders.
+**Caching:** LRU cache for economics calculations in `src/utils/economics.ts` (max 100 entries, key built from all input parameters).
 
 ---
 
-*Architecture analysis: 2026-03-05*
+*Architecture analysis: 2026-03-06*
