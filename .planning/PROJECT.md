@@ -1,93 +1,75 @@
-# Slopcast Data Persistence Layer
+# Slopcast UI Revamp
 
 ## What This Is
 
-A multi-tenant data persistence layer for Slopcast that moves from localStorage-only to a Supabase-backed architecture. This enables users to save and share deal evaluations across sessions and within their organization, while maintaining strict tenant isolation. The system supports both demo mode (mock data) and live mode (database) via a user-controlled toggle.
+A visual and navigational overhaul of the Slopcast workspace — the main oil & gas economics modeling interface. The goal is to bring the GUI up to modern SaaS standards (inspired by Apple and Databricks) while preserving the existing animated background themes that define Slopcast's identity. Same functionality, better presentation and navigation.
 
 ## Core Value
 
-All user work—well groups, economic assumptions, scenarios, and calculated results—persists reliably and is accessible to authorized users within their tenant, never lost to browser storage limitations.
+Users can navigate the workspace intuitively — always knowing where they are, what they can do, and how to find settings — without the UI getting in the way of the animated themes underneath.
 
 ## Requirements
 
 ### Validated
 
-- ✓ Well metadata structure (operator, formation, location, status) — existing in types.ts
-- ✓ WellGroup structure with assumptions (type curve, CAPEX, OPEX, ownership) — existing in types.ts
-- ✓ Scenario structure (pricing, schedule, scalars) — existing in types.ts
-- ✓ DealMetrics calculation outputs (NPV, IRR, EUR, variants) — existing in types.ts
-- ✓ Economic calculation engine — existing in utils/economics.ts
+<!-- Shipped and confirmed valuable. -->
+
+- ✓ Animated background themes system — existing
+- ✓ Well map view with pins and selection — existing
+- ✓ Economics calculation engine (TypeScript + Python) — existing
+- ✓ Type curve / CAPEX / OPEX / ownership assumption editing — existing
+- ✓ Well group management — existing
+- ✓ Scenario overlay system — existing
+- ✓ Deal metrics display (NPV10, IRR, EUR, payout) — existing
+- ✓ Monthly cash flow charting — existing
+- ✓ Theme switcher (slate, mario, etc.) — existing
+- ✓ Auth system with dev bypass — existing
+- ✓ Project persistence (Supabase + localStorage fallback) — existing
 
 ### Active
 
-- [ ] Supabase schema design for all core entities
-- [ ] Multi-tenant data model with organization/tenant isolation
-- [ ] Wells table with tenant scoping
-- [ ] Well groups table with user ownership
-- [ ] Scenarios table with user ownership
-- [ ] Economic assumptions table (type curves, CAPEX, OPEX, ownership presets)
-- [ ] Saved deals table linking groups + scenarios + assumptions
-- [ ] Calculated results storage (optional: store or recalculate on demand)
-- [ ] Mode toggle (demo/live) in UI
-- [ ] Data repository layer for CRUD operations
-- [ ] Migration from localStorage to database on first auth
-- [ ] Row-level security policies for tenant isolation
-- [ ] User authentication flow integrated with Supabase
+- [ ] Persistent sidebar navigation replacing tab-based switching
+- [ ] Inline assumption editing (edit where you see, no separate pages)
+- [ ] Clean visual hierarchy — spacing, alignment, typography consistency
+- [ ] Decluttered layout — reduce visual noise, let content breathe
+- [ ] Consistent component styling (cards, buttons, inputs, tables)
+- [ ] Backgrounds/themes remain visible and prominent through the UI shell
+- [ ] Clear information architecture — obvious sections and groupings
+- [ ] Responsive behavior maintained (desktop + mobile)
 
 ### Out of Scope
 
-- External data integrations (user DB connections, schema mapping) — future milestone
-- Advanced filtering UI for well selection — future milestone
-- Production data time-series storage — defer until integration requirements clear
-- Data connection management (credentials, sync) — future milestone
-- Public well data registry — private tenant data only for v1
-- Databricks migration — Supabase first, Databricks later
+- Hub page redesign — workspace only for this milestone
+- Auth page redesign — workspace only
+- Integrations page redesign — workspace only
+- UX workflow rethink (e.g. changing how deals flow from wells → assumptions → economics) — visual/layout only
+- New features or functionality — this is a reskin, not a feature build
+- Backend changes — front-end only
 
 ## Context
 
-**Current Architecture:**
-- Frontend: React + Vite, TypeScript
-- State: In-memory via hooks (useSlopcastWorkspace)
-- Persistence: localStorage via useProjectPersistence hook
-- Auth: DevBypassAdapter (local) / SupabaseAdapter (prod) pattern exists
-- Economics: Pure TypeScript functions in utils/economics.ts (661 lines, well-tested)
-
-**Existing TypeScript types** (src/types.ts):
-- `Well` — operator, formation, lat/lng, status
-- `WellGroup` — named group + wells + all assumptions
-- `Scenario` — pricing + schedule + scalars
-- `TypeCurve` — qi, b, di
-- `CapexItem[]` — AFE line items
-- `OpexSegment[]` — LOE over time
-- `Ownership` — NRI, cost interest
-- `DealMetrics` — NPV10, IRR, EUR, payout, tax/levered/risked variants
-- `MonthlyCashFlow` — time-series with optional tax/debt fields
-
-**Mock Data** (src/constants.ts):
-- 40 generated Permian Basin wells
-- Default type curve, CAPEX, OPEX, ownership, pricing
-- Template presets in constants/templates.ts
-
-**Use Case:**
-Oil & gas professionals evaluate acquisition deals by modeling wells, applying economic assumptions, running scenarios, and comparing NPV/IRR across deals. Data needs to persist across sessions and be shared within their organization (not browser-only).
+- The Slopcast workspace is the primary page users interact with. It currently uses a tab-based layout (WELLS / ECONOMICS tabs) with assumption editing happening in nested panels.
+- The animated canvas backgrounds are a signature feature — the UI shell must be designed to complement them, not obscure them. This means transparency, glass effects, or restrained solid areas.
+- Current pain points: tab switching feels clunky, assumption settings are buried and hard to find, layout feels cluttered, spacing and alignment are inconsistent.
+- Inspiration: Apple (clean hierarchy, obvious navigation, inspector panels), Databricks (sidebar workspace nav, data-dense but organized).
+- Existing theme system uses CSS custom properties — new components should use these, not hardcoded colors.
 
 ## Constraints
 
-- **Multi-tenancy**: Critical — absolute data isolation between organizations. One customer must never see another's data.
-- **Security**: Row-level security (RLS) policies required in Supabase for all tables.
-- **Performance**: Economics calculations are client-side (TypeScript), but large well sets may require optimization.
-- **Backward compatibility**: Existing localStorage data should migrate smoothly for current users.
-- **Mock data availability**: Demo mode must remain functional for unauthenticated users and demos.
+- **Tech stack**: React + Vite + TypeScript — no framework changes
+- **Theme system**: Must use existing ThemeProvider / CSS custom properties
+- **Backgrounds**: Animated canvas backgrounds must remain visible and central to the experience
+- **Functionality**: All existing features must continue to work — no regressions
+- **Scope**: Slopcast workspace page only (`SlopcastPage` and its children)
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Supabase for persistence | Already integrated for auth, Postgres RLS handles multi-tenancy well | — Pending |
-| Mode toggle (demo/live) | Users need to experiment with mock data + access real data without switching accounts | — Pending |
-| Store calculated results | Store vs recalculate trade-off: storage cost vs compute cost for large well sets | — Pending |
-| Tenant-scoped wells | Each organization imports/owns their wells privately (not a shared public registry) | — Pending |
-| Schema-first approach | Design complete data model before building integrations | — Pending |
+| Sidebar nav over top tabs | Persistent orientation, matches Databricks pattern, scales better | — Pending |
+| Inline editing over panels/pages | Keeps user in context, reduces navigation, Apple-like | — Pending |
+| Workspace-only scope | Focused impact, ship faster, extend pattern to other pages later | — Pending |
+| Visual-only (no workflow changes) | Reduce risk, keep scope manageable, iterate on UX separately | — Pending |
 
 ---
-*Last updated: 2026-03-05 after initialization*
+*Last updated: 2026-03-06 after initialization*
