@@ -15,9 +15,6 @@ interface SidebarProps {
   onActivateGroup: (id: string) => void;
   economicsNeedsAttention?: boolean;
   wellsNeedsAttention?: boolean;
-  themeId?: string;
-  onSetThemeId?: (id: string) => void;
-  themes?: Array<{ id: string; label: string; icon: string }>;
 }
 
 const CollapseChevron: React.FC<{ collapsed: boolean; isClassic: boolean }> = ({ collapsed, isClassic }) => (
@@ -47,9 +44,6 @@ export function Sidebar({
   onActivateGroup,
   economicsNeedsAttention,
   wellsNeedsAttention,
-  themeId,
-  onSetThemeId,
-  themes,
 }: SidebarProps) {
   return (
     <div className="flex flex-col h-full">
@@ -106,30 +100,6 @@ export function Sidebar({
         />
       </div>
 
-      {/* Theme selector at bottom */}
-      {!collapsed && themes && onSetThemeId && themeId && (
-        <>
-          <div className={`mx-2 border-t theme-transition ${isClassic ? 'border-white/10' : 'border-theme-border/30'}`} />
-          <div className="px-3 py-2 flex items-center gap-1.5 flex-wrap">
-            {themes.map(t => (
-              <button
-                key={t.id}
-                onClick={() => onSetThemeId(t.id)}
-                title={t.label}
-                className={`w-5 h-5 rounded-full text-[10px] flex items-center justify-center theme-transition focus-visible:outline-2 focus-visible:outline-theme-cyan focus-visible:outline-offset-1 ${
-                  t.id === themeId
-                    ? isClassic
-                      ? 'ring-1 ring-theme-warning ring-offset-1 ring-offset-transparent'
-                      : 'ring-1 ring-theme-cyan ring-offset-1 ring-offset-transparent'
-                    : 'opacity-60 hover:opacity-100'
-                }`}
-              >
-                {t.icon}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
     </div>
   );
 }

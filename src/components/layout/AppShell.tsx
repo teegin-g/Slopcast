@@ -113,9 +113,6 @@ export function AppShell({ workspace, children }: AppShellProps) {
     onActivateGroup: workspace.setActiveGroupId,
     economicsNeedsAttention: workspace.economicsNeedsAttention,
     wellsNeedsAttention: workspace.wellsNeedsAttention,
-    themeId: workspace.themeId,
-    onSetThemeId: workspace.setThemeId,
-    themes: workspace.themes,
   };
 
   const sectionLabel = section === 'wells' ? 'Wells' : section === 'economics' ? 'Economics' : 'Scenarios';
