@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './auth/AuthProvider';
 import { ThemeProvider } from './theme/ThemeProvider';
+import './app.css';
 import './styles/theme.css';
 
 const DebugProvider = import.meta.env.DEV

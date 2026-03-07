@@ -1,5 +1,6 @@
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import debugLoggerPlugin from './vite-plugin-debug-logger';
 
@@ -28,7 +29,7 @@ export default defineConfig(({ mode }) => {
           },
         },
       },
-      plugins: [react(), debugLoggerPlugin()],
+      plugins: [tailwindcss(), react(), debugLoggerPlugin()],
       define: {
         'process.env.API_KEY': JSON.stringify(geminiApiKey),
         'process.env.GEMINI_API_KEY': JSON.stringify(geminiApiKey)

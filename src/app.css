@@ -1,0 +1,32 @@
+@import "tailwindcss";
+@import "./styles/theme.css";
+
+/* @theme inline prevents Tailwind from generating its own --color-* variables,
+   allowing dynamic theme switching via data-theme attribute to work. */
+@theme inline {
+  --color-theme-bg: rgb(var(--bg-deep) / <alpha-value>);
+  --color-theme-space: rgb(var(--bg-space) / <alpha-value>);
+  --color-theme-surface1: rgb(var(--surface-1) / <alpha-value>);
+  --color-theme-surface2: rgb(var(--surface-2) / <alpha-value>);
+  --color-theme-border: rgb(var(--border) / <alpha-value>);
+  --color-theme-cyan: rgb(var(--cyan) / <alpha-value>);
+  --color-theme-magenta: rgb(var(--magenta) / <alpha-value>);
+  --color-theme-violet: rgb(var(--violet) / <alpha-value>);
+  --color-theme-purple: rgb(var(--purple) / <alpha-value>);
+  --color-theme-lavender: rgb(var(--lav) / <alpha-value>);
+  --color-theme-text: rgb(var(--text) / <alpha-value>);
+  --color-theme-muted: rgb(var(--muted) / <alpha-value>);
+  --color-theme-success: rgb(var(--success) / <alpha-value>);
+  --color-theme-warning: rgb(var(--warning) / <alpha-value>);
+  --color-theme-danger: rgb(var(--danger) / <alpha-value>);
+
+  --shadow-glow-cyan: var(--shadow-glow-cyan);
+  --shadow-glow-magenta: var(--shadow-glow-magenta);
+  --shadow-card: var(--shadow-card);
+
+  --radius-panel: var(--radius-panel);
+  --radius-inner: calc(var(--radius-panel) - 6px);
+
+  --font-brand: var(--font-brand), sans-serif;
+  --font-script: "Permanent Marker", cursive;
+}
