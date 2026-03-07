@@ -24,7 +24,7 @@ const statusTone = (status: StepStatus, isClassic: boolean): string => {
   }
 
   if (status === 'COMPLETE') return 'bg-theme-cyan text-theme-bg border-theme-cyan';
-  if (status === 'ACTIVE') return 'bg-theme-magenta text-white border-theme-magenta';
+  if (status === 'ACTIVE') return 'bg-theme-magenta text-theme-bg border-theme-magenta';
   if (status === 'STALE') return 'bg-theme-warning text-theme-bg border-theme-warning';
   return 'bg-theme-bg text-theme-muted border-theme-border';
 };

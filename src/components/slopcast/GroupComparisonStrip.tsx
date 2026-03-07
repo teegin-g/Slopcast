@@ -115,7 +115,7 @@ const GroupComparisonStrip: React.FC<GroupComparisonStripProps> = ({
                   className="h-full rounded-full transition-all duration-300"
                   style={{
                     width: `${Math.max(2, barWidth)}%`,
-                    backgroundColor: isPositive ? groupColor : '#ef4444',
+                    backgroundColor: isPositive ? groupColor : 'rgb(var(--danger))',
                     opacity: isActive ? 1 : 0.6,
                   }}
                 />

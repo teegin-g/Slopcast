@@ -112,7 +112,7 @@ const CompactRunBar: React.FC<{
           <div className={isClassic ? 'p-3 flex items-center gap-2 flex-wrap' : 'p-3 flex items-center gap-2 flex-wrap'}>
             <button
               onClick={onSaveSnapshot}
-              className="px-4 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.14em] transition-all shrink-0 bg-theme-magenta text-white hover:shadow-glow-magenta"
+              className="px-4 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.14em] transition-all shrink-0 bg-theme-magenta text-theme-bg hover:shadow-glow-magenta"
             >
               Save Snapshot
             </button>
@@ -358,7 +358,7 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
               <div className="space-y-2">
                 <button
                   onClick={onSaveSnapshot}
-                  className="w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.14em] transition-all bg-theme-magenta text-white hover:shadow-glow-magenta"
+                  className="w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.14em] transition-all bg-theme-magenta text-theme-bg hover:shadow-glow-magenta"
                 >
                   Save Snapshot
                 </button>
