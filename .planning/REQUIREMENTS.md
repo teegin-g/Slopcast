@@ -1,130 +1,81 @@
-# Requirements: Slopcast Data Persistence Layer
+# Requirements: Slopcast UI Revamp
 
-**Defined:** 2026-03-05
-**Core Value:** All user work—well groups, economic assumptions, scenarios, and calculated results—persists reliably and is accessible to authorized users within their tenant, never lost to browser storage limitations.
+**Defined:** 2026-03-06
+**Core Value:** Users can navigate the workspace intuitively — always knowing where they are, what they can do, and how to find settings — without the UI getting in the way of the animated themes underneath.
 
 ## v1 Requirements
 
 Requirements for initial release. Each maps to roadmap phases.
 
-### Security (SEC)
+### Styling Foundation
 
-- [ ] **SEC-01**: User data is isolated by organization (multi-tenant architecture)
-- [ ] **SEC-02**: User can only access data belonging to their organization
-- [ ] **SEC-03**: Database enforces tenant isolation via Row-Level Security policies
-- [ ] **SEC-04**: Invalid data (negative values, malformed inputs) is rejected before saving
-- [ ] **SEC-05**: Schema constraints prevent data corruption
+- [ ] **STYLE-01**: Tailwind CSS v4 installed and wired with existing CSS custom properties via @theme
+- [ ] **STYLE-02**: Spacing tokens standardized on 4/8/12/16/24/32/48px grid across all workspace components
+- [ ] **STYLE-03**: Typography hierarchy defined with 5-6 levels (H1, H2, H3, body, caption, label) using Tailwind utilities
+- [ ] **STYLE-04**: Hover and focus-visible states present on all interactive elements (buttons, table rows, sidebar items, inputs)
+- [ ] **STYLE-05**: Glassmorphism token system established (--glass-sidebar, --glass-panel, --glass-card) with backdrop-blur + semi-transparent backgrounds
+- [ ] **STYLE-06**: Animated canvas backgrounds remain visible and prominent through the glass UI shell across all themes
 
-### Wells (WELL)
+### Navigation
 
-- [ ] **WELL-01**: User can create wells with operator, formation, location, status
-- [ ] **WELL-02**: User can view their organization's wells
-- [ ] **WELL-03**: User can edit well metadata
-- [ ] **WELL-04**: User can delete wells
+- [ ] **NAV-01**: Persistent collapsible sidebar replaces tab-based view switching (Wells, Economics, Analysis sections)
+- [ ] **NAV-02**: Breadcrumb or active-section indicator visually shows current location at all times
+- [ ] **NAV-03**: Sidebar collapses to icon-only mode on viewports narrower than breakpoint
+- [ ] **NAV-04**: URL state synced with sidebar navigation so browser back/forward works
 
-### Well Groups (GRP)
+### Components
 
-- [ ] **GRP-01**: User can create well groups with selected wells
-- [ ] **GRP-02**: User can assign type curve assumptions to well groups
-- [ ] **GRP-03**: User can assign CAPEX assumptions to well groups
-- [ ] **GRP-04**: User can assign OPEX assumptions to well groups
-- [ ] **GRP-05**: User can assign ownership assumptions to well groups
-- [ ] **GRP-06**: User can view all well groups
-- [ ] **GRP-07**: User can edit well group settings
-- [ ] **GRP-08**: User can delete well groups
+- [ ] **COMP-01**: Unified outer card component with glass styling used consistently across workspace
+- [ ] **COMP-02**: Unified inner card component for nested content tiles used consistently
+- [ ] **COMP-03**: Smooth view transitions (slide/fade) when switching between sections via sidebar
 
-### Scenarios (SCEN)
+### Data & Editing
 
-- [ ] **SCEN-01**: User can create scenarios with pricing assumptions
-- [ ] **SCEN-02**: User can define schedule parameters in scenarios
-- [ ] **SCEN-03**: User can set scalar modifiers in scenarios
-- [ ] **SCEN-04**: User can view all scenarios
-- [ ] **SCEN-05**: User can edit scenario settings
-- [ ] **SCEN-06**: User can delete scenarios
+- [ ] **DATA-01**: Well list rendered with TanStack Table supporting sortable and filterable columns
+- [ ] **DATA-02**: Cash flow table rendered with TanStack Table with consistent styling
+- [ ] **DATA-03**: User can edit type curve, CAPEX, OPEX, and ownership assumptions inline where they are displayed
+- [ ] **DATA-04**: Inline edits are debounced/buffered (commit-on-blur) to prevent economics recalculation storms
 
-### Deals (DEAL)
+### Responsive
 
-- [ ] **DEAL-01**: User can save deals combining groups + scenarios + assumptions
-- [ ] **DEAL-02**: User can load saved deals
-- [ ] **DEAL-03**: User can edit saved deals
-- [ ] **DEAL-04**: User can delete saved deals
-
-### Auto-Persistence (AUTO)
-
-- [ ] **AUTO-01**: Changes to well groups save automatically (no manual save button)
-- [ ] **AUTO-02**: Changes to scenarios save automatically
-- [ ] **AUTO-03**: Changes to deals save automatically
-- [ ] **AUTO-04**: Auto-save is debounced (300ms idle) to prevent excessive writes
-- [ ] **AUTO-05**: User sees save status indicator (saving / saved / error)
-
-### Migration (MIG)
-
-- [ ] **MIG-01**: User's existing localStorage data migrates to database on first login
-- [ ] **MIG-02**: Migration is idempotent (safe to run multiple times)
-- [ ] **MIG-03**: Migration handles race conditions (multiple tabs)
-- [ ] **MIG-04**: User can toggle between Demo mode (mock data) and Live mode (database)
-- [ ] **MIG-05**: Mode toggle warns before switching (prevents accidental data loss)
-- [ ] **MIG-06**: Demo mode and Live mode maintain separate state
+- [ ] **RESP-01**: Desktop layout renders sidebar + content area with full functionality
+- [ ] **RESP-02**: Mobile layout collapses sidebar to drawer or bottom nav with preserved functionality
 
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
 
-### Collaboration (COLLAB)
+### Navigation Enhancement
 
-- **COLLAB-01**: All organization members can view organization's data
-- **COLLAB-02**: Multiple users can edit the same deal simultaneously
-- **COLLAB-03**: User can see who last edited a deal and when
+- **NAV-05**: Command palette (Cmd+K) for quick-jumping to any group, section, or action
+- **NAV-06**: Keyboard-first navigation (Tab through sidebar, arrow keys in tables, Escape to close)
 
-### Data Recovery (RECOV)
+### Settings & Organization
 
-- **RECOV-01**: User can recover deleted wells (soft delete)
-- **RECOV-02**: User can recover deleted well groups
-- **RECOV-03**: User can recover deleted scenarios
-- **RECOV-04**: User can see version history of deals
-- **RECOV-05**: User can revert to previous version of deal
+- **SET-01**: Settings/preferences (theme, engine, mode) consolidated in sidebar section
+- **SET-02**: Drag-to-reorder sidebar well group items
 
-### Templates (TMPL)
+### Data Presentation
 
-- **TMPL-01**: User can save assumption sets as templates
-- **TMPL-02**: User can apply templates to new well groups
-- **TMPL-03**: User can share templates within organization
-
-### Analysis (ANLY)
-
-- **ANLY-01**: User can view side-by-side comparison of multiple scenarios
-- **ANLY-02**: User can rank deals by NPV/IRR
-- **ANLY-03**: User can filter deals by performance criteria
-
-### Performance (PERF)
-
-- **PERF-01**: Economics calculations cache results (only recalculate when assumptions change)
-- **PERF-02**: System handles 500+ wells per group without lag
-
-### Export (EXP)
-
-- **EXP-01**: User can export deal to Excel
-- **EXP-02**: User can export deal to PDF
+- **DATA-05**: Inspector panel (right-side detail panel) for selected well group context
+- **DATA-06**: Loading skeleton states for KPI grid, charts, and tables
+- **DATA-07**: Empty states with CTAs for all data panels
+- **DATA-08**: Snapshot/version indicator showing last save time
 
 ## Out of Scope
 
-Explicitly excluded. Documented to prevent scope creep.
-
 | Feature | Reason |
 |---------|--------|
-| Public well data registry | Competitive intelligence leakage risk, data quality chaos |
-| Real-time collaboration (WebSocket) | High complexity, unclear demand until validated |
-| Blockchain audit trail | Massive complexity, overkill for use case |
-| Real-time calculations (as user types) | CPU thrashing, poor UX on calculation lag |
-| Unlimited undo/redo history | Memory explosion, state complexity |
-| Full-text search across all fields | Index bloat, slow writes, maintenance cost |
-| Custom fields on all entities | Schema explosion, query complexity |
-| AI-generated assumptions | Liability risk, hard to validate outputs |
-| Bulk import from Excel/CSV | High complexity, defer until validated need |
-| API integrations (Enverus, DrillingInfo) | External dependencies, defer to future milestone |
-| Offline mode | Service worker complexity, defer until field use validated |
-| Approval workflows | Enterprise feature, defer until enterprise customers |
-| Role-based permissions (Admin/Analyst/Viewer) | Adds RLS complexity, defer until org management validated |
+| Hub page redesign | Workspace-only scope for this milestone |
+| Auth page redesign | Workspace-only scope |
+| Integrations page redesign | Workspace-only scope |
+| UX workflow rethink | Visual/layout only — no changes to how deals flow from wells → assumptions → economics |
+| New features or functionality | This is a reskin, not a feature build |
+| Backend changes | Front-end only |
+| Dark/light mode toggle | App is inherently dark (animated backgrounds); themes provide variety |
+| Dashboard customization / widget grid | Over-engineering for a focused economics tool |
+| Notification center | Single-user modeling tool, not collaboration platform |
+| Multi-level nested navigation | Only ~4 sections; deep nav trees add complexity without value |
 
 ## Traceability
 
@@ -132,50 +83,31 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SEC-01 | Phase 1 | Pending |
-| SEC-02 | Phase 1 | Pending |
-| SEC-03 | Phase 1 | Pending |
-| SEC-04 | Phase 1 | Pending |
-| SEC-05 | Phase 1 | Pending |
-| WELL-01 | Phase 3 | Pending |
-| WELL-02 | Phase 3 | Pending |
-| WELL-03 | Phase 3 | Pending |
-| WELL-04 | Phase 3 | Pending |
-| GRP-01 | Phase 3 | Pending |
-| GRP-02 | Phase 3 | Pending |
-| GRP-03 | Phase 3 | Pending |
-| GRP-04 | Phase 3 | Pending |
-| GRP-05 | Phase 3 | Pending |
-| GRP-06 | Phase 3 | Pending |
-| GRP-07 | Phase 3 | Pending |
-| GRP-08 | Phase 3 | Pending |
-| SCEN-01 | Phase 3 | Pending |
-| SCEN-02 | Phase 3 | Pending |
-| SCEN-03 | Phase 3 | Pending |
-| SCEN-04 | Phase 3 | Pending |
-| SCEN-05 | Phase 3 | Pending |
-| SCEN-06 | Phase 3 | Pending |
-| DEAL-01 | Phase 3 | Pending |
-| DEAL-02 | Phase 3 | Pending |
-| DEAL-03 | Phase 3 | Pending |
-| DEAL-04 | Phase 3 | Pending |
-| AUTO-01 | Phase 2 | Pending |
-| AUTO-02 | Phase 2 | Pending |
-| AUTO-03 | Phase 2 | Pending |
-| AUTO-04 | Phase 2 | Pending |
-| AUTO-05 | Phase 2 | Pending |
-| MIG-01 | Phase 2 | Pending |
-| MIG-02 | Phase 2 | Pending |
-| MIG-03 | Phase 2 | Pending |
-| MIG-04 | Phase 2 | Pending |
-| MIG-05 | Phase 2 | Pending |
-| MIG-06 | Phase 2 | Pending |
+| STYLE-01 | TBD | Pending |
+| STYLE-02 | TBD | Pending |
+| STYLE-03 | TBD | Pending |
+| STYLE-04 | TBD | Pending |
+| STYLE-05 | TBD | Pending |
+| STYLE-06 | TBD | Pending |
+| NAV-01 | TBD | Pending |
+| NAV-02 | TBD | Pending |
+| NAV-03 | TBD | Pending |
+| NAV-04 | TBD | Pending |
+| COMP-01 | TBD | Pending |
+| COMP-02 | TBD | Pending |
+| COMP-03 | TBD | Pending |
+| DATA-01 | TBD | Pending |
+| DATA-02 | TBD | Pending |
+| DATA-03 | TBD | Pending |
+| DATA-04 | TBD | Pending |
+| RESP-01 | TBD | Pending |
+| RESP-02 | TBD | Pending |
 
 **Coverage:**
-- v1 requirements: 41 total
-- Mapped to phases: 41/41 (100%)
-- Unmapped: 0
+- v1 requirements: 19 total
+- Mapped to phases: 0
+- Unmapped: 19
 
 ---
-*Requirements defined: 2026-03-05*
-*Last updated: 2026-03-05 after roadmap creation*
+*Requirements defined: 2026-03-06*
+*Last updated: 2026-03-06 after initial definition*
