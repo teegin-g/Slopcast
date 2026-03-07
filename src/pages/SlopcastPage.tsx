@@ -3,7 +3,6 @@ import { MOCK_WELLS } from '../constants';
 import ScenarioDashboard from '../components/ScenarioDashboard';
 import DesignEconomicsView from '../components/slopcast/DesignEconomicsView';
 import DesignWellsView from '../components/slopcast/DesignWellsView';
-import PageHeader from '../components/slopcast/PageHeader';
 import KeyboardShortcutsHelp from '../components/slopcast/KeyboardShortcutsHelp';
 import OnboardingTour, { ONBOARDING_STORAGE_KEY } from '../components/slopcast/OnboardingTour';
 import ProjectSharePanel from '../components/slopcast/ProjectSharePanel';
@@ -11,12 +10,13 @@ import LandingPage from '../components/slopcast/LandingPage';
 import AiAssistant from '../components/slopcast/AiAssistant';
 import ForecastGrid from '../components/slopcast/ForecastGrid';
 import EngineComparisonPanel from '../components/slopcast/EngineComparisonPanel';
+import { AppShell } from '../components/layout/AppShell';
 import { useSlopcastWorkspace } from '../hooks/useSlopcastWorkspace';
 
 const SlopcastPage: React.FC = () => {
   const w = useSlopcastWorkspace();
 
-  // Landing page
+  // Landing page -- unchanged, no sidebar
   if (w.pageMode === 'landing') {
     return (
       <div className={`min-h-screen bg-transparent theme-transition ${w.atmosphereClass} ${w.fxClass}`}>
@@ -41,40 +41,9 @@ const SlopcastPage: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-screen bg-transparent theme-transition ${w.atmosphereClass} ${w.fxClass}`}>
-      {w.BackgroundComponent && (
-        <Suspense fallback={null}>
-          <w.BackgroundComponent />
-        </Suspense>
-      )}
-
-      <PageHeader
-        isClassic={w.isClassic}
-        theme={w.theme}
-        themes={w.themes}
-        themeId={w.themeId}
-        setThemeId={w.setThemeId}
-        viewMode={w.viewMode}
-        onSetViewMode={w.setViewMode}
-        designWorkspace={w.designWorkspace}
-        onSetDesignWorkspace={w.setDesignWorkspace}
-        economicsNeedsAttention={w.economicsNeedsAttention}
-        wellsNeedsAttention={w.wellsNeedsAttention}
-        onNavigateHub={() => w.navigate('/hub')}
-        atmosphericOverlays={w.atmosphericOverlays}
-        headerAtmosphereClass={w.headerAtmosphereClass}
-        fxClass={w.fxClass}
-        colorMode={w.colorMode}
-        onSetColorMode={w.setColorMode}
-        effectiveMode={w.effectiveMode}
-        onShare={() => w.setShowSharePanel(true)}
-        onRestartTour={() => {
-          try { localStorage.removeItem(ONBOARDING_STORAGE_KEY); } catch { /* no-op */ }
-          window.location.reload();
-        }}
-      />
-
-      <main className="p-4 md:p-6 max-w-[1920px] mx-auto w-full">
+    <>
+      <AppShell workspace={w}>
+        {/* Content rendered based on workspace state (synced from sidebar via useSidebarNav) */}
         {w.viewMode === 'ANALYSIS' ? (
           <ScenarioDashboard
             groups={w.processedGroups}
@@ -182,9 +151,9 @@ const SlopcastPage: React.FC = () => {
             )}
           </>
         )}
-      </main>
+      </AppShell>
 
-      {/* AI Assistant */}
+      {/* Overlays -- outside AppShell, rendered at page level */}
       <AiAssistant
         isClassic={w.isClassic}
         activeGroup={w.activeGroup}
@@ -207,13 +176,10 @@ const SlopcastPage: React.FC = () => {
         }}
       />
 
-      {/* Onboarding Tour */}
       <OnboardingTour isClassic={w.isClassic} />
 
-      {/* Keyboard Shortcuts Help Modal */}
       <KeyboardShortcutsHelp isClassic={w.isClassic} open={w.showShortcutsHelp} onClose={() => w.setShowShortcutsHelp(false)} />
 
-      {/* Project Share Panel */}
       <ProjectSharePanel
         isClassic={w.isClassic}
         open={w.showSharePanel}
@@ -223,7 +189,7 @@ const SlopcastPage: React.FC = () => {
         onRemoveMember={() => {}}
         onUpdateRole={() => {}}
       />
-    </div>
+    </>
   );
 };
 
