@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 01-styling-foundation-and-app-shell
 source: [01-01-SUMMARY.md, 01-02-SUMMARY.md]
 started: 2026-03-07T12:00:00Z
@@ -72,14 +72,49 @@ skipped: 0
   reason: "User reported: Make sure panel and tile border colors and font colors match the color tokens for the themes"
   severity: major
   test: 3
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "27+ child components use hardcoded Tailwind color classes (text-white/, border-white/, bg-black/) and inline rgba() instead of theme tokens (text-theme-text/, border-theme-border/, bg-theme-surface1/)"
+  artifacts:
+    - path: "src/components/slopcast/EconomicsGroupBar.tsx"
+      issue: "13 white/ + 14 black/ hardcoded color classes"
+    - path: "src/components/slopcast/DesignEconomicsView.tsx"
+      issue: "13 white/ + 9 black/ hardcoded color classes"
+    - path: "src/components/slopcast/PageHeader.tsx"
+      issue: "8 white/ + 12 black/ hardcoded color classes"
+    - path: "src/components/slopcast/EconomicsDriversPanel.tsx"
+      issue: "10 white/ + 9 black/ hardcoded color classes"
+    - path: "src/components/slopcast/ProfileSelector.tsx"
+      issue: "10 white/ + 9 black/ hardcoded color classes"
+    - path: "src/components/slopcast/DealsTable.tsx"
+      issue: "9 white/ + 1 black/ hardcoded color classes"
+    - path: "src/components/slopcast/DesignWellsView.tsx"
+      issue: "9 white/ + 5 black/ hardcoded color classes"
+    - path: "src/components/slopcast/WaterfallChart.tsx"
+      issue: "Inline hardcoded hex colors instead of chartPalette tokens"
+    - path: "src/components/slopcast/ReservesPanel.tsx"
+      issue: "Hardcoded category color map instead of chartPalette"
+    - path: "src/components/slopcast/MiniMapPreview.tsx"
+      issue: "Inline rgba() for grid lines, fills, strokes"
+    - path: "src/components/slopcast/GroupComparisonStrip.tsx"
+      issue: "Hardcoded #ef4444 instead of text-theme-danger"
+  missing:
+    - "Replace text-white/XX with text-theme-text/XX across 27 files"
+    - "Replace border-white/XX with border-theme-border/XX"
+    - "Replace bg-black/XX with bg-theme-surface1/XX or bg-theme-bg/XX"
+    - "Replace hardcoded hex colors in charts with chartPalette from theme context"
+  debug_session: ".planning/debug/glass-hardcoded-colors.md"
 - truth: "Theme selector accessible in header, not sidebar"
   status: failed
   reason: "User reported: the theme should only be accessible in the header, not sidebar"
   severity: major
   test: 5
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "Theme selector duplicated — rendered in both Sidebar bottom (lines 109-132) and PageHeader. Sidebar copy needs removal."
+  artifacts:
+    - path: "src/components/layout/Sidebar.tsx"
+      issue: "Lines 109-132: theme selector JSX block and lines 18-20 theme props need removal"
+    - path: "src/components/layout/AppShell.tsx"
+      issue: "Lines 116-118: themeId, onSetThemeId, themes passed to sidebarProps unnecessarily"
+  missing:
+    - "Remove theme selector JSX block from Sidebar.tsx"
+    - "Remove themeId/onSetThemeId/themes props from SidebarProps interface"
+    - "Remove corresponding prop assignments from AppShell.tsx sidebarProps"
+  debug_session: ".planning/debug/sidebar-theme-selector.md"
