@@ -51,6 +51,7 @@
   .typo-body { @apply text-sm font-normal text-theme-text; }
   .typo-caption { @apply text-xs text-theme-muted; }
   .typo-label { @apply text-xs font-medium uppercase tracking-wider text-theme-muted; }
+  .typo-section { @apply text-xs font-bold uppercase tracking-[0.2em] text-theme-cyan; }
   .typo-value { @apply font-mono tabular-nums; }
 }
 

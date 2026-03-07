@@ -12,14 +12,18 @@ describe('GlassCard', () => {
     expect(screen.getByText('Card content')).toBeTruthy();
   });
 
-  it('applies inner card glass styles when isClassic=false', () => {
+  it('uses theme surface-2 tokens via Tailwind classes when isClassic=false', () => {
     const { container } = render(
       <GlassCard isClassic={false}>content</GlassCard>
     );
     const div = container.firstElementChild as HTMLElement;
-    expect(div.style.background).toBe('var(--glass-card-bg)');
-    expect(div.style.border).toBe('1px solid var(--glass-card-border)');
+    expect(div.className).toContain('bg-theme-surface2/50');
+    expect(div.className).toContain('border-theme-border/20');
+    expect(div.className).toContain('hover:bg-theme-surface2/65');
     expect(div.className).toContain('rounded-inner');
+    // No inline styles — all via Tailwind classes
+    expect(div.style.background).toBe('');
+    expect(div.style.border).toBe('');
   });
 
   it('does not apply backdrop-filter on inner cards (performance)', () => {
@@ -30,15 +34,14 @@ describe('GlassCard', () => {
     expect(div.style.backdropFilter).toBe('');
   });
 
-  it('falls back to rounded-inner class without glass styles when isClassic=true', () => {
+  it('falls back to rounded-inner class without theme surface classes when isClassic=true', () => {
     const { container } = render(
       <GlassCard isClassic={true}>content</GlassCard>
     );
     const div = container.firstElementChild as HTMLElement;
     expect(div.className).toContain('rounded-inner');
     expect(div.className).toContain('theme-transition');
-    expect(div.style.background).toBe('');
-    expect(div.style.border).toBe('');
+    expect(div.className).not.toContain('bg-theme-surface2');
   });
 
   it('merges custom className', () => {

@@ -1,18 +1,36 @@
 import React from 'react';
 
+type AccentColor = 'cyan' | 'warning' | 'magenta' | 'none';
+
 interface GlassPanelProps {
   isClassic: boolean;
   children: React.ReactNode;
   className?: string;
   hover?: boolean;
+  /** Colored accent border: cyan, warning, magenta, or none (default border) */
+  accent?: AccentColor;
 }
 
+const accentBorderMap: Record<AccentColor, string> = {
+  cyan: 'border-theme-cyan/40',
+  warning: 'border-theme-warning/40',
+  magenta: 'border-theme-magenta/40',
+  none: 'border-theme-border/30',
+};
+
 /**
- * Outer card component with glassmorphism styling.
- * When isClassic is true (Mario theme), renders a solid retro panel with no glass/blur.
- * When false, renders a semi-transparent glass panel that lets animated backgrounds show through.
+ * Outer card component using theme surface tokens for per-theme color personality.
+ * When isClassic is true (Mario theme), renders a solid retro panel with no transparency.
+ * When false, renders a semi-transparent panel tinted with the theme's surface-1 color
+ * so each theme has a distinct visual identity. No backdrop-filter blur on content panels.
  */
-export function GlassPanel({ isClassic, children, className = '', hover = false }: GlassPanelProps) {
+export function GlassPanel({
+  isClassic,
+  children,
+  className = '',
+  hover = false,
+  accent = 'none',
+}: GlassPanelProps) {
   if (isClassic) {
     return (
       <div className={`rounded-panel theme-transition ${className}`}>
@@ -21,20 +39,14 @@ export function GlassPanel({ isClassic, children, className = '', hover = false 
     );
   }
 
+  const borderClass = `border ${accentBorderMap[accent]}`;
   const hoverClasses = hover
-    ? 'hover:brightness-110 hover:scale-[1.005] focus-visible:outline-2 focus-visible:outline-theme-cyan transition-all duration-200'
+    ? 'hover:bg-theme-surface1/70 hover:scale-[1.005] focus-visible:outline-2 focus-visible:outline-theme-cyan transition-all duration-200'
     : '';
 
   return (
     <div
-      className={`rounded-panel theme-transition ${hoverClasses} ${className}`}
-      style={{
-        background: 'var(--glass-panel-bg)',
-        backdropFilter: 'blur(var(--glass-panel-blur))',
-        WebkitBackdropFilter: 'blur(var(--glass-panel-blur))',
-        border: '1px solid var(--glass-panel-border)',
-        boxShadow: 'var(--glass-panel-shadow)',
-      }}
+      className={`rounded-panel theme-transition bg-theme-surface1/60 ${borderClass} shadow-[var(--shadow-card)] ${hoverClasses} ${className}`}
     >
       {children}
     </div>

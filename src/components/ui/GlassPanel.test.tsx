@@ -12,27 +12,28 @@ describe('GlassPanel', () => {
     expect(screen.getByText('Hello')).toBeTruthy();
   });
 
-  it('applies glass styles when isClassic=false', () => {
+  it('uses theme surface tokens via Tailwind classes when isClassic=false', () => {
     const { container } = render(
       <GlassPanel isClassic={false}>content</GlassPanel>
     );
     const div = container.firstElementChild as HTMLElement;
-    expect(div.style.background).toBe('var(--glass-panel-bg)');
-    expect(div.style.backdropFilter).toBe('blur(var(--glass-panel-blur))');
-    expect(div.style.border).toBe('1px solid var(--glass-panel-border)');
-    expect(div.style.boxShadow).toBe('var(--glass-panel-shadow)');
+    expect(div.className).toContain('bg-theme-surface1/60');
+    expect(div.className).toContain('border-theme-border/30');
+    expect(div.className).toContain('shadow-[var(--shadow-card)]');
     expect(div.className).toContain('rounded-panel');
+    // No inline glass styles — all via Tailwind classes
+    expect(div.style.background).toBe('');
+    expect(div.style.backdropFilter).toBe('');
   });
 
-  it('falls back to rounded-panel class without glass styles when isClassic=true', () => {
+  it('falls back to rounded-panel class without theme surface classes when isClassic=true', () => {
     const { container } = render(
       <GlassPanel isClassic={true}>content</GlassPanel>
     );
     const div = container.firstElementChild as HTMLElement;
     expect(div.className).toContain('rounded-panel');
     expect(div.className).toContain('theme-transition');
-    expect(div.style.background).toBe('');
-    expect(div.style.backdropFilter).toBe('');
+    expect(div.className).not.toContain('bg-theme-surface1');
   });
 
   it('applies hover classes when hover=true', () => {
@@ -40,7 +41,7 @@ describe('GlassPanel', () => {
       <GlassPanel isClassic={false} hover>content</GlassPanel>
     );
     const div = container.firstElementChild as HTMLElement;
-    expect(div.className).toContain('hover:brightness-110');
+    expect(div.className).toContain('hover:bg-theme-surface1/70');
     expect(div.className).toContain('hover:scale-[1.005]');
     expect(div.className).toContain('transition-all');
   });
@@ -50,7 +51,23 @@ describe('GlassPanel', () => {
       <GlassPanel isClassic={false}>content</GlassPanel>
     );
     const div = container.firstElementChild as HTMLElement;
-    expect(div.className).not.toContain('hover:brightness-110');
+    expect(div.className).not.toContain('hover:bg-theme-surface1/70');
+  });
+
+  it('applies accent border when accent prop is set', () => {
+    const { container } = render(
+      <GlassPanel isClassic={false} accent="cyan">content</GlassPanel>
+    );
+    const div = container.firstElementChild as HTMLElement;
+    expect(div.className).toContain('border-theme-cyan/40');
+  });
+
+  it('uses default border when accent is none', () => {
+    const { container } = render(
+      <GlassPanel isClassic={false} accent="none">content</GlassPanel>
+    );
+    const div = container.firstElementChild as HTMLElement;
+    expect(div.className).toContain('border-theme-border/30');
   });
 
   it('merges custom className', () => {
