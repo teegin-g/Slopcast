@@ -18,10 +18,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Navigation
 
-- [ ] **NAV-01**: Persistent collapsible sidebar replaces tab-based view switching (Wells, Economics, Analysis sections)
-- [ ] **NAV-02**: Breadcrumb or active-section indicator visually shows current location at all times
-- [ ] **NAV-03**: Sidebar collapses to icon-only mode on viewports narrower than breakpoint
-- [ ] **NAV-04**: URL state synced with sidebar navigation so browser back/forward works
+- [x] **NAV-01**: Persistent collapsible sidebar replaces tab-based view switching (Wells, Economics, Analysis sections)
+- [x] **NAV-02**: Breadcrumb or active-section indicator visually shows current location at all times
+- [x] **NAV-03**: Sidebar collapses to icon-only mode on viewports narrower than breakpoint
+- [x] **NAV-04**: URL state synced with sidebar navigation so browser back/forward works
 
 ### Components
 
@@ -38,8 +38,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Responsive
 
-- [ ] **RESP-01**: Desktop layout renders sidebar + content area with full functionality
-- [ ] **RESP-02**: Mobile layout collapses sidebar to drawer or bottom nav with preserved functionality
+- [x] **RESP-01**: Desktop layout renders sidebar + content area with full functionality
+- [x] **RESP-02**: Mobile layout collapses sidebar to drawer or bottom nav with preserved functionality
 
 ## v2 Requirements
 
@@ -89,10 +89,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STYLE-04 | Phase 1 | Pending |
 | STYLE-05 | Phase 1 | Complete |
 | STYLE-06 | Phase 1 | Complete |
-| NAV-01 | Phase 1 | Pending |
-| NAV-02 | Phase 1 | Pending |
-| NAV-03 | Phase 1 | Pending |
-| NAV-04 | Phase 1 | Pending |
+| NAV-01 | Phase 1 | Complete |
+| NAV-02 | Phase 1 | Complete |
+| NAV-03 | Phase 1 | Complete |
+| NAV-04 | Phase 1 | Complete |
 | COMP-01 | Phase 1 | Complete |
 | COMP-02 | Phase 1 | Complete |
 | COMP-03 | Phase 2 | Pending |
@@ -100,8 +100,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DATA-02 | Phase 2 | Pending |
 | DATA-03 | Phase 3 | Pending |
 | DATA-04 | Phase 3 | Pending |
-| RESP-01 | Phase 1 | Pending |
-| RESP-02 | Phase 1 | Pending |
+| RESP-01 | Phase 1 | Complete |
+| RESP-02 | Phase 1 | Complete |
 
 **Coverage:**
 - v1 requirements: 19 total
