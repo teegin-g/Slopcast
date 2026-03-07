@@ -199,7 +199,7 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
             }
           >
             <span className="flex items-center gap-2 truncate">
-              <span className="w-2.5 h-2.5 rounded-full border border-white/20 shrink-0" style={{ backgroundColor: activeGroup?.color || '#4F8BFF', boxShadow: `0 0 0 2px ${(activeGroup?.color || '#4F8BFF')}33` }} />
+              <span className="w-2.5 h-2.5 rounded-full border border-theme-border/30 shrink-0" style={{ backgroundColor: activeGroup?.color || '#4F8BFF', boxShadow: `0 0 0 2px ${(activeGroup?.color || '#4F8BFF')}33` }} />
               <span className="truncate">{activeGroup?.name || 'No group'}</span>
             </span>
             <span className="text-theme-muted">▾</span>
@@ -294,7 +294,7 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0 flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full border border-white/20 shrink-0" style={{ backgroundColor: group.color }} />
+                          <span className="w-2.5 h-2.5 rounded-full border border-theme-border/30 shrink-0" style={{ backgroundColor: group.color }} />
                           <span className="truncate text-[10px] font-black uppercase tracking-[0.08em]">
                             {group.name}
                           </span>
