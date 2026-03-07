@@ -1,18 +1,23 @@
 import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { WellGroup, ReserveCategory, DEFAULT_RESERVE_RISK_FACTORS } from '../../types';
+import { useTheme } from '../../theme/ThemeProvider';
 
 interface ReservesPanelProps {
   isClassic: boolean;
   groups: WellGroup[];
 }
 
-const CATEGORY_COLORS: Record<ReserveCategory, string> = {
-  PDP: '#3b82f6',
-  PUD: '#E566DA',
-  PROBABLE: '#DBA1DD',
-  POSSIBLE: '#475569',
-};
+/** Build category colors from the active theme's chart palette. */
+function useCategoryColors(): Record<ReserveCategory, string> {
+  const { theme } = useTheme();
+  return useMemo(() => ({
+    PDP: theme.chartPalette.oil,
+    PUD: theme.chartPalette.cash,
+    PROBABLE: theme.chartPalette.lav,
+    POSSIBLE: theme.chartPalette.grid,
+  }), [theme.chartPalette]);
+}
 
 const CATEGORY_ORDER: ReserveCategory[] = ['PDP', 'PUD', 'PROBABLE', 'POSSIBLE'];
 
@@ -28,6 +33,8 @@ const formatMboe = (boe: number): string => `${(boe / 1000).toFixed(1)}`;
 const formatMm = (value: number): string => `$${(value / 1e6).toFixed(1)}MM`;
 
 const ReservesPanel: React.FC<ReservesPanelProps> = ({ isClassic, groups }) => {
+  const CATEGORY_COLORS = useCategoryColors();
+
   const rollups = useMemo(() => {
     const map = new Map<ReserveCategory, CategoryRollup>();
 

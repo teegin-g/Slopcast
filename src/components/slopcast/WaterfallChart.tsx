@@ -81,13 +81,13 @@ const WaterfallChart: React.FC<WaterfallChartProps> = ({ isClassic, baseNpv, dri
   const fillForType = (type: BarType): string => {
     switch (type) {
       case 'positive':
-        return '#3b82f6';
+        return chartPalette.oil;
       case 'negative':
-        return '#E566DA';
+        return chartPalette.cash;
       case 'base':
       case 'adjusted':
       default:
-        return '#DBA1DD';
+        return chartPalette.lav;
     }
   };
 

@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Well, WellGroup } from '../../types';
+import { useTheme } from '../../theme/ThemeProvider';
 
 interface MiniMapPreviewProps {
   isClassic: boolean;
@@ -14,6 +15,8 @@ const USA_BOUNDS = {
 };
 
 const MiniMapPreview: React.FC<MiniMapPreviewProps> = ({ isClassic, wells, activeGroup }) => {
+  const { theme } = useTheme();
+  const { chartPalette, mapPalette } = theme;
   const groupWells = useMemo(
     () => wells.filter(w => activeGroup.wellIds.has(w.id)),
     [wells, activeGroup.wellIds]
@@ -84,16 +87,16 @@ const MiniMapPreview: React.FC<MiniMapPreviewProps> = ({ isClassic, wells, activ
         style={{ maxHeight: '120px' }}
       >
         {/* Background */}
-        <rect width={svgWidth} height={svgHeight} fill={isClassic ? '#0a1220' : '#060e1a'} />
+        <rect width={svgWidth} height={svgHeight} fill={chartPalette.surface} />
 
         {/* Grid lines */}
         {Array.from({ length: 5 }, (_, i) => {
           const x = (svgWidth / 5) * (i + 1);
-          return <line key={`v${i}`} x1={x} y1={0} x2={x} y2={svgHeight} stroke="rgba(100,140,180,0.12)" strokeWidth={0.5} />;
+          return <line key={`v${i}`} x1={x} y1={0} x2={x} y2={svgHeight} stroke={mapPalette.gridColor} strokeOpacity={mapPalette.gridOpacity * 0.4} strokeWidth={0.5} />;
         })}
         {Array.from({ length: 3 }, (_, i) => {
           const y = (svgHeight / 3) * (i + 1);
-          return <line key={`h${i}`} x1={0} y1={y} x2={svgWidth} y2={y} stroke="rgba(100,140,180,0.12)" strokeWidth={0.5} />;
+          return <line key={`h${i}`} x1={0} y1={y} x2={svgWidth} y2={y} stroke={mapPalette.gridColor} strokeOpacity={mapPalette.gridOpacity * 0.4} strokeWidth={0.5} />;
         })}
 
         {/* Well dots */}
@@ -105,7 +108,7 @@ const MiniMapPreview: React.FC<MiniMapPreviewProps> = ({ isClassic, wells, activ
             r={3.5}
             fill={activeGroup.color}
             fillOpacity={0.85}
-            stroke="rgba(255,255,255,0.4)"
+            stroke={mapPalette.selectedStroke}
             strokeWidth={0.8}
           />
         ))}
@@ -123,7 +126,7 @@ const MiniMapPreview: React.FC<MiniMapPreviewProps> = ({ isClassic, wells, activ
         <text
           x={6}
           y={12}
-          fill={isClassic ? 'rgba(255,255,255,0.5)' : 'rgba(180,200,220,0.5)'}
+          fill={chartPalette.text}
           fontSize={8}
           fontFamily="Inter, Arial, sans-serif"
           fontWeight={700}
