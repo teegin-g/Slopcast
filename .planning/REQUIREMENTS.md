@@ -10,9 +10,9 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Styling Foundation
 
 - [x] **STYLE-01**: Tailwind CSS v4 installed and wired with existing CSS custom properties via @theme
-- [ ] **STYLE-02**: Spacing tokens standardized on 4/8/12/16/24/32/48px grid across all workspace components
-- [ ] **STYLE-03**: Typography hierarchy defined with 5-6 levels (H1, H2, H3, body, caption, label) using Tailwind utilities
-- [ ] **STYLE-04**: Hover and focus-visible states present on all interactive elements (buttons, table rows, sidebar items, inputs)
+- [x] **STYLE-02**: Spacing tokens standardized on 4/8/12/16/24/32/48px grid across all workspace components
+- [x] **STYLE-03**: Typography hierarchy defined with 5-6 levels (H1, H2, H3, body, caption, label) using Tailwind utilities
+- [x] **STYLE-04**: Hover and focus-visible states present on all interactive elements (buttons, table rows, sidebar items, inputs)
 - [x] **STYLE-05**: Glassmorphism token system established (--glass-sidebar, --glass-panel, --glass-card) with backdrop-blur + semi-transparent backgrounds
 - [x] **STYLE-06**: Animated canvas backgrounds remain visible and prominent through the glass UI shell across all themes
 
@@ -84,9 +84,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | STYLE-01 | Phase 1 | Complete |
-| STYLE-02 | Phase 1 | Pending |
-| STYLE-03 | Phase 1 | Pending |
-| STYLE-04 | Phase 1 | Pending |
+| STYLE-02 | Phase 1 | Complete |
+| STYLE-03 | Phase 1 | Complete |
+| STYLE-04 | Phase 1 | Complete |
 | STYLE-05 | Phase 1 | Complete |
 | STYLE-06 | Phase 1 | Complete |
 | NAV-01 | Phase 1 | Complete |
