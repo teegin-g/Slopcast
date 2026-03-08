@@ -5,6 +5,11 @@ import type { ColumnFiltersState } from '@tanstack/react-table';
 // Keyed by tableId so wells and cash flow tables have independent filters.
 const filterStore = new Map<string, { globalFilter: string; columnFilters: ColumnFiltersState }>();
 
+/** Clear all stored filters. Exposed for testing. */
+export function clearFilterStore() {
+  filterStore.clear();
+}
+
 export interface ActiveFilter {
   id: string;
   value: string;

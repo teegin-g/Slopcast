@@ -1,7 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import React from 'react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, within, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import WellsTable from './WellsTable';
+import { clearFilterStore } from './hooks/useTableFilters';
 import type { Well } from '../../types';
 
 const mockWells: Well[] = [
@@ -25,66 +27,82 @@ function renderTable(props: Partial<React.ComponentProps<typeof WellsTable>> = {
   );
 }
 
+beforeEach(() => {
+  clearFilterStore();
+});
+
+afterEach(() => {
+  cleanup();
+});
+
 describe('WellsTable', () => {
   it('renders all 5 column headers plus checkbox', () => {
-    renderTable();
+    const { container } = renderTable();
+    const table = container.querySelector('table')!;
+    const headers = table.querySelectorAll('thead th');
+    expect(headers.length).toBe(6); // checkbox + 5 data columns
     expect(screen.getByText('Well')).toBeDefined();
     expect(screen.getByText('Formation')).toBeDefined();
     expect(screen.getByText('Lateral')).toBeDefined();
     expect(screen.getByText('Status')).toBeDefined();
     expect(screen.getByText('Operator')).toBeDefined();
-    // Checkbox column - select all checkbox
-    const checkboxes = screen.getAllByRole('checkbox');
-    expect(checkboxes.length).toBeGreaterThanOrEqual(1); // at least the header checkbox
   });
 
   it('renders well rows with correct data', () => {
-    renderTable();
+    const { container } = renderTable();
+    const table = container.querySelector('table')!;
+    const rows = table.querySelectorAll('tbody tr');
+    expect(rows.length).toBe(4);
     expect(screen.getByText('Alpha Well')).toBeDefined();
     expect(screen.getByText('Bravo Well')).toBeDefined();
     expect(screen.getByText('Charlie Well')).toBeDefined();
     expect(screen.getByText('Delta Well')).toBeDefined();
-    expect(screen.getByText('Wolfcamp')).toBeDefined();
     expect(screen.getByText('10,500 ft')).toBeDefined();
   });
 
   it('clicking column header triggers sort', () => {
-    renderTable();
+    const { container } = renderTable();
     const wellHeader = screen.getByText('Well');
     fireEvent.click(wellHeader);
-    // After clicking, rows should be sorted - Alpha should still be first (asc)
-    const rows = screen.getAllByRole('row');
-    // Header row + 4 data rows
-    expect(rows.length).toBe(5);
+    // After sort asc, first row should be Alpha Well
+    const table = container.querySelector('table')!;
+    const rows = table.querySelectorAll('tbody tr');
+    expect(rows.length).toBe(4);
+    const firstRowName = rows[0].querySelectorAll('td')[1]?.textContent;
+    expect(firstRowName).toBe('Alpha Well');
   });
 
   it('global filter filters rows by text', () => {
-    renderTable();
-    const searchInput = screen.getByPlaceholderText(/search/i);
+    const { container } = renderTable();
+    const searchInput = container.querySelector('input[type="text"]') as HTMLInputElement;
     fireEvent.change(searchInput, { target: { value: 'Alpha' } });
-    // Should only show Alpha Well
-    expect(screen.getByText('Alpha Well')).toBeDefined();
-    expect(screen.queryByText('Bravo Well')).toBeNull();
+    const table = container.querySelector('table')!;
+    const rows = table.querySelectorAll('tbody tr');
+    expect(rows.length).toBe(1);
+    expect(rows[0].textContent).toContain('Alpha Well');
   });
 
-  it('checkbox select toggles row selection', () => {
+  it('checkbox select calls onSelectWells', () => {
     const onSelectWells = vi.fn();
-    renderTable({ onSelectWells });
-    const checkboxes = screen.getAllByRole('checkbox');
-    // First checkbox is select-all, rest are per-row
-    expect(checkboxes.length).toBe(5); // 1 header + 4 rows
-    fireEvent.click(checkboxes[1]); // click first row checkbox
+    const { container } = renderTable({ onSelectWells });
+    const table = container.querySelector('table')!;
+    const rows = table.querySelectorAll('tbody tr');
+    const firstRowCheckbox = rows[0].querySelector('input[type="checkbox"]') as HTMLInputElement;
+    fireEvent.click(firstRowCheckbox);
     expect(onSelectWells).toHaveBeenCalled();
   });
 
   it('selectedWellIds prop correctly marks rows as selected', () => {
-    renderTable({ selectedWellIds: new Set(['w1', 'w3']) });
-    const checkboxes = screen.getAllByRole('checkbox') as HTMLInputElement[];
-    // Row checkboxes for w1 and w3 should be checked
-    // checkboxes[0] = select-all, [1]=w1, [2]=w2, [3]=w3, [4]=w4
-    expect(checkboxes[1].checked).toBe(true);
-    expect(checkboxes[2].checked).toBe(false);
-    expect(checkboxes[3].checked).toBe(true);
-    expect(checkboxes[4].checked).toBe(false);
+    const { container } = renderTable({ selectedWellIds: new Set(['w1', 'w3']) });
+    const table = container.querySelector('table')!;
+    const rows = table.querySelectorAll('tbody tr');
+    const checkboxes = Array.from(rows).map(
+      row => row.querySelector('input[type="checkbox"]') as HTMLInputElement
+    );
+    // w1 (Alpha) = checked, w2 (Bravo) = unchecked, w3 (Charlie) = checked, w4 (Delta) = unchecked
+    expect(checkboxes[0].checked).toBe(true);
+    expect(checkboxes[1].checked).toBe(false);
+    expect(checkboxes[2].checked).toBe(true);
+    expect(checkboxes[3].checked).toBe(false);
   });
 });

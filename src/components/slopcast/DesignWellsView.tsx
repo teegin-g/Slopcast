@@ -3,7 +3,7 @@ import GroupList from '../GroupList';
 import MapVisualizer from '../MapVisualizer';
 import { ThemeMeta, ThemeId } from '../../theme/themes';
 import { Well, WellGroup } from '../../types';
-import GroupWellsTable from './GroupWellsTable';
+import WellsTable from './WellsTable';
 
 export type WellsMobilePanel = 'GROUPS' | 'MAP';
 
@@ -301,12 +301,11 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
           />
 
           {activeGroup && (
-            <GroupWellsTable
-              isClassic={isClassic}
-              group={activeGroup}
-              wells={wells}
-              title="Wells in active group"
-              defaultSort={{ key: 'name', dir: 'asc' }}
+            <WellsTable
+              wells={wells.filter(w => activeGroup.wellIds.has(w.id))}
+              selectedWellIds={selectedWellIds}
+              onSelectWells={onSelectWells}
+              onToggleWell={onToggleWell}
             />
           )}
 
