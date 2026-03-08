@@ -1,9 +1,9 @@
 ---
-status: diagnosed
+status: complete
 phase: 01-styling-foundation-and-app-shell
-source: [01-01-SUMMARY.md, 01-02-SUMMARY.md]
-started: 2026-03-07T12:00:00Z
-updated: 2026-03-07T12:00:00Z
+source: [01-04-SUMMARY.md, 01-05-SUMMARY.md, 01-06-SUMMARY.md]
+started: 2026-03-07T23:58:00Z
+updated: 2026-03-08T00:05:00Z
 ---
 
 ## Current Test
@@ -13,108 +13,53 @@ updated: 2026-03-07T12:00:00Z
 
 ## Tests
 
-### 1. App Loads Without Errors
-expected: Navigate to localhost:3000. The app loads without console errors. Sidebar visible on left, main content area on right, animated canvas background visible behind panels.
+### 1. Theme Selector Location
+expected: The theme selector is ONLY in the PageHeader (top bar). The sidebar bottom area has NO theme selector dots/icons. Only one place to switch themes in the entire UI.
 result: pass
 
-### 2. Sidebar Navigation Sections
-expected: Sidebar shows three navigation items: Wells, Economics, and Scenarios. Clicking each switches the main content view. Active section shows a visual indicator (highlight or accent).
-result: pass
-
-### 3. Glass Panel Styling
-expected: Content panels have a translucent glass effect — you can see the animated background through them. Panels have subtle borders and shadows. The overall look is layered and atmospheric, not flat.
+### 2. Panel Borders Match Theme (Slate)
+expected: Switch to Slate theme. Content panels (Economics view, Wells view) have borders that use Slate's blue-gray accent colors — NOT generic white/20 borders. Borders should feel cohesive with the Slate palette.
 result: issue
-reported: "Make sure panel and tile border colors and font colors match the color tokens for the themes"
+reported: "Make sure borders follow the theme tokens for all themes, and make sure that the text and border color is not all white for every theme"
 severity: major
 
-### 4. Vignette Overlay
-expected: A subtle dark gradient is visible at the edges of the viewport, creating a vignette effect that frames the content. Most noticeable at the corners.
+### 3. Panel Borders Match Theme (Synthwave)
+expected: Switch to Synthwave theme. Panel borders should reflect Synthwave's neon cyan/purple accents. The overall look should feel distinctly Synthwave, not the same as Slate.
+result: skipped
+reason: Same core issue as Test 2 — borders/text not following theme tokens
+
+### 4. Text Colors Follow Theme
+expected: In any non-Mario theme: labels, values, and headers should NOT be plain white. Text should use the theme's text token colors. Switch between Slate and Synthwave — text tinting should visibly change with the theme.
+result: skipped
+reason: Same core issue as Test 2 — text colors not following theme tokens
+
+### 5. Chart Colors Theme-Aware
+expected: Open the Economics tab and look at any charts (waterfall, reserves pie). Chart bar/slice colors should change when switching themes. They should NOT be hardcoded hex colors that stay the same regardless of theme.
 result: pass
 
-### 5. Theme Switching
-expected: Theme selector (icon dots at bottom of sidebar) lets you switch between themes. Each theme changes the overall color scheme — background, panel tinting, accent colors should all change. Try at least Slate, Synthwave, and Mario.
-result: issue
-reported: "the theme should only be accessible in the header, not sidebar"
-severity: major
-
-### 6. Mario Theme Classic Mode
-expected: When Mario theme is active, panels should have a solid retro look (NO glass transparency/blur) with distinct borders. It should look intentionally different from the glass themes.
+### 6. Mario Classic Mode Preserved
+expected: Switch to Mario theme. Panels should be solid (no glass blur), with deliberate retro white text on dark backgrounds. The classic/retro look should be intentionally different from glass themes — white/black colors here are correct.
 result: pass
 
-### 7. Well Group Tree
-expected: Sidebar shows a collapsible well group list. Groups can be expanded/collapsed. Each group shows a color dot and well count badge.
-result: pass
-
-### 8. URL Navigation Sync
-expected: Clicking sidebar sections updates the URL (search params change). Using browser back/forward buttons navigates between previously visited sections.
-result: pass
-
-### 9. Sidebar Collapse Toggle
-expected: Desktop: a toggle button collapses the sidebar to a narrow icon strip. Clicking again expands it. The collapse preference persists across page reloads.
-result: pass
-
-### 10. Mobile Responsive Layout
-expected: Narrow the browser window below ~768px. Sidebar should auto-hide. A hamburger/menu button appears to open the sidebar as a drawer overlay. Clicking the backdrop or pressing Escape closes it.
+### 7. Mini Map Theme Colors
+expected: If the Wells view has a mini map preview, its background, grid lines, and well markers should use theme-appropriate colors — not hardcoded gray/white fills.
 result: pass
 
 ## Summary
 
-total: 10
-passed: 8
-issues: 2
+total: 7
+passed: 4
+issues: 1
 pending: 0
+skipped: 2
 skipped: 0
 
 ## Gaps
 
-- truth: "Content panels have translucent glass effect with theme-appropriate borders, shadows, and font colors"
+- truth: "Content panels have borders using theme-specific accent colors, and text colors follow theme tokens — not hardcoded white across all themes"
   status: failed
-  reason: "User reported: Make sure panel and tile border colors and font colors match the color tokens for the themes"
+  reason: "User reported: Make sure borders follow the theme tokens for all themes, and make sure that the text and border color is not all white for every theme"
   severity: major
-  test: 3
-  root_cause: "27+ child components use hardcoded Tailwind color classes (text-white/, border-white/, bg-black/) and inline rgba() instead of theme tokens (text-theme-text/, border-theme-border/, bg-theme-surface1/)"
-  artifacts:
-    - path: "src/components/slopcast/EconomicsGroupBar.tsx"
-      issue: "13 white/ + 14 black/ hardcoded color classes"
-    - path: "src/components/slopcast/DesignEconomicsView.tsx"
-      issue: "13 white/ + 9 black/ hardcoded color classes"
-    - path: "src/components/slopcast/PageHeader.tsx"
-      issue: "8 white/ + 12 black/ hardcoded color classes"
-    - path: "src/components/slopcast/EconomicsDriversPanel.tsx"
-      issue: "10 white/ + 9 black/ hardcoded color classes"
-    - path: "src/components/slopcast/ProfileSelector.tsx"
-      issue: "10 white/ + 9 black/ hardcoded color classes"
-    - path: "src/components/slopcast/DealsTable.tsx"
-      issue: "9 white/ + 1 black/ hardcoded color classes"
-    - path: "src/components/slopcast/DesignWellsView.tsx"
-      issue: "9 white/ + 5 black/ hardcoded color classes"
-    - path: "src/components/slopcast/WaterfallChart.tsx"
-      issue: "Inline hardcoded hex colors instead of chartPalette tokens"
-    - path: "src/components/slopcast/ReservesPanel.tsx"
-      issue: "Hardcoded category color map instead of chartPalette"
-    - path: "src/components/slopcast/MiniMapPreview.tsx"
-      issue: "Inline rgba() for grid lines, fills, strokes"
-    - path: "src/components/slopcast/GroupComparisonStrip.tsx"
-      issue: "Hardcoded #ef4444 instead of text-theme-danger"
-  missing:
-    - "Replace text-white/XX with text-theme-text/XX across 27 files"
-    - "Replace border-white/XX with border-theme-border/XX"
-    - "Replace bg-black/XX with bg-theme-surface1/XX or bg-theme-bg/XX"
-    - "Replace hardcoded hex colors in charts with chartPalette from theme context"
-  debug_session: ".planning/debug/glass-hardcoded-colors.md"
-- truth: "Theme selector accessible in header, not sidebar"
-  status: failed
-  reason: "User reported: the theme should only be accessible in the header, not sidebar"
-  severity: major
-  test: 5
-  root_cause: "Theme selector duplicated — rendered in both Sidebar bottom (lines 109-132) and PageHeader. Sidebar copy needs removal."
-  artifacts:
-    - path: "src/components/layout/Sidebar.tsx"
-      issue: "Lines 109-132: theme selector JSX block and lines 18-20 theme props need removal"
-    - path: "src/components/layout/AppShell.tsx"
-      issue: "Lines 116-118: themeId, onSetThemeId, themes passed to sidebarProps unnecessarily"
-  missing:
-    - "Remove theme selector JSX block from Sidebar.tsx"
-    - "Remove themeId/onSetThemeId/themes props from SidebarProps interface"
-    - "Remove corresponding prop assignments from AppShell.tsx sidebarProps"
-  debug_session: ".planning/debug/sidebar-theme-selector.md"
+  test: 2
+  artifacts: []
+  missing: []
