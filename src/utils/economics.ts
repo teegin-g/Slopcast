@@ -1,5 +1,5 @@
 
-import { Well, TypeCurveParams, CapexAssumptions, CommodityPricingAssumptions, MonthlyCashFlow, DealMetrics, WellGroup, Scenario, SensitivityVariable, SensitivityMatrixResult, ScheduleParams, OpexAssumptions, OwnershipAssumptions, JvAgreement, TaxAssumptions, DebtAssumptions, ReserveCategory, DEFAULT_RESERVE_RISK_FACTORS } from '../types';
+import { Well, TypeCurveParams, CapexAssumptions, CommodityPricingAssumptions, MonthlyCashFlow, DealMetrics, WellGroup, Scenario, SensitivityVariable, SensitivityMatrixResult, ScheduleParams, OpexAssumptions, OwnershipAssumptions, JvAgreement, TaxAssumptions, DebtAssumptions, ReserveCategory, DEFAULT_RESERVE_RISK_FACTORS, ForecastSegment, CutoffKind } from '../types';
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
@@ -22,6 +22,7 @@ const buildEconCacheKey = (
   const parts = [
     sortedIds,
     tc.qi, tc.di, tc.b, tc.gorMcfPerBbl || 0,
+    (tc.segments || []).map(s => `${s.qi}:${s.b}:${s.initialDecline}:${s.cutoffKind}:${s.cutoffValue}`).join('|'),
     capex.rigCount, capex.drillDurationDays, capex.stimDurationDays,
     capex.items.map(i => `${i.id}:${i.value}:${i.basis}`).join('|'),
     pricing.oilPrice, pricing.gasPrice, pricing.oilDifferential || 0, pricing.gasDifferential || 0,
@@ -156,6 +157,78 @@ const computeOwnershipFactors = (
   return { netRevenueFactor, netCostFactor };
 };
 
+// --- Multi-Segment Production Evaluator ---
+
+function shouldCutoff(
+  seg: { cutoffKind?: CutoffKind; cutoffValue?: number | null },
+  rateMonthly: number,
+  localMonths: number,
+  cumProduction: number,
+): boolean {
+  const kind = seg.cutoffKind || 'default';
+  if (kind === 'default') return false;
+  const val = seg.cutoffValue ?? 0;
+  switch (kind) {
+    case 'rate': return rateMonthly <= val * 30.4; // cutoffValue is daily rate
+    case 'time_days': return localMonths * 30.4 >= val;
+    case 'cum': return cumProduction >= val;
+    case 'decline': return false; // not yet implemented
+    default: return false;
+  }
+}
+
+function evaluateMultiSegmentProduction(
+  tc: TypeCurveParams,
+  monthsToProject: number,
+  productionScalar: number,
+): { oilByMonth: number[]; gasByMonth: number[] } {
+  const segments: Array<{ qi: number | null; b: number | null; initialDecline: number | null; cutoffKind?: CutoffKind; cutoffValue?: number | null }> =
+    tc.segments?.length
+      ? tc.segments
+      : [{ qi: tc.qi, b: tc.b, initialDecline: tc.di, cutoffKind: 'default' as CutoffKind, cutoffValue: null }];
+
+  const oilByMonth = new Array(monthsToProject).fill(0);
+  const gasByMonth = new Array(monthsToProject).fill(0);
+
+  let currentMonth = 0; // 0-based index into oilByMonth
+  let currentRate = (segments[0].qi ?? tc.qi) * 30.4 * productionScalar;
+
+  for (const seg of segments) {
+    if (currentMonth >= monthsToProject) break;
+
+    const qi = seg.qi != null ? seg.qi * 30.4 * productionScalar : currentRate;
+    const b = seg.b ?? 0;
+    const Di_annual = seg.initialDecline ?? 8;
+    const Di_monthly = 1 - Math.pow(1 - (Di_annual / 100), 1 / 12);
+
+    let localT = 0;
+    let cumProd = 0;
+
+    while (currentMonth < monthsToProject) {
+      localT++;
+      let q_t: number;
+      if (b === 0) {
+        q_t = qi * Math.exp(-Di_monthly * localT);
+      } else {
+        q_t = qi / Math.pow(1 + b * Di_monthly * localT, 1 / b);
+      }
+
+      if (shouldCutoff(seg, q_t, localT, cumProd)) {
+        currentRate = q_t;
+        break;
+      }
+
+      oilByMonth[currentMonth] = q_t;
+      gasByMonth[currentMonth] = q_t * (tc.gorMcfPerBbl || 0);
+      cumProd += q_t;
+      currentRate = q_t;
+      currentMonth++;
+    }
+  }
+
+  return { oilByMonth, gasByMonth };
+}
+
 export const calculateEconomics = (
   selectedWells: Well[],
   tc: TypeCurveParams,
@@ -236,56 +309,50 @@ export const calculateEconomics = (
   const grossCapex: number[] = new Array(monthsToProject).fill(0);
 
   let totalOil = 0;
-  
-  const Di_monthly = 1 - Math.pow(1 - (tc.di / 100), 1/12);
-  const b = tc.b;
-  const qi_monthly = tc.qi * 30.4 * scalars.production; 
+
   const monthlyDiscountRate = 0.10 / 12;
-  
+
   // Realized Prices (Net of Differentials)
   const realizedOil = pricing.oilPrice - (pricing.oilDifferential || 0);
   const realizedGas = pricing.gasPrice - (pricing.gasDifferential || 0);
 
   wellSchedules.forEach(({ well, startMonthOffset }) => {
-      
+
       const rawWellCapex = capex.items.reduce((sum, item) => {
         return sum + (item.basis === 'PER_FOOT' ? item.value * well.lateralLength : item.value);
       }, 0);
-      
-      const wellTotalCapex = rawWellCapex * scalars.capex; 
+
+      const wellTotalCapex = rawWellCapex * scalars.capex;
 
       const prodStartMonthIdx = Math.floor(startMonthOffset) + 1;
-      const capexMonthIdx = Math.floor(startMonthOffset); 
+      const capexMonthIdx = Math.floor(startMonthOffset);
 
       if (capexMonthIdx >= 0 && capexMonthIdx < monthsToProject) {
           grossCapex[capexMonthIdx] += wellTotalCapex;
       }
 
-      for (let t = 1; t <= monthsToProject; t++) {
-          const calendarMonthIdx = prodStartMonthIdx + t - 1;
-          
-          if (calendarMonthIdx >= 0 && calendarMonthIdx < monthsToProject) {
-              let q_t = 0;
-              if (b === 0) {
-                  q_t = qi_monthly * Math.exp(-Di_monthly * t);
-              } else {
-                  q_t = qi_monthly / Math.pow(1 + b * Di_monthly * t, 1/b);
-              }
+      const wellMonths = monthsToProject;
+      const { oilByMonth, gasByMonth } = evaluateMultiSegmentProduction(tc, wellMonths, scalars.production);
 
-              const gas_t = q_t * (tc.gorMcfPerBbl || 0);
+      for (let t = 0; t < wellMonths; t++) {
+          const calendarMonthIdx = prodStartMonthIdx + t;
+
+          if (calendarMonthIdx >= 0 && calendarMonthIdx < monthsToProject) {
+              const q_t = oilByMonth[t];
+              const gas_t = gasByMonth[t];
 
               const revenueGross = (q_t * realizedOil) + (gas_t * realizedGas);
-              const seg = getOpexSegmentForAgeMonth(opex, t);
-              const fixed = seg ? seg.fixedPerWellPerMonth : 0;
-              const varOil = seg ? seg.variableOilPerBbl : 0;
-              const varGas = seg ? seg.variableGasPerMcf : 0;
+              const opexSeg = getOpexSegmentForAgeMonth(opex, t + 1);
+              const fixed = opexSeg ? opexSeg.fixedPerWellPerMonth : 0;
+              const varOil = opexSeg ? opexSeg.variableOilPerBbl : 0;
+              const varGas = opexSeg ? opexSeg.variableGasPerMcf : 0;
               const opexGross = fixed + (q_t * varOil) + (gas_t * varGas);
 
               oilProduction[calendarMonthIdx] += q_t;
               gasProduction[calendarMonthIdx] += gas_t;
               grossRevenue[calendarMonthIdx] += revenueGross;
               grossOpex[calendarMonthIdx] += opexGross;
-              
+
               totalOil += q_t;
           }
       }

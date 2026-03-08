@@ -1,5 +1,5 @@
 
-import { Well, TypeCurveParams, CapexAssumptions, CapexItem, CommodityPricingAssumptions, OpexAssumptions, OwnershipAssumptions } from './types';
+import { Well, TypeCurveParams, CapexAssumptions, CapexItem, CommodityPricingAssumptions, OpexAssumptions, OwnershipAssumptions, ForecastSegment } from './types';
 
 // Generate some mock wells in a basin-like cluster
 const generateWells = (count: number): Well[] => {
@@ -27,12 +27,18 @@ const generateWells = (count: number): Well[] => {
 
 export const MOCK_WELLS: Well[] = generateWells(40);
 
+export const DEFAULT_SEGMENTS: ForecastSegment[] = [
+  { id: 's1', name: 'primary', method: 'arps', qi: 850, b: 1.2, initialDecline: 65, cutoffKind: 'rate', cutoffValue: 200 },
+  { id: 's2', name: 'tail', method: 'arps', qi: null, b: 0, initialDecline: 8, cutoffKind: 'default', cutoffValue: null },
+];
+
 export const DEFAULT_TYPE_CURVE: TypeCurveParams = {
   qi: 850,
   b: 1.2,
   di: 65, // 65% initial decline
   terminalDecline: 8,
   gorMcfPerBbl: 0,
+  segments: DEFAULT_SEGMENTS,
 };
 
 const DEFAULT_CAPEX_ITEMS: CapexItem[] = [

@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { OpexAssumptions, OwnershipAssumptions, WellGroup, TypeCurveParams, CapexAssumptions } from '../types';
+import { OpexAssumptions, OwnershipAssumptions, WellGroup, CapexAssumptions } from '../types';
 import CapexControls from './CapexControls';
 import OpexControls from './OpexControls';
 import OwnershipControls from './OwnershipControls';
+import DeclineSegmentTable from './DeclineSegmentTable';
 import { useTheme } from '../theme/ThemeProvider';
 import { ASSUMPTION_TEMPLATES, AssumptionTemplate } from '../constants/templates';
-import { InlineEditableValue } from './inline/InlineEditableValue';
+import { DEFAULT_SEGMENTS } from '../constants';
 
 interface ControlsProps {
   group: WellGroup;
@@ -46,11 +47,6 @@ const Controls: React.FC<ControlsProps> = ({
     }
   };
 
-  const handleTcChange = (key: keyof TypeCurveParams, val: string) => {
-    onUpdateGroup({ ...group, typeCurve: { ...group.typeCurve, [key]: parseFloat(val) || 0 } });
-    if (onMarkDirty) onMarkDirty();
-  };
-
   const handleCapexChange = (updatedCapex: CapexAssumptions) => {
     onUpdateGroup({ ...group, capex: updatedCapex });
     if (onMarkDirty) onMarkDirty();
@@ -83,21 +79,9 @@ const Controls: React.FC<ControlsProps> = ({
     ? 'text-[9px] font-black uppercase tracking-[0.2em] mb-1 block text-theme-warning'
     : 'text-[9px] font-black uppercase tracking-[0.2em] mb-1 block text-theme-muted';
 
-  const badgeClass = isClassic
-    ? 'text-[9px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded border border-black/30 bg-theme-cyan text-white'
-    : 'text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border bg-theme-bg border-theme-border text-theme-cyan';
-
   const sectionHeaderClass = isClassic
     ? 'text-[10px] font-black uppercase tracking-[0.22em] text-white pb-2 mb-3 border-b border-white/10'
     : 'text-[10px] font-black uppercase tracking-[0.22em] text-theme-cyan pb-2 mb-3 border-b border-theme-border';
-
-  const inlineValueClass = isClassic
-    ? 'text-[11px] font-black text-white'
-    : 'text-[11px] font-black text-theme-text';
-
-  const inlineInputClass = isClassic
-    ? 'text-[11px] font-black w-20'
-    : 'text-[11px] font-black w-20';
 
   return (
     <div className="space-y-4 pb-12">
@@ -243,7 +227,7 @@ const Controls: React.FC<ControlsProps> = ({
         </div>
       </div>
 
-      {/* Type Curve Section -- flat, always visible */}
+      {/* Type Curve Section -- segment table */}
       <div
         className={
           isClassic
@@ -252,98 +236,25 @@ const Controls: React.FC<ControlsProps> = ({
         }
       >
         <h3 className={sectionHeaderClass}>Decline Profile</h3>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <label className={labelClass}>Initial Rate (BOPD)</label>
-              <span className={badgeClass}>{group.typeCurve.qi > 1000 ? "TIER 1" : "PROVEN"}</span>
-            </div>
-            <InlineEditableValue
-              value={group.typeCurve.qi}
-              onCommit={(v) => handleTcChange('qi', v)}
-              format={(v) => String(Math.round(Number(v)))}
-              type="number"
-              validate={(raw) => {
-                const n = parseFloat(raw);
-                if (isNaN(n) || n <= 0) return 'Must be > 0';
-                return null;
-              }}
-              className={inlineValueClass}
-              inputClassName={inlineInputClass}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <label className={labelClass}>Hyperbolic B-Factor</label>
-            <InlineEditableValue
-              value={group.typeCurve.b}
-              onCommit={(v) => handleTcChange('b', v)}
-              format={(v) => Number(v).toFixed(2)}
-              type="number"
-              validate={(raw) => {
-                const n = parseFloat(raw);
-                if (isNaN(n) || n <= 0) return 'Must be > 0';
-                if (n > 2) return 'Max 2.0';
-                return null;
-              }}
-              className={inlineValueClass}
-              inputClassName={inlineInputClass}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <label className={labelClass}>Effective Decline (%)</label>
-            <InlineEditableValue
-              value={group.typeCurve.di}
-              onCommit={(v) => handleTcChange('di', v)}
-              format={(v) => `${Number(v).toFixed(1)}%`}
-              type="number"
-              validate={(raw) => {
-                const n = parseFloat(raw);
-                if (isNaN(n) || n < 0) return 'Must be >= 0';
-                if (n > 100) return 'Max 100%';
-                return null;
-              }}
-              className={inlineValueClass}
-              inputClassName={inlineInputClass}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <label className={labelClass}>Terminal Decline (%)</label>
-            <InlineEditableValue
-              value={group.typeCurve.terminalDecline}
-              onCommit={(v) => handleTcChange('terminalDecline', v)}
-              format={(v) => `${Number(v).toFixed(1)}%`}
-              type="number"
-              validate={(raw) => {
-                const n = parseFloat(raw);
-                if (isNaN(n) || n < 0) return 'Must be >= 0';
-                if (n > 100) return 'Max 100%';
-                return null;
-              }}
-              className={inlineValueClass}
-              inputClassName={inlineInputClass}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <label className={labelClass}>GOR (MCF/BBL)</label>
-            <InlineEditableValue
-              value={group.typeCurve.gorMcfPerBbl}
-              onCommit={(v) => handleTcChange('gorMcfPerBbl', v)}
-              format={(v) => Number(v).toFixed(1)}
-              type="number"
-              validate={(raw) => {
-                const n = parseFloat(raw);
-                if (isNaN(n) || n < 0) return 'Must be >= 0';
-                return null;
-              }}
-              className={inlineValueClass}
-              inputClassName={inlineInputClass}
-            />
-          </div>
-        </div>
+        <DeclineSegmentTable
+          segments={group.typeCurve.segments || DEFAULT_SEGMENTS}
+          gorMcfPerBbl={group.typeCurve.gorMcfPerBbl}
+          onChange={(segments, gor) => {
+            const firstSeg = segments[0];
+            onUpdateGroup({
+              ...group,
+              typeCurve: {
+                ...group.typeCurve,
+                qi: firstSeg?.qi ?? group.typeCurve.qi,
+                b: firstSeg?.b ?? group.typeCurve.b,
+                di: firstSeg?.initialDecline ?? group.typeCurve.di,
+                gorMcfPerBbl: gor,
+                segments,
+              }
+            });
+            if (onMarkDirty) onMarkDirty();
+          }}
+        />
       </div>
 
       {/* CAPEX Section -- flat, always visible */}

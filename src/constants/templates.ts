@@ -1,4 +1,4 @@
-import { TypeCurveParams, CapexAssumptions, CapexItem } from '../types';
+import { TypeCurveParams, CapexAssumptions, CapexItem, ForecastSegment } from '../types';
 
 export interface AssumptionTemplate {
   id: string;
@@ -67,6 +67,10 @@ export const ASSUMPTION_TEMPLATES: AssumptionTemplate[] = [
       di: 70,
       terminalDecline: 8,
       gorMcfPerBbl: 2.5,
+      segments: [
+        { id: 't-wca-s1', name: 'primary', method: 'arps', qi: 1200, b: 1.3, initialDecline: 70, cutoffKind: 'rate', cutoffValue: 250 },
+        { id: 't-wca-s2', name: 'tail', method: 'arps', qi: null, b: 0, initialDecline: 8, cutoffKind: 'default', cutoffValue: null },
+      ],
     },
     capexItems: WOLFCAMP_A_CAPEX,
   },
@@ -80,6 +84,10 @@ export const ASSUMPTION_TEMPLATES: AssumptionTemplate[] = [
       di: 60,
       terminalDecline: 8,
       gorMcfPerBbl: 3.0,
+      segments: [
+        { id: 't-bs-s1', name: 'primary', method: 'arps', qi: 750, b: 1.1, initialDecline: 60, cutoffKind: 'rate', cutoffValue: 180 },
+        { id: 't-bs-s2', name: 'tail', method: 'arps', qi: null, b: 0, initialDecline: 8, cutoffKind: 'default', cutoffValue: null },
+      ],
     },
     capexItems: BONE_SPRING_CAPEX,
   },
@@ -93,6 +101,10 @@ export const ASSUMPTION_TEMPLATES: AssumptionTemplate[] = [
       di: 65,
       terminalDecline: 8,
       gorMcfPerBbl: 2.0,
+      segments: [
+        { id: 't-del-s1', name: 'primary', method: 'arps', qi: 900, b: 1.2, initialDecline: 65, cutoffKind: 'rate', cutoffValue: 200 },
+        { id: 't-del-s2', name: 'tail', method: 'arps', qi: null, b: 0, initialDecline: 8, cutoffKind: 'default', cutoffValue: null },
+      ],
     },
     capexItems: DELAWARE_AVG_CAPEX,
   },
@@ -106,6 +118,10 @@ export const ASSUMPTION_TEMPLATES: AssumptionTemplate[] = [
       di: 55,
       terminalDecline: 8,
       gorMcfPerBbl: 1.5,
+      segments: [
+        { id: 't-con-s1', name: 'primary', method: 'arps', qi: 600, b: 1.0, initialDecline: 55, cutoffKind: 'rate', cutoffValue: 150 },
+        { id: 't-con-s2', name: 'tail', method: 'arps', qi: null, b: 0, initialDecline: 8, cutoffKind: 'default', cutoffValue: null },
+      ],
     },
     capexItems: CONSERVATIVE_CAPEX,
   },

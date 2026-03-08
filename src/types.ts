@@ -10,12 +10,26 @@ export interface Well {
   formation: string;
 }
 
+export type CutoffKind = 'rate' | 'cum' | 'time_days' | 'decline' | 'default';
+
+export interface ForecastSegment {
+  id: string;
+  name: string;
+  method: string;          // 'arps' for now
+  qi: number | null;       // null = inherit from previous segment end rate
+  b: number | null;        // null = inherit
+  initialDecline: number | null; // Di %/yr, null = inherit
+  cutoffKind: CutoffKind;
+  cutoffValue: number | null; // null when kind='default' (use horizon)
+}
+
 export interface TypeCurveParams {
   qi: number; // Initial Production (bbl/d)
   b: number; // b-factor
   di: number; // Nominal initial decline rate (annual %)
   terminalDecline: number; // Terminal decline (annual %)
   gorMcfPerBbl: number; // Gas-Oil Ratio (mcf/bbl) used to derive gas volumes
+  segments?: ForecastSegment[]; // Multi-segment forecast (source of truth when present)
 }
 
 export type CapexCategory = 'DRILLING' | 'COMPLETION' | 'FACILITIES' | 'EQUIPMENT' | 'OTHER';

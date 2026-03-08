@@ -19,7 +19,7 @@ import {
   DEFAULT_DEBT_ASSUMPTIONS,
   TAX_PRESETS,
 } from '../types';
-import type { Well, WellGroup, DebtAssumptions } from '../types';
+import type { Well, WellGroup, DebtAssumptions, TypeCurveParams, ForecastSegment } from '../types';
 
 // Small test well sets
 const TEST_WELLS: Well[] = MOCK_WELLS.slice(0, 3);
@@ -92,9 +92,12 @@ describe('calculateEconomics', () => {
   });
 
   it('production scalar affects EUR proportionally', () => {
+    // Use a single-segment type curve (no segments) so rate cutoffs don't interfere
+    const singleSegTc = { qi: 850, b: 1.2, di: 65, terminalDecline: 8, gorMcfPerBbl: 0 };
+
     const base = calculateEconomics(
       SINGLE_WELL,
-      DEFAULT_TYPE_CURVE,
+      singleSegTc,
       DEFAULT_CAPEX,
       DEFAULT_COMMODITY_PRICING,
       DEFAULT_OPEX,
@@ -104,7 +107,7 @@ describe('calculateEconomics', () => {
 
     const boosted = calculateEconomics(
       SINGLE_WELL,
-      DEFAULT_TYPE_CURVE,
+      singleSegTc,
       DEFAULT_CAPEX,
       DEFAULT_COMMODITY_PRICING,
       DEFAULT_OPEX,
@@ -453,5 +456,110 @@ describe('aggregateEconomics', () => {
     expect(metrics.eur).toBe(0);
     expect(metrics.npv10).toBe(0);
     expect(metrics.wellCount).toBe(0);
+  });
+});
+
+// ─── Multi-Segment Production ──────────────────────────────────────
+
+describe('multi-segment production', () => {
+  it('backward compat: no segments field produces same results as before', () => {
+    const tcNoSegments: TypeCurveParams = {
+      qi: 850,
+      b: 1.2,
+      di: 65,
+      terminalDecline: 8,
+      gorMcfPerBbl: 0,
+      // no segments field
+    };
+
+    const tcWithFallback: TypeCurveParams = {
+      qi: 850,
+      b: 1.2,
+      di: 65,
+      terminalDecline: 8,
+      gorMcfPerBbl: 0,
+      segments: [], // empty array should also fall back
+    };
+
+    const resultNo = calculateEconomics(
+      SINGLE_WELL, tcNoSegments, DEFAULT_CAPEX, DEFAULT_COMMODITY_PRICING, DEFAULT_OPEX, DEFAULT_OWNERSHIP,
+    );
+
+    const resultEmpty = calculateEconomics(
+      SINGLE_WELL, tcWithFallback, DEFAULT_CAPEX, DEFAULT_COMMODITY_PRICING, DEFAULT_OPEX, DEFAULT_OWNERSHIP,
+    );
+
+    // Both should produce identical EUR (same single-segment calculation)
+    expect(resultNo.metrics.eur).toBeCloseTo(resultEmpty.metrics.eur, 2);
+    expect(resultNo.metrics.npv10).toBeCloseTo(resultEmpty.metrics.npv10, 2);
+  });
+
+  it('two-segment hyp-to-exp transition produces positive EUR', () => {
+    const tcTwoSeg: TypeCurveParams = {
+      qi: 850,
+      b: 1.2,
+      di: 65,
+      terminalDecline: 8,
+      gorMcfPerBbl: 0,
+      segments: [
+        { id: 's1', name: 'primary', method: 'arps', qi: 850, b: 1.2, initialDecline: 65, cutoffKind: 'rate', cutoffValue: 200 },
+        { id: 's2', name: 'tail', method: 'arps', qi: null, b: 0, initialDecline: 8, cutoffKind: 'default', cutoffValue: null },
+      ],
+    };
+
+    const { metrics, flow } = calculateEconomics(
+      SINGLE_WELL, tcTwoSeg, DEFAULT_CAPEX, DEFAULT_COMMODITY_PRICING, DEFAULT_OPEX, DEFAULT_OWNERSHIP,
+    );
+
+    expect(metrics.eur).toBeGreaterThan(0);
+    expect(metrics.npv10).toBeGreaterThan(0);
+    expect(flow).toHaveLength(120);
+  });
+
+  it('segment rate continuity: tail segment inherits end rate from primary', () => {
+    // With rate cutoff at 200 BOPD, the tail segment should start near 200*30.4 monthly
+    const tcTwoSeg: TypeCurveParams = {
+      qi: 850,
+      b: 1.2,
+      di: 65,
+      terminalDecline: 8,
+      gorMcfPerBbl: 2.0,
+      segments: [
+        { id: 's1', name: 'primary', method: 'arps', qi: 850, b: 1.2, initialDecline: 65, cutoffKind: 'rate', cutoffValue: 200 },
+        { id: 's2', name: 'tail', method: 'arps', qi: null, b: 0, initialDecline: 8, cutoffKind: 'default', cutoffValue: null },
+      ],
+    };
+
+    const { flow } = calculateEconomics(
+      SINGLE_WELL, tcTwoSeg, DEFAULT_CAPEX, DEFAULT_COMMODITY_PRICING, DEFAULT_OPEX, DEFAULT_OWNERSHIP,
+    );
+
+    // Production should be non-zero throughout (both segments contribute)
+    const midFlow = flow[60]; // month 61
+    expect(midFlow.oilProduction).toBeGreaterThan(0);
+
+    // Gas should also be produced (GOR > 0)
+    expect(midFlow.gasProduction).toBeGreaterThan(0);
+  });
+
+  it('time_days cutoff switches segments after specified time', () => {
+    const tcTimeCutoff: TypeCurveParams = {
+      qi: 850,
+      b: 1.2,
+      di: 65,
+      terminalDecline: 8,
+      gorMcfPerBbl: 0,
+      segments: [
+        { id: 's1', name: 'primary', method: 'arps', qi: 850, b: 1.2, initialDecline: 65, cutoffKind: 'time_days', cutoffValue: 365 },
+        { id: 's2', name: 'tail', method: 'arps', qi: null, b: 0, initialDecline: 8, cutoffKind: 'default', cutoffValue: null },
+      ],
+    };
+
+    const { metrics } = calculateEconomics(
+      SINGLE_WELL, tcTimeCutoff, DEFAULT_CAPEX, DEFAULT_COMMODITY_PRICING, DEFAULT_OPEX, DEFAULT_OWNERSHIP,
+    );
+
+    expect(metrics.eur).toBeGreaterThan(0);
+    expect(metrics.npv10).toBeGreaterThan(0);
   });
 });
