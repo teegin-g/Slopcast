@@ -15,6 +15,7 @@ import GroupWellsTable from './GroupWellsTable';
 import GroupComparisonStrip from './GroupComparisonStrip';
 import MiniMapPreview from './MiniMapPreview';
 import ReservesPanel from './ReservesPanel';
+import CashFlowTable from './CashFlowTable';
 import { ViewTransition } from '../layout/ViewTransition';
 
 export type EconomicsMobilePanel = 'SETUP' | 'RESULTS';
@@ -676,6 +677,13 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                 scenarioRankings={operationsProps.scenarioRankings}
                 onJumpToDriver={handleJumpToDriver}
                 baseNpv={aggregateMetrics.npv10}
+              />
+            )}
+
+            {resultsTab === 'CASH_FLOW' && (
+              <CashFlowTable
+                flow={aggregateFlow}
+                pricing={activeGroup.pricing}
               />
             )}
 
