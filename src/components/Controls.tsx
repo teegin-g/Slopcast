@@ -1,88 +1,23 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { OpexAssumptions, OwnershipAssumptions, WellGroup, TypeCurveParams, CapexAssumptions } from '../types';
 import CapexControls from './CapexControls';
 import OpexControls from './OpexControls';
 import OwnershipControls from './OwnershipControls';
 import { useTheme } from '../theme/ThemeProvider';
 import { ASSUMPTION_TEMPLATES, AssumptionTemplate } from '../constants/templates';
+import { InlineEditableValue } from './inline/InlineEditableValue';
 
 interface ControlsProps {
   group: WellGroup;
   onUpdateGroup: (updatedGroup: WellGroup) => void;
   onMarkDirty?: () => void;
-  openSectionKey?: SectionKey | null;
-  onOpenSectionHandled?: () => void;
 }
-
-type SectionKey = 'TYPE_CURVE' | 'CAPEX' | 'OPEX' | 'OWNERSHIP';
-
-interface AccordionSectionProps {
-  id: SectionKey;
-  title: string;
-  isOpen: boolean;
-  onToggle: (id: SectionKey) => void;
-  children: React.ReactNode;
-}
-
-const AccordionSection: React.FC<AccordionSectionProps> = ({ 
-  id, title, isOpen, onToggle, children 
-}) => {
-  const { theme } = useTheme();
-  const isClassic = theme.id === 'mario';
-  return (
-    <div
-      className={
-        isClassic
-          ? `sc-panel theme-transition mb-3 ${isOpen ? 'ring-2 ring-theme-warning/30' : ''}`
-          : `
-            border rounded-panel overflow-hidden theme-transition mb-3 shadow-card
-            ${isOpen 
-              ? 'bg-theme-surface1 border-theme-magenta shadow-glow-magenta' 
-              : 'bg-theme-surface1/40 border-theme-border'}
-          `
-      }
-    >
-      <button 
-        onClick={() => onToggle(id)}
-        className={
-          isClassic
-            ? `w-full flex items-center justify-between px-4 py-3 text-left transition-all sc-panelTitlebar sc-titlebar--neutral ${
-                isOpen ? 'text-white' : 'text-white/90'
-              }`
-            : `w-full flex items-center justify-between px-4 py-3 text-left transition-all ${isOpen ? 'text-theme-cyan' : 'text-theme-muted'}`
-        }
-      >
-        <span className={`text-[10px] font-black uppercase tracking-[0.22em] ${theme.features.brandFont ? 'brand-font' : ''}`}>{title}</span>
-        <span className={`transform transition-transform duration-500 opacity-30 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
-      </button>
-      
-      <div className={`transition-all duration-500 ease-in-out ${isOpen ? 'max-h-[720px] opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
-        <div className={isClassic ? 'p-4 bg-black/10' : 'p-4 border-t border-theme-border/20'}>
-          {children}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const Controls: React.FC<ControlsProps> = ({
   group,
   onUpdateGroup,
   onMarkDirty,
-  openSectionKey,
-  onOpenSectionHandled,
 }) => {
-  const [openSections, setOpenSections] = useState<Set<SectionKey>>(() => new Set(['TYPE_CURVE']));
-
-  const toggleSection = (id: SectionKey) => {
-    setOpenSections(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-  const [capexEditSignal, setCapexEditSignal] = useState(0);
   const [showTemplateMenu, setShowTemplateMenu] = useState(false);
   const [pendingTemplate, setPendingTemplate] = useState<AssumptionTemplate | null>(null);
   const { theme } = useTheme();
@@ -111,17 +46,6 @@ const Controls: React.FC<ControlsProps> = ({
     }
   };
 
-  useEffect(() => {
-    if (!openSectionKey) return;
-    setOpenSections(prev => {
-      if (prev.has(openSectionKey)) return prev;
-      const next = new Set(prev);
-      next.add(openSectionKey);
-      return next;
-    });
-    if (onOpenSectionHandled) onOpenSectionHandled();
-  }, [onOpenSectionHandled, openSectionKey]);
-
   const handleTcChange = (key: keyof TypeCurveParams, val: string) => {
     onUpdateGroup({ ...group, typeCurve: { ...group.typeCurve, [key]: parseFloat(val) || 0 } });
     if (onMarkDirty) onMarkDirty();
@@ -131,7 +55,7 @@ const Controls: React.FC<ControlsProps> = ({
     onUpdateGroup({ ...group, capex: updatedCapex });
     if (onMarkDirty) onMarkDirty();
   };
-  
+
   const handleOpexChange = (updated: OpexAssumptions) => {
     onUpdateGroup({ ...group, opex: updated });
     if (onMarkDirty) onMarkDirty();
@@ -155,10 +79,6 @@ const Controls: React.FC<ControlsProps> = ({
     };
   }, [group.capex.items, group.wellIds.size]);
 
-  const inputClass = isClassic
-    ? 'w-full rounded-inner px-3 py-1.5 text-[11px] font-black sc-inputNavy'
-    : 'w-full bg-theme-bg border rounded-inner px-3 py-1.5 text-[11px] text-theme-text outline-none focus:ring-1 theme-transition border-theme-border focus:border-theme-cyan focus:ring-theme-cyan/30';
-
   const labelClass = isClassic
     ? 'text-[9px] font-black uppercase tracking-[0.2em] mb-1 block text-theme-warning'
     : 'text-[9px] font-black uppercase tracking-[0.2em] mb-1 block text-theme-muted';
@@ -167,8 +87,21 @@ const Controls: React.FC<ControlsProps> = ({
     ? 'text-[9px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded border border-black/30 bg-theme-cyan text-white'
     : 'text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border bg-theme-bg border-theme-border text-theme-cyan';
 
+  const sectionHeaderClass = isClassic
+    ? 'text-[10px] font-black uppercase tracking-[0.22em] text-white pb-2 mb-3 border-b border-white/10'
+    : 'text-[10px] font-black uppercase tracking-[0.22em] text-theme-cyan pb-2 mb-3 border-b border-theme-border';
+
+  const inlineValueClass = isClassic
+    ? 'text-[11px] font-black text-white'
+    : 'text-[11px] font-black text-theme-text';
+
+  const inlineInputClass = isClassic
+    ? 'text-[11px] font-black w-20'
+    : 'text-[11px] font-black w-20';
+
   return (
     <div className="space-y-4 pb-12">
+      {/* Group header */}
       <div
         className={
           isClassic
@@ -274,6 +207,7 @@ const Controls: React.FC<ControlsProps> = ({
         )}
       </div>
 
+      {/* CAPEX Snapshot */}
       <div
         className={
           isClassic
@@ -285,24 +219,6 @@ const Controls: React.FC<ControlsProps> = ({
           <h3 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
             CAPEX Snapshot
           </h3>
-          <button
-            onClick={() => {
-              setOpenSections(prev => {
-                if (prev.has('CAPEX')) return prev;
-                const next = new Set(prev);
-                next.add('CAPEX');
-                return next;
-              });
-              setCapexEditSignal(prev => prev + 1);
-            }}
-            className={
-              isClassic
-                ? 'sc-btnPrimary px-3 py-1.5 rounded-inner text-[9px] font-black uppercase tracking-[0.16em]'
-                : 'px-3 py-1.5 rounded-inner text-[9px] font-black uppercase tracking-[0.16em] bg-theme-magenta text-white hover:shadow-glow-magenta transition-all'
-            }
-          >
-            Edit CAPEX
-          </button>
         </div>
 
         <div className="grid grid-cols-3 gap-2">
@@ -327,77 +243,144 @@ const Controls: React.FC<ControlsProps> = ({
         </div>
       </div>
 
-      <AccordionSection id="TYPE_CURVE" title="Decline Profile" isOpen={openSections.has('TYPE_CURVE')} onToggle={toggleSection}>
-        <div className="space-y-4">
-            <div>
-                <div className="flex justify-between items-center mb-1">
-                    <label className={labelClass}>Initial Rate (BOPD)</label>
-                    <span className={badgeClass}>{group.typeCurve.qi > 1000 ? "TIER 1" : "PROVEN"}</span>
-                </div>
-                <input type="number" step="10" value={group.typeCurve.qi} onChange={e => handleTcChange('qi', e.target.value)} className={inputClass} />
+      {/* Type Curve Section -- flat, always visible */}
+      <div
+        className={
+          isClassic
+            ? 'sc-panel theme-transition mb-3 p-4'
+            : 'rounded-panel border p-4 shadow-card theme-transition mb-3 bg-theme-surface1/40 border-theme-border'
+        }
+      >
+        <h3 className={sectionHeaderClass}>Decline Profile</h3>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <label className={labelClass}>Initial Rate (BOPD)</label>
+              <span className={badgeClass}>{group.typeCurve.qi > 1000 ? "TIER 1" : "PROVEN"}</span>
             </div>
+            <InlineEditableValue
+              value={group.typeCurve.qi}
+              onCommit={(v) => handleTcChange('qi', v)}
+              format={(v) => String(Math.round(Number(v)))}
+              type="number"
+              validate={(raw) => {
+                const n = parseFloat(raw);
+                if (isNaN(n) || n <= 0) return 'Must be > 0';
+                return null;
+              }}
+              className={inlineValueClass}
+              inputClassName={inlineInputClass}
+            />
+          </div>
 
-            <div>
-                <div className="flex justify-between items-center mb-1">
-                    <label className={labelClass}>Hyperbolic B-Factor</label>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="2"
-                  step="0.1"
-                  value={group.typeCurve.b}
-                  onChange={e => handleTcChange('b', e.target.value)}
-                  className={
-                    isClassic
-                      ? 'w-full h-1.5 sc-rangeNavy appearance-none cursor-pointer'
-                      : 'w-full h-1.5 bg-theme-bg border border-theme-border rounded-lg appearance-none cursor-pointer accent-theme-cyan'
-                  }
-                />
-                <div className={`flex justify-between mt-0.5 text-[9px] font-mono ${isClassic ? 'text-white/75' : 'text-theme-muted'}`}>
-                  <span>0.0</span>
-                  <span className={isClassic ? 'text-theme-warning font-black' : ''}>{group.typeCurve.b}</span>
-                  <span>2.0</span>
-                </div>
-            </div>
+          <div className="flex items-center justify-between">
+            <label className={labelClass}>Hyperbolic B-Factor</label>
+            <InlineEditableValue
+              value={group.typeCurve.b}
+              onCommit={(v) => handleTcChange('b', v)}
+              format={(v) => Number(v).toFixed(2)}
+              type="number"
+              validate={(raw) => {
+                const n = parseFloat(raw);
+                if (isNaN(n) || n <= 0) return 'Must be > 0';
+                if (n > 2) return 'Max 2.0';
+                return null;
+              }}
+              className={inlineValueClass}
+              inputClassName={inlineInputClass}
+            />
+          </div>
 
-            <div>
-                <label className={labelClass}>Effective Decline (%)</label>
-                <div className="flex items-center space-x-3">
-                    <input
-                      type="range"
-                      min="20"
-                      max="95"
-                      value={group.typeCurve.di}
-                      onChange={e => handleTcChange('di', e.target.value)}
-                      className={
-                        isClassic
-                          ? 'flex-1 h-1.5 sc-rangeNavy appearance-none cursor-pointer'
-                          : 'flex-1 h-1.5 bg-theme-bg border border-theme-border rounded-lg appearance-none cursor-pointer accent-theme-magenta'
-                      }
-                    />
-                    <span className={`text-[11px] font-black w-9 text-right ${isClassic ? 'text-theme-warning' : 'text-theme-text'}`}>{group.typeCurve.di}%</span>
-                </div>
-            </div>
+          <div className="flex items-center justify-between">
+            <label className={labelClass}>Effective Decline (%)</label>
+            <InlineEditableValue
+              value={group.typeCurve.di}
+              onCommit={(v) => handleTcChange('di', v)}
+              format={(v) => `${Number(v).toFixed(1)}%`}
+              type="number"
+              validate={(raw) => {
+                const n = parseFloat(raw);
+                if (isNaN(n) || n < 0) return 'Must be >= 0';
+                if (n > 100) return 'Max 100%';
+                return null;
+              }}
+              className={inlineValueClass}
+              inputClassName={inlineInputClass}
+            />
+          </div>
 
-            <div>
-                <label className={labelClass}>GOR (MCF/BBL)</label>
-                <input type="number" step="0.1" value={group.typeCurve.gorMcfPerBbl} onChange={e => handleTcChange('gorMcfPerBbl', e.target.value)} className={inputClass} />
-            </div>
+          <div className="flex items-center justify-between">
+            <label className={labelClass}>Terminal Decline (%)</label>
+            <InlineEditableValue
+              value={group.typeCurve.terminalDecline}
+              onCommit={(v) => handleTcChange('terminalDecline', v)}
+              format={(v) => `${Number(v).toFixed(1)}%`}
+              type="number"
+              validate={(raw) => {
+                const n = parseFloat(raw);
+                if (isNaN(n) || n < 0) return 'Must be >= 0';
+                if (n > 100) return 'Max 100%';
+                return null;
+              }}
+              className={inlineValueClass}
+              inputClassName={inlineInputClass}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <label className={labelClass}>GOR (MCF/BBL)</label>
+            <InlineEditableValue
+              value={group.typeCurve.gorMcfPerBbl}
+              onCommit={(v) => handleTcChange('gorMcfPerBbl', v)}
+              format={(v) => Number(v).toFixed(1)}
+              type="number"
+              validate={(raw) => {
+                const n = parseFloat(raw);
+                if (isNaN(n) || n < 0) return 'Must be >= 0';
+                return null;
+              }}
+              className={inlineValueClass}
+              inputClassName={inlineInputClass}
+            />
+          </div>
         </div>
-      </AccordionSection>
+      </div>
 
-      <AccordionSection id="CAPEX" title="CAPEX Logic" isOpen={openSections.has('CAPEX')} onToggle={toggleSection}>
-         <CapexControls capex={group.capex} onChange={handleCapexChange} focusEditSignal={capexEditSignal} />
-      </AccordionSection>
+      {/* CAPEX Section -- flat, always visible */}
+      <div
+        className={
+          isClassic
+            ? 'sc-panel theme-transition mb-3 p-4'
+            : 'rounded-panel border p-4 shadow-card theme-transition mb-3 bg-theme-surface1/40 border-theme-border'
+        }
+      >
+        <h3 className={sectionHeaderClass}>CAPEX Logic</h3>
+        <CapexControls capex={group.capex} onChange={handleCapexChange} />
+      </div>
 
-      <AccordionSection id="OPEX" title="LOE / Operating Expenses" isOpen={openSections.has('OPEX')} onToggle={toggleSection}>
+      {/* OPEX Section -- flat, always visible */}
+      <div
+        className={
+          isClassic
+            ? 'sc-panel theme-transition mb-3 p-4'
+            : 'rounded-panel border p-4 shadow-card theme-transition mb-3 bg-theme-surface1/40 border-theme-border'
+        }
+      >
+        <h3 className={sectionHeaderClass}>LOE / Operating Expenses</h3>
         <OpexControls opex={group.opex} onChange={handleOpexChange} />
-      </AccordionSection>
+      </div>
 
-      <AccordionSection id="OWNERSHIP" title="Ownership / Revenue Interest" isOpen={openSections.has('OWNERSHIP')} onToggle={toggleSection}>
+      {/* Ownership Section -- flat, always visible */}
+      <div
+        className={
+          isClassic
+            ? 'sc-panel theme-transition mb-3 p-4'
+            : 'rounded-panel border p-4 shadow-card theme-transition mb-3 bg-theme-surface1/40 border-theme-border'
+        }
+      >
+        <h3 className={sectionHeaderClass}>Ownership / Revenue Interest</h3>
         <OwnershipControls ownership={group.ownership} onChange={handleOwnershipChange} />
-      </AccordionSection>
+      </div>
     </div>
   );
 };

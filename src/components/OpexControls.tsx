@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { OpexAssumptions, OpexSegment } from '../types';
 import { useTheme } from '../theme/ThemeProvider';
+import { InlineEditableValue } from './inline/InlineEditableValue';
 
 interface OpexControlsProps {
   opex: OpexAssumptions;
@@ -67,13 +68,12 @@ const OpexControls: React.FC<OpexControlsProps> = ({ opex, onChange }) => {
     onChange({ ...opex, segments: segments.filter(seg => seg.id !== id) });
   };
 
-  const inputClass = isClassic
-    ? 'w-full rounded-md px-2 py-1 text-[10px] font-black sc-inputNavy'
-    : 'w-full bg-transparent text-theme-text px-1 rounded outline-none text-[10px] font-mono focus:bg-theme-surface1/50';
-
   const headerClass = isClassic
     ? 'bg-black/10 border-black/30'
     : 'bg-theme-bg border-theme-border';
+
+  const inlineValueClass = isClassic ? 'text-[10px] font-black text-white' : 'text-[10px] font-mono text-theme-text';
+  const inlineInputClass = 'text-[10px] w-full';
 
   return (
     <div className="space-y-3">
@@ -105,66 +105,84 @@ const OpexControls: React.FC<OpexControlsProps> = ({ opex, onChange }) => {
           {segments.map(seg => (
             <div key={seg.id} className="grid grid-cols-12 gap-0 border-b border-theme-border text-[10px] items-center hover:bg-theme-surface1/30 group transition-colors">
               <div className="col-span-3 p-1">
-                <input
-                  type="text"
+                <InlineEditableValue
                   value={seg.label}
-                  onChange={e => handleUpdateSegment(seg.id, { label: e.target.value })}
-                  className={isClassic ? 'w-full bg-transparent text-white/80 focus:text-white px-1 rounded outline-none' : 'w-full bg-transparent text-theme-muted focus:text-theme-text focus:bg-theme-surface1/50 px-1 rounded outline-none'}
+                  onCommit={(v) => handleUpdateSegment(seg.id, { label: v })}
+                  type="text"
+                  className={isClassic ? 'text-[10px] text-white/80' : 'text-[10px] text-theme-muted'}
+                  inputClassName={inlineInputClass}
                 />
               </div>
 
               <div className="col-span-1 p-1">
-                <input
-                  type="number"
-                  min={1}
+                <InlineEditableValue
                   value={seg.startMonth}
-                  onChange={e => handleUpdateSegment(seg.id, { startMonth: parseInt(e.target.value, 10) || 1 })}
-                  className={`${inputClass} text-center`}
+                  onCommit={(v) => handleUpdateSegment(seg.id, { startMonth: parseInt(v, 10) || 1 })}
+                  type="number"
+                  validate={(raw) => {
+                    const n = parseInt(raw, 10);
+                    if (isNaN(n) || n < 1) return 'Min 1';
+                    return null;
+                  }}
+                  className={`${inlineValueClass} text-center`}
+                  inputClassName={`${inlineInputClass} text-center`}
                 />
               </div>
 
               <div className="col-span-1 p-1">
-                <input
-                  type="number"
-                  min={1}
+                <InlineEditableValue
                   value={seg.endMonth}
-                  onChange={e => handleUpdateSegment(seg.id, { endMonth: parseInt(e.target.value, 10) || seg.startMonth })}
-                  className={`${inputClass} text-center`}
+                  onCommit={(v) => handleUpdateSegment(seg.id, { endMonth: parseInt(v, 10) || seg.startMonth })}
+                  type="number"
+                  validate={(raw) => {
+                    const n = parseInt(raw, 10);
+                    if (isNaN(n) || n < 1) return 'Min 1';
+                    return null;
+                  }}
+                  className={`${inlineValueClass} text-center`}
+                  inputClassName={`${inlineInputClass} text-center`}
                 />
               </div>
 
               <div className="col-span-2 p-1">
-                <input
-                  type="number"
+                <InlineEditableValue
                   value={seg.fixedPerWellPerMonth}
-                  onChange={e => handleUpdateSegment(seg.id, { fixedPerWellPerMonth: parseFloat(e.target.value) || 0 })}
-                  className={`${inputClass} text-right`}
+                  onCommit={(v) => handleUpdateSegment(seg.id, { fixedPerWellPerMonth: parseFloat(v) || 0 })}
+                  format={(v) => `$${Number(v).toLocaleString()}`}
+                  type="number"
+                  className={`${inlineValueClass} text-right`}
+                  inputClassName={`${inlineInputClass} text-right`}
                 />
               </div>
 
               <div className="col-span-2 p-1">
-                <input
-                  type="number"
-                  step="0.01"
+                <InlineEditableValue
                   value={seg.variableOilPerBbl}
-                  onChange={e => handleUpdateSegment(seg.id, { variableOilPerBbl: parseFloat(e.target.value) || 0 })}
-                  className={`${inputClass} text-right`}
+                  onCommit={(v) => handleUpdateSegment(seg.id, { variableOilPerBbl: parseFloat(v) || 0 })}
+                  format={(v) => Number(v).toFixed(2)}
+                  type="number"
+                  className={`${inlineValueClass} text-right`}
+                  inputClassName={`${inlineInputClass} text-right`}
                 />
               </div>
 
               <div className="col-span-2 p-1">
-                <input
-                  type="number"
-                  step="0.01"
+                <InlineEditableValue
                   value={seg.variableGasPerMcf}
-                  onChange={e => handleUpdateSegment(seg.id, { variableGasPerMcf: parseFloat(e.target.value) || 0 })}
-                  className={`${inputClass} text-right`}
+                  onCommit={(v) => handleUpdateSegment(seg.id, { variableGasPerMcf: parseFloat(v) || 0 })}
+                  format={(v) => Number(v).toFixed(2)}
+                  type="number"
+                  className={`${inlineValueClass} text-right`}
+                  inputClassName={`${inlineInputClass} text-right`}
                 />
               </div>
 
               <div className="col-span-1 text-center">
                 <button
-                  onClick={() => handleDeleteSegment(seg.id)}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    handleDeleteSegment(seg.id);
+                  }}
                   className="text-theme-border hover:text-theme-danger w-4 h-4 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   &times;
@@ -181,7 +199,13 @@ const OpexControls: React.FC<OpexControlsProps> = ({ opex, onChange }) => {
         </div>
 
         <div className={`p-2 flex justify-between items-center border-t ${headerClass}`}>
-          <button onClick={handleAddSegment} className="text-[10px] text-theme-cyan hover:opacity-80 font-medium transition-colors">
+          <button
+            onMouseDown={(e) => {
+              e.preventDefault();
+              handleAddSegment();
+            }}
+            className="text-[10px] text-theme-cyan hover:opacity-80 font-medium transition-colors"
+          >
             + Add Segment
           </button>
           <div className="text-[10px] text-theme-muted">
@@ -194,4 +218,3 @@ const OpexControls: React.FC<OpexControlsProps> = ({ opex, onChange }) => {
 };
 
 export default OpexControls;
-

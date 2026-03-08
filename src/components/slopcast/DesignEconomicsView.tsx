@@ -359,8 +359,6 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
               group={activeGroup}
               onUpdateGroup={onUpdateGroup}
               onMarkDirty={onMarkDirty}
-              openSectionKey={controlsOpenSection}
-              onOpenSectionHandled={onControlsOpenHandled}
             />
 
             {/* Tax & Fiscal Controls - Collapsible */}
