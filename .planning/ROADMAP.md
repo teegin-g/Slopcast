@@ -46,11 +46,12 @@ Plans:
   1. User can sort and filter the well list by any column (operator, formation, status, etc.)
   2. User can view cash flow data in a styled table with sortable columns matching the glass design system
   3. User sees smooth slide/fade transitions when switching between sections via the sidebar
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
+- [ ] 02-01-PLAN.md -- Install TanStack Table + Motion, build wells table with sort/filter/select/resize, bidirectional map sync
+- [ ] 02-02-PLAN.md -- Cash flow table with annual rollup rows, expandable monthly detail, accounting number formatting
+- [ ] 02-03-PLAN.md -- Framer Motion crossfade view transitions for section and sub-tab switching
 
 ### Phase 3: Inline Editing
 **Goal**: Users can edit assumptions directly where they are displayed without navigating to separate editing panels
@@ -73,5 +74,5 @@ Phases execute in numeric order: 1 -> 2 -> 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Styling Foundation and App Shell | 4/6 | In Progress|  |
-| 2. Content Migration and Data Tables | 0/2 | Not started | - |
+| 2. Content Migration and Data Tables | 0/3 | Not started | - |
 | 3. Inline Editing | 0/1 | Not started | - |
