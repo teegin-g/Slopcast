@@ -61,10 +61,11 @@ Plans:
   1. User can click on a type curve, CAPEX, OPEX, or ownership value and edit it in place
   2. Edits commit on blur (not on every keystroke) and economics recalculate after a debounce delay without UI lag
   3. User can edit multiple assumption fields in sequence without triggering a recalculation storm
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 03-01: TBD
+- [ ] 03-01-PLAN.md -- InlineEditableValue component, useDebouncedRecalc hook, RecalcStatus context, shimmer CSS, with tests
+- [ ] 03-02-PLAN.md -- Wire inline editing into Controls/Capex/Opex/Ownership, debounced recalc through DesignEconomicsView, KPI shimmer
 
 ## Progress
 
@@ -75,4 +76,4 @@ Phases execute in numeric order: 1 -> 2 -> 3
 |-------|----------------|--------|-----------|
 | 1. Styling Foundation and App Shell | 4/6 | In Progress|  |
 | 2. Content Migration and Data Tables | 3/3 | Complete    | 2026-03-08 |
-| 3. Inline Editing | 0/1 | Not started | - |
+| 3. Inline Editing | 0/2 | Not started | - |
