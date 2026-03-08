@@ -27,7 +27,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **COMP-01**: Unified outer card component with glass styling used consistently across workspace
 - [x] **COMP-02**: Unified inner card component for nested content tiles used consistently
-- [ ] **COMP-03**: Smooth view transitions (slide/fade) when switching between sections via sidebar
+- [x] **COMP-03**: Smooth view transitions (slide/fade) when switching between sections via sidebar
 
 ### Data & Editing
 
@@ -95,7 +95,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NAV-04 | Phase 1 | Complete |
 | COMP-01 | Phase 1 | Complete |
 | COMP-02 | Phase 1 | Complete |
-| COMP-03 | Phase 2 | Pending |
+| COMP-03 | Phase 2 | Complete |
 | DATA-01 | Phase 2 | Complete |
 | DATA-02 | Phase 2 | Pending |
 | DATA-03 | Phase 3 | Pending |
