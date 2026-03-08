@@ -15,6 +15,7 @@ import GroupWellsTable from './GroupWellsTable';
 import GroupComparisonStrip from './GroupComparisonStrip';
 import MiniMapPreview from './MiniMapPreview';
 import ReservesPanel from './ReservesPanel';
+import { ViewTransition } from '../layout/ViewTransition';
 
 export type EconomicsMobilePanel = 'SETUP' | 'RESULTS';
 
@@ -609,84 +610,86 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
         >
           <EconomicsResultsTabs isClassic={isClassic} tab={resultsTab} onChange={onSetResultsTab} />
 
-          {resultsTab === 'SUMMARY' && (
-            <div className="space-y-4">
-              {/* Hero NPV + stat strip */}
-              <KpiGrid
-                isClassic={isClassic}
-                metrics={aggregateMetrics}
-                aggregateFlow={aggregateFlow}
-                breakevenOilPrice={breakevenOilPrice}
-                snapshotHistory={snapshotHistory}
-                showAfterTax={showAfterTax}
-                showLevered={showLevered}
-              />
-
-              {/* Accent divider */}
-              <AccentDivider />
-
-              {/* 2-column: Group Comparison + Quick Drivers */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <GroupComparisonStrip
+          <ViewTransition transitionKey={resultsTab}>
+            {resultsTab === 'SUMMARY' && (
+              <div className="space-y-4">
+                {/* Hero NPV + stat strip */}
+                <KpiGrid
                   isClassic={isClassic}
-                  groups={groups}
-                  activeGroupId={activeGroupId}
-                  onActivateGroup={onActivateGroup}
-                  scenarioRankings={operationsProps.scenarioRankings}
+                  metrics={aggregateMetrics}
+                  aggregateFlow={aggregateFlow}
+                  breakevenOilPrice={breakevenOilPrice}
+                  snapshotHistory={snapshotHistory}
+                  showAfterTax={showAfterTax}
+                  showLevered={showLevered}
                 />
-                <QuickDrivers
-                  isClassic={isClassic}
-                  topDrivers={operationsProps.topDrivers}
-                  breakevenOilPrice={operationsProps.breakevenOilPrice}
-                />
-              </div>
 
-              {/* Accent divider before Execution */}
-              {!focusMode && <AccentDivider />}
+                {/* Accent divider */}
+                <AccentDivider />
 
-              {!focusMode && (
-                <div className="pt-1">
-                  <p className={isClassic
-                    ? 'text-[9px] font-black uppercase tracking-[0.2em] text-white/50 mb-3'
-                    : 'text-[9px] font-black uppercase tracking-[0.2em] text-theme-muted/60 mb-3'
-                  }>
-                    Execution
-                  </p>
+                {/* 2-column: Group Comparison + Quick Drivers */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <GroupComparisonStrip
+                    isClassic={isClassic}
+                    groups={groups}
+                    activeGroupId={activeGroupId}
+                    onActivateGroup={onActivateGroup}
+                    scenarioRankings={operationsProps.scenarioRankings}
+                  />
+                  <QuickDrivers
+                    isClassic={isClassic}
+                    topDrivers={operationsProps.topDrivers}
+                    breakevenOilPrice={operationsProps.breakevenOilPrice}
+                  />
                 </div>
-              )}
 
-              {/* Compact run bar */}
-              {!focusMode && <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />}
-            </div>
-          )}
+                {/* Accent divider before Execution */}
+                {!focusMode && <AccentDivider />}
 
-          {resultsTab === 'CHARTS' && chartPanel}
+                {!focusMode && (
+                  <div className="pt-1">
+                    <p className={isClassic
+                      ? 'text-[9px] font-black uppercase tracking-[0.2em] text-white/50 mb-3'
+                      : 'text-[9px] font-black uppercase tracking-[0.2em] text-theme-muted/60 mb-3'
+                    }>
+                      Execution
+                    </p>
+                  </div>
+                )}
 
-          {resultsTab === 'DRIVERS' && (
-            <EconomicsDriversPanel
-              isClassic={isClassic}
-              topDrivers={operationsProps.topDrivers}
-              biggestPositive={operationsProps.biggestPositive}
-              biggestNegative={operationsProps.biggestNegative}
-              breakevenOilPrice={operationsProps.breakevenOilPrice}
-              payoutMonths={operationsProps.payoutMonths}
-              fastestPayoutScenarioName={operationsProps.fastestPayoutScenarioName}
-              scenarioRankings={operationsProps.scenarioRankings}
-              onJumpToDriver={handleJumpToDriver}
-              baseNpv={aggregateMetrics.npv10}
-            />
-          )}
+                {/* Compact run bar */}
+                {!focusMode && <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />}
+              </div>
+            )}
 
-          {resultsTab === 'RESERVES' && (
-            <ReservesPanel
-              isClassic={isClassic}
-              groups={groups}
-            />
-          )}
+            {resultsTab === 'CHARTS' && chartPanel}
 
-          {!focusMode && resultsTab !== 'SUMMARY' && (
-            <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />
-          )}
+            {resultsTab === 'DRIVERS' && (
+              <EconomicsDriversPanel
+                isClassic={isClassic}
+                topDrivers={operationsProps.topDrivers}
+                biggestPositive={operationsProps.biggestPositive}
+                biggestNegative={operationsProps.biggestNegative}
+                breakevenOilPrice={operationsProps.breakevenOilPrice}
+                payoutMonths={operationsProps.payoutMonths}
+                fastestPayoutScenarioName={operationsProps.fastestPayoutScenarioName}
+                scenarioRankings={operationsProps.scenarioRankings}
+                onJumpToDriver={handleJumpToDriver}
+                baseNpv={aggregateMetrics.npv10}
+              />
+            )}
+
+            {resultsTab === 'RESERVES' && (
+              <ReservesPanel
+                isClassic={isClassic}
+                groups={groups}
+              />
+            )}
+
+            {!focusMode && resultsTab !== 'SUMMARY' && (
+              <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />
+            )}
+          </ViewTransition>
         </section>
       </div>
 
