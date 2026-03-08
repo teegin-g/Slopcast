@@ -34,7 +34,7 @@ describe('ViewTransition', () => {
     expect(div.className).toContain('custom-class');
   });
 
-  it('renders different children when transitionKey changes', () => {
+  it('renders new children after rerender with different transitionKey', async () => {
     const { rerender } = render(
       <ViewTransition transitionKey="tab-A">
         <span>Tab A</span>
@@ -47,6 +47,10 @@ describe('ViewTransition', () => {
         <span>Tab B</span>
       </ViewTransition>
     );
-    expect(screen.getByText('Tab B')).toBeTruthy();
+    // In jsdom, AnimatePresence mode="wait" may keep both during exit.
+    // The new content should be present in the DOM after rerender.
+    // Use findByText which waits for the element to appear.
+    const tabB = await screen.findByText('Tab B');
+    expect(tabB).toBeTruthy();
   });
 });

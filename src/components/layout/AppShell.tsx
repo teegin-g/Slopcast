@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar';
 import { MobileDrawer } from './MobileDrawer';
 import { Vignette } from '../ui/Vignette';
 import PageHeader from '../slopcast/PageHeader';
+import { ViewTransition } from './ViewTransition';
 import { useSidebarNav } from '../../hooks/useSidebarNav';
 import { useViewportLayout } from '../slopcast/hooks/useViewportLayout';
 import type { WellGroup } from '../../types';
@@ -179,7 +180,9 @@ export function AppShell({ workspace, children }: AppShellProps) {
         {/* Content area */}
         <main className="flex-1 overflow-y-auto">
           <div className="p-3 max-w-[1920px] mx-auto w-full">
-            {children}
+            <ViewTransition transitionKey={section}>
+              {children}
+            </ViewTransition>
           </div>
         </main>
       </div>
