@@ -155,7 +155,7 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
     <div
       ref={rootRef}
       data-testid="economics-group-bar"
-      className={`relative z-40 lg:sticky lg:top-[84px] lg:z-20 mb-3 border px-2.5 py-1.5 theme-transition ${
+      className={`relative z-40 lg:sticky lg:top-0 lg:z-20 mb-3 border px-2.5 py-1.5 theme-transition ${
         isClassic ? 'sc-panel' : 'rounded-panel bg-theme-surface1/65 border-theme-border shadow-card backdrop-blur-sm'
       }`}
     >
