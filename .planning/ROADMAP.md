@@ -49,7 +49,7 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 02-01-PLAN.md -- Install TanStack Table + Motion, build wells table with sort/filter/select/resize, bidirectional map sync
+- [x] 02-01-PLAN.md -- Install TanStack Table + Motion, build wells table with sort/filter/select/resize, bidirectional map sync
 - [ ] 02-02-PLAN.md -- Cash flow table with annual rollup rows, expandable monthly detail, accounting number formatting
 - [ ] 02-03-PLAN.md -- Framer Motion crossfade view transitions for section and sub-tab switching
 
@@ -74,5 +74,5 @@ Phases execute in numeric order: 1 -> 2 -> 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Styling Foundation and App Shell | 4/6 | In Progress|  |
-| 2. Content Migration and Data Tables | 0/3 | Not started | - |
+| 2. Content Migration and Data Tables | 1/3 | In Progress | - |
 | 3. Inline Editing | 0/1 | Not started | - |

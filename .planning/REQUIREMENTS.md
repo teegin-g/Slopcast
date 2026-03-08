@@ -31,7 +31,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Data & Editing
 
-- [ ] **DATA-01**: Well list rendered with TanStack Table supporting sortable and filterable columns
+- [x] **DATA-01**: Well list rendered with TanStack Table supporting sortable and filterable columns
 - [ ] **DATA-02**: Cash flow table rendered with TanStack Table with consistent styling
 - [ ] **DATA-03**: User can edit type curve, CAPEX, OPEX, and ownership assumptions inline where they are displayed
 - [ ] **DATA-04**: Inline edits are debounced/buffered (commit-on-blur) to prevent economics recalculation storms
@@ -96,7 +96,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | COMP-01 | Phase 1 | Complete |
 | COMP-02 | Phase 1 | Complete |
 | COMP-03 | Phase 2 | Pending |
-| DATA-01 | Phase 2 | Pending |
+| DATA-01 | Phase 2 | Complete |
 | DATA-02 | Phase 2 | Pending |
 | DATA-03 | Phase 3 | Pending |
 | DATA-04 | Phase 3 | Pending |
