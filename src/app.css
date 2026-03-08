@@ -15,21 +15,21 @@
 /* @theme inline prevents Tailwind from generating its own --color-* variables,
    allowing dynamic theme switching via data-theme attribute to work. */
 @theme inline {
-  --color-theme-bg: rgb(var(--bg-deep) / <alpha-value>);
-  --color-theme-space: rgb(var(--bg-space) / <alpha-value>);
-  --color-theme-surface1: rgb(var(--surface-1) / <alpha-value>);
-  --color-theme-surface2: rgb(var(--surface-2) / <alpha-value>);
-  --color-theme-border: rgb(var(--border) / <alpha-value>);
-  --color-theme-cyan: rgb(var(--cyan) / <alpha-value>);
-  --color-theme-magenta: rgb(var(--magenta) / <alpha-value>);
-  --color-theme-violet: rgb(var(--violet) / <alpha-value>);
-  --color-theme-purple: rgb(var(--purple) / <alpha-value>);
-  --color-theme-lavender: rgb(var(--lav) / <alpha-value>);
-  --color-theme-text: rgb(var(--text) / <alpha-value>);
-  --color-theme-muted: rgb(var(--muted) / <alpha-value>);
-  --color-theme-success: rgb(var(--success) / <alpha-value>);
-  --color-theme-warning: rgb(var(--warning) / <alpha-value>);
-  --color-theme-danger: rgb(var(--danger) / <alpha-value>);
+  --color-theme-bg: rgb(var(--bg-deep));
+  --color-theme-space: rgb(var(--bg-space));
+  --color-theme-surface1: rgb(var(--surface-1));
+  --color-theme-surface2: rgb(var(--surface-2));
+  --color-theme-border: rgb(var(--border));
+  --color-theme-cyan: rgb(var(--cyan));
+  --color-theme-magenta: rgb(var(--magenta));
+  --color-theme-violet: rgb(var(--violet));
+  --color-theme-purple: rgb(var(--purple));
+  --color-theme-lavender: rgb(var(--lav));
+  --color-theme-text: rgb(var(--text));
+  --color-theme-muted: rgb(var(--muted));
+  --color-theme-success: rgb(var(--success));
+  --color-theme-warning: rgb(var(--warning));
+  --color-theme-danger: rgb(var(--danger));
 
   --shadow-glow-cyan: var(--shadow-glow-cyan);
   --shadow-glow-magenta: var(--shadow-glow-magenta);

@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 01-styling-foundation-and-app-shell
 source: [01-04-SUMMARY.md, 01-05-SUMMARY.md, 01-06-SUMMARY.md]
 started: 2026-03-07T23:58:00Z
@@ -57,9 +57,13 @@ skipped: 0
 ## Gaps
 
 - truth: "Content panels have borders using theme-specific accent colors, and text colors follow theme tokens — not hardcoded white across all themes"
-  status: failed
+  status: resolved
   reason: "User reported: Make sure borders follow the theme tokens for all themes, and make sure that the text and border color is not all white for every theme"
   severity: major
   test: 2
-  artifacts: []
-  missing: []
+  root_cause: "@theme inline block in src/app.css used Tailwind v3 <alpha-value> placeholder syntax which v4 does not process — literal string passed through to compiled CSS producing invalid color values, causing browsers to discard all theme token colors"
+  artifacts:
+    - path: "src/app.css"
+      issue: "All 15 --color-theme-* definitions used rgb(var(--token) / <alpha-value>) instead of rgb(var(--token))"
+  missing:
+    - "Replace <alpha-value> syntax with plain rgb() — Tailwind v4 handles opacity via color-mix() automatically"
