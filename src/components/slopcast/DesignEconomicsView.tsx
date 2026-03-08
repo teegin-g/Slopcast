@@ -17,6 +17,8 @@ import MiniMapPreview from './MiniMapPreview';
 import ReservesPanel from './ReservesPanel';
 import CashFlowTable from './CashFlowTable';
 import { ViewTransition } from '../layout/ViewTransition';
+import { useDebouncedRecalc } from './hooks/useDebouncedRecalc';
+import { RecalcStatusProvider } from './hooks/useRecalcStatus';
 
 export type EconomicsMobilePanel = 'SETUP' | 'RESULTS';
 
@@ -204,6 +206,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   onToggleAfterTax,
   onToggleLevered,
 }) => {
+  const { debouncedUpdate, isRecalculating } = useDebouncedRecalc(onUpdateGroup, 400);
   const hasReadinessBlocker = !hasGroup || !hasGroupWells || !hasCapexItems;
   const [showSetupInsights, setShowSetupInsights] = useState(hasReadinessBlocker);
   const [didAutoOpenInsights, setDidAutoOpenInsights] = useState(hasReadinessBlocker);
@@ -357,7 +360,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
 
             <Controls
               group={activeGroup}
-              onUpdateGroup={onUpdateGroup}
+              onUpdateGroup={debouncedUpdate}
               onMarkDirty={onMarkDirty}
             />
 
@@ -609,6 +612,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
         >
           <EconomicsResultsTabs isClassic={isClassic} tab={resultsTab} onChange={onSetResultsTab} />
 
+          <RecalcStatusProvider isRecalculating={isRecalculating}>
           <ViewTransition transitionKey={resultsTab}>
             {resultsTab === 'SUMMARY' && (
               <div className="space-y-4">
@@ -696,6 +700,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
               <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />
             )}
           </ViewTransition>
+          </RecalcStatusProvider>
         </section>
       </div>
 

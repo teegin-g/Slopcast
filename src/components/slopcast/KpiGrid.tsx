@@ -1,5 +1,6 @@
 import React from 'react';
 import { DealMetrics, MonthlyCashFlow } from '../../types';
+import { useRecalcStatus } from './hooks/useRecalcStatus';
 
 interface SnapshotHistoryEntry {
   npv: number;
@@ -103,11 +104,12 @@ const KpiStripTile: React.FC<{
   unit?: string;
   accent: AccentColor;
   extra?: React.ReactNode;
-}> = ({ title, value, unit, accent, extra }) => (
+  shimmer?: string;
+}> = ({ title, value, unit, accent, extra, shimmer = '' }) => (
   <div className={`rounded-inner border border-theme-border bg-theme-surface1/60 px-4 py-3 theme-transition hover:bg-theme-surface2 ${accentBorder[accent]}`}>
     <p className="text-[11px] font-bold uppercase tracking-[0.18em] mb-1.5 text-theme-text/70">{title}</p>
     <div className="flex items-center gap-2">
-      <p className="text-xl font-black text-theme-text leading-none">
+      <p className={`text-xl font-black text-theme-text leading-none ${shimmer}`}>
         {value}
         {unit && <span className="text-[11px] text-theme-muted font-semibold ml-1">{unit}</span>}
       </p>
@@ -155,6 +157,8 @@ const MetricSparkline: React.FC<{ values: number[] }> = ({ values }) => {
 };
 
 const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, breakevenOilPrice, snapshotHistory, showAfterTax, showLevered }) => {
+  const { isRecalculating } = useRecalcStatus();
+  const shimmerClass = isRecalculating ? 'animate-shimmer' : '';
   const breakevenLabel = breakevenOilPrice != null ? `Breakeven $${breakevenOilPrice}/bbl` : null;
 
   if (isClassic) {
@@ -170,7 +174,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
             <p className="text-[10px] font-black uppercase tracking-[0.25em]">PORTFOLIO NPV (10%)</p>
           </div>
           <div className="px-6 py-6 flex items-baseline relative z-10">
-            <span className="sc-kpiValue text-5xl sm:text-6xl xl:text-7xl font-black tracking-tighter leading-none">
+            <span className={`sc-kpiValue text-5xl sm:text-6xl xl:text-7xl font-black tracking-tighter leading-none ${shimmerClass}`}>
               ${(metrics.npv10 / 1e6).toFixed(1)}
             </span>
             <span className="sc-kpiValue text-2xl font-black ml-3">MM</span>
@@ -187,7 +191,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
               <p className="text-[10px] font-black uppercase tracking-[0.2em]">Total CAPEX</p>
             </div>
             <div className="px-4 py-4">
-              <p className="sc-kpiValue text-3xl font-black tracking-tight">
+              <p className={`sc-kpiValue text-3xl font-black tracking-tight ${shimmerClass}`}>
                 ${(metrics.totalCapex / 1e6).toFixed(1)}
                 <span className="text-lg font-black ml-1 opacity-90">MM</span>
               </p>
@@ -198,7 +202,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
               <p className="text-[10px] font-black uppercase tracking-[0.2em]">Portfolio EUR</p>
             </div>
             <div className="px-4 py-4">
-              <p className="sc-kpiValue text-3xl font-black tracking-tight">
+              <p className={`sc-kpiValue text-3xl font-black tracking-tight ${shimmerClass}`}>
                 {(metrics.eur / 1e3).toFixed(0)}
                 <span className="text-lg font-black ml-1 opacity-90">MBOE</span>
               </p>
@@ -211,7 +215,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
               <p className="text-[10px] font-black uppercase tracking-[0.2em]">Payout</p>
             </div>
             <div className="px-4 py-4">
-              <p className="sc-kpiValue text-3xl font-black tracking-tight">
+              <p className={`sc-kpiValue text-3xl font-black tracking-tight ${shimmerClass}`}>
                 {metrics.payoutMonths > 0 ? String(metrics.payoutMonths) : '-'}
                 <span className="text-lg font-black ml-1 opacity-90">MO</span>
               </p>
@@ -222,7 +226,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
               <p className="text-[10px] font-black uppercase tracking-[0.2em]">Wells</p>
             </div>
             <div className="px-4 py-4">
-              <p className="sc-kpiValue text-3xl font-black tracking-tight">
+              <p className={`sc-kpiValue text-3xl font-black tracking-tight ${shimmerClass}`}>
                 {String(metrics.wellCount)}
                 <span className="text-lg font-black ml-1 opacity-90">UNIT</span>
               </p>
@@ -244,7 +248,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
         )}
         <p className="text-theme-muted text-[10px] font-bold uppercase tracking-[0.4em] mb-2 relative z-10">Portfolio NPV (10%)</p>
         <div className="flex items-baseline relative z-10">
-          <span className="text-5xl sm:text-6xl xl:text-7xl font-black tracking-tighter leading-none text-theme-cyan">
+          <span className={`text-5xl sm:text-6xl xl:text-7xl font-black tracking-tighter leading-none text-theme-cyan ${shimmerClass}`}>
             ${(metrics.npv10 / 1e6).toFixed(1)}
           </span>
           <span className="text-2xl font-black ml-3 text-theme-lavender italic">MM</span>
@@ -280,6 +284,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
           value={`$${(metrics.totalCapex / 1e6).toFixed(1)}`}
           unit="MM"
           accent="magenta"
+          shimmer={shimmerClass}
           extra={snapshotHistory && snapshotHistory.length >= 2 ? <MetricSparkline values={snapshotHistory.map(s => s.capex)} /> : undefined}
         />
         <KpiStripTile
@@ -287,6 +292,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
           value={(metrics.eur / 1e3).toFixed(0)}
           unit="MBOE"
           accent="cyan"
+          shimmer={shimmerClass}
           extra={snapshotHistory && snapshotHistory.length >= 2 ? <MetricSparkline values={snapshotHistory.map(s => s.eur)} /> : undefined}
         />
         <KpiStripTile
@@ -294,6 +300,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
           value={metrics.payoutMonths > 0 ? String(metrics.payoutMonths) : '-'}
           unit="MO"
           accent="lavender"
+          shimmer={shimmerClass}
           extra={<PayoutRing months={metrics.payoutMonths} />}
         />
         <WellsBadge count={metrics.wellCount} />
