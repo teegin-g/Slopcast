@@ -13,7 +13,7 @@ This roadmap transforms the Slopcast workspace from a tab-based layout with brok
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Styling Foundation and App Shell** - Install Tailwind v4, establish glass token system, build sidebar navigation shell with responsive layout
-- [ ] **Phase 2: Content Migration and Data Tables** - Migrate Wells/Economics/Scenarios views into new shell with TanStack Table and view transitions
+- [x] **Phase 2: Content Migration and Data Tables** - Migrate Wells/Economics/Scenarios views into new shell with TanStack Table and view transitions (completed 2026-03-08)
 - [ ] **Phase 3: Inline Editing** - Enable inline assumption editing with buffered inputs and debounced economics recalculation
 
 ## Phase Details
@@ -46,7 +46,7 @@ Plans:
   1. User can sort and filter the well list by any column (operator, formation, status, etc.)
   2. User can view cash flow data in a styled table with sortable columns matching the glass design system
   3. User sees smooth slide/fade transitions when switching between sections via the sidebar
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 02-01-PLAN.md -- Install TanStack Table + Motion, build wells table with sort/filter/select/resize, bidirectional map sync
@@ -74,5 +74,5 @@ Phases execute in numeric order: 1 -> 2 -> 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Styling Foundation and App Shell | 4/6 | In Progress|  |
-| 2. Content Migration and Data Tables | 2/3 | In Progress|  |
+| 2. Content Migration and Data Tables | 3/3 | Complete   | 2026-03-08 |
 | 3. Inline Editing | 0/1 | Not started | - |

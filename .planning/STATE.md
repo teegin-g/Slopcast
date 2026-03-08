@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-03-PLAN.md
-last_updated: "2026-03-08T19:07:39.581Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-03-08T19:10:33.385Z"
 last_activity: 2026-03-08 -- Plan 02-03 executed (Framer Motion crossfade view transitions)
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 9
-  completed_plans: 7
+  completed_plans: 8
   percent: 78
 ---
 
@@ -52,6 +52,7 @@ Progress: [████████░░] 78%
 
 *Updated after each plan completion*
 | Phase 02 P03 | 2 | 2 tasks | 4 files |
+| Phase 02 P02 | 4 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,8 @@ Recent decisions affecting current work:
 - [Phase 02]: Module-level Map store for filter persistence instead of URL params to avoid useSidebarNav conflicts
 - [Phase 02]: getRowId set to well.id for stable selection across sort/filter operations
 - [Phase 02]: 175ms easeInOut crossfade via motion/react AnimatePresence mode=wait for section and sub-tab transitions
+- [Phase 02]: String slicing for date year extraction to avoid timezone bugs in annual rollup grouping
+- [Phase 02]: Unified TableRow type for TanStack subRows pattern; CASH_FLOW tab between Charts and Drivers
 
 ### Pending Todos
 
@@ -87,6 +90,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-08T19:07:39.579Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-03-08T19:10:33.383Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
