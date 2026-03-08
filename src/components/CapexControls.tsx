@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { CapexAssumptions, CapexItem, CostBasis, CapexCategory } from '../types';
 import { useTheme } from '../theme/ThemeProvider';
 import { InlineEditableValue } from './inline/InlineEditableValue';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface CapexControlsProps {
   capex: CapexAssumptions;
@@ -14,9 +15,20 @@ const BASIS_OPTS: { label: string; value: CostBasis }[] = [
   { label: '$/Ft', value: 'PER_FOOT' },
 ];
 
+const CATEGORY_COLORS: Record<CapexCategory, string> = {
+  DRILLING: '#3b82f6',
+  COMPLETION: '#10b981',
+  FACILITIES: '#f59e0b',
+  EQUIPMENT: '#8b5cf6',
+  OTHER: '#6b7280',
+};
+
+const STANDARD_LATERAL = 10000;
+
 const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
   const { theme } = useTheme();
   const isClassic = theme.id === 'mario';
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleUpdateItem = (id: string, field: keyof CapexItem, value: any) => {
     const newItems = capex.items.map(item => {
@@ -44,8 +56,6 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
     onChange({ ...capex, items: capex.items.filter(i => i.id !== id) });
   };
 
-  const STANDARD_LATERAL = 10000;
-
   const totalCost = useMemo(() => {
     let total = 0;
     capex.items.forEach(item => {
@@ -55,16 +65,115 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
     return total;
   }, [capex.items]);
 
+  const categoryData = useMemo(() => {
+    const byCategory: Record<string, number> = {};
+    capex.items.forEach(item => {
+      const cost = item.basis === 'PER_FOOT' ? item.value * STANDARD_LATERAL : item.value;
+      byCategory[item.category] = (byCategory[item.category] || 0) + cost;
+    });
+    return Object.entries(byCategory)
+      .filter(([, v]) => v > 0)
+      .map(([category, value]) => ({
+        name: category,
+        value,
+        color: CATEGORY_COLORS[category as CapexCategory] || '#6b7280',
+      }));
+  }, [capex.items]);
+
   const inlineValueClass = isClassic ? 'text-[10px] font-black text-white' : 'text-[10px] font-mono text-theme-text';
   const inlineInputClass = 'text-[10px] w-full';
 
+  // --- PIE CHART SUMMARY VIEW ---
+  if (!isEditing) {
+    return (
+      <div className="space-y-3">
+        <div
+          className="cursor-pointer group"
+          onClick={() => setIsEditing(true)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={e => e.key === 'Enter' && setIsEditing(true)}
+        >
+          {categoryData.length > 0 ? (
+            <div className="flex items-center gap-4">
+              <div className="w-28 h-28 shrink-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={categoryData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={28}
+                      outerRadius={48}
+                      strokeWidth={1}
+                      stroke={isClassic ? 'rgba(0,0,0,0.3)' : 'var(--theme-border)'}
+                    >
+                      {categoryData.map((entry, i) => (
+                        <Cell key={i} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: number) => `$${(value / 1e6).toFixed(2)}MM`}
+                      contentStyle={{
+                        background: 'var(--theme-bg)',
+                        border: '1px solid var(--theme-border)',
+                        borderRadius: '6px',
+                        fontSize: '10px',
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex-1 space-y-1.5">
+                <div className={`text-center mb-2 ${isClassic ? 'text-white' : 'text-theme-text'}`}>
+                  <span className="text-lg font-black">${(totalCost / 1e6).toFixed(2)}</span>
+                  <span className="text-[10px] font-bold text-theme-muted ml-1">MM D&C</span>
+                </div>
+                {categoryData.map(d => (
+                  <div key={d.name} className="flex items-center gap-2 text-[9px]">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                    <span className={`uppercase tracking-wider font-bold ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
+                      {d.name}
+                    </span>
+                    <span className={`ml-auto font-mono ${isClassic ? 'text-white' : 'text-theme-text'}`}>
+                      ${(d.value / 1e6).toFixed(2)}M
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 text-center text-theme-muted text-[10px] italic">
+              No cost items defined.
+            </div>
+          )}
+          <p className={`text-[9px] text-center mt-2 transition-opacity ${isClassic ? 'text-white/40 group-hover:text-white/70' : 'text-theme-muted/50 group-hover:text-theme-muted'}`}>
+            Click to edit details
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // --- EDITABLE GRID VIEW ---
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-center mb-2">
         <h4 className="text-xs font-bold text-theme-text">Line Items</h4>
+        <button
+          onClick={() => setIsEditing(false)}
+          className={`px-3 py-1 rounded-inner text-[9px] font-black uppercase tracking-[0.12em] border transition-all ${
+            isClassic
+              ? 'bg-black/15 text-white border-black/30 hover:bg-black/25'
+              : 'bg-theme-bg text-theme-cyan border-theme-border hover:border-theme-cyan'
+          }`}
+        >
+          Done
+        </button>
       </div>
 
-      {/* Grid Table -- always editable */}
       <div className={`border rounded-inner overflow-hidden ${isClassic ? 'border-black/30 bg-black/10' : 'border-theme-border bg-theme-bg'}`}>
         <div className={`grid grid-cols-12 gap-0 text-[10px] font-bold text-theme-muted p-2 border-b ${isClassic ? 'bg-black/10 border-black/30' : 'bg-theme-bg border-theme-border'}`}>
           <div className="col-span-3">ITEM</div>
