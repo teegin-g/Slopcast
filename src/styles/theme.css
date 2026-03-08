@@ -2417,3 +2417,12 @@ body {
   --bar-neutral-text: 15 23 42;
   --bar-neutral-border: 203 213 225;
 }
+
+/* ---------- Recalc shimmer animation ---------- */
+@keyframes shimmer {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.animate-shimmer {
+  animation: shimmer 0.8s ease-in-out infinite;
+}
