@@ -49,6 +49,7 @@
     radial-gradient(980px circle at 92% -8%, rgba(99, 102, 241, 0.20) 0%, rgba(99, 102, 241, 0) 54%),
     linear-gradient(160deg, #19273d 0%, #0f172a 58%, #0a1323 100%);
   --font-brand: 'Inter';
+  --font-heading: 'Inter';
   --ambient-left: 59 130 246;
   --ambient-right: 71 85 105;
   --ambient-left-alpha: 0.26;
@@ -208,6 +209,7 @@
     radial-gradient(1080px circle at 92% -10%, rgba(158, 211, 240, 0.38) 0%, rgba(158, 211, 240, 0) 58%),
     linear-gradient(168deg, #1a0a2d 0%, #120722 50%, #090312 100%);
   --font-brand: 'Orbitron';
+  --font-heading: 'Orbitron';
   --ambient-left: 229 102 218;
   --ambient-right: 158 211 240;
   --ambient-left-alpha: 0.42;
@@ -261,6 +263,8 @@
     radial-gradient(980px circle at 92% -10%, rgba(185, 255, 59, 0.24) 0%, rgba(185, 255, 59, 0) 56%),
     linear-gradient(162deg, #1b3140 0%, #142636 52%, #0f1c2b 100%);
   --font-brand: 'Inter';
+  --font-heading: 'Quicksand';
+  --radius-panel: 22px;
   --ambient-left: 45 212 191;
   --ambient-right: 185 255 59;
   --ambient-left-alpha: 0.32;
@@ -316,6 +320,8 @@
     radial-gradient(900px circle at 88% -8%, rgba(233, 176, 103, 0.23) 0%, rgba(233, 176, 103, 0) 56%),
     linear-gradient(170deg, #0b1830 0%, #071020 52%, #030810 100%);
   --font-brand: 'Inter';
+  --font-heading: 'Cormorant Garamond';
+  --radius-panel: 14px;
   --ambient-left: 103 195 238;
   --ambient-right: 233 176 103;
   --ambient-left-alpha: 0.30;
@@ -402,6 +408,8 @@
     radial-gradient(980px circle at 90% -12%, rgba(247, 166, 102, 0.24) 0%, rgba(247, 166, 102, 0) 56%),
     linear-gradient(170deg, #1a2842 0%, #101a2d 54%, #070b16 100%);
   --font-brand: 'Inter';
+  --font-heading: 'JetBrains Mono';
+  --radius-panel: 4px;
   --ambient-left: 126 161 216;
   --ambient-right: 247 166 102;
   --ambient-left-alpha: 0.32;
@@ -683,6 +691,8 @@
     radial-gradient(980px circle at 90% -12%, rgba(251, 188, 5, 0.1) 0%, rgba(251, 188, 5, 0) 56%),
     linear-gradient(170deg, #162338 0%, #0b1320 100%);
   --font-brand: 'Inter';
+  --font-heading: 'Space Grotesk';
+  --radius-panel: 12px;
   --ambient-left: 56 189 248;
   --ambient-right: 251 188 5;
   --ambient-left-alpha: 0.15;

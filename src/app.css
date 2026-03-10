@@ -40,6 +40,7 @@
 
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-brand: var(--font-brand), sans-serif;
+  --font-heading: var(--font-heading), sans-serif;
   --font-script: "Permanent Marker", cursive;
 }
 
@@ -53,6 +54,13 @@
   .typo-label { @apply text-xs font-medium uppercase tracking-wider text-theme-muted; }
   .typo-section { @apply text-xs font-bold uppercase tracking-[0.2em] text-theme-cyan; }
   .typo-value { @apply font-mono tabular-nums; }
+}
+
+/* ---------- Heading font utility ---------- */
+@layer components {
+  .heading-font {
+    font-family: var(--font-heading);
+  }
 }
 
 /* ---------- Focus ring utility ---------- */

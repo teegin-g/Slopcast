@@ -36,6 +36,9 @@ export interface ThemeFeatures {
   retroGrid: boolean;
   brandFont: boolean;       // use --font-brand (Orbitron, etc.)
   glowEffects: boolean;     // neon glow filters on map / cards
+  panelStyle: 'glass' | 'solid' | 'outline';
+  headingFont: boolean;     // use --font-heading per theme
+  denseSpacing: boolean;    // tighter gaps for utilitarian themes
 }
 
 export type ColorMode = 'dark' | 'light' | 'system';
@@ -113,6 +116,9 @@ const slate: ThemeMeta = {
     retroGrid: false,
     brandFont: false,
     glowEffects: false,
+    panelStyle: 'glass',
+    headingFont: false,
+    denseSpacing: false,
   },
 };
 
@@ -147,6 +153,9 @@ const synthwave: ThemeMeta = {
     retroGrid: true,
     brandFont: true,
     glowEffects: true,
+    panelStyle: 'outline',
+    headingFont: false,
+    denseSpacing: false,
   },
   BackgroundComponent: SynthwaveBackground,
   atmosphereClass: 'theme-atmo',
@@ -186,6 +195,9 @@ const tropical: ThemeMeta = {
     retroGrid: false,
     brandFont: false,
     glowEffects: true,
+    panelStyle: 'glass',
+    headingFont: true,
+    denseSpacing: false,
   },
   BackgroundComponent: TropicalBackground,
   atmosphereClass: 'theme-atmo',
@@ -225,6 +237,9 @@ const league: ThemeMeta = {
     retroGrid: false,
     brandFont: false,
     glowEffects: true,
+    panelStyle: 'glass',
+    headingFont: true,
+    denseSpacing: false,
   },
   BackgroundComponent: MoonlightBackground,
   atmosphereClass: 'theme-atmo',
@@ -263,6 +278,9 @@ const stormwatch: ThemeMeta = {
     retroGrid: false,
     brandFont: false,
     glowEffects: true,
+    panelStyle: 'solid',
+    headingFont: true,
+    denseSpacing: true,
   },
   BackgroundComponent: StormDuskBackground,
   atmosphereClass: 'theme-atmo',
@@ -302,6 +320,9 @@ const mario: ThemeMeta = {
     retroGrid: false,
     brandFont: false,
     glowEffects: false,
+    panelStyle: 'glass',
+    headingFont: false,
+    denseSpacing: false,
   },
   BackgroundComponent: MarioOverworldBackground,
   atmosphereClass: 'theme-atmo',
@@ -341,6 +362,9 @@ const hyperborea: ThemeMeta = {
     retroGrid: false,
     brandFont: false,
     glowEffects: true,
+    panelStyle: 'glass',
+    headingFont: true,
+    denseSpacing: false,
   },
   BackgroundComponent: HyperboreaBackground,
   atmosphereClass: 'theme-atmo',

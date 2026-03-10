@@ -1,6 +1,7 @@
 import React from 'react';
 import { DealMetrics, MonthlyCashFlow } from '../../types';
 import { useRecalcStatus } from './hooks/useRecalcStatus';
+import { useTheme } from '../../theme/ThemeProvider';
 
 interface SnapshotHistoryEntry {
   npv: number;
@@ -105,9 +106,10 @@ const KpiStripTile: React.FC<{
   accent: AccentColor;
   extra?: React.ReactNode;
   shimmer?: string;
-}> = ({ title, value, unit, accent, extra, shimmer = '' }) => (
-  <div className={`rounded-inner border border-theme-border bg-theme-surface1/60 px-4 py-3 theme-transition hover:bg-theme-surface2 ${accentBorder[accent]}`}>
-    <p className="text-[11px] font-bold uppercase tracking-[0.18em] mb-1.5 text-theme-text/70">{title}</p>
+  bgClass?: string;
+}> = ({ title, value, unit, accent, extra, shimmer = '', bgClass = 'bg-theme-surface1/60' }) => (
+  <div className={`rounded-inner border border-theme-border ${bgClass} px-4 py-3 theme-transition hover:bg-theme-surface2 ${accentBorder[accent]}`}>
+    <p className="text-[11px] font-bold uppercase tracking-[0.18em] mb-1.5 text-theme-text/70 heading-font">{title}</p>
     <div className="flex items-center gap-2">
       <p className={`text-xl font-black text-theme-text leading-none ${shimmer}`}>
         {value}
@@ -156,8 +158,22 @@ const MetricSparkline: React.FC<{ values: number[] }> = ({ values }) => {
   );
 };
 
+const heroBgMap: Record<'glass' | 'solid' | 'outline', string> = {
+  glass: 'bg-theme-surface1',
+  solid: 'bg-theme-surface1',
+  outline: 'bg-theme-surface1/20',
+};
+
+const tileBgMap: Record<'glass' | 'solid' | 'outline', string> = {
+  glass: 'bg-theme-surface1/60',
+  solid: 'bg-theme-surface1',
+  outline: 'bg-theme-surface1/20',
+};
+
 const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, breakevenOilPrice, snapshotHistory, showAfterTax, showLevered }) => {
   const { isRecalculating } = useRecalcStatus();
+  const { theme } = useTheme();
+  const panelStyle = theme.features.panelStyle;
   const shimmerClass = isRecalculating ? 'animate-shimmer' : '';
   const breakevenLabel = breakevenOilPrice != null ? `Breakeven $${breakevenOilPrice}/bbl` : null;
 
@@ -239,14 +255,16 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
 
   return (
     <div className="space-y-4">
-      <div className="rounded-panel border p-8 shadow-card relative overflow-hidden group theme-transition bg-theme-surface1 border-theme-border hover:border-theme-magenta">
-        <div className="absolute top-0 right-0 w-80 h-80 rounded-full blur-[100px] -mr-24 -mt-24 pointer-events-none transition-opacity duration-700 bg-theme-cyan/15 opacity-60 group-hover:opacity-100"></div>
+      <div className={`rounded-panel border p-8 shadow-card relative overflow-hidden group theme-transition ${heroBgMap[panelStyle]} border-theme-border hover:border-theme-magenta`}>
+        {panelStyle !== 'solid' && (
+          <div className="absolute top-0 right-0 w-80 h-80 rounded-full blur-[100px] -mr-24 -mt-24 pointer-events-none transition-opacity duration-700 bg-theme-cyan/15 opacity-60 group-hover:opacity-100"></div>
+        )}
         {aggregateFlow && aggregateFlow.length > 1 && (
           <div className="absolute inset-0 text-theme-cyan pointer-events-none">
             <CashFlowSparkline flow={aggregateFlow} />
           </div>
         )}
-        <p className="text-theme-muted text-[10px] font-bold uppercase tracking-[0.4em] mb-2 relative z-10">Portfolio NPV (10%)</p>
+        <p className="text-theme-muted text-[10px] font-bold uppercase tracking-[0.4em] mb-2 relative z-10 heading-font">Portfolio NPV (10%)</p>
         <div className="flex items-baseline relative z-10">
           <span className={`text-5xl sm:text-6xl xl:text-7xl font-black tracking-tighter leading-none text-theme-cyan ${shimmerClass}`}>
             ${(metrics.npv10 / 1e6).toFixed(1)}
@@ -285,6 +303,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
           unit="MM"
           accent="magenta"
           shimmer={shimmerClass}
+          bgClass={tileBgMap[panelStyle]}
           extra={snapshotHistory && snapshotHistory.length >= 2 ? <MetricSparkline values={snapshotHistory.map(s => s.capex)} /> : undefined}
         />
         <KpiStripTile
@@ -293,6 +312,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
           unit="MBOE"
           accent="cyan"
           shimmer={shimmerClass}
+          bgClass={tileBgMap[panelStyle]}
           extra={snapshotHistory && snapshotHistory.length >= 2 ? <MetricSparkline values={snapshotHistory.map(s => s.eur)} /> : undefined}
         />
         <KpiStripTile
@@ -301,6 +321,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
           unit="MO"
           accent="lavender"
           shimmer={shimmerClass}
+          bgClass={tileBgMap[panelStyle]}
           extra={<PayoutRing months={metrics.payoutMonths} />}
         />
         <WellsBadge count={metrics.wellCount} />

@@ -7,7 +7,15 @@ interface SectionCardProps {
   className?: string;
   bodyClassName?: string;
   children: React.ReactNode;
+  /** Panel surface treatment: glass (default), solid, or outline */
+  panelStyle?: 'glass' | 'solid' | 'outline';
 }
+
+const sectionBgMap: Record<'glass' | 'solid' | 'outline', string> = {
+  glass: 'bg-theme-surface1/70',
+  solid: 'bg-theme-surface1',
+  outline: 'bg-theme-surface1/20',
+};
 
 const SectionCard: React.FC<SectionCardProps> = ({
   isClassic,
@@ -16,13 +24,14 @@ const SectionCard: React.FC<SectionCardProps> = ({
   className = '',
   bodyClassName = '',
   children,
+  panelStyle = 'glass',
 }) => {
   return (
     <div
       className={
         isClassic
           ? `sc-panel theme-transition overflow-hidden ${className}`
-          : `rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border ${className}`
+          : `rounded-panel border shadow-card theme-transition ${sectionBgMap[panelStyle]} border-theme-border ${className}`
       }
     >
       {(title || action) && (
@@ -37,7 +46,7 @@ const SectionCard: React.FC<SectionCardProps> = ({
             className={
               isClassic
                 ? 'text-[11px] font-black uppercase tracking-[0.24em] text-white'
-                : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'
+                : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan heading-font'
             }
           >
             {title}
