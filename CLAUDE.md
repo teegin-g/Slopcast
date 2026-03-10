@@ -124,6 +124,44 @@ This project includes a multi-agent system in `.agents/` for structured feature 
 - Implementers follow TDD: write failing tests first, then implement
 - All activity is logged to `.agents/state/activity.jsonl`
 
+## Design Context
+
+### Users
+O&G professionals (A&D analysts, reservoir engineers, deal teams) evaluating acquisitions and development economics. Client-facing SaaS product — users compare across operators, formations, and pricing scenarios to make capital allocation decisions worth millions. They expect a tool that matches the gravity of the decisions but doesn't feel like a punishment to use.
+
+### Brand Personality
+**Bold, cinematic, opinionated.** Slopcast has its own visual identity — it doesn't reference or defer to other products. The theme system isn't a gimmick; it's a first-class feature that signals craft and care. Every theme should feel like a deliberate creative choice, not a skin swap.
+
+### Emotional Goals
+- **Impressed & engaged**: "This is way cooler than it needs to be." Users should notice the visual craft and feel like they're using something special.
+- **Energized & ambitious**: Deal-making should feel exciting. War-room energy — the interface should make users want to run another scenario, not dread it.
+
+### Aesthetic Direction
+- **Dark-mode native**: All themes are dark-first. Light mode exists for Slate only.
+- **Atmospheric, not decorative**: Animated backgrounds, glass panels, ambient glow — these create mood, not noise. Every visual layer earns its place.
+- **Per-theme structural differentiation**: Themes differ in typography (heading fonts), border radius, panel opacity (glass/solid/outline), and spacing density — not just color swaps.
+- **Anti-references**: No generic SaaS minimalism (Stripe/Linear flat gray). No Bloomberg terminal density. Slopcast is cinematic where those are clinical.
+
+### Design Principles
+
+1. **Atmosphere is architecture.** Backgrounds, overlays, and glass effects aren't decoration — they're structural elements that define each theme's identity. Treat them with the same rigor as layout code.
+
+2. **Earn every pixel.** No ornament without purpose. Glow effects guide attention. Panel opacity creates depth hierarchy. Border radius communicates personality. If a visual element doesn't serve information hierarchy or emotional tone, remove it.
+
+3. **Theme-native, not theme-aware.** Components shouldn't "know about" themes via conditionals — they should consume CSS custom properties and ThemeFeatures so each theme naturally expresses itself. The `isClassic` branch is the only hard fork.
+
+4. **Data has gravity.** NPV, IRR, EUR, payout — these are the stars. Typography, spacing, and color should create a clear visual hierarchy that pulls the eye to the numbers that matter. Metrics should feel weighty and confident.
+
+5. **Opinionated defaults, no dead states.** Every view should look intentional even with zero user data. Empty states, loading states, and defaults should feel designed, not forgotten. The app should always look like it's ready for a screenshot.
+
+### Design Tokens Reference
+- **Spacing scale** (compact density): 4px micro, 8px inner, 12px standard, 16px section, 24px area, 32px page, 48px hero
+- **Radii**: `--radius-panel` (18px default, varies per theme 4–22px), `--radius-inner` (panel - 6px)
+- **Surfaces**: `--bg-deep` (page), `--bg-space` (ambient), `--surface-1` (panels), `--surface-2` (cards/tiles)
+- **Accent colors**: `--cyan` (primary), `--magenta` (secondary), `--lav` (tertiary)
+- **Typography**: `--font-sans` (Inter body), `--font-heading` (per-theme headings), `--font-brand` (per-theme display), `--font-script` (Permanent Marker accents)
+- **Panel styles**: `glass` (60% opacity), `solid` (100% opacity), `outline` (20% opacity) — driven by `ThemeFeatures.panelStyle`
+
 ## UI Audit Workflow
 
 When making visual/layout/style changes:
