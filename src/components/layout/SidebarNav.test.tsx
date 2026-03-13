@@ -3,8 +3,6 @@ import { render, screen, cleanup } from '@testing-library/react';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { SidebarNav } from './SidebarNav';
-import { GlassCard } from '../ui/GlassCard';
-import { GlassPanel } from '../ui/GlassPanel';
 
 const defaultProps = {
   section: 'wells' as const,
@@ -44,21 +42,14 @@ describe('STYLE-04: Hover and focus-visible states on interactive elements', () 
     expect(wellsBtn.className).toContain('hover:text-white/90');
   });
 
-  it('GlassCard has hover state class for non-classic theme', () => {
-    const { container } = render(
-      <GlassCard isClassic={false}>card content</GlassCard>,
-    );
-    const div = container.firstElementChild as HTMLElement;
-    expect(div.className).toContain('hover:bg-theme-surface2/65');
-  });
-
-  it('GlassPanel with hover=true has focus-visible outline', () => {
-    const { container } = render(
-      <GlassPanel isClassic={false} hover={true}>panel</GlassPanel>,
-    );
-    const div = container.firstElementChild as HTMLElement;
-    expect(div.className).toContain('focus-visible:outline-2');
-    expect(div.className).toContain('focus-visible:outline-theme-cyan');
+  it('nav buttons carry the shipped rounded-inner utility recipe directly', () => {
+    render(<SidebarNav {...defaultProps} section="wells" />);
+    const economicsBtn = screen.getByText('Economics').closest('button')!;
+    expect(economicsBtn.className).toContain('rounded-inner');
+    expect(economicsBtn.className).toContain('theme-transition');
+    expect(economicsBtn.className).toContain('text-theme-muted');
+    expect(economicsBtn.className).toContain('hover:bg-theme-cyan/10');
+    expect(economicsBtn.className).toContain('hover:text-theme-text');
   });
 
   it('app.css defines a focus-ring utility class', () => {

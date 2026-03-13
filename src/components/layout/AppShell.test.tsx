@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppShell } from './AppShell';
+import SectionCard from '../slopcast/SectionCard';
 import type { WellGroup } from '../../types';
 
 // Mock useViewportLayout to control responsive behavior
@@ -22,27 +23,30 @@ vi.mock('./ViewTransition', () => ({
 
 import React from 'react';
 
+type MockWorkspace = React.ComponentProps<typeof AppShell>['workspace'];
+const mockWorkspaceFn = <T extends (...args: any[]) => unknown>() => vi.fn() as unknown as T;
+
 // Minimal workspace mock
-function createMockWorkspace(overrides: Partial<ReturnType<typeof createMockWorkspace>> = {}) {
+function createMockWorkspace(overrides: Partial<MockWorkspace> = {}): MockWorkspace {
   return {
     isClassic: false,
     BackgroundComponent: null,
     atmosphereClass: '',
     fxClass: '',
-    viewMode: 'DASHBOARD' as const,
-    setViewMode: vi.fn(),
-    designWorkspace: 'WELLS' as const,
-    setDesignWorkspace: vi.fn(),
+    viewMode: 'DASHBOARD',
+    setViewMode: mockWorkspaceFn<MockWorkspace['setViewMode']>(),
+    designWorkspace: 'WELLS',
+    setDesignWorkspace: mockWorkspaceFn<MockWorkspace['setDesignWorkspace']>(),
     processedGroups: [] as WellGroup[],
     activeGroupId: null,
-    setActiveGroupId: vi.fn(),
+    setActiveGroupId: mockWorkspaceFn<MockWorkspace['setActiveGroupId']>(),
     economicsNeedsAttention: false,
     wellsNeedsAttention: false,
     themeId: 'slate',
-    setThemeId: vi.fn(),
+    setThemeId: mockWorkspaceFn<MockWorkspace['setThemeId']>(),
     themes: [],
     theme: { id: 'slate', name: 'Slate' } as any,
-    navigate: vi.fn(),
+    navigate: mockWorkspaceFn<MockWorkspace['navigate']>(),
     atmosphericOverlays: [],
     headerAtmosphereClass: '',
     ...overrides,
@@ -52,13 +56,14 @@ function createMockWorkspace(overrides: Partial<ReturnType<typeof createMockWork
 function renderAppShell(
   workspaceOverrides: Partial<ReturnType<typeof createMockWorkspace>> = {},
   viewport: 'mobile' | 'mid' | 'desktop' = 'desktop',
+  children: React.ReactNode = <div data-testid="content-area">Content Here</div>,
 ) {
   mockViewport.mockReturnValue(viewport);
   const workspace = createMockWorkspace(workspaceOverrides);
   return render(
     <MemoryRouter initialEntries={['/?section=wells']}>
       <AppShell workspace={workspace}>
-        <div data-testid="content-area">Content Here</div>
+        {children}
       </AppShell>
     </MemoryRouter>,
   );
@@ -92,20 +97,34 @@ describe('STYLE-06: Animated canvas backgrounds visible through glass UI shell',
     expect(sidebar).not.toBeNull();
   });
 
-  it('GlassPanel uses semi-transparent bg (verified by class containing bg-theme-surface1/60)', () => {
-    // This is tested in GlassPanel.test.tsx but we verify the contract here:
-    // GlassPanel with isClassic=false should have bg-theme-surface1/60 — which means
-    // 60% opacity, allowing canvas backgrounds to show through.
-    // Already covered by GlassPanel.test.tsx line 20 assertion.
-    // This test verifies the content area does NOT have an opaque background.
+  it('keeps the shell content area free of opaque app backgrounds', () => {
     const { container } = renderAppShell();
     const mainContent = container.querySelector('main');
     expect(mainContent).not.toBeNull();
-    // Content area should not have bg-white, bg-black, or bg-theme-bg (opaque backgrounds)
     const mainClasses = mainContent!.className;
     expect(mainClasses).not.toContain('bg-white');
     expect(mainClasses).not.toContain('bg-black');
     expect(mainClasses).not.toContain('bg-theme-bg');
+  });
+
+  it('renders production outer surfaces with the utility-first panel recipe', () => {
+    renderAppShell(
+      {},
+      'desktop',
+      <SectionCard isClassic={false} title="Surface Contract">
+        <div data-testid="content-area">Content Here</div>
+      </SectionCard>,
+    );
+
+    const heading = screen.getByText('Surface Contract');
+    const panel = heading.closest('.rounded-panel') as HTMLElement | null;
+    expect(panel).not.toBeNull();
+    expect(panel!.className).toContain('rounded-panel');
+    expect(panel!.className).toContain('border');
+    expect(panel!.className).toContain('shadow-card');
+    expect(panel!.className).toContain('theme-transition');
+    expect(panel!.className).toContain('bg-theme-surface1/70');
+    expect(panel!.className).toContain('border-theme-border');
   });
 
   it('Vignette renders at z-10 between background and content', () => {
