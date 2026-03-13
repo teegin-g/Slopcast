@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useTheme } from '../../theme/ThemeProvider';
+import { useStableChartContainer } from './hooks/useStableChartContainer';
 
 interface WaterfallChartProps {
   isClassic: boolean;
@@ -34,6 +35,7 @@ interface WaterfallDatum {
 const WaterfallChart: React.FC<WaterfallChartProps> = ({ isClassic, baseNpv, drivers }) => {
   const { theme } = useTheme();
   const { chartPalette } = theme;
+  const waterfallChart = useStableChartContainer([theme.id, baseNpv, drivers.length]);
 
   const data = useMemo(() => {
     const result: WaterfallDatum[] = [];
@@ -109,66 +111,72 @@ const WaterfallChart: React.FC<WaterfallChartProps> = ({ isClassic, baseNpv, dri
         VALUE BRIDGE
       </h3>
 
-      <ResponsiveContainer width="100%" height={280}>
-        <BarChart
-          data={data}
-          margin={{ top: 8, right: 8, left: -8, bottom: 0 }}
-        >
-          <CartesianGrid
-            strokeDasharray="4 4"
-            stroke={chartPalette.grid}
-            vertical={false}
-          />
-          <XAxis
-            dataKey="name"
-            stroke={chartPalette.text}
-            fontSize={9}
-            tickLine={false}
-            axisLine={false}
-            interval={0}
-            angle={-30}
-            textAnchor="end"
-            height={50}
-          />
-          <YAxis
-            stroke={chartPalette.text}
-            fontSize={9}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(value: number) => formatMm(value)}
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: chartPalette.surface,
-              borderRadius: '8px',
-              border: `1px solid ${chartPalette.border}`,
-              color: 'rgb(var(--text))',
-              fontSize: '11px',
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
-            }}
-            formatter={(value: number, name: string) => {
-              if (name === 'invisible') return [null, null];
-              return [formatMm(value), 'NPV Impact'];
-            }}
-            labelStyle={{ fontWeight: 700, marginBottom: 4 }}
-            cursor={{ fill: 'rgba(255,255,255,0.04)' }}
-          />
+      <div className="h-[280px] w-full" ref={waterfallChart.containerRef}>
+        {waterfallChart.ready ? (
+          <ResponsiveContainer width={waterfallChart.width} height={waterfallChart.height}>
+            <BarChart
+              data={data}
+              margin={{ top: 8, right: 8, left: -8, bottom: 0 }}
+            >
+              <CartesianGrid
+                strokeDasharray="4 4"
+                stroke={chartPalette.grid}
+                vertical={false}
+              />
+              <XAxis
+                dataKey="name"
+                stroke={chartPalette.text}
+                fontSize={9}
+                tickLine={false}
+                axisLine={false}
+                interval={0}
+                angle={-30}
+                textAnchor="end"
+                height={50}
+              />
+              <YAxis
+                stroke={chartPalette.text}
+                fontSize={9}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value: number) => formatMm(value)}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: chartPalette.surface,
+                  borderRadius: '8px',
+                  border: `1px solid ${chartPalette.border}`,
+                  color: 'rgb(var(--text))',
+                  fontSize: '11px',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
+                }}
+                formatter={(value: number, name: string) => {
+                  if (name === 'invisible') return [null, null];
+                  return [formatMm(value), 'NPV Impact'];
+                }}
+                labelStyle={{ fontWeight: 700, marginBottom: 4 }}
+                cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+              />
 
-          {/* Invisible spacer series */}
-          <Bar dataKey="invisible" stackId="waterfall" fill="transparent" isAnimationActive={false}>
-            {data.map((entry, index) => (
-              <Cell key={`spacer-${index}`} fill="transparent" />
-            ))}
-          </Bar>
+              {/* Invisible spacer series */}
+              <Bar dataKey="invisible" stackId="waterfall" fill="transparent" isAnimationActive={false}>
+                {data.map((entry, index) => (
+                  <Cell key={`spacer-${index}`} fill="transparent" />
+                ))}
+              </Bar>
 
-          {/* Visible value series */}
-          <Bar dataKey="value" stackId="waterfall" radius={[3, 3, 0, 0]}>
-            {data.map((entry, index) => (
-              <Cell key={`val-${index}`} fill={fillForType(entry.type)} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+              {/* Visible value series */}
+              <Bar dataKey="value" stackId="waterfall" radius={[3, 3, 0, 0]}>
+                {data.map((entry, index) => (
+                  <Cell key={`val-${index}`} fill={fillForType(entry.type)} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="h-full w-full rounded-inner bg-theme-bg/40 animate-pulse" />
+        )}
+      </div>
     </div>
   );
 };

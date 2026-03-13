@@ -159,7 +159,7 @@ const MetricSparkline: React.FC<{ values: number[] }> = ({ values }) => {
 };
 
 const heroBgMap: Record<'glass' | 'solid' | 'outline', string> = {
-  glass: 'bg-theme-surface1',
+  glass: 'bg-theme-surface1/80',
   solid: 'bg-theme-surface1',
   outline: 'bg-theme-surface1/20',
 };

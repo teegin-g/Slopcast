@@ -3,6 +3,7 @@ import { CapexAssumptions, CapexItem, CostBasis, CapexCategory } from '../types'
 import { useTheme } from '../theme/ThemeProvider';
 import { InlineEditableValue } from './inline/InlineEditableValue';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { useStableChartContainer } from './slopcast/hooks/useStableChartContainer';
 
 interface CapexControlsProps {
   capex: CapexAssumptions;
@@ -29,6 +30,7 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
   const { theme } = useTheme();
   const isClassic = theme.id === 'mario';
   const [isEditing, setIsEditing] = useState(false);
+  const capexChart = useStableChartContainer([theme.id, capex.items.length]);
 
   const handleUpdateItem = (id: string, field: keyof CapexItem, value: any) => {
     const newItems = capex.items.map(item => {
@@ -96,35 +98,39 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
         >
           {categoryData.length > 0 ? (
             <div className="flex items-center gap-4">
-              <div className="w-28 h-28 shrink-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryData}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={28}
-                      outerRadius={48}
-                      strokeWidth={1}
-                      stroke={isClassic ? 'rgba(0,0,0,0.3)' : 'var(--theme-border)'}
-                    >
-                      {categoryData.map((entry, i) => (
-                        <Cell key={i} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value: number) => `$${(value / 1e6).toFixed(2)}MM`}
-                      contentStyle={{
-                        background: 'var(--theme-bg)',
-                        border: '1px solid var(--theme-border)',
-                        borderRadius: '6px',
-                        fontSize: '10px',
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+              <div className="w-28 h-28 shrink-0" ref={capexChart.containerRef}>
+                {capexChart.ready ? (
+                  <ResponsiveContainer width={capexChart.width} height={capexChart.height}>
+                    <PieChart>
+                      <Pie
+                        data={categoryData}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={28}
+                        outerRadius={48}
+                        strokeWidth={1}
+                        stroke={isClassic ? 'rgba(0,0,0,0.3)' : 'var(--theme-border)'}
+                      >
+                        {categoryData.map((entry, i) => (
+                          <Cell key={i} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: number) => `$${(value / 1e6).toFixed(2)}MM`}
+                        contentStyle={{
+                          background: 'var(--theme-bg)',
+                          border: '1px solid var(--theme-border)',
+                          borderRadius: '6px',
+                          fontSize: '10px',
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className={`h-full w-full rounded-full ${isClassic ? 'bg-black/20' : 'bg-theme-bg/40 animate-pulse'}`} />
+                )}
               </div>
               <div className="flex-1 space-y-1.5">
                 <div className={`text-center mb-2 ${isClassic ? 'text-white' : 'text-theme-text'}`}>
