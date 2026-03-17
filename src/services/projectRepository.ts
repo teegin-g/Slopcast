@@ -29,6 +29,17 @@ const normalizeRole = (value: string | null | undefined) => {
   return 'viewer' as const;
 };
 
+const unwrapContract = <T>(value: unknown): T => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return (value ?? {}) as T;
+  }
+  const next = { ...(value as Record<string, unknown>) };
+  delete next.schema_version;
+  delete next.validated_at;
+  delete next.validator_name;
+  return next as T;
+};
+
 export interface SaveProjectPayload {
   projectId?: string | null;
   name: string;
@@ -107,18 +118,23 @@ export async function listProjects(): Promise<ProjectRecord[]> {
 
   const { data, error } = await supabase
     .from('projects')
-    .select('id, owner_user_id, name, description, active_group_id, ui_state, created_at, updated_at')
+    .select('id, organization_id, owner_user_id, project_kind, status, name, description, active_group_id, current_version_id, ui_state_jsonb, metadata_jsonb, created_at, updated_at')
     .order('updated_at', { ascending: false });
 
   if (error) throw error;
 
   return (data || []).map((row: any) => ({
     id: row.id,
+    organizationId: row.organization_id,
     ownerUserId: row.owner_user_id,
+    projectKind: row.project_kind,
+    status: row.status,
     name: row.name,
     description: row.description,
     activeGroupId: row.active_group_id,
-    uiState: (row.ui_state || {}) as ProjectUiState,
+    uiState: unwrapContract<ProjectUiState>(row.ui_state_jsonb),
+    currentVersionId: row.current_version_id,
+    metadata: (row.metadata_jsonb || {}) as Record<string, unknown>,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }));
@@ -131,7 +147,7 @@ export async function getProject(projectId: string): Promise<LoadedProjectBundle
   const [{ data: projectRow, error: projectError }, { data: roleData, error: roleError }] = await Promise.all([
     supabase
       .from('projects')
-      .select('id, owner_user_id, name, description, active_group_id, ui_state, created_at, updated_at')
+      .select('id, organization_id, owner_user_id, project_kind, status, name, description, active_group_id, current_version_id, ui_state_jsonb, metadata_jsonb, created_at, updated_at')
       .eq('id', projectId)
       .maybeSingle(),
     supabase.rpc('current_project_role', { target_project_id: projectId }),
@@ -144,12 +160,12 @@ export async function getProject(projectId: string): Promise<LoadedProjectBundle
   const [groupsRes, scenariosRes] = await Promise.all([
     supabase
       .from('project_groups')
-      .select('id, project_id, name, color, sort_order, type_curve, capex, opex, ownership, created_at, updated_at')
+      .select('id, project_id, name, color, sort_order, config_jsonb, created_at, updated_at')
       .eq('project_id', projectId)
       .order('sort_order', { ascending: true }),
     supabase
       .from('project_scenarios')
-      .select('id, project_id, name, color, is_base_case, pricing, schedule, capex_scalar, production_scalar, sort_order, created_at, updated_at')
+      .select('id, project_id, name, color, is_base_case, pricing_jsonb, schedule_jsonb, scalar_jsonb, sort_order, created_at, updated_at')
       .eq('project_id', projectId)
       .order('sort_order', { ascending: true }),
   ]);
@@ -163,7 +179,7 @@ export async function getProject(projectId: string): Promise<LoadedProjectBundle
   let wellsByGroup = new Map<string, string[]>();
   if (groupIds.length > 0) {
     const groupWellsRes = await supabase
-      .from('project_group_wells')
+      .from('group_well_memberships')
       .select('project_group_id, well_id')
       .in('project_group_id', groupIds);
     if (groupWellsRes.error) throw groupWellsRes.error;
@@ -171,10 +187,11 @@ export async function getProject(projectId: string): Promise<LoadedProjectBundle
     const wellIds = Array.from(new Set((groupWellsRes.data || []).map((row: any) => row.well_id)));
     const externalByWellId = new Map<string, string>();
     if (wellIds.length > 0) {
-      const wellsRes = await supabase.from('wells').select('id, external_key').in('id', wellIds);
+      const wellsRes = await supabase.from('wells').select('id, external_key, canonical_api, canonical_uwi').in('id', wellIds);
       if (wellsRes.error) throw wellsRes.error;
       (wellsRes.data || []).forEach((row: any) => {
-        if (row.external_key) externalByWellId.set(row.id, row.external_key);
+        const stableKey = row.external_key || row.canonical_api || row.canonical_uwi;
+        if (stableKey) externalByWellId.set(row.id, stableKey);
       });
     }
 
@@ -191,39 +208,47 @@ export async function getProject(projectId: string): Promise<LoadedProjectBundle
   return {
     project: {
       id: projectRow.id,
+      organizationId: projectRow.organization_id,
       ownerUserId: projectRow.owner_user_id,
+      projectKind: projectRow.project_kind,
+      status: projectRow.status,
       name: projectRow.name,
       description: projectRow.description,
       activeGroupId: projectRow.active_group_id,
-      uiState: (projectRow.ui_state || {}) as ProjectUiState,
+      uiState: unwrapContract<ProjectUiState>(projectRow.ui_state_jsonb),
+      currentVersionId: projectRow.current_version_id,
+      metadata: (projectRow.metadata_jsonb || {}) as Record<string, unknown>,
       createdAt: projectRow.created_at,
       updatedAt: projectRow.updated_at,
     },
     memberRole: normalizeRole((roleData as string | null) ?? null),
-    groups: groupRows.map((row: any) => ({
-      id: row.id,
-      projectId: row.project_id,
-      name: row.name,
-      color: row.color,
-      sortOrder: row.sort_order,
-      wellIds: wellsByGroup.get(row.id) || [],
-      typeCurve: row.type_curve,
-      capex: row.capex,
-      opex: row.opex,
-      ownership: row.ownership,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    })),
+    groups: groupRows.map((row: any) => {
+      const config = (row.config_jsonb || {}) as Record<string, any>;
+      return {
+        id: row.id,
+        projectId: row.project_id,
+        name: row.name,
+        color: row.color,
+        sortOrder: row.sort_order,
+        wellIds: wellsByGroup.get(row.id) || [],
+        typeCurve: (config.typeCurve || {}) as ProjectGroupRecord['typeCurve'],
+        capex: (config.capex || {}) as ProjectGroupRecord['capex'],
+        opex: (config.opex || {}) as ProjectGroupRecord['opex'],
+        ownership: (config.ownership || {}) as ProjectGroupRecord['ownership'],
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      };
+    }),
     scenarios: (scenariosRes.data || []).map((row: any) => ({
       id: row.id,
       projectId: row.project_id,
       name: row.name,
       color: row.color,
       isBaseCase: row.is_base_case,
-      pricing: row.pricing,
-      schedule: row.schedule,
-      capexScalar: row.capex_scalar,
-      productionScalar: row.production_scalar,
+      pricing: unwrapContract(row.pricing_jsonb),
+      schedule: unwrapContract(row.schedule_jsonb),
+      capexScalar: Number(unwrapContract<Record<string, unknown>>(row.scalar_jsonb).capexScalar ?? 1),
+      productionScalar: Number(unwrapContract<Record<string, unknown>>(row.scalar_jsonb).productionScalar ?? 1),
       sortOrder: row.sort_order,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
@@ -346,7 +371,7 @@ export async function listRuns(projectId: string): Promise<EconomicsRunRecord[]>
 
   const { data, error } = await supabase
     .from('economics_runs')
-    .select('id, project_id, triggered_by, input_hash, portfolio_metrics, warnings, created_at')
+    .select('id, project_id, project_version_id, triggered_by, input_hash, run_kind, engine_version, portfolio_metrics, warnings, created_at')
     .eq('project_id', projectId)
     .order('created_at', { ascending: false });
 
@@ -355,8 +380,11 @@ export async function listRuns(projectId: string): Promise<EconomicsRunRecord[]>
   return (data || []).map((row: any) => ({
     id: row.id,
     projectId: row.project_id,
+    projectVersionId: row.project_version_id,
     triggeredBy: row.triggered_by,
     inputHash: row.input_hash,
+    runKind: row.run_kind,
+    engineVersion: row.engine_version,
     portfolioMetrics: row.portfolio_metrics,
     warnings: (row.warnings || []) as string[],
     createdAt: row.created_at,
@@ -523,13 +551,13 @@ export async function logProjectAction(
   const userId = await requireUserId();
   const supabase = requireSupabase();
 
-  const { error } = await supabase.from('project_audit_log').insert({
+  const { error } = await supabase.from('project_audit_events').insert({
     project_id: projectId,
-    user_id: userId,
-    action,
+    actor_user_id: userId,
+    event_type: action,
     entity_type: entityType,
     entity_id: entityId ?? null,
-    payload: toJson(payload ?? {}),
+    payload_jsonb: toJson(payload ?? {}),
   });
 
   if (error) {
@@ -542,7 +570,7 @@ export async function listAuditLog(projectId: string, limit = 50): Promise<Audit
   const supabase = requireSupabase();
 
   const { data, error } = await supabase
-    .from('project_audit_log')
+    .from('project_audit_events')
     .select('*')
     .eq('project_id', projectId)
     .order('created_at', { ascending: false })
@@ -553,11 +581,11 @@ export async function listAuditLog(projectId: string, limit = 50): Promise<Audit
   return (data || []).map((row: any) => ({
     id: row.id,
     projectId: row.project_id,
-    userId: row.user_id,
-    action: row.action,
+    userId: row.actor_user_id,
+    action: row.event_type,
     entityType: row.entity_type,
     entityId: row.entity_id,
-    payload: (row.payload || {}) as Record<string, unknown>,
+    payload: (row.payload_jsonb || {}) as Record<string, unknown>,
     createdAt: row.created_at,
   }));
 }
@@ -598,7 +626,7 @@ export async function listComments(
   return (data || []).map((row: any) => ({
     id: row.id,
     projectId: row.project_id,
-    userId: row.user_id,
+    userId: row.author_user_id,
     entityType: row.entity_type as 'well' | 'group' | 'scenario',
     entityId: row.entity_id,
     body: row.body,
@@ -621,6 +649,7 @@ export async function addComment(
     .insert({
       project_id: projectId,
       user_id: userId,
+      author_user_id: userId,
       entity_type: entityType,
       entity_id: entityId,
       body,
@@ -633,7 +662,7 @@ export async function addComment(
   return {
     id: data.id,
     projectId: data.project_id,
-    userId: data.user_id,
+    userId: data.author_user_id,
     entityType: data.entity_type as 'well' | 'group' | 'scenario',
     entityId: data.entity_id,
     body: data.body,

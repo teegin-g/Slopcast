@@ -14,17 +14,30 @@ function requireSupabase() {
   return supabase;
 }
 
+function unwrapContract<T>(value: unknown): T {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return (value ?? {}) as T;
+  }
+  const next = { ...(value as Record<string, unknown>) };
+  delete next.schema_version;
+  delete next.validated_at;
+  delete next.validator_name;
+  return next as T;
+}
+
 function mapRow(row: any): DealTypeCurvePreset {
   return {
     id: row.id,
+    organizationId: row.organization_id,
     ownerUserId: row.owner_user_id,
+    scope: row.scope,
     name: row.name,
-    profileType: row.profile_type as ProfileType,
-    parentPresetId: row.parent_preset_id,
+    profileType: row.preset_type as ProfileType,
+    parentPresetId: row.parent_preset_id ?? null,
     basin: row.basin,
     formation: row.formation,
     operator: row.operator,
-    config: (row.config || {}) as Record<string, unknown>,
+    config: unwrapContract<Record<string, unknown>>(row.config_jsonb),
     isTemplate: row.is_template,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -43,12 +56,12 @@ export async function listPresets(filters?: ListPresetsFilters): Promise<DealTyp
   const supabase = requireSupabase();
 
   let query = supabase
-    .from('deal_type_curve_presets')
+    .from('model_presets')
     .select('*')
     .order('updated_at', { ascending: false });
 
   if (filters?.profileType) {
-    query = query.eq('profile_type', filters.profileType);
+    query = query.eq('preset_type', filters.profileType);
   }
   if (filters?.basin) {
     query = query.eq('basin', filters.basin);
@@ -69,7 +82,7 @@ export async function getPreset(id: string): Promise<DealTypeCurvePreset | null>
   const supabase = requireSupabase();
 
   const { data, error } = await supabase
-    .from('deal_type_curve_presets')
+    .from('model_presets')
     .select('*')
     .eq('id', id)
     .maybeSingle();
@@ -93,15 +106,15 @@ export async function createPreset(payload: CreatePresetPayload): Promise<DealTy
   const supabase = requireSupabase();
 
   const { data, error } = await supabase
-    .from('deal_type_curve_presets')
+    .from('model_presets')
     .insert({
       name: payload.name,
-      profile_type: payload.profileType,
-      parent_preset_id: payload.parentPresetId ?? null,
+      scope: 'user',
+      preset_type: payload.profileType,
       basin: payload.basin ?? null,
       formation: payload.formation ?? null,
       operator: payload.operator ?? null,
-      config: payload.config,
+      config_jsonb: payload.config,
       is_template: payload.isTemplate ?? false,
     })
     .select()
@@ -119,17 +132,16 @@ export async function updatePreset(
 
   const row: Record<string, unknown> = {};
   if (updates.name !== undefined) row.name = updates.name;
-  if (updates.profileType !== undefined) row.profile_type = updates.profileType;
-  if (updates.parentPresetId !== undefined) row.parent_preset_id = updates.parentPresetId;
+  if (updates.profileType !== undefined) row.preset_type = updates.profileType;
   if (updates.basin !== undefined) row.basin = updates.basin;
   if (updates.formation !== undefined) row.formation = updates.formation;
   if (updates.operator !== undefined) row.operator = updates.operator;
-  if (updates.config !== undefined) row.config = updates.config;
+  if (updates.config !== undefined) row.config_jsonb = updates.config;
   if (updates.isTemplate !== undefined) row.is_template = updates.isTemplate;
   row.updated_at = new Date().toISOString();
 
   const { data, error } = await supabase
-    .from('deal_type_curve_presets')
+    .from('model_presets')
     .update(row)
     .eq('id', id)
     .select()
@@ -143,7 +155,7 @@ export async function deletePreset(id: string): Promise<void> {
   const supabase = requireSupabase();
 
   const { error } = await supabase
-    .from('deal_type_curve_presets')
+    .from('model_presets')
     .delete()
     .eq('id', id);
 

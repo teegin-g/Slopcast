@@ -233,6 +233,11 @@ export interface SensitivityMatrixResult {
 }
 
 export type ProjectMemberRole = 'owner' | 'editor' | 'viewer';
+export type OrganizationRole = 'org_owner' | 'org_admin' | 'org_member';
+export type ProjectKind = 'portfolio_model' | 'deal_evaluation';
+export type ProjectVersionKind = 'checkpoint' | 'pre_run' | 'published' | 'migration';
+export type ProjectArtifactType = 'memo' | 'report' | 'export' | 'attachment';
+export type ModelPresetScope = 'user' | 'organization';
 
 export interface ProjectUiState {
   designWorkspace?: 'WELLS' | 'ECONOMICS';
@@ -244,11 +249,16 @@ export interface ProjectUiState {
 
 export interface ProjectRecord {
   id: string;
+  organizationId?: string;
   ownerUserId: string;
+  projectKind?: ProjectKind;
+  status?: string;
   name: string;
   description: string | null;
   activeGroupId: string | null;
   uiState: ProjectUiState;
+  currentVersionId?: string | null;
+  metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }
@@ -286,8 +296,11 @@ export interface ProjectScenarioRecord {
 export interface EconomicsRunRecord {
   id: string;
   projectId: string;
+  projectVersionId?: string | null;
   triggeredBy: string;
   inputHash: string;
+  runKind?: string;
+  engineVersion?: string;
   portfolioMetrics: {
     npv10: number;
     totalCapex: number;
@@ -296,6 +309,39 @@ export interface EconomicsRunRecord {
     wellCount: number;
   };
   warnings: string[];
+  createdAt: string;
+}
+
+export interface OrganizationRecord {
+  id: string;
+  name: string;
+  slug: string;
+  status: 'active' | 'disabled';
+  settings: Record<string, unknown>;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ProjectVersionRecord {
+  id: string;
+  projectId: string;
+  versionNo: number;
+  versionKind: ProjectVersionKind;
+  createdBy: string | null;
+  changeReason: string | null;
+  snapshot: Record<string, unknown>;
+  inputHash: string | null;
+  createdAt: string;
+}
+
+export interface ProjectArtifactRecord {
+  id: string;
+  projectId: string;
+  artifactType: ProjectArtifactType | string;
+  sourceRunId: string | null;
+  storagePath: string;
+  metadata: Record<string, unknown>;
+  createdBy: string | null;
   createdAt: string;
 }
 
@@ -483,7 +529,9 @@ export type ProfileType = 'type_curve' | 'capex' | 'opex' | 'ownership' | 'prici
 
 export interface DealTypeCurvePreset {
   id: string;
+  organizationId?: string | null;
   ownerUserId: string;
+  scope?: ModelPresetScope;
   name: string;
   profileType: ProfileType;
   parentPresetId: string | null;

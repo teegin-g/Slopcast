@@ -55,29 +55,41 @@ async function requireUserId() {
   return data.user.id;
 }
 
+function unwrapContract<T>(value: unknown): T {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return (value ?? {}) as T;
+  }
+  const next = { ...(value as Record<string, unknown>) };
+  delete next.schema_version;
+  delete next.validated_at;
+  delete next.validator_name;
+  return next as T;
+}
+
 function mapRow(row: any): IntegrationConfig {
   return {
     id: row.id,
     ownerUserId: row.owner_user_id,
     name: row.name,
     connectionType: row.connection_type as ConnectionType,
-    connectionParams: (row.connection_params || {}) as Record<string, unknown>,
-    fieldMappings: (row.field_mappings || {}) as Record<string, string>,
+    connectionParams: unwrapContract<Record<string, unknown>>(row.config_jsonb),
+    fieldMappings: unwrapContract<Record<string, string>>(row.field_mappings_jsonb),
     status: row.status as IntegrationStatus,
-    lastSyncAt: row.last_sync_at ?? null,
+    lastSyncAt: row.last_sync_at ?? row.completed_at ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
 function mapJobRow(row: any): IntegrationJob {
+  const rowCounts = unwrapContract<Record<string, unknown>>(row.row_counts_jsonb);
   return {
     id: row.id,
-    configId: row.config_id,
+    configId: row.source_connection_id,
     status: row.status as JobStatus,
-    recordsProcessed: Number(row.records_processed),
-    recordsFailed: Number(row.records_failed),
-    errorLog: (row.error_log as unknown[] | null) ?? null,
+    recordsProcessed: Number(rowCounts.recordsProcessed ?? 0),
+    recordsFailed: Number(rowCounts.recordsFailed ?? 0),
+    errorLog: null,
     startedAt: row.started_at ?? null,
     completedAt: row.completed_at ?? null,
     createdAt: row.created_at,
@@ -93,7 +105,7 @@ export async function listIntegrations(): Promise<IntegrationConfig[]> {
   const supabase = requireSupabase();
 
   const { data, error } = await supabase
-    .from('integration_configs')
+    .from('source_connections')
     .select('*')
     .order('updated_at', { ascending: false });
 
@@ -107,7 +119,7 @@ export async function getIntegration(id: string): Promise<IntegrationConfig | nu
   const supabase = requireSupabase();
 
   const { data, error } = await supabase
-    .from('integration_configs')
+    .from('source_connections')
     .select('*')
     .eq('id', id)
     .maybeSingle();
@@ -125,16 +137,22 @@ export async function createIntegration(payload: {
   fieldMappings?: Record<string, string>;
   status?: IntegrationStatus;
 }): Promise<IntegrationConfig> {
-  await requireUserId();
   const supabase = requireSupabase();
+  const userId = await requireUserId();
+  const { data: organizationId, error: orgError } = await supabase.rpc('ensure_personal_organization', {
+    p_user_id: userId,
+  });
+  if (orgError) throw orgError;
 
   const { data, error } = await supabase
-    .from('integration_configs')
+    .from('source_connections')
     .insert({
+      organization_id: organizationId,
+      owner_user_id: userId,
       name: payload.name,
       connection_type: payload.connectionType,
-      connection_params: payload.connectionParams,
-      field_mappings: payload.fieldMappings ?? {},
+      config_jsonb: payload.connectionParams,
+      field_mappings_jsonb: payload.fieldMappings ?? {},
       status: payload.status ?? 'draft',
     })
     .select()
@@ -161,12 +179,12 @@ export async function updateIntegration(
   const row: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (updates.name !== undefined) row.name = updates.name;
   if (updates.connectionType !== undefined) row.connection_type = updates.connectionType;
-  if (updates.connectionParams !== undefined) row.connection_params = updates.connectionParams;
-  if (updates.fieldMappings !== undefined) row.field_mappings = updates.fieldMappings;
+  if (updates.connectionParams !== undefined) row.config_jsonb = updates.connectionParams;
+  if (updates.fieldMappings !== undefined) row.field_mappings_jsonb = updates.fieldMappings;
   if (updates.status !== undefined) row.status = updates.status;
 
   const { data, error } = await supabase
-    .from('integration_configs')
+    .from('source_connections')
     .update(row)
     .eq('id', id)
     .select()
@@ -182,7 +200,7 @@ export async function deleteIntegration(id: string): Promise<void> {
   const supabase = requireSupabase();
 
   const { error } = await supabase
-    .from('integration_configs')
+    .from('source_connections')
     .delete()
     .eq('id', id);
 
@@ -198,9 +216,9 @@ export async function listJobs(configId: string): Promise<IntegrationJob[]> {
   const supabase = requireSupabase();
 
   const { data, error } = await supabase
-    .from('integration_jobs')
+    .from('sync_runs')
     .select('*')
-    .eq('config_id', configId)
+    .eq('source_connection_id', configId)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -213,9 +231,9 @@ export async function createJob(configId: string): Promise<IntegrationJob> {
   const supabase = requireSupabase();
 
   const { data, error } = await supabase
-    .from('integration_jobs')
+    .from('sync_runs')
     .insert({
-      config_id: configId,
+      source_connection_id: configId,
       status: 'pending',
     })
     .select()
