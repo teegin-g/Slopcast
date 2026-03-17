@@ -1,7 +1,43 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { motion, useMotionValue, useTransform, animate } from 'motion/react';
 import { DealMetrics, MonthlyCashFlow } from '../../types';
 import { useRecalcStatus } from './hooks/useRecalcStatus';
 import { useTheme } from '../../theme/ThemeProvider';
+
+/** Smoothly animates between numeric values with spring physics */
+const AnimatedValue: React.FC<{
+  value: number;
+  format: (n: number) => string;
+  className?: string;
+}> = ({ value, format, className }) => {
+  const motionValue = useMotionValue(value);
+  const display = useTransform(motionValue, (v) => format(v));
+  const ref = useRef<HTMLSpanElement>(null);
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      motionValue.set(value);
+      return;
+    }
+    const controls = animate(motionValue, value, {
+      type: 'spring',
+      stiffness: 80,
+      damping: 20,
+      mass: 0.8,
+    });
+    return controls.stop;
+  }, [value, motionValue]);
+
+  useEffect(() => {
+    return display.on('change', (v) => {
+      if (ref.current) ref.current.textContent = v;
+    });
+  }, [display]);
+
+  return <span ref={ref} className={className}>{format(value)}</span>;
+};
 
 interface SnapshotHistoryEntry {
   npv: number;
@@ -30,7 +66,7 @@ const accentBorder: Record<AccentColor, string> = {
   muted: 'border-l-2 border-l-theme-muted/40',
 };
 
-/** Tiny SVG sparkline from cumulative cash flow data */
+/** Tiny SVG sparkline from cumulative cash flow data — draws on mount */
 const CashFlowSparkline: React.FC<{ flow: MonthlyCashFlow[] }> = ({ flow }) => {
   if (flow.length < 2) return null;
   const cumValues = flow.map(f => f.cumulativeCashFlow);
@@ -44,6 +80,13 @@ const CashFlowSparkline: React.FC<{ flow: MonthlyCashFlow[] }> = ({ flow }) => {
     const y = h - ((v - min) / range) * h;
     return `${x},${y}`;
   });
+  // Approximate polyline length for stroke animation
+  const pathLength = cumValues.reduce((acc, _, i) => {
+    if (i === 0) return 0;
+    const dx = (1 / (cumValues.length - 1)) * w;
+    const dy = (h - ((cumValues[i] - min) / range) * h) - (h - ((cumValues[i - 1] - min) / range) * h);
+    return acc + Math.sqrt(dx * dx + dy * dy);
+  }, 0);
   return (
     <svg
       viewBox={`0 0 ${w} ${h}`}
@@ -56,17 +99,24 @@ const CashFlowSparkline: React.FC<{ flow: MonthlyCashFlow[] }> = ({ flow }) => {
           <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
         </linearGradient>
       </defs>
-      <polyline
+      <motion.polyline
         fill="none"
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinejoin="round"
         opacity="0.25"
         points={points.join(' ')}
+        strokeDasharray={pathLength || 1}
+        initial={{ strokeDashoffset: pathLength || 1 }}
+        animate={{ strokeDashoffset: 0 }}
+        transition={{ duration: 1.2, ease: 'easeOut' }}
       />
-      <polygon
+      <motion.polygon
         fill="url(#sparkFill)"
         points={`0,${h} ${points.join(' ')} ${w},${h}`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 0.6 }}
       />
     </svg>
   );
@@ -101,20 +151,28 @@ const PayoutRing: React.FC<{ months: number; benchmark?: number }> = ({ months, 
 
 const KpiStripTile: React.FC<{
   title: string;
-  value: string;
+  value?: string;
+  valueNode?: React.ReactNode;
   unit?: string;
   accent: AccentColor;
   extra?: React.ReactNode;
   shimmer?: string;
   bgClass?: string;
-}> = ({ title, value, unit, accent, extra, shimmer = '', bgClass = 'bg-theme-surface1/60' }) => (
+}> = ({ title, value, valueNode, unit, accent, extra, shimmer = '', bgClass = 'bg-theme-surface1/60' }) => (
   <div className={`rounded-inner border border-theme-border ${bgClass} px-4 py-3 theme-transition hover:bg-theme-surface2 ${accentBorder[accent]}`}>
     <p className="text-[11px] font-bold uppercase tracking-[0.18em] mb-1.5 text-theme-text/70 heading-font">{title}</p>
     <div className="flex items-center gap-2">
-      <p className={`text-xl font-black text-theme-text leading-none ${shimmer}`}>
-        {value}
-        {unit && <span className="text-[11px] text-theme-muted font-semibold ml-1">{unit}</span>}
-      </p>
+      {valueNode ? (
+        <p className="flex items-center">
+          {valueNode}
+          {unit && <span className="text-[11px] text-theme-muted font-semibold ml-1">{unit}</span>}
+        </p>
+      ) : (
+        <p className={`text-xl font-black text-theme-text leading-none ${shimmer}`}>
+          {value}
+          {unit && <span className="text-[11px] text-theme-muted font-semibold ml-1">{unit}</span>}
+        </p>
+      )}
       {extra}
     </div>
   </div>
@@ -255,9 +313,18 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
 
   return (
     <div className="space-y-4">
-      <div className={`rounded-panel border p-8 shadow-card relative overflow-hidden group theme-transition ${heroBgMap[panelStyle]} border-theme-border hover:border-theme-magenta`}>
+      <motion.div
+        className={`rounded-panel border p-8 shadow-card relative overflow-hidden group theme-transition ${heroBgMap[panelStyle]} border-theme-border hover:border-theme-magenta`}
+        whileHover={{ scale: 1.005 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      >
         {panelStyle !== 'solid' && (
-          <div className="absolute top-0 right-0 w-80 h-80 rounded-full blur-[100px] -mr-24 -mt-24 pointer-events-none transition-opacity duration-700 bg-theme-cyan/15 opacity-60 group-hover:opacity-100"></div>
+          <motion.div
+            className="absolute top-0 right-0 w-80 h-80 rounded-full blur-[100px] -mr-24 -mt-24 pointer-events-none bg-theme-cyan/15"
+            initial={{ opacity: 0.6 }}
+            whileHover={{ opacity: 1 }}
+            transition={{ duration: 0.7 }}
+          />
         )}
         {aggregateFlow && aggregateFlow.length > 1 && (
           <div className="absolute inset-0 text-theme-cyan pointer-events-none">
@@ -266,9 +333,11 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
         )}
         <p className="text-theme-muted text-[10px] font-bold uppercase tracking-[0.4em] mb-2 relative z-10 heading-font">Portfolio NPV (10%)</p>
         <div className="flex items-baseline relative z-10">
-          <span className={`text-5xl sm:text-6xl xl:text-7xl font-black tracking-tighter leading-none text-theme-cyan ${shimmerClass}`}>
-            ${(metrics.npv10 / 1e6).toFixed(1)}
-          </span>
+          <AnimatedValue
+            value={metrics.npv10 / 1e6}
+            format={(n) => `$${n.toFixed(1)}`}
+            className={`text-5xl sm:text-6xl xl:text-7xl font-black tracking-tighter leading-none text-theme-cyan ${shimmerClass}`}
+          />
           <span className="text-2xl font-black ml-3 text-theme-lavender italic">MM</span>
         </div>
         {breakevenLabel && (
@@ -294,12 +363,18 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
             )}
           </div>
         )}
-      </div>
+      </motion.div>
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
         <KpiStripTile
           title="Total CAPEX"
-          value={`$${(metrics.totalCapex / 1e6).toFixed(1)}`}
+          valueNode={
+            <AnimatedValue
+              value={metrics.totalCapex / 1e6}
+              format={(n) => `$${n.toFixed(1)}`}
+              className={`text-xl font-black text-theme-text leading-none ${shimmerClass}`}
+            />
+          }
           unit="MM"
           accent="magenta"
           shimmer={shimmerClass}
@@ -308,7 +383,13 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
         />
         <KpiStripTile
           title="Portfolio EUR"
-          value={(metrics.eur / 1e3).toFixed(0)}
+          valueNode={
+            <AnimatedValue
+              value={metrics.eur / 1e3}
+              format={(n) => n.toFixed(0)}
+              className={`text-xl font-black text-theme-text leading-none ${shimmerClass}`}
+            />
+          }
           unit="MBOE"
           accent="cyan"
           shimmer={shimmerClass}
@@ -317,7 +398,13 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
         />
         <KpiStripTile
           title="Payout"
-          value={metrics.payoutMonths > 0 ? String(metrics.payoutMonths) : '-'}
+          valueNode={
+            <AnimatedValue
+              value={metrics.payoutMonths}
+              format={(n) => n > 0 ? String(Math.round(n)) : '-'}
+              className={`text-xl font-black text-theme-text leading-none ${shimmerClass}`}
+            />
+          }
           unit="MO"
           accent="lavender"
           shimmer={shimmerClass}
