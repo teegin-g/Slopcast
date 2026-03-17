@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface GroupRanking {
   id: string;
@@ -59,70 +60,77 @@ const GroupComparisonStrip: React.FC<GroupComparisonStripProps> = ({
       </div>
 
       <div className="p-3 space-y-1.5">
-        {scenarioRankings.map((ranking, index) => {
-          const isActive = ranking.id === activeGroupId;
-          const barWidth = maxNpv > 0 ? Math.abs(ranking.npv10) / maxNpv * 100 : 0;
-          const isPositive = ranking.npv10 >= 0;
-          const groupColor = getGroupColor(ranking.id);
+        <AnimatePresence mode="popLayout">
+          {scenarioRankings.map((ranking, index) => {
+            const isActive = ranking.id === activeGroupId;
+            const barWidth = maxNpv > 0 ? Math.abs(ranking.npv10) / maxNpv * 100 : 0;
+            const isPositive = ranking.npv10 >= 0;
+            const groupColor = getGroupColor(ranking.id);
 
-          return (
-            <button
-              key={ranking.id}
-              onClick={() => onActivateGroup(ranking.id)}
-              className={`w-full text-left rounded-inner border px-3 py-2 transition-all ${
-                isActive
-                  ? isClassic
-                    ? 'border-theme-warning bg-black/20 ring-1 ring-theme-warning/30'
-                    : 'border-theme-cyan bg-theme-surface2/80 ring-1 ring-theme-cyan/20'
-                  : isClassic
-                    ? 'border-black/20 bg-black/10 hover:bg-black/15'
-                    : 'border-theme-border/50 bg-theme-bg/50 hover:bg-theme-surface2/50'
-              }`}
-              style={isActive ? { borderLeftWidth: '3px', borderLeftColor: groupColor } : undefined}
-            >
-              <div className="flex items-center justify-between gap-2 mb-1.5">
-                <div className="flex items-center gap-2 min-w-0">
-                  <RankBadge rank={index + 1} isClassic={isClassic} />
-                  <span
-                    className="w-3 h-3 rounded-full shrink-0"
-                    style={{ backgroundColor: groupColor }}
+            return (
+              <motion.button
+                key={ranking.id}
+                layout
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                onClick={() => onActivateGroup(ranking.id)}
+                className={`w-full text-left rounded-inner border px-3 py-2 transition-colors ${
+                  isActive
+                    ? isClassic
+                      ? 'border-theme-warning bg-black/20 ring-1 ring-theme-warning/30'
+                      : 'border-theme-cyan bg-theme-surface2/80 ring-1 ring-theme-cyan/20'
+                    : isClassic
+                      ? 'border-black/20 bg-black/10 hover:bg-black/15'
+                      : 'border-theme-border/50 bg-theme-bg/50 hover:bg-theme-surface2/50'
+                }`}
+                style={isActive ? { borderLeftWidth: '3px', borderLeftColor: groupColor } : undefined}
+              >
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <RankBadge rank={index + 1} isClassic={isClassic} />
+                    <span
+                      className="w-3 h-3 rounded-full shrink-0"
+                      style={{ backgroundColor: groupColor }}
+                    />
+                    <span className={`text-[10px] font-black uppercase tracking-[0.1em] truncate ${
+                      isActive
+                        ? isClassic ? 'text-white' : 'text-theme-text'
+                        : isClassic ? 'text-white/80' : 'text-theme-muted'
+                    }`}>
+                      {ranking.name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`text-[10px] font-black tabular-nums whitespace-nowrap ${
+                      isPositive
+                        ? isClassic ? 'text-theme-warning' : 'text-theme-cyan'
+                        : 'text-theme-warning'
+                    }`}>
+                      ${(ranking.npv10 / 1e6).toFixed(1)}M
+                    </span>
+                    <span className="text-[9px] tabular-nums text-theme-muted whitespace-nowrap">
+                      {ranking.roi.toFixed(1)}x
+                    </span>
+                  </div>
+                </div>
+
+                {/* NPV bar */}
+                <div className="h-1.5 rounded-full bg-theme-bg/60 overflow-hidden">
+                  <motion.div
+                    className="h-full rounded-full"
+                    animate={{
+                      width: `${Math.max(2, barWidth)}%`,
+                      opacity: isActive ? 1 : 0.6,
+                    }}
+                    transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+                    style={{
+                      backgroundColor: isPositive ? groupColor : 'rgb(var(--danger))',
+                    }}
                   />
-                  <span className={`text-[10px] font-black uppercase tracking-[0.1em] truncate ${
-                    isActive
-                      ? isClassic ? 'text-white' : 'text-theme-text'
-                      : isClassic ? 'text-white/80' : 'text-theme-muted'
-                  }`}>
-                    {ranking.name}
-                  </span>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className={`text-[10px] font-black tabular-nums whitespace-nowrap ${
-                    isPositive
-                      ? isClassic ? 'text-theme-warning' : 'text-theme-cyan'
-                      : 'text-theme-warning'
-                  }`}>
-                    ${(ranking.npv10 / 1e6).toFixed(1)}M
-                  </span>
-                  <span className="text-[9px] tabular-nums text-theme-muted whitespace-nowrap">
-                    {ranking.roi.toFixed(1)}x
-                  </span>
-                </div>
-              </div>
-
-              {/* NPV bar */}
-              <div className="h-1.5 rounded-full bg-theme-bg/60 overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-300"
-                  style={{
-                    width: `${Math.max(2, barWidth)}%`,
-                    backgroundColor: isPositive ? groupColor : 'rgb(var(--danger))',
-                    opacity: isActive ? 1 : 0.6,
-                  }}
-                />
-              </div>
-            </button>
-          );
-        })}
+              </motion.button>
+            );
+          })}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 
 export type EconomicsResultsTab = 'SUMMARY' | 'CHARTS' | 'CASH_FLOW' | 'DRIVERS' | 'RESERVES';
 
@@ -36,19 +37,29 @@ const EconomicsResultsTabs: React.FC<EconomicsResultsTabsProps> = ({
               type="button"
               onClick={() => onChange(item.id)}
               data-testid={`economics-results-tab-${item.id.toLowerCase()}`}
-              className={
+              className={`relative isolate ${
                 isClassic
                   ? `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
-                      active ? 'bg-theme-warning text-black border-black/20' : 'bg-black/15 text-white/90 border-black/25'
+                      active ? 'text-black border-black/20' : 'bg-black/15 text-white/90 border-black/25'
                     }`
                   : `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border transition-colors ${
                       active
-                        ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
+                        ? 'text-theme-bg border-theme-cyan shadow-glow-cyan'
                         : 'bg-theme-bg text-theme-muted border-theme-border hover:text-theme-text'
                     }`
-              }
+              }`}
             >
-              {item.label}
+              {active && (
+                <motion.div
+                  layoutId="economicsResultsActiveTab"
+                  className={`absolute inset-0 rounded-inner ${
+                    isClassic ? 'bg-theme-warning' : 'bg-theme-cyan'
+                  }`}
+                  style={{ zIndex: 0 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                />
+              )}
+              <span className="relative z-10">{item.label}</span>
             </button>
           );
         })}

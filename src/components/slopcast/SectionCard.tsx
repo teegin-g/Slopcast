@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 
 interface SectionCardProps {
   isClassic: boolean;
@@ -9,6 +10,8 @@ interface SectionCardProps {
   children: React.ReactNode;
   /** Panel surface treatment: glass (default), solid, or outline */
   panelStyle?: 'glass' | 'solid' | 'outline';
+  /** Stagger delay index for entrance animation (multiply by 0.06s) */
+  staggerIndex?: number;
 }
 
 const sectionBgMap: Record<'glass' | 'solid' | 'outline', string> = {
@@ -25,9 +28,17 @@ const SectionCard: React.FC<SectionCardProps> = ({
   bodyClassName = '',
   children,
   panelStyle = 'glass',
+  staggerIndex = 0,
 }) => {
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.35,
+        delay: staggerIndex * 0.06,
+        ease: [0.25, 0.1, 0.25, 1],
+      }}
       className={
         isClassic
           ? `sc-panel theme-transition overflow-hidden ${className}`
@@ -55,7 +66,7 @@ const SectionCard: React.FC<SectionCardProps> = ({
         </div>
       )}
       <div className={isClassic ? `p-4 ${bodyClassName}` : `p-4 ${bodyClassName}`}>{children}</div>
-    </div>
+    </motion.div>
   );
 };
 

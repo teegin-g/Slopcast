@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 
 export type DesignStep = 'SETUP' | 'SELECT' | 'RUN' | 'REVIEW';
 export type StepStatus = 'NOT_STARTED' | 'ACTIVE' | 'COMPLETE' | 'STALE';
@@ -65,13 +66,23 @@ const WorkflowStepper: React.FC<WorkflowStepperProps> = ({ isClassic, steps, com
       <div className="p-3">
         <div className={`grid ${compact ? 'grid-cols-2 gap-2' : 'grid-cols-4 gap-2'}`}>
           {steps.map((step, idx) => (
-            <div
+            <motion.div
               key={step.id}
               className={`rounded-inner border px-3 py-2 ${statusTone(step.status, isClassic)} transition-colors`}
+              animate={
+                step.status === 'ACTIVE'
+                  ? { scale: [1, 1.03, 1] }
+                  : { scale: 1 }
+              }
+              transition={
+                step.status === 'ACTIVE'
+                  ? { duration: 0.4, ease: 'easeInOut' }
+                  : { duration: 0.2 }
+              }
             >
               <p className="text-[9px] font-black uppercase tracking-[0.18em]">{idx + 1}. {step.label}</p>
               <p className={`text-[9px] uppercase tracking-[0.12em] mt-1 ${isClassic ? 'opacity-90' : ''}`}>{caption(step.status)}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
