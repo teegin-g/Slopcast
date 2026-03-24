@@ -4,7 +4,7 @@ import Charts from '../Charts';
 import TaxControls from '../TaxControls';
 import DebtControls from '../DebtControls';
 import { ThemeId } from '../../theme/themes';
-import { MonthlyCashFlow, Well, WellGroup, TaxAssumptions, DebtAssumptions, ReserveCategory, DEFAULT_TAX_ASSUMPTIONS, DEFAULT_DEBT_ASSUMPTIONS } from '../../types';
+import { MonthlyCashFlow, Well, WellGroup, ReserveCategory, DEFAULT_TAX_ASSUMPTIONS, DEFAULT_DEBT_ASSUMPTIONS } from '../../types';
 import KpiGrid from './KpiGrid';
 import OperationsConsole, { OperationsConsoleProps } from './OperationsConsole';
 import EconomicsDriversPanel, { DriverFamilyId } from './EconomicsDriversPanel';
@@ -13,7 +13,6 @@ import EconomicsGroupBar from './EconomicsGroupBar';
 import EconomicsResultsTabs, { EconomicsResultsTab } from './EconomicsResultsTabs';
 import GroupWellsTable from './GroupWellsTable';
 import GroupComparisonStrip from './GroupComparisonStrip';
-import MiniMapPreview from './MiniMapPreview';
 import ReservesPanel from './ReservesPanel';
 import CashFlowTable from './CashFlowTable';
 import { ViewTransition } from '../layout/ViewTransition';
@@ -70,38 +69,7 @@ interface DesignEconomicsViewProps {
   onToggleLevered?: () => void;
 }
 
-/** SVG progress ring for Setup Insights */
-const SetupProgressRing: React.FC<{ completed: number; total: number; isClassic: boolean }> = ({ completed, total, isClassic }) => {
-  const r = 10;
-  const circumference = 2 * Math.PI * r;
-  const progress = total > 0 ? completed / total : 0;
-  const dashLen = progress * circumference;
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" className="shrink-0">
-      <circle cx="12" cy="12" r={r} fill="none" stroke="currentColor" strokeWidth="2" className={isClassic ? 'text-white/15' : 'text-theme-border'} />
-      <circle
-        cx="12"
-        cy="12"
-        r={r}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeDasharray={`${dashLen} ${circumference}`}
-        strokeLinecap="round"
-        transform="rotate(-90 12 12)"
-        className={isClassic ? 'text-theme-warning' : 'text-theme-cyan'}
-      />
-      <text x="12" y="12" textAnchor="middle" dominantBaseline="central" className="text-[7px] font-black" style={{ fill: isClassic ? 'white' : 'rgb(var(--text))' }}>
-        {completed}/{total}
-      </text>
-    </svg>
-  );
-};
-
-/** Gradient accent divider */
-const AccentDivider: React.FC = () => (
-  <div className="h-[2px] rounded-full bg-gradient-to-r from-theme-cyan via-theme-magenta to-theme-lavender opacity-40" />
-);
+type AdvancedConfigSection = 'FINANCIAL' | 'RESERVES' | 'GROUP_WELLS';
 
 /** Quick Drivers mini-panel shown in the 2-column layout */
 const QuickDrivers: React.FC<{
@@ -117,7 +85,7 @@ const QuickDrivers: React.FC<{
       className={
         isClassic
           ? 'sc-panel theme-transition h-full'
-          : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border h-full'
+          : 'utility-surface theme-transition h-full'
       }
     >
       <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
@@ -208,42 +176,14 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
 }) => {
   const { debouncedUpdate, isRecalculating } = useDebouncedRecalc(onUpdateGroup, 400);
   const hasReadinessBlocker = !hasGroup || !hasGroupWells || !hasCapexItems;
-  const [showSetupInsights, setShowSetupInsights] = useState(hasReadinessBlocker);
-  const [didAutoOpenInsights, setDidAutoOpenInsights] = useState(hasReadinessBlocker);
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [taxOpen, setTaxOpen] = useState(false);
-  const [leverageOpen, setLeverageOpen] = useState(false);
-  const [reserveOpen, setReserveOpen] = useState(false);
-
-  useEffect(() => {
-    if (didAutoOpenInsights) return;
-    if (!hasReadinessBlocker) return;
-    setShowSetupInsights(true);
-    setDidAutoOpenInsights(true);
-  }, [didAutoOpenInsights, hasReadinessBlocker]);
+  const [advancedSection, setAdvancedSection] = useState<AdvancedConfigSection>('FINANCIAL');
 
   useEffect(() => {
     if (!focusMode) return;
     if (mobilePanel === 'RESULTS') return;
     onSetMobilePanel('RESULTS');
   }, [focusMode, mobilePanel, onSetMobilePanel]);
-
-  // Auto-collapse Setup Insights once all checks pass
-  useEffect(() => {
-    if (!hasReadinessBlocker && showSetupInsights) {
-      setShowSetupInsights(false);
-    }
-  }, [hasReadinessBlocker]); // eslint-disable-line react-hooks/exhaustive-deps
-  const checklist = [
-    { id: 'group', label: 'Choose active group', done: hasGroup },
-    { id: 'wells', label: 'Assign wells to group', done: hasGroupWells },
-    { id: 'capex', label: 'Confirm CAPEX items', done: hasCapexItems },
-  ];
-
-  const completedCount = checklist.filter(c => c.done).length;
-
-  const activeWorkflowStep =
-    workflowSteps.find(step => step.status === 'ACTIVE' || step.status === 'STALE') || workflowSteps[0];
 
   const readinessBlocker =
     !hasGroup
@@ -313,10 +253,10 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
               onClick={() => onSetMobilePanel('SETUP')}
               className={
                 isClassic
-                  ? `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
+                  ? `px-3 py-2.5 rounded-inner text-[10px] font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
                       mobilePanel === 'SETUP' ? 'bg-theme-warning text-black border-black/20' : 'bg-black/15 text-white/90 border-black/25'
                     }`
-                  : `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border transition-colors ${
+                  : `px-3 py-2.5 rounded-inner text-[10px] font-black uppercase tracking-widest border transition-colors ${
                       mobilePanel === 'SETUP'
                         ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
                         : 'bg-theme-bg text-theme-muted border-theme-border'
@@ -329,10 +269,10 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
               onClick={() => onSetMobilePanel('RESULTS')}
               className={
                 isClassic
-                  ? `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
+                  ? `px-3 py-2.5 rounded-inner text-[10px] font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
                       mobilePanel === 'RESULTS' ? 'bg-theme-warning text-black border-black/20' : 'bg-black/15 text-white/90 border-black/25'
                     }`
-                  : `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border transition-colors ${
+                  : `px-3 py-2.5 rounded-inner text-[10px] font-black uppercase tracking-widest border transition-colors ${
                       mobilePanel === 'RESULTS'
                         ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
                         : 'bg-theme-bg text-theme-muted border-theme-border'
@@ -352,11 +292,22 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
               mobilePanel !== 'SETUP' ? 'hidden lg:block' : ''
             }`}
           >
-            <MiniMapPreview
-              isClassic={isClassic}
-              wells={wells}
-              activeGroup={activeGroup}
-            />
+            {hasReadinessBlocker && (
+              <div
+                className={
+                  isClassic
+                    ? 'sc-panel theme-transition'
+                    : 'rounded-inner utility-inset px-4 py-3 theme-transition'
+                }
+              >
+                <p className={isClassic ? 'text-[9px] font-black uppercase tracking-[0.16em] text-theme-warning' : 'text-[9px] font-black uppercase tracking-[0.16em] text-theme-lavender'}>
+                  Current blocker
+                </p>
+                <p className={isClassic ? 'mt-1 text-[10px] text-white/80' : 'mt-1 text-[10px] text-theme-muted'}>
+                  {readinessBlocker}
+                </p>
+              </div>
+            )}
 
             <Controls
               group={activeGroup}
@@ -364,147 +315,11 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
               onMarkDirty={onMarkDirty}
             />
 
-            {/* Tax & Fiscal Controls - Collapsible */}
             <div
               className={
                 isClassic
                   ? 'sc-panel theme-transition'
-                  : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
-              }
-            >
-              <button
-                type="button"
-                onClick={() => setTaxOpen(prev => !prev)}
-                className={`w-full px-4 py-2.5 flex items-center justify-between ${
-                  isClassic
-                    ? 'sc-panelTitlebar sc-titlebar--neutral hover:bg-black/10'
-                    : 'border-b border-theme-border/60 hover:bg-theme-surface2/30'
-                } transition-colors`}
-              >
-                <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
-                  Tax &amp; Fiscal
-                </h2>
-                <span className={`transform transition-transform duration-300 text-xs ${taxOpen ? 'rotate-180' : ''} ${
-                  isClassic ? 'text-white/50' : 'text-theme-muted'
-                }`}>
-                  ▼
-                </span>
-              </button>
-
-              <div
-                className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                  taxOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
-                }`}
-              >
-                <div className="p-3">
-                  <TaxControls
-                    isClassic={isClassic}
-                    tax={activeGroup.taxAssumptions || DEFAULT_TAX_ASSUMPTIONS}
-                    onChange={(tax) => onUpdateGroup({ ...activeGroup, taxAssumptions: tax })}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Leverage / Debt Controls - Collapsible */}
-            <div
-              className={
-                isClassic
-                  ? 'sc-panel theme-transition'
-                  : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
-              }
-            >
-              <button
-                type="button"
-                onClick={() => setLeverageOpen(prev => !prev)}
-                className={`w-full px-4 py-2.5 flex items-center justify-between ${
-                  isClassic
-                    ? 'sc-panelTitlebar sc-titlebar--neutral hover:bg-black/10'
-                    : 'border-b border-theme-border/60 hover:bg-theme-surface2/30'
-                } transition-colors`}
-              >
-                <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
-                  Leverage
-                </h2>
-                <span className={`transform transition-transform duration-300 text-xs ${leverageOpen ? 'rotate-180' : ''} ${
-                  isClassic ? 'text-white/50' : 'text-theme-muted'
-                }`}>
-                  ▼
-                </span>
-              </button>
-
-              <div
-                className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                  leverageOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
-                }`}
-              >
-                <div className="p-3">
-                  <DebtControls
-                    isClassic={isClassic}
-                    debt={activeGroup.debtAssumptions || DEFAULT_DEBT_ASSUMPTIONS}
-                    onChange={(debt) => onUpdateGroup({ ...activeGroup, debtAssumptions: debt })}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Reserve Category Selector - Collapsible */}
-            <div
-              className={
-                isClassic
-                  ? 'sc-panel theme-transition'
-                  : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
-              }
-            >
-              <button
-                type="button"
-                onClick={() => setReserveOpen(prev => !prev)}
-                className={`w-full px-4 py-2.5 flex items-center justify-between ${
-                  isClassic
-                    ? 'sc-panelTitlebar sc-titlebar--neutral hover:bg-black/10'
-                    : 'border-b border-theme-border/60 hover:bg-theme-surface2/30'
-                } transition-colors`}
-              >
-                <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
-                  Reserve Category
-                </h2>
-                <span className={`transform transition-transform duration-300 text-xs ${reserveOpen ? 'rotate-180' : ''} ${
-                  isClassic ? 'text-white/50' : 'text-theme-muted'
-                }`}>
-                  ▼
-                </span>
-              </button>
-
-              <div
-                className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                  reserveOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
-                }`}
-              >
-                <div className="p-3">
-                  <select
-                    value={activeGroup.reserveCategory || 'PDP'}
-                    onChange={(e) => onUpdateGroup({ ...activeGroup, reserveCategory: e.target.value as ReserveCategory })}
-                    className={
-                      isClassic
-                        ? 'w-full rounded-md px-2 py-1 text-[10px] font-black sc-inputNavy'
-                        : 'w-full bg-theme-bg border border-theme-border rounded-lg px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition'
-                    }
-                  >
-                    <option value="PDP">PDP (Proved Developed)</option>
-                    <option value="PUD">PUD (Proved Undeveloped)</option>
-                    <option value="PROBABLE">Probable</option>
-                    <option value="POSSIBLE">Possible</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Advanced Settings - Collapsible Section */}
-            <div
-              className={
-                isClassic
-                  ? 'sc-panel theme-transition'
-                  : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
+                  : 'utility-surface theme-transition'
               }
             >
               <button
@@ -517,7 +332,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                 } transition-colors`}
               >
                 <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
-                  Advanced Settings
+                  Advanced Configuration
                 </h2>
                 <span className={`transform transition-transform duration-300 text-xs ${advancedOpen ? 'rotate-180' : ''} ${
                   isClassic ? 'text-white/50' : 'text-theme-muted'
@@ -531,74 +346,99 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                   advancedOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
                 }`}
               >
-                <div className="p-4">
-                  <GroupWellsTable
-                    isClassic={isClassic}
-                    group={activeGroup}
-                    wells={wells}
-                    title="Wells in active group"
-                    defaultSort={{ key: 'name', dir: 'asc' }}
-                    dense
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Setup Insights - compact vertical checklist with progress ring */}
-            <div
-              className={
-                isClassic
-                  ? 'sc-panel theme-transition'
-                  : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
-              }
-            >
-              <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <SetupProgressRing completed={completedCount} total={checklist.length} isClassic={isClassic} />
-                    <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
-                      Setup Insights
-                    </h2>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowSetupInsights(prev => !prev)}
-                    className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-cyan"
-                  >
-                    {showSetupInsights ? 'Hide' : 'Show'}
-                  </button>
-                </div>
-              </div>
-              {showSetupInsights && (
-                <div className="p-4 space-y-3">
-                  <p className="text-[10px] text-theme-muted">
-                    {activeWorkflowStep?.label || 'Setup'} step is <span className="uppercase font-black text-theme-cyan">{activeWorkflowStep?.status.toLowerCase()}</span>.
-                  </p>
-
-                  {/* Compact vertical checklist instead of tile grid */}
-                  <div className="space-y-1">
-                    {checklist.map((item) => (
-                      <div key={item.id} className="flex items-center gap-2.5 py-1.5 px-2 rounded-inner hover:bg-theme-surface2/50 transition-colors">
-                        <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 text-[8px] font-black ${
-                          item.done
-                            ? 'bg-theme-cyan/20 border-theme-cyan text-theme-cyan'
-                            : 'bg-transparent border-theme-border text-transparent'
-                        }`}>
-                          {item.done ? '✓' : ''}
-                        </span>
-                        <span className={`text-[10px] ${item.done ? 'text-theme-text' : 'text-theme-muted'}`}>
+                <div className="p-3 space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {([
+                      { id: 'FINANCIAL', label: 'Financial' },
+                      { id: 'RESERVES', label: 'Reserves' },
+                      { id: 'GROUP_WELLS', label: 'Group Wells' },
+                    ] as const).map((item) => {
+                      const isActive = advancedSection === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setAdvancedSection(item.id)}
+                          className={
+                            isClassic
+                              ? `px-3 py-1.5 rounded-inner border-2 text-[9px] font-black uppercase tracking-[0.14em] transition-colors ${
+                                  isActive ? 'bg-theme-warning text-black border-black/20' : 'bg-black/15 text-white/85 border-black/25'
+                                }`
+                              : `px-3 py-1.5 rounded-inner border text-[9px] font-black uppercase tracking-[0.14em] transition-colors ${
+                                  isActive
+                                    ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
+                                    : 'bg-theme-bg text-theme-muted border-theme-border hover:text-theme-text'
+                                }`
+                          }
+                        >
                           {item.label}
-                        </span>
-                      </div>
-                    ))}
+                        </button>
+                      );
+                    })}
                   </div>
 
-                  <div className="rounded-inner border border-theme-border bg-theme-bg px-3 py-2">
-                    <p className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-lavender">Current blocker</p>
-                    <p className="text-[10px] text-theme-muted mt-1">{readinessBlocker}</p>
-                  </div>
+                  {advancedSection === 'FINANCIAL' && (
+                    <div className="space-y-3">
+                      <div className="rounded-inner utility-inset p-3">
+                        <p className="mb-2 text-[9px] font-black uppercase tracking-[0.16em] text-theme-lavender">
+                          Tax &amp; Fiscal
+                        </p>
+                        <TaxControls
+                          isClassic={isClassic}
+                          tax={activeGroup.taxAssumptions || DEFAULT_TAX_ASSUMPTIONS}
+                          onChange={(tax) => onUpdateGroup({ ...activeGroup, taxAssumptions: tax })}
+                        />
+                      </div>
+
+                      <div className="rounded-inner utility-inset p-3">
+                        <p className="mb-2 text-[9px] font-black uppercase tracking-[0.16em] text-theme-lavender">
+                          Leverage
+                        </p>
+                        <DebtControls
+                          isClassic={isClassic}
+                          debt={activeGroup.debtAssumptions || DEFAULT_DEBT_ASSUMPTIONS}
+                          onChange={(debt) => onUpdateGroup({ ...activeGroup, debtAssumptions: debt })}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {advancedSection === 'RESERVES' && (
+                    <div className="rounded-inner utility-inset p-3">
+                      <p className="mb-2 text-[9px] font-black uppercase tracking-[0.16em] text-theme-lavender">
+                        Reserve Category
+                      </p>
+                      <select
+                        value={activeGroup.reserveCategory || 'PDP'}
+                        onChange={(e) => onUpdateGroup({ ...activeGroup, reserveCategory: e.target.value as ReserveCategory })}
+                        className={
+                          isClassic
+                            ? 'w-full rounded-md px-2 py-1 text-[10px] font-black sc-inputNavy'
+                            : 'w-full bg-theme-bg border border-theme-border rounded-lg px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition'
+                        }
+                      >
+                        <option value="PDP">PDP (Proved Developed)</option>
+                        <option value="PUD">PUD (Proved Undeveloped)</option>
+                        <option value="PROBABLE">Probable</option>
+                        <option value="POSSIBLE">Possible</option>
+                      </select>
+                    </div>
+                  )}
+
+                  {advancedSection === 'GROUP_WELLS' && (
+                    <div className="rounded-inner utility-inset p-3">
+                      <GroupWellsTable
+                        isClassic={isClassic}
+                        group={activeGroup}
+                        wells={wells}
+                        title="Wells in active group"
+                        defaultSort={{ key: 'name', dir: 'asc' }}
+                        dense
+                      />
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </aside>
         )}
@@ -621,16 +461,11 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                   isClassic={isClassic}
                   metrics={aggregateMetrics}
                   aggregateFlow={aggregateFlow}
-                  breakevenOilPrice={breakevenOilPrice}
                   snapshotHistory={snapshotHistory}
                   showAfterTax={showAfterTax}
                   showLevered={showLevered}
                 />
 
-                {/* Accent divider */}
-                <AccentDivider />
-
-                {/* 2-column: Group Comparison + Quick Drivers */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <GroupComparisonStrip
                     isClassic={isClassic}
@@ -639,29 +474,14 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                     onActivateGroup={onActivateGroup}
                     scenarioRankings={operationsProps.scenarioRankings}
                   />
-                  <QuickDrivers
-                    isClassic={isClassic}
-                    topDrivers={operationsProps.topDrivers}
-                    breakevenOilPrice={operationsProps.breakevenOilPrice}
-                  />
+                  {operationsProps.topDrivers.length > 0 && (
+                    <QuickDrivers
+                      isClassic={isClassic}
+                      topDrivers={operationsProps.topDrivers}
+                      breakevenOilPrice={operationsProps.breakevenOilPrice}
+                    />
+                  )}
                 </div>
-
-                {/* Accent divider before Execution */}
-                {!focusMode && <AccentDivider />}
-
-                {!focusMode && (
-                  <div className="pt-1">
-                    <p className={isClassic
-                      ? 'text-[9px] font-black uppercase tracking-[0.2em] text-white/50 mb-3'
-                      : 'text-[9px] font-black uppercase tracking-[0.2em] text-theme-muted/60 mb-3'
-                    }>
-                      Execution
-                    </p>
-                  </div>
-                )}
-
-                {/* Compact run bar */}
-                {!focusMode && <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />}
               </div>
             )}
 
@@ -695,12 +515,12 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                 groups={groups}
               />
             )}
-
-            {!focusMode && resultsTab !== 'SUMMARY' && (
-              <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />
-            )}
           </ViewTransition>
           </RecalcStatusProvider>
+
+          {!focusMode && (
+            <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />
+          )}
         </section>
       </div>
 

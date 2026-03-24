@@ -103,7 +103,7 @@ const CompactRunBar: React.FC<{
       className={
         isClassic
           ? 'sc-panel theme-transition'
-          : 'rounded-panel border shadow-card theme-transition bg-theme-surface1 border-theme-border overflow-hidden'
+          : 'utility-surface theme-transition overflow-hidden'
       }
     >
       {canUseSecondaryActions ? (

@@ -1749,6 +1749,22 @@ body {
   box-shadow: var(--shadow-card);
 }
 
+.utility-surface {
+  border-radius: var(--radius-panel);
+  border: 1px solid rgb(var(--border) / 0.58);
+  background: rgb(var(--surface-1) / 0.38);
+  box-shadow: none;
+}
+
+.utility-surface:hover {
+  border-color: rgb(var(--border) / 0.78);
+}
+
+.utility-inset {
+  border: 1px solid rgb(var(--border) / 0.45);
+  background: rgb(var(--bg-deep) / 0.34);
+}
+
 .sc-panel::before {
   content: '';
   position: absolute;

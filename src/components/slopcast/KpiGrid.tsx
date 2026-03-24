@@ -15,7 +15,6 @@ interface KpiGridProps {
   isClassic: boolean;
   metrics: DealMetrics;
   aggregateFlow?: MonthlyCashFlow[];
-  breakevenOilPrice?: number | null;
   snapshotHistory?: SnapshotHistoryEntry[];
   showAfterTax?: boolean;
   showLevered?: boolean;
@@ -170,12 +169,11 @@ const tileBgMap: Record<'glass' | 'solid' | 'outline', string> = {
   outline: 'bg-theme-surface1/20',
 };
 
-const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, breakevenOilPrice, snapshotHistory, showAfterTax, showLevered }) => {
+const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, snapshotHistory, showAfterTax, showLevered }) => {
   const { isRecalculating } = useRecalcStatus();
   const { theme } = useTheme();
   const panelStyle = theme.features.panelStyle;
   const shimmerClass = isRecalculating ? 'animate-shimmer' : '';
-  const breakevenLabel = breakevenOilPrice != null ? `Breakeven $${breakevenOilPrice}/bbl` : null;
 
   if (isClassic) {
     return (
@@ -195,11 +193,6 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
             </span>
             <span className="sc-kpiValue text-2xl font-black ml-3">MM</span>
           </div>
-          {breakevenLabel && (
-            <div className="px-6 pb-4 relative z-10">
-              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/60">{breakevenLabel}</span>
-            </div>
-          )}
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="sc-kpi sc-kpi--tile theme-transition">
@@ -271,9 +264,6 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
           </span>
           <span className="text-2xl font-black ml-3 text-theme-lavender italic">MM</span>
         </div>
-        {breakevenLabel && (
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-theme-muted/70 mt-2 relative z-10">{breakevenLabel}</p>
-        )}
         {/* After-tax / Levered NPV indicators */}
         {(showAfterTax || showLevered) && (
           <div className="flex items-center gap-4 mt-2 relative z-10">

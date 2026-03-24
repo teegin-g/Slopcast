@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useState } from 'react';
 import { MOCK_WELLS } from '../constants';
 import ScenarioDashboard from '../components/ScenarioDashboard';
 import DesignEconomicsView from '../components/slopcast/DesignEconomicsView';
@@ -15,6 +15,8 @@ import { useSlopcastWorkspace } from '../hooks/useSlopcastWorkspace';
 
 const SlopcastPage: React.FC = () => {
   const w = useSlopcastWorkspace();
+  const [showForecastGrid, setShowForecastGrid] = useState(false);
+  const [showEngineComparison, setShowEngineComparison] = useState(false);
 
   // Landing page -- unchanged, no sidebar
   if (w.pageMode === 'landing') {
@@ -128,25 +130,71 @@ const SlopcastPage: React.FC = () => {
               />
             )}
 
-            {/* Forecast Grid */}
-            {w.designWorkspace === 'ECONOMICS' && w.aggregateFlow.length > 0 && (
-              <div className="mt-4">
-                <ForecastGrid
-                  isClassic={w.isClassic}
-                  flow={w.aggregateFlow}
-                  readOnly
-                />
-              </div>
-            )}
-
-            {/* Engine Comparison Panel */}
             {w.designWorkspace === 'ECONOMICS' && (
-              <div className="mt-4">
-                <EngineComparisonPanel
-                  isClassic={w.isClassic}
-                  tsResult={w.aggregateFlow.length > 0 ? { flow: w.aggregateFlow, metrics: w.aggregateMetrics } : null}
-                  pyResult={null}
-                />
+              <div className="mt-4 space-y-3">
+                {w.aggregateFlow.length > 0 && (
+                  <div className={w.isClassic ? 'sc-panel theme-transition overflow-hidden' : 'utility-surface theme-transition overflow-hidden'}>
+                    <button
+                      type="button"
+                      onClick={() => setShowForecastGrid(prev => !prev)}
+                      className={`w-full flex items-center justify-between px-4 py-3 transition-colors ${
+                        w.isClassic ? 'hover:bg-black/10' : 'hover:bg-theme-surface2/20'
+                      }`}
+                    >
+                      <div className="text-left">
+                        <p className={w.isClassic ? 'text-[10px] font-black uppercase tracking-[0.22em] text-white' : 'text-[10px] font-black uppercase tracking-[0.22em] text-theme-cyan'}>
+                          Forecast Grid
+                        </p>
+                        <p className={w.isClassic ? 'mt-1 text-[10px] text-white/55' : 'mt-1 text-[10px] text-theme-muted'}>
+                          Monthly forecast table for detailed review.
+                        </p>
+                      </div>
+                      <span className={w.isClassic ? 'text-white/60 text-[10px] font-black uppercase tracking-[0.16em]' : 'text-theme-muted text-[10px] font-black uppercase tracking-[0.16em]'}>
+                        {showForecastGrid ? 'Hide' : 'Show'}
+                      </span>
+                    </button>
+                    {showForecastGrid && (
+                      <div className="px-4 pb-4">
+                        <ForecastGrid
+                          isClassic={w.isClassic}
+                          flow={w.aggregateFlow}
+                          readOnly
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className={w.isClassic ? 'sc-panel theme-transition overflow-hidden' : 'utility-surface theme-transition overflow-hidden'}>
+                  <button
+                    type="button"
+                    onClick={() => setShowEngineComparison(prev => !prev)}
+                    className={`w-full flex items-center justify-between px-4 py-3 transition-colors ${
+                      w.isClassic ? 'hover:bg-black/10' : 'hover:bg-theme-surface2/20'
+                    }`}
+                  >
+                    <div className="text-left">
+                      <p className={w.isClassic ? 'text-[10px] font-black uppercase tracking-[0.22em] text-white' : 'text-[10px] font-black uppercase tracking-[0.22em] text-theme-cyan'}>
+                        Engine Comparison
+                      </p>
+                      <p className={w.isClassic ? 'mt-1 text-[10px] text-white/55' : 'mt-1 text-[10px] text-theme-muted'}>
+                        Parity and diagnostics between the calculation engines.
+                      </p>
+                    </div>
+                    <span className={w.isClassic ? 'text-white/60 text-[10px] font-black uppercase tracking-[0.16em]' : 'text-theme-muted text-[10px] font-black uppercase tracking-[0.16em]'}>
+                      {showEngineComparison ? 'Hide' : 'Show'}
+                    </span>
+                  </button>
+                  {showEngineComparison && (
+                    <div className="px-4 pb-4">
+                      <EngineComparisonPanel
+                        isClassic={w.isClassic}
+                        tsResult={w.aggregateFlow.length > 0 ? { flow: w.aggregateFlow, metrics: w.aggregateMetrics } : null}
+                        pyResult={null}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </>

@@ -85,37 +85,13 @@ const Controls: React.FC<ControlsProps> = ({
 
   return (
     <div className="space-y-4 pb-12">
-      {/* Group header */}
-      <div
-        className={
-          isClassic
-            ? 'sc-panel theme-transition mb-3'
-            : 'rounded-panel border p-3 shadow-card theme-transition bg-theme-surface1 border-theme-border/60'
-        }
-      >
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <span
-              className="w-2.5 h-2.5 rounded-full border border-white/20 shrink-0"
-              style={{ backgroundColor: group.color, boxShadow: theme.features.glowEffects ? `0 0 8px ${group.color}66` : 'none' }}
-            />
-            <h2 className={`text-[11px] font-black uppercase tracking-[0.16em] truncate ${isClassic ? 'text-white' : 'text-theme-text'} ${theme.features.brandFont ? 'brand-font' : ''}`}>
-              {group.name}
-            </h2>
-          </div>
-          <p className={`text-[10px] font-black uppercase tracking-[0.12em] whitespace-nowrap ${isClassic ? 'text-theme-warning' : 'text-theme-cyan'}`}>
-            {group.wellIds.size} wells · ${group.metrics ? (group.metrics.totalCapex / 1e6).toFixed(1) : 0}M capex
-          </p>
-        </div>
-      </div>
-
       {/* Template selector */}
       <div className="relative">
         <div
           className={
             isClassic
               ? 'sc-panel theme-transition mb-3'
-              : 'rounded-panel border p-3 mb-3 shadow-card theme-transition bg-theme-surface1/60 border-theme-border/60'
+            : 'utility-surface p-3 mb-3 theme-transition'
           }
         >
           <div className="flex items-center justify-between gap-2">
@@ -196,7 +172,7 @@ const Controls: React.FC<ControlsProps> = ({
         className={
           isClassic
             ? 'sc-panel theme-transition mb-4'
-            : 'rounded-panel border p-4 mb-4 shadow-card theme-transition bg-theme-surface1/80 border-theme-border'
+            : 'utility-surface p-4 mb-4 theme-transition'
         }
       >
         <div className="flex items-center justify-between mb-3">
@@ -232,7 +208,7 @@ const Controls: React.FC<ControlsProps> = ({
         className={
           isClassic
             ? 'sc-panel theme-transition mb-3 p-4'
-            : 'rounded-panel border p-4 shadow-card theme-transition mb-3 bg-theme-surface1/40 border-theme-border'
+            : 'utility-surface p-4 mb-3 theme-transition'
         }
       >
         <h3 className={sectionHeaderClass}>Decline Profile</h3>
@@ -262,7 +238,7 @@ const Controls: React.FC<ControlsProps> = ({
         className={
           isClassic
             ? 'sc-panel theme-transition mb-3 p-4'
-            : 'rounded-panel border p-4 shadow-card theme-transition mb-3 bg-theme-surface1/40 border-theme-border'
+            : 'utility-surface p-4 mb-3 theme-transition'
         }
       >
         <h3 className={sectionHeaderClass}>CAPEX Logic</h3>
@@ -274,7 +250,7 @@ const Controls: React.FC<ControlsProps> = ({
         className={
           isClassic
             ? 'sc-panel theme-transition mb-3 p-4'
-            : 'rounded-panel border p-4 shadow-card theme-transition mb-3 bg-theme-surface1/40 border-theme-border'
+            : 'utility-surface p-4 mb-3 theme-transition'
         }
       >
         <h3 className={sectionHeaderClass}>LOE / Operating Expenses</h3>
@@ -286,7 +262,7 @@ const Controls: React.FC<ControlsProps> = ({
         className={
           isClassic
             ? 'sc-panel theme-transition mb-3 p-4'
-            : 'rounded-panel border p-4 shadow-card theme-transition mb-3 bg-theme-surface1/40 border-theme-border'
+            : 'utility-surface p-4 mb-3 theme-transition'
         }
       >
         <h3 className={sectionHeaderClass}>Ownership / Revenue Interest</h3>
