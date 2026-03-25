@@ -69,11 +69,11 @@ const readStoredDesignWorkspace = (): DesignWorkspace => {
 const readStoredEconomicsResultsTab = (): EconomicsResultsTab => {
   try {
     const raw = localStorage.getItem(ECONOMICS_RESULTS_TAB_STORAGE_KEY);
-    if (raw === 'SUMMARY' || raw === 'CHARTS' || raw === 'DRIVERS' || raw === 'RESERVES') return raw;
+    if (raw === 'OVERVIEW' || raw === 'CASH_FLOW' || raw === 'RESERVES') return raw; if (raw === 'SUMMARY' || raw === 'CHARTS' || raw === 'DRIVERS') return 'OVERVIEW';
   } catch {
     // no-op
   }
-  return 'SUMMARY';
+  return 'OVERVIEW';
 };
 
 const readStoredEconomicsFocusMode = (): boolean => {

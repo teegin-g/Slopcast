@@ -1,33 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import Controls from '../Controls';
 import Charts from '../Charts';
-import TaxControls from '../TaxControls';
-import DebtControls from '../DebtControls';
 import { ThemeId } from '../../theme/themes';
-import { MonthlyCashFlow, Well, WellGroup, TaxAssumptions, DebtAssumptions, ReserveCategory, DEFAULT_TAX_ASSUMPTIONS, DEFAULT_DEBT_ASSUMPTIONS } from '../../types';
-import { DEFAULT_COMMODITY_PRICING } from '../../constants';
+import { MonthlyCashFlow, Well, WellGroup } from '../../types';
 import KpiGrid from './KpiGrid';
 import OperationsConsole, { OperationsConsoleProps } from './OperationsConsole';
-import EconomicsDriversPanel, { DriverFamilyId } from './EconomicsDriversPanel';
+import EconomicsDriversPanel from './EconomicsDriversPanel';
 import { WorkflowStep } from './WorkflowStepper';
 import EconomicsGroupBar from './EconomicsGroupBar';
 import EconomicsResultsTabs, { EconomicsResultsTab } from './EconomicsResultsTabs';
 import GroupWellsTable from './GroupWellsTable';
 import GroupComparisonStrip from './GroupComparisonStrip';
-import MiniMapPreview from './MiniMapPreview';
-import ReservesPanel from './ReservesPanel';
-import CashFlowTable from './CashFlowTable';
-import { ViewTransition } from '../layout/ViewTransition';
-import { useDebouncedRecalc } from './hooks/useDebouncedRecalc';
-import { RecalcStatusProvider } from './hooks/useRecalcStatus';
-import { KpiGridSkeleton, GroupComparisonSkeleton, FadeIn } from './Skeleton';
-import { ReadinessChecklist } from './ReadinessChecklist';
-import { useToast } from './Toast';
 
 export type EconomicsMobilePanel = 'SETUP' | 'RESULTS';
 
 type ControlsSection = 'TYPE_CURVE' | 'CAPEX' | 'OPEX' | 'OWNERSHIP';
-type AnalysisOpenSection = 'PRICING' | 'SCHEDULE' | 'SCALARS';
 
 interface DesignEconomicsViewProps {
   isClassic: boolean;
@@ -37,10 +24,6 @@ interface DesignEconomicsViewProps {
   onSetMobilePanel: (panel: EconomicsMobilePanel) => void;
   resultsTab: EconomicsResultsTab;
   onSetResultsTab: (tab: EconomicsResultsTab) => void;
-  focusMode: boolean;
-  onToggleFocusMode: () => void;
-  onRequestOpenControlsSection: (section: ControlsSection) => void;
-  onRequestOpenAnalysisSection: (section: AnalysisOpenSection) => void;
   wells: Well[];
   groups: WellGroup[];
   activeGroupId: string;
@@ -60,18 +43,10 @@ interface DesignEconomicsViewProps {
     eur: number;
     payoutMonths: number;
     wellCount: number;
-    afterTaxNpv10?: number;
-    leveredNpv10?: number;
-    dscr?: number;
   };
   aggregateFlow: MonthlyCashFlow[];
   operationsProps: OperationsConsoleProps;
   breakevenOilPrice?: number | null;
-  snapshotHistory?: Array<{ npv: number; capex: number; eur: number; payout: number; timestamp: number }>;
-  showAfterTax?: boolean;
-  showLevered?: boolean;
-  onToggleAfterTax?: () => void;
-  onToggleLevered?: () => void;
 }
 
 /** SVG progress ring for Setup Insights */
@@ -102,78 +77,7 @@ const SetupProgressRing: React.FC<{ completed: number; total: number; isClassic:
   );
 };
 
-/** Gradient accent divider */
-const AccentDivider: React.FC = () => (
-  <div className="h-[2px] rounded-full bg-gradient-to-r from-theme-cyan via-theme-magenta to-theme-lavender opacity-40" />
-);
 
-/** Quick Drivers mini-panel shown in the 2-column layout */
-const QuickDrivers: React.FC<{
-  isClassic: boolean;
-  topDrivers: Array<{ id: string; label: string; dominantDelta: number }>;
-  breakevenOilPrice: number | null;
-}> = ({ isClassic, topDrivers, breakevenOilPrice }) => {
-  const top2 = topDrivers.slice(0, 2);
-  const maxMag = Math.max(...top2.map(d => Math.abs(d.dominantDelta)), 1);
-
-  return (
-    <div
-      className={
-        isClassic
-          ? 'sc-panel theme-transition h-full'
-          : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border h-full'
-      }
-    >
-      <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
-        <h2 className={isClassic ? 'text-xs font-black uppercase tracking-[0.24em] text-white' : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan'}>
-          Quick Drivers
-        </h2>
-      </div>
-
-      <div className="p-3 space-y-2">
-        {top2.map(driver => {
-          const isPositive = driver.dominantDelta >= 0;
-          const barPct = (Math.abs(driver.dominantDelta) / maxMag) * 100;
-          return (
-            <div key={driver.id}>
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <span className={`text-xs font-black uppercase tracking-[0.1em] ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
-                  {driver.label}
-                </span>
-                <span className={`text-xs font-black tabular-nums ${isPositive ? (isClassic ? 'text-theme-warning' : 'text-theme-cyan') : 'text-theme-magenta'}`}>
-                  {isPositive ? '+' : ''}${(driver.dominantDelta / 1e6).toFixed(1)}M
-                </span>
-              </div>
-              <div className="h-1 rounded-full bg-theme-bg/60 overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-300"
-                  style={{
-                    width: `${Math.max(2, barPct)}%`,
-                    backgroundColor: isPositive ? 'rgb(var(--cyan))' : 'rgb(var(--magenta))',
-                    opacity: 0.7,
-                  }}
-                />
-              </div>
-            </div>
-          );
-        })}
-
-        {breakevenOilPrice != null && (
-          <div className={`mt-2 pt-2 border-t ${isClassic ? 'border-white/10' : 'border-theme-border/30'}`}>
-            <div className="flex items-center justify-between">
-              <span className={`text-xs font-black uppercase tracking-[0.1em] ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
-                Breakeven Oil
-              </span>
-              <span className={`text-xs font-black tabular-nums ${isClassic ? 'text-theme-warning' : 'text-theme-lavender'}`}>
-                ${breakevenOilPrice}/bbl
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
 const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   isClassic,
@@ -183,10 +87,6 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   onSetMobilePanel,
   resultsTab,
   onSetResultsTab,
-  focusMode,
-  onToggleFocusMode,
-  onRequestOpenControlsSection,
-  onRequestOpenAnalysisSection,
   wells,
   groups,
   activeGroupId,
@@ -204,30 +104,10 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   aggregateFlow,
   operationsProps,
   breakevenOilPrice,
-  snapshotHistory,
-  showAfterTax,
-  showLevered,
-  onToggleAfterTax,
-  onToggleLevered,
 }) => {
-  const { addToast } = useToast();
-  const { debouncedUpdate, isRecalculating } = useDebouncedRecalc(onUpdateGroup, 400);
-  const prevRecalculating = React.useRef(isRecalculating);
   const hasReadinessBlocker = !hasGroup || !hasGroupWells || !hasCapexItems;
   const [showSetupInsights, setShowSetupInsights] = useState(hasReadinessBlocker);
   const [didAutoOpenInsights, setDidAutoOpenInsights] = useState(hasReadinessBlocker);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [taxOpen, setTaxOpen] = useState(false);
-  const [leverageOpen, setLeverageOpen] = useState(false);
-  const [reserveOpen, setReserveOpen] = useState(false);
-
-  // Toast on recalc complete
-  useEffect(() => {
-    if (prevRecalculating.current && !isRecalculating && hasGroup && hasGroupWells && hasCapexItems) {
-      addToast({ type: 'success', message: 'Economics recalculated' });
-    }
-    prevRecalculating.current = isRecalculating;
-  }, [isRecalculating, hasGroup, hasGroupWells, hasCapexItems, addToast]);
 
   useEffect(() => {
     if (didAutoOpenInsights) return;
@@ -235,19 +115,6 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
     setShowSetupInsights(true);
     setDidAutoOpenInsights(true);
   }, [didAutoOpenInsights, hasReadinessBlocker]);
-
-  useEffect(() => {
-    if (!focusMode) return;
-    if (mobilePanel === 'RESULTS') return;
-    onSetMobilePanel('RESULTS');
-  }, [focusMode, mobilePanel, onSetMobilePanel]);
-
-  // Auto-collapse Setup Insights once all checks pass
-  useEffect(() => {
-    if (!hasReadinessBlocker && showSetupInsights) {
-      setShowSetupInsights(false);
-    }
-  }, [hasReadinessBlocker]); // eslint-disable-line react-hooks/exhaustive-deps
   const checklist = [
     { id: 'group', label: 'Choose active group', done: hasGroup },
     { id: 'wells', label: 'Assign wells to group', done: hasGroupWells },
@@ -280,29 +147,6 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
     </div>
   );
 
-  const handleJumpToDriver = (driverId: DriverFamilyId) => {
-    if (driverId === 'capex') {
-      onRequestOpenControlsSection('CAPEX');
-      onSetMobilePanel('SETUP');
-      return;
-    }
-
-    if (driverId === 'eur') {
-      onRequestOpenControlsSection('TYPE_CURVE');
-      onSetMobilePanel('SETUP');
-      return;
-    }
-
-    if (driverId === 'oil') {
-      onRequestOpenAnalysisSection('PRICING');
-      return;
-    }
-
-    if (driverId === 'rig') {
-      onRequestOpenAnalysisSection('SCHEDULE');
-    }
-  };
-
   return (
     <>
       <EconomicsGroupBar
@@ -311,405 +155,153 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
         activeGroupId={activeGroupId}
         onActivateGroup={onActivateGroup}
         onCloneActiveGroup={() => onCloneGroup(activeGroupId)}
-        scenarioRankings={operationsProps.scenarioRankings}
-        focusMode={focusMode}
-        onToggleFocusMode={onToggleFocusMode}
       />
 
-      {!focusMode && (
-        <div
-          className={`lg:hidden mb-4 border p-2 theme-transition ${
-            isClassic ? 'sc-panel' : 'rounded-panel bg-theme-surface1/60 border-theme-border shadow-card backdrop-blur-sm'
-          }`}
-        >
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => onSetMobilePanel('SETUP')}
-              className={
-                isClassic
-                  ? `px-3 py-2 rounded-inner text-xs font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
-                      mobilePanel === 'SETUP' ? 'bg-theme-warning text-black border-black/20' : 'bg-black/15 text-white/90 border-black/25'
-                    }`
-                  : `px-3 py-2 rounded-inner text-xs font-black uppercase tracking-widest border transition-colors ${
-                      mobilePanel === 'SETUP'
-                        ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
-                        : 'bg-theme-bg text-theme-muted border-theme-border'
-                    }`
-              }
-            >
-              Setup
-            </button>
-            <button
-              onClick={() => onSetMobilePanel('RESULTS')}
-              className={
-                isClassic
-                  ? `px-3 py-2 rounded-inner text-xs font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
-                      mobilePanel === 'RESULTS' ? 'bg-theme-warning text-black border-black/20' : 'bg-black/15 text-white/90 border-black/25'
-                    }`
-                  : `px-3 py-2 rounded-inner text-xs font-black uppercase tracking-widest border transition-colors ${
-                      mobilePanel === 'RESULTS'
-                        ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
-                        : 'bg-theme-bg text-theme-muted border-theme-border'
-                    }`
-              }
-            >
-              Results
-            </button>
-          </div>
+      <div
+        className={`lg:hidden mb-4 border p-2 theme-transition ${
+          isClassic ? 'sc-panel' : 'rounded-panel bg-theme-surface1/60 border-theme-border shadow-card backdrop-blur-sm'
+        }`}
+      >
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => onSetMobilePanel('SETUP')}
+            className={
+              isClassic
+                ? `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
+                    mobilePanel === 'SETUP' ? 'bg-theme-warning text-black border-black/20' : 'bg-black/15 text-white/90 border-black/25'
+                  }`
+                : `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border transition-colors ${
+                    mobilePanel === 'SETUP'
+                      ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
+                      : 'bg-theme-bg text-theme-muted border-theme-border'
+                  }`
+            }
+          >
+            Setup
+          </button>
+          <button
+            onClick={() => onSetMobilePanel('RESULTS')}
+            className={
+              isClassic
+                ? `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
+                    mobilePanel === 'RESULTS' ? 'bg-theme-warning text-black border-black/20' : 'bg-black/15 text-white/90 border-black/25'
+                  }`
+                : `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border transition-colors ${
+                    mobilePanel === 'RESULTS'
+                      ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
+                      : 'bg-theme-bg text-theme-muted border-theme-border'
+                  }`
+            }
+          >
+            Results
+          </button>
         </div>
-      )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:min-h-[calc(100vh-13.5rem)]">
-        {!focusMode && (
-          <aside
-            className={`lg:col-span-5 xl:col-span-4 space-y-4 lg:max-h-[calc(100vh-13.5rem)] lg:overflow-y-auto lg:pr-1 ${
-              mobilePanel !== 'SETUP' ? 'hidden lg:block' : ''
-            }`}
-          >
-            <MiniMapPreview
-              isClassic={isClassic}
-              wells={wells}
-              activeGroup={activeGroup}
-            />
-
-            <Controls
-              group={activeGroup}
-              onUpdateGroup={debouncedUpdate}
-              onMarkDirty={onMarkDirty}
-            />
-
-            {/* Tax & Fiscal Controls - Collapsible */}
-            <div
-              className={
-                isClassic
-                  ? 'sc-panel theme-transition'
-                  : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
-              }
-            >
-              <button
-                type="button"
-                onClick={() => setTaxOpen(prev => !prev)}
-                className={`w-full px-4 py-2.5 flex items-center justify-between ${
-                  isClassic
-                    ? 'sc-panelTitlebar sc-titlebar--neutral hover:bg-black/10'
-                    : 'border-b border-theme-border/60 hover:bg-theme-surface2/30'
-                } transition-colors`}
-              >
-                <h2 className={isClassic ? 'text-xs font-black uppercase tracking-[0.24em] text-white' : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan'}>
-                  Tax &amp; Fiscal
-                </h2>
-                <span className={`transform transition-transform duration-300 text-xs ${taxOpen ? 'rotate-180' : ''} ${
-                  isClassic ? 'text-white/50' : 'text-theme-muted'
-                }`}>
-                  ▼
-                </span>
-              </button>
-
-              <div
-                className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                  taxOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
-                }`}
-              >
-                <div className="p-3">
-                  <TaxControls
-                    isClassic={isClassic}
-                    tax={activeGroup.taxAssumptions || DEFAULT_TAX_ASSUMPTIONS}
-                    onChange={(tax) => onUpdateGroup({ ...activeGroup, taxAssumptions: tax })}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Leverage / Debt Controls - Collapsible */}
-            <div
-              className={
-                isClassic
-                  ? 'sc-panel theme-transition'
-                  : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
-              }
-            >
-              <button
-                type="button"
-                onClick={() => setLeverageOpen(prev => !prev)}
-                className={`w-full px-4 py-2.5 flex items-center justify-between ${
-                  isClassic
-                    ? 'sc-panelTitlebar sc-titlebar--neutral hover:bg-black/10'
-                    : 'border-b border-theme-border/60 hover:bg-theme-surface2/30'
-                } transition-colors`}
-              >
-                <h2 className={isClassic ? 'text-xs font-black uppercase tracking-[0.24em] text-white' : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan'}>
-                  Leverage
-                </h2>
-                <span className={`transform transition-transform duration-300 text-xs ${leverageOpen ? 'rotate-180' : ''} ${
-                  isClassic ? 'text-white/50' : 'text-theme-muted'
-                }`}>
-                  ▼
-                </span>
-              </button>
-
-              <div
-                className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                  leverageOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
-                }`}
-              >
-                <div className="p-3">
-                  <DebtControls
-                    isClassic={isClassic}
-                    debt={activeGroup.debtAssumptions || DEFAULT_DEBT_ASSUMPTIONS}
-                    onChange={(debt) => onUpdateGroup({ ...activeGroup, debtAssumptions: debt })}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Reserve Category Selector - Collapsible */}
-            <div
-              className={
-                isClassic
-                  ? 'sc-panel theme-transition'
-                  : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
-              }
-            >
-              <button
-                type="button"
-                onClick={() => setReserveOpen(prev => !prev)}
-                className={`w-full px-4 py-2.5 flex items-center justify-between ${
-                  isClassic
-                    ? 'sc-panelTitlebar sc-titlebar--neutral hover:bg-black/10'
-                    : 'border-b border-theme-border/60 hover:bg-theme-surface2/30'
-                } transition-colors`}
-              >
-                <h2 className={isClassic ? 'text-xs font-black uppercase tracking-[0.24em] text-white' : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan'}>
-                  Reserve Category
-                </h2>
-                <span className={`transform transition-transform duration-300 text-xs ${reserveOpen ? 'rotate-180' : ''} ${
-                  isClassic ? 'text-white/50' : 'text-theme-muted'
-                }`}>
-                  ▼
-                </span>
-              </button>
-
-              <div
-                className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                  reserveOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
-                }`}
-              >
-                <div className="p-3">
-                  <select
-                    value={activeGroup.reserveCategory || 'PDP'}
-                    onChange={(e) => onUpdateGroup({ ...activeGroup, reserveCategory: e.target.value as ReserveCategory })}
-                    className={
-                      isClassic
-                        ? 'w-full rounded-md px-2 py-1 text-xs font-black sc-inputNavy'
-                        : 'w-full bg-theme-bg border border-theme-border rounded-lg px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition'
-                    }
-                  >
-                    <option value="PDP">PDP (Proved Developed)</option>
-                    <option value="PUD">PUD (Proved Undeveloped)</option>
-                    <option value="PROBABLE">Probable</option>
-                    <option value="POSSIBLE">Possible</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Advanced Settings - Collapsible Section */}
-            <div
-              className={
-                isClassic
-                  ? 'sc-panel theme-transition'
-                  : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
-              }
-            >
-              <button
-                type="button"
-                onClick={() => setAdvancedOpen(prev => !prev)}
-                className={`w-full px-4 py-2.5 flex items-center justify-between ${
-                  isClassic
-                    ? 'sc-panelTitlebar sc-titlebar--neutral hover:bg-black/10'
-                    : 'border-b border-theme-border/60 hover:bg-theme-surface2/30'
-                } transition-colors`}
-              >
-                <h2 className={isClassic ? 'text-xs font-black uppercase tracking-[0.24em] text-white' : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan'}>
-                  Advanced Settings
-                </h2>
-                <span className={`transform transition-transform duration-300 text-xs ${advancedOpen ? 'rotate-180' : ''} ${
-                  isClassic ? 'text-white/50' : 'text-theme-muted'
-                }`}>
-                  ▼
-                </span>
-              </button>
-
-              <div
-                className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                  advancedOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
-                }`}
-              >
-                <div className="p-4">
-                  <GroupWellsTable
-                    isClassic={isClassic}
-                    group={activeGroup}
-                    wells={wells}
-                    title="Wells in active group"
-                    defaultSort={{ key: 'name', dir: 'asc' }}
-                    dense
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Setup Insights - compact vertical checklist with progress ring */}
-            <div
-              className={
-                isClassic
-                  ? 'sc-panel theme-transition'
-                  : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border'
-              }
-            >
-              <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <SetupProgressRing completed={completedCount} total={checklist.length} isClassic={isClassic} />
-                    <h2 className={isClassic ? 'text-xs font-black uppercase tracking-[0.24em] text-white' : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan'}>
-                      Setup Insights
-                    </h2>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowSetupInsights(prev => !prev)}
-                    className="text-xs font-black uppercase tracking-[0.16em] text-theme-cyan"
-                  >
-                    {showSetupInsights ? 'Hide' : 'Show'}
-                  </button>
-                </div>
-              </div>
-              {showSetupInsights && (
-                <div className="p-4 space-y-3">
-                  <p className="text-xs text-theme-muted">
-                    {activeWorkflowStep?.label || 'Setup'} step is <span className="uppercase font-black text-theme-cyan">{activeWorkflowStep?.status.toLowerCase()}</span>.
-                  </p>
-
-                  {/* Readiness checklist with progress bar */}
-                  {hasReadinessBlocker && (
-                    <ReadinessChecklist
-                      items={checklist.map(c => ({ label: c.label, done: c.done }))}
-                    />
-                  )}
-
-                  {/* Compact vertical checklist instead of tile grid */}
-                  {!hasReadinessBlocker && (
-                    <div className="space-y-1">
-                      {checklist.map((item) => (
-                        <div key={item.id} className="flex items-center gap-2.5 py-1.5 px-2 rounded-inner hover:bg-theme-surface2/50 transition-colors">
-                          <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 text-[10px] font-black ${
-                            item.done
-                              ? 'bg-theme-cyan/20 border-theme-cyan text-theme-cyan'
-                              : 'bg-transparent border-theme-border text-transparent'
-                          }`}>
-                            {item.done ? '✓' : ''}
-                          </span>
-                          <span className={`text-xs ${item.done ? 'text-theme-text' : 'text-theme-muted'}`}>
-                            {item.label}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="rounded-inner border border-theme-border bg-theme-bg px-3 py-2">
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-theme-lavender">Current blocker</p>
-                    <p className="text-xs text-theme-muted mt-1">{readinessBlocker}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </aside>
-        )}
-
-        <section
-          className={`space-y-4 lg:max-h-[calc(100vh-13.5rem)] lg:overflow-y-auto lg:pr-1 ${
-            focusMode ? 'lg:col-span-12 xl:col-span-12' : 'lg:col-span-7 xl:col-span-8'
-          } ${
-            !focusMode && mobilePanel !== 'RESULTS' ? 'hidden lg:block' : ''
+        <aside
+          className={`lg:col-span-5 xl:col-span-4 space-y-4 lg:max-h-[calc(100vh-13.5rem)] lg:overflow-y-auto lg:pr-1 ${
+            mobilePanel !== 'SETUP' ? 'hidden lg:block' : ''
           }`}
         >
-          <EconomicsResultsTabs
-            isClassic={isClassic}
-            tab={resultsTab}
-            onChange={onSetResultsTab}
-            hasFlowData={aggregateFlow.length > 0}
+          <Controls
+            group={activeGroup}
+            onUpdateGroup={onUpdateGroup}
+            onMarkDirty={onMarkDirty}
+            openSectionKey={controlsOpenSection}
+            onOpenSectionHandled={onControlsOpenHandled}
           />
 
-          <RecalcStatusProvider isRecalculating={isRecalculating}>
-          <ViewTransition transitionKey={resultsTab}>
-            {resultsTab === 'SUMMARY' && (
-              <div className="space-y-4">
-                {/* Hero NPV + stat strip */}
-                {isRecalculating ? (
-                  <KpiGridSkeleton />
-                ) : (
-                  <FadeIn>
-                    <KpiGrid
-                      isClassic={isClassic}
-                      metrics={aggregateMetrics}
-                      aggregateFlow={aggregateFlow}
-                      breakevenOilPrice={breakevenOilPrice}
-                      snapshotHistory={snapshotHistory}
-                      showAfterTax={showAfterTax}
-                      showLevered={showLevered}
-                    />
-                  </FadeIn>
-                )}
+          <GroupWellsTable
+            isClassic={isClassic}
+            group={activeGroup}
+            wells={wells}
+            title="Wells in active group"
+            defaultSort={{ key: 'name', dir: 'asc' }}
+            dense
+          />
 
-                {/* Accent divider */}
-                <AccentDivider />
+          {/* Setup Insights - compact vertical checklist with progress ring */}
+          <div
+            className={
+              isClassic
+                ? 'sc-panel theme-transition'
+                : 'rounded-panel border theme-transition bg-theme-surface1/30 border-theme-border'
+            }
+          >
+            <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <SetupProgressRing completed={completedCount} total={checklist.length} isClassic={isClassic} />
+                  <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
+                    Setup Insights
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSetupInsights(prev => !prev)}
+                  className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-cyan"
+                >
+                  {showSetupInsights ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </div>
+            {showSetupInsights && (
+              <div className="p-4 space-y-3">
+                <p className="text-[10px] text-theme-muted">
+                  {activeWorkflowStep?.label || 'Setup'} step is <span className="uppercase font-black text-theme-cyan">{activeWorkflowStep?.status.toLowerCase()}</span>.
+                </p>
 
-                {/* 2-column: Group Comparison + Quick Drivers */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {isRecalculating && groups.length < 2 ? (
-                    <GroupComparisonSkeleton />
-                  ) : (
-                    <FadeIn delay={0.1}>
-                      <GroupComparisonStrip
-                        isClassic={isClassic}
-                        groups={groups}
-                        activeGroupId={activeGroupId}
-                        onActivateGroup={onActivateGroup}
-                        scenarioRankings={operationsProps.scenarioRankings}
-                      />
-                    </FadeIn>
-                  )}
-                  <FadeIn delay={0.15}>
-                    <QuickDrivers
-                      isClassic={isClassic}
-                      topDrivers={operationsProps.topDrivers}
-                      breakevenOilPrice={operationsProps.breakevenOilPrice}
-                    />
-                  </FadeIn>
+                {/* Compact vertical checklist instead of tile grid */}
+                <div className="space-y-1">
+                  {checklist.map((item) => (
+                    <div key={item.id} className="flex items-center gap-2.5 py-1.5 px-2 rounded-inner hover:bg-theme-surface2/50 transition-colors">
+                      <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 text-[8px] font-black ${
+                        item.done
+                          ? 'bg-theme-cyan/20 border-theme-cyan text-theme-cyan'
+                          : 'bg-transparent border-theme-border text-transparent'
+                      }`}>
+                        {item.done ? '✓' : ''}
+                      </span>
+                      <span className={`text-[10px] ${item.done ? 'text-theme-text' : 'text-theme-muted'}`}>
+                        {item.label}
+                      </span>
+                    </div>
+                  ))}
                 </div>
 
-                {/* Accent divider before Execution */}
-                {!focusMode && <AccentDivider />}
-
-                {!focusMode && (
-                  <div className="pt-1">
-                    <p className={isClassic
-                      ? 'text-xs font-black uppercase tracking-[0.2em] text-white/50 mb-3'
-                      : 'text-xs font-black uppercase tracking-[0.2em] text-theme-muted/60 mb-3'
-                    }>
-                      Execution
-                    </p>
-                  </div>
-                )}
-
-                {/* Compact run bar */}
-                {!focusMode && <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />}
+                <div className="rounded-inner border border-theme-border bg-theme-bg px-3 py-2">
+                  <p className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-lavender">Current blocker</p>
+                  <p className="text-[10px] text-theme-muted mt-1">{readinessBlocker}</p>
+                </div>
               </div>
             )}
+          </div>
+        </aside>
 
-            {resultsTab === 'CHARTS' && chartPanel}
+        <section
+          className={`lg:col-span-7 xl:col-span-8 space-y-4 lg:max-h-[calc(100vh-13.5rem)] lg:overflow-y-auto lg:pr-1 ${
+            mobilePanel !== 'RESULTS' ? 'hidden lg:block' : ''
+          }`}
+        >
+          <EconomicsResultsTabs isClassic={isClassic} tab={resultsTab} onChange={onSetResultsTab} />
 
-            {resultsTab === 'DRIVERS' && (
+          {resultsTab === 'OVERVIEW' && (
+            <div className="space-y-4">
+              <KpiGrid
+                isClassic={isClassic}
+                metrics={aggregateMetrics}
+                aggregateFlow={aggregateFlow}
+                breakevenOilPrice={breakevenOilPrice}
+              />
+              <GroupComparisonStrip
+                isClassic={isClassic}
+                groups={groups}
+                activeGroupId={activeGroupId}
+                onActivateGroup={onActivateGroup}
+                scenarioRankings={operationsProps.scenarioRankings}
+              />
+              {chartPanel}
               <EconomicsDriversPanel
                 isClassic={isClassic}
                 topDrivers={operationsProps.topDrivers}
@@ -719,71 +311,34 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                 payoutMonths={operationsProps.payoutMonths}
                 fastestPayoutScenarioName={operationsProps.fastestPayoutScenarioName}
                 scenarioRankings={operationsProps.scenarioRankings}
-                onJumpToDriver={handleJumpToDriver}
-                baseNpv={aggregateMetrics.npv10}
               />
-            )}
+            </div>
+          )}
 
-            {resultsTab === 'CASH_FLOW' && (
-              <CashFlowTable
-                flow={aggregateFlow}
-                pricing={DEFAULT_COMMODITY_PRICING}
-              />
-            )}
+          {resultsTab === 'CASH_FLOW' && (
+            <div className="space-y-4">
+              {chartPanel}
+            </div>
+          )}
 
-            {resultsTab === 'RESERVES' && (
-              <ReservesPanel
-                isClassic={isClassic}
-                groups={groups}
-              />
-            )}
-
-            {!focusMode && resultsTab !== 'SUMMARY' && (
-              <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />
-            )}
-          </ViewTransition>
-          </RecalcStatusProvider>
+          {resultsTab === 'RESERVES' && (
+            <div className="space-y-4">
+              <div
+                className={
+                  isClassic
+                    ? 'sc-panel theme-transition p-4'
+                    : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border p-4'
+                }
+              >
+                <p className="text-sm text-theme-muted">Reserve estimates coming soon.</p>
+              </div>
+            </div>
+          )}
         </section>
       </div>
-
-      {/* Mobile Sticky Action Strip */}
-      {!focusMode && (
-        <div
-          className={`fixed bottom-0 left-0 right-0 z-40 backdrop-blur-md lg:hidden px-4 py-3 border-t ${
-            isClassic
-              ? 'bg-black/70 border-white/10'
-              : 'bg-theme-bg/80 border-theme-border/60'
-          }`}
-        >
-          {mobilePanel === 'SETUP' ? (
-            <button
-              type="button"
-              onClick={() => onSetMobilePanel('RESULTS')}
-              className={`w-full py-2.5 rounded-inner text-xs font-black uppercase tracking-[0.2em] transition-colors ${
-                isClassic
-                  ? 'bg-theme-warning text-black border-2 border-black/20 shadow-card'
-                  : 'bg-theme-cyan text-theme-bg border border-theme-cyan shadow-glow-cyan'
-              }`}
-            >
-              View Results &rarr;
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => onSetMobilePanel('SETUP')}
-              className={`w-full py-2.5 rounded-inner text-xs font-black uppercase tracking-[0.2em] transition-colors ${
-                isClassic
-                  ? 'bg-black/30 text-white/90 border-2 border-black/25 shadow-card'
-                  : 'bg-theme-surface1 text-theme-text border border-theme-border'
-              }`}
-            >
-              &larr; Edit Setup
-            </button>
-          )}
-        </div>
-      )}
+      <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />
     </>
   );
 };
 
-export default React.memo(DesignEconomicsView);
+export default DesignEconomicsView;

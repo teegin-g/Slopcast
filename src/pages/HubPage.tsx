@@ -228,11 +228,11 @@ const HubPage: React.FC = () => {
                       }`}
                     >
                       <div className="flex items-start justify-between gap-3 mb-3">
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <h4 className={`text-base ${isClassic ? 'text-white font-black uppercase' : 'text-theme-text font-black tracking-tight'}`}>
                             {module.name}
                           </h4>
-                          <p className={`mt-2 text-xs leading-relaxed ${isClassic ? 'text-white/80' : 'text-theme-muted'}`}>
+                          <p className={`mt-2 text-xs leading-relaxed line-clamp-2 ${isClassic ? 'text-white/80' : 'text-theme-muted'}`}>
                             {module.description}
                           </p>
                         </div>
@@ -273,7 +273,7 @@ const HubPage: React.FC = () => {
             </div>
           </section>
 
-          <aside className="xl:col-span-4 space-y-5 md:space-y-6">
+          <aside className="xl:col-span-4 space-y-4">
             <div className={`rounded-panel border p-5 md:p-6 theme-transition ${isClassic ? 'sc-panel' : 'bg-theme-surface1/70 border-theme-border shadow-card'}`}>
               <h3 className={`text-[11px] uppercase tracking-[0.3em] mb-4 ${isClassic ? 'text-theme-warning font-black' : 'text-theme-magenta font-black'}`}>
                 Account Dashboard
@@ -345,16 +345,6 @@ const HubPage: React.FC = () => {
                     Sync Session
                   </button>
                 )}
-                <button
-                  onClick={() => navigate('/hub/integrations')}
-                  className={
-                    isClassic
-                      ? 'rounded-inner px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] bg-black/20 border border-black/25 text-white/90'
-                      : 'rounded-inner px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] bg-theme-bg border border-theme-border text-theme-muted hover:text-theme-text'
-                  }
-                >
-                  Data Integrations
-                </button>
               </div>
             </div>
           </aside>
