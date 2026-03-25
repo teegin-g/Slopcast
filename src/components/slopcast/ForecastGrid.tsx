@@ -49,10 +49,13 @@ const ForecastGrid: React.FC<ForecastGridProps> = ({ isClassic, flow, onUpdateFl
     const { row, col } = editingCell;
     const field = COLUMNS[col].key as EditableField;
     const parsed = parseFloat(editValue);
-    if (!isNaN(parsed)) {
-      const updated = flow.map((f, i) => (i === row ? { ...f, [field]: parsed } : f));
-      onUpdateFlow(updated);
-    }
+    const previousValue = flow[row][field];
+
+    // Validate: revert to previous if NaN, clamp negatives to 0
+    const validValue = isNaN(parsed) ? previousValue : Math.max(0, parsed);
+
+    const updated = flow.map((f, i) => (i === row ? { ...f, [field]: validValue } : f));
+    onUpdateFlow(updated);
     setEditingCell(null);
   }, [editingCell, editValue, flow, onUpdateFlow]);
 
@@ -136,11 +139,11 @@ const ForecastGrid: React.FC<ForecastGridProps> = ({ isClassic, flow, onUpdateFl
     : 'px-4 py-2 border-b border-theme-border/60';
 
   const titleCls = isClassic
-    ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white'
-    : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan';
+    ? 'text-xs font-black uppercase tracking-[0.24em] text-white'
+    : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan';
 
   const thCls = (align: string) =>
-    `px-3 py-2 text-${align} text-[9px] font-black uppercase tracking-[0.14em] whitespace-nowrap ${
+    `px-3 py-2 text-${align} text-xs font-black uppercase tracking-[0.14em] whitespace-nowrap ${
       isClassic ? 'text-white/60 bg-black/40' : 'text-theme-muted bg-theme-bg'
     }`;
 
@@ -163,7 +166,7 @@ const ForecastGrid: React.FC<ForecastGridProps> = ({ isClassic, flow, onUpdateFl
         <div className="flex items-center justify-between">
           <span className={titleCls}>Forecast Grid</span>
           {!readOnly && (
-            <span className={`text-[9px] ${isClassic ? 'text-white/40' : 'text-theme-muted/60'}`}>
+            <span className={`text-xs ${isClassic ? 'text-white/40' : 'text-theme-muted/60'}`}>
               Ctrl+D fill down
             </span>
           )}

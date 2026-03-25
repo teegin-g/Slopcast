@@ -66,16 +66,16 @@ const GroupWellsTable: React.FC<GroupWellsTableProps> = ({
 
   const titleClassName = isClassic
     ? 'text-[11px] font-black uppercase tracking-[0.24em] text-white'
-    : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan';
+    : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan';
 
   const controlRowClassName = dense ? 'px-3 py-2' : 'px-3 py-2';
-  const controlTextClassName = dense ? 'text-[10px]' : 'text-[11px]';
+  const controlTextClassName = dense ? 'text-xs' : 'text-[11px]';
   const inputClassName = isClassic
     ? `w-full rounded-inner px-2 py-1.5 ${dense ? 'text-[11px]' : 'text-[12px]'} font-black sc-inputNavy`
     : `w-full rounded-inner border border-theme-border bg-theme-bg px-2 py-1.5 ${dense ? 'text-[11px]' : 'text-[12px]'} text-theme-text placeholder:text-theme-muted`;
 
   const headerButtonBase = isClassic
-    ? 'sc-btnSecondary px-3 py-1.5 rounded-inner text-[10px] font-black uppercase tracking-widest transition-all'
+    ? 'sc-btnSecondary px-3 py-1.5 rounded-inner text-xs font-black uppercase tracking-widest transition-all'
     : 'px-2 py-1.5 rounded-inner border border-theme-border bg-theme-bg text-theme-muted hover:text-theme-text transition-colors';
 
   const sortSelectClassName = isClassic
@@ -164,19 +164,12 @@ const GroupWellsTable: React.FC<GroupWellsTableProps> = ({
 
           {sortedWells.length === 0 ? (
             <div className="px-4">
-              <div
-                className={
-                  isClassic
-                    ? 'sc-insetDark rounded-inner px-4 py-4'
-                    : 'rounded-inner border border-theme-border bg-theme-bg px-4 py-4'
-                }
-              >
-                <div className={isClassic ? 'text-white font-black' : 'text-theme-text font-black'}>
-                  No wells assigned to this group yet.
-                </div>
-                <div className={isClassic ? 'text-white/70 text-sm mt-1' : 'text-theme-muted text-sm mt-1'}>
-                  Select wells on the map and assign.
-                </div>
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="text-3xl mb-3 opacity-40">📌</div>
+                <h3 className={`text-sm font-bold mb-2 ${isClassic ? 'text-white' : 'text-theme-text'}`}>No wells assigned to this group</h3>
+                <p className={`text-xs max-w-xs ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
+                  Switch to the Wells workspace to select and assign wells using the basin map.
+                </p>
               </div>
             </div>
           ) : (
@@ -185,7 +178,7 @@ const GroupWellsTable: React.FC<GroupWellsTableProps> = ({
               <div className={`hidden md:block px-4 ${tableWrapperClassName} overflow-auto`}>
                 <table className="w-full text-left">
                   <thead className={isClassic ? 'text-white/80' : 'text-theme-muted'}>
-                    <tr className={`${dense ? 'text-[10px]' : 'text-[11px]'} font-black uppercase tracking-[0.18em]`}>
+                    <tr className={`${dense ? 'text-xs' : 'text-[11px]'} font-black uppercase tracking-[0.18em]`}>
                       <th className="py-2 pr-3">
                         <button type="button" className="hover:underline" onClick={() => toggleSort('name')}>
                           Well{sortIndicator('name')}

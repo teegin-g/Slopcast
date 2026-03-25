@@ -24,6 +24,7 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ isClassic }) => {
   const [stepIndex, setStepIndex] = useState(0);
   const [visible, setVisible] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number }>({ top: 100, left: 100 });
+  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
 
   useEffect(() => {
     try {
@@ -39,6 +40,9 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ isClassic }) => {
     if (el) {
       const rect = el.getBoundingClientRect();
       setPosition({ top: rect.bottom + 12, left: Math.max(16, rect.left) });
+      setTargetRect(rect);
+    } else {
+      setTargetRect(null);
     }
   }, [stepIndex]);
 
@@ -68,8 +72,19 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ isClassic }) => {
   const isLast = stepIndex === TOUR_STEPS.length - 1;
 
   return (
-    <div className="fixed inset-0 z-[200] pointer-events-none">
+    <div className="fixed inset-0 z-50 pointer-events-none">
       <div className="absolute inset-0 bg-black/30 pointer-events-auto" onClick={handleDone} />
+      {targetRect && (
+        <div
+          className="absolute rounded-lg border-2 border-theme-cyan shadow-glow-cyan pointer-events-none transition-all duration-300"
+          style={{
+            top: targetRect.top - 4,
+            left: targetRect.left - 4,
+            width: targetRect.width + 8,
+            height: targetRect.height + 8,
+          }}
+        />
+      )}
       <div
         className={`absolute z-10 w-72 pointer-events-auto ${
           isClassic
@@ -80,12 +95,12 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ isClassic }) => {
       >
         <div className="p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className={`text-[9px] font-black uppercase tracking-[0.18em] ${isClassic ? 'text-theme-warning' : 'text-theme-cyan'}`}>
+            <span className={`text-xs font-black uppercase tracking-[0.18em] ${isClassic ? 'text-theme-warning' : 'text-theme-cyan'}`}>
               Step {stepIndex + 1} of {TOUR_STEPS.length}
             </span>
             <button
               onClick={handleDone}
-              className={`text-[9px] font-bold ${isClassic ? 'text-white/50 hover:text-white' : 'text-theme-muted hover:text-theme-text'}`}
+              className={`text-xs font-bold ${isClassic ? 'text-white/50 hover:text-white' : 'text-theme-muted hover:text-theme-text'}`}
             >
               Skip
             </button>
@@ -94,7 +109,7 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ isClassic }) => {
           <p className={`text-[11px] leading-relaxed mb-3 ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>{step.description}</p>
           <button
             onClick={handleNext}
-            className={`w-full py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.14em] transition-colors ${
+            className={`w-full py-2 rounded-inner text-xs font-black uppercase tracking-[0.14em] transition-colors ${
               isClassic
                 ? 'sc-btnPrimary'
                 : 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan'

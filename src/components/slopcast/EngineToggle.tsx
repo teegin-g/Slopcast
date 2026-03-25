@@ -31,7 +31,7 @@ const EngineToggle: React.FC<EngineToggleProps> = ({ isClassic, currentEngineId,
   return (
     <div className="flex items-center gap-1.5" title={`Engine: ${activeLabel}`}>
       <span
-        className={`text-[10px] font-semibold uppercase tracking-wide ${
+        className={`text-xs font-semibold uppercase tracking-wide ${
           isClassic ? 'text-white/50' : 'text-theme-text/40'
         }`}
       >

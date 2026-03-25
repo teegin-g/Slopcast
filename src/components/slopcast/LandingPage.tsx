@@ -142,7 +142,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
           />
 
           {lastQuery && (
-            <p className={`mt-3 text-[10px] ${isClassic ? 'text-white/40' : 'text-theme-muted/50'}`}>
+            <p className={`mt-3 text-xs ${isClassic ? 'text-white/40' : 'text-theme-muted/50'}`}>
               Showing results for: "{lastQuery}"
             </p>
           )}
@@ -162,7 +162,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
           </button>
           <button
             onClick={onEnterWorkspace}
-            className={`px-5 py-2.5 rounded-panel text-[10px] font-black uppercase tracking-widest transition-all border ${
+            className={`px-5 py-2.5 rounded-panel text-xs font-black uppercase tracking-widest transition-all border ${
               isClassic
                 ? 'bg-black/20 text-white border-black/30 hover:bg-black/30'
                 : 'bg-theme-bg text-theme-muted border-theme-border hover:text-theme-text hover:border-theme-cyan'
@@ -198,28 +198,28 @@ const LandingPage: React.FC<LandingPageProps> = ({
                   : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border p-4'
               }
             >
-              <h3 className={`text-[10px] font-black uppercase tracking-[0.24em] mb-3 ${isClassic ? 'text-white' : 'text-theme-cyan'}`}>
+              <h3 className={`text-xs font-black uppercase tracking-[0.24em] mb-3 ${isClassic ? 'text-white' : 'text-theme-cyan'}`}>
                 Portfolio Summary
               </h3>
               <div className="grid grid-cols-2 gap-3">
                 <div className={`rounded-inner border p-3 ${isClassic ? 'border-black/30 bg-black/10' : 'border-theme-border bg-theme-bg'}`}>
-                  <p className={`text-[9px] font-black uppercase tracking-wide ${isClassic ? 'text-white/50' : 'text-theme-muted'}`}>Total Deals</p>
+                  <p className={`text-xs font-black uppercase tracking-wide ${isClassic ? 'text-white/50' : 'text-theme-muted'}`}>Total Deals</p>
                   <p className={`text-lg font-black tabular-nums ${isClassic ? 'text-white' : 'text-theme-text'}`}>{deals.length}</p>
                 </div>
                 <div className={`rounded-inner border p-3 ${isClassic ? 'border-black/30 bg-black/10' : 'border-theme-border bg-theme-bg'}`}>
-                  <p className={`text-[9px] font-black uppercase tracking-wide ${isClassic ? 'text-white/50' : 'text-theme-muted'}`}>Active</p>
+                  <p className={`text-xs font-black uppercase tracking-wide ${isClassic ? 'text-white/50' : 'text-theme-muted'}`}>Active</p>
                   <p className={`text-lg font-black tabular-nums ${isClassic ? 'text-theme-warning' : 'text-theme-cyan'}`}>
                     {deals.filter(d => d.status === 'active').length}
                   </p>
                 </div>
                 <div className={`rounded-inner border p-3 ${isClassic ? 'border-black/30 bg-black/10' : 'border-theme-border bg-theme-bg'}`}>
-                  <p className={`text-[9px] font-black uppercase tracking-wide ${isClassic ? 'text-white/50' : 'text-theme-muted'}`}>Total PV10</p>
+                  <p className={`text-xs font-black uppercase tracking-wide ${isClassic ? 'text-white/50' : 'text-theme-muted'}`}>Total PV10</p>
                   <p className={`text-lg font-black tabular-nums ${isClassic ? 'text-theme-warning' : 'text-theme-lavender'}`}>
                     ${(deals.reduce((sum, d) => sum + (d.kpis.pv10 || 0), 0) / 1e6).toFixed(1)}M
                   </p>
                 </div>
                 <div className={`rounded-inner border p-3 ${isClassic ? 'border-black/30 bg-black/10' : 'border-theme-border bg-theme-bg'}`}>
-                  <p className={`text-[9px] font-black uppercase tracking-wide ${isClassic ? 'text-white/50' : 'text-theme-muted'}`}>Total Wells</p>
+                  <p className={`text-xs font-black uppercase tracking-wide ${isClassic ? 'text-white/50' : 'text-theme-muted'}`}>Total Wells</p>
                   <p className={`text-lg font-black tabular-nums ${isClassic ? 'text-white' : 'text-theme-text'}`}>
                     {deals.reduce((sum, d) => sum + (d.kpis.wellCount || 0), 0)}
                   </p>

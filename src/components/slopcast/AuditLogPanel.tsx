@@ -43,7 +43,7 @@ const AuditLogPanel: React.FC<AuditLogPanelProps> = ({ isClassic, entries, onRev
       }
     >
       <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
-        <h2 className={`text-[10px] font-black uppercase tracking-[0.24em] ${isClassic ? 'text-white' : 'text-theme-cyan'}`}>
+        <h2 className={`text-xs font-black uppercase tracking-[0.24em] ${isClassic ? 'text-white' : 'text-theme-cyan'}`}>
           Activity Log
         </h2>
       </div>
@@ -69,14 +69,14 @@ const AuditLogPanel: React.FC<AuditLogPanelProps> = ({ isClassic, entries, onRev
                       </span>
                     )}
                   </p>
-                  <p className={`text-[9px] mt-0.5 ${isClassic ? 'text-white/40' : 'text-theme-muted/60'}`}>
+                  <p className={`text-xs mt-0.5 ${isClassic ? 'text-white/40' : 'text-theme-muted/60'}`}>
                     {formatTimestamp(entry.createdAt)}
                   </p>
                 </div>
                 {entry.action === 'economics.snapshot' && onRevert && (
                   <button
                     onClick={() => onRevert(entry.id)}
-                    className={`text-[9px] font-black uppercase tracking-wide px-2 py-1 rounded-inner transition-colors shrink-0 ${
+                    className={`text-xs font-black uppercase tracking-wide px-2 py-1 rounded-inner transition-colors shrink-0 ${
                       isClassic
                         ? 'bg-black/20 text-white/60 hover:text-white border border-black/30'
                         : 'bg-theme-surface2 text-theme-muted hover:text-theme-cyan border border-theme-border'

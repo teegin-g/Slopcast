@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { WellGroup } from '../../types';
+import { useToast } from './Toast';
 
 type GroupSortKey = 'NPV' | 'ROI' | 'PAYOUT' | 'CAPEX' | 'NAME';
 
@@ -33,6 +34,7 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
   focusMode = false,
   onToggleFocusMode,
 }) => {
+  const { addToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState<GroupSortKey>('NPV');
@@ -156,7 +158,7 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
       ref={rootRef}
       data-testid="economics-group-bar"
       className={`relative z-40 lg:sticky lg:top-0 lg:z-20 mb-3 border px-2.5 py-1.5 theme-transition ${
-        isClassic ? 'sc-panel' : 'rounded-panel bg-theme-surface1/65 border-theme-border shadow-card backdrop-blur-sm'
+        isClassic ? 'sc-panel' : 'rounded-panel bg-theme-surface1/65 border-theme-border shadow-card'
       }`}
     >
       {/* Scope label */}
@@ -174,8 +176,8 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
           onClick={() => cycleGroup(-1)}
           className={
             isClassic
-              ? `px-1.5 py-1 rounded-inner border-2 border-black/25 bg-black/20 text-white/85 text-[9px] font-black ${focusRing}`
-              : `px-1.5 py-1 rounded-inner border border-theme-border bg-theme-bg text-theme-muted text-[9px] font-black hover:text-theme-text ${focusRing}`
+              ? `px-1.5 py-1 rounded-inner border-2 border-black/25 bg-black/20 text-white/85 text-xs font-black ${focusRing}`
+              : `px-1.5 py-1 rounded-inner border border-theme-border bg-theme-bg text-theme-muted text-xs font-black hover:text-theme-text ${focusRing}`
           }
         >
           &larr;
@@ -194,8 +196,8 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
             }}
             className={
               isClassic
-                ? `w-full rounded-inner border-2 border-black/25 bg-black/20 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.08em] text-white text-left flex items-center justify-between ${focusRing}`
-                : `w-full rounded-inner border border-theme-border bg-theme-bg px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.08em] text-theme-text text-left flex items-center justify-between ${focusRing}`
+                ? `w-full rounded-inner border-2 border-black/25 bg-black/20 px-2.5 py-1 text-xs font-black uppercase tracking-[0.08em] text-white text-left flex items-center justify-between ${focusRing}`
+                : `w-full rounded-inner border border-theme-border bg-theme-bg px-2.5 py-1 text-xs font-black uppercase tracking-[0.08em] text-theme-text text-left flex items-center justify-between ${focusRing}`
             }
           >
             <span className="flex items-center gap-2 truncate">
@@ -225,8 +227,8 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
                   aria-label="Search groups"
                   className={
                     isClassic
-                      ? `w-full rounded-inner px-3 py-2 text-[10px] font-black sc-inputNavy ${focusRing}`
-                      : `w-full rounded-inner px-3 py-2 text-[10px] text-theme-text bg-theme-bg border border-theme-border outline-none focus:ring-1 focus:ring-theme-cyan/30 focus:border-theme-cyan theme-transition ${focusRing}`
+                      ? `w-full rounded-inner px-3 py-2 text-xs font-black sc-inputNavy ${focusRing}`
+                      : `w-full rounded-inner px-3 py-2 text-xs text-theme-text bg-theme-bg border border-theme-border outline-none focus:ring-1 focus:ring-theme-cyan/30 focus:border-theme-cyan theme-transition ${focusRing}`
                   }
                 />
 
@@ -246,10 +248,10 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
                         onClick={() => setSortKey(item.id)}
                         className={
                           isClassic
-                            ? `px-2 py-1 rounded-inner border-2 text-[8px] font-black uppercase tracking-[0.14em] transition-colors ${
+                            ? `px-2 py-1 rounded-inner border-2 text-xs font-black uppercase tracking-[0.14em] transition-colors ${
                                 active ? 'bg-theme-warning text-black border-black/20' : 'bg-black/20 text-white/85 border-black/25 hover:bg-black/30'
                               } ${focusRing}`
-                            : `px-2 py-1 rounded-inner border text-[8px] font-black uppercase tracking-[0.14em] transition-colors ${
+                            : `px-2 py-1 rounded-inner border text-xs font-black uppercase tracking-[0.14em] transition-colors ${
                                 active ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan' : 'bg-theme-bg text-theme-muted border-theme-border hover:text-theme-text'
                               } ${focusRing}`
                         }
@@ -263,7 +265,7 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
 
               <div className={isClassic ? 'space-y-1' : 'space-y-1'}>
                 {visibleGroups.length === 0 && (
-                  <div className={`px-3 py-3 text-[10px] ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
+                  <div className={`px-3 py-3 text-xs ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
                     No groups match “{search.trim()}”.
                   </div>
                 )}
@@ -295,11 +297,11 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0 flex items-center gap-2">
                           <span className="w-2.5 h-2.5 rounded-full border border-theme-border/30 shrink-0" style={{ backgroundColor: group.color }} />
-                          <span className="truncate text-[10px] font-black uppercase tracking-[0.08em]">
+                          <span className="truncate text-xs font-black uppercase tracking-[0.08em]">
                             {group.name}
                           </span>
                           <span
-                            className={`shrink-0 text-[8px] font-black uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-full border ${
+                            className={`shrink-0 text-xs font-black uppercase tracking-[0.12em] px-1.5 py-0.5 rounded-full border ${
                               isHealthy
                                 ? (isClassic ? 'bg-theme-cyan/20 text-white border-black/25' : 'bg-theme-cyan/10 text-theme-cyan border-theme-cyan/20')
                                 : (isClassic ? 'bg-theme-warning/20 text-white border-black/25' : 'bg-theme-warning/10 text-theme-warning border-theme-warning/20')
@@ -310,7 +312,7 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
                           </span>
                         </div>
 
-                        <div className={`shrink-0 text-[9px] tabular-nums flex items-center gap-2 ${isActive ? '' : 'opacity-80'}`}>
+                        <div className={`shrink-0 text-xs tabular-nums flex items-center gap-2 ${isActive ? '' : 'opacity-80'}`}>
                           <span className={isClassic ? '' : 'text-theme-cyan'}>
                             {formatMillions(metrics?.npv10 ?? 0)}
                           </span>
@@ -347,8 +349,8 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
           onClick={() => cycleGroup(1)}
           className={
             isClassic
-              ? `px-1.5 py-1 rounded-inner border-2 border-black/25 bg-black/20 text-white/85 text-[9px] font-black ${focusRing}`
-              : `px-1.5 py-1 rounded-inner border border-theme-border bg-theme-bg text-theme-muted text-[9px] font-black hover:text-theme-text ${focusRing}`
+              ? `px-1.5 py-1 rounded-inner border-2 border-black/25 bg-black/20 text-white/85 text-xs font-black ${focusRing}`
+              : `px-1.5 py-1 rounded-inner border border-theme-border bg-theme-bg text-theme-muted text-xs font-black hover:text-theme-text ${focusRing}`
           }
         >
           &rarr;
@@ -362,10 +364,10 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
             onClick={onToggleFocusMode}
             className={
               isClassic
-                ? `px-2 py-1 rounded-inner text-[8px] font-black uppercase tracking-[0.12em] border-2 border-black/25 whitespace-nowrap transition-colors ${
+                ? `px-2 py-1 rounded-inner text-xs font-black uppercase tracking-[0.12em] border-2 border-black/25 whitespace-nowrap transition-colors ${
                     focusMode ? 'bg-theme-warning text-black' : 'bg-black/20 text-white/90 hover:bg-black/30'
                   } ${focusRing}`
-                : `px-2 py-1 rounded-inner text-[8px] font-black uppercase tracking-[0.12em] border whitespace-nowrap transition-colors ${
+                : `px-2 py-1 rounded-inner text-xs font-black uppercase tracking-[0.12em] border whitespace-nowrap transition-colors ${
                     focusMode ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan' : 'bg-theme-bg text-theme-text border-theme-border hover:border-theme-cyan'
                   } ${focusRing}`
             }
@@ -377,11 +379,14 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
         <button
           type="button"
           data-testid="economics-group-clone"
-          onClick={onCloneActiveGroup}
+          onClick={() => {
+            onCloneActiveGroup();
+            addToast({ type: 'success', message: `Group "${activeGroup?.name || 'Untitled'}" cloned` });
+          }}
           className={
             isClassic
-              ? `px-2 py-1 rounded-inner text-[8px] font-black uppercase tracking-[0.12em] border-2 border-black/25 bg-black/20 text-white/90 whitespace-nowrap ${focusRing}`
-              : `px-2 py-1 rounded-inner text-[8px] font-black uppercase tracking-[0.12em] border border-theme-border bg-theme-bg text-theme-text hover:border-theme-cyan whitespace-nowrap ${focusRing}`
+              ? `px-2 py-1 rounded-inner text-xs font-black uppercase tracking-[0.12em] border-2 border-black/25 bg-black/20 text-white/90 whitespace-nowrap ${focusRing}`
+              : `px-2 py-1 rounded-inner text-xs font-black uppercase tracking-[0.12em] border border-theme-border bg-theme-bg text-theme-text hover:border-theme-cyan whitespace-nowrap ${focusRing}`
           }
         >
           Clone Group
@@ -399,7 +404,7 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
               className="w-2 h-2 rounded-full shrink-0"
               style={{ backgroundColor: activeGroup.color || '#4F8BFF' }}
             />
-            <span className={`text-[9px] font-bold truncate ${
+            <span className={`text-xs font-bold truncate ${
               isClassic ? 'text-white/80' : 'text-theme-text/80'
             }`}>
               {activeGroup.name}
@@ -416,7 +421,7 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
           </span>
 
           {/* Wells count */}
-          <span className={`shrink-0 text-[8px] tabular-nums ${
+          <span className={`shrink-0 text-xs tabular-nums ${
             isClassic ? 'text-white/50' : 'text-theme-muted/60'
           }`}>
             {activeGroup.wellIds.size} well{activeGroup.wellIds.size !== 1 ? 's' : ''}
@@ -427,7 +432,7 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
 
           {/* NPV if available */}
           {activeMetrics && (
-            <span className={`shrink-0 text-[9px] font-bold tabular-nums ${
+            <span className={`shrink-0 text-xs font-bold tabular-nums ${
               isClassic ? 'text-white/70' : 'text-theme-cyan/70'
             }`}>
               NPV {formatMillions(activeMetrics.npv10)}

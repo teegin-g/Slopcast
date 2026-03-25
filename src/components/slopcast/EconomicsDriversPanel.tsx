@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import WaterfallChart from './WaterfallChart';
 
 export type DriverFamilyId = 'oil' | 'capex' | 'eur' | 'rig';
@@ -45,7 +46,7 @@ export interface EconomicsDriversPanelProps {
 }
 
 const RankBadge: React.FC<{ rank: number }> = ({ rank }) => (
-  <span className="w-5 h-5 rounded-full bg-theme-surface2 border border-theme-border text-[9px] font-black text-theme-text flex items-center justify-center shrink-0">
+  <span className="w-5 h-5 rounded-full bg-theme-surface2 border border-theme-border text-xs font-black text-theme-text flex items-center justify-center shrink-0">
     {rank}
   </span>
 );
@@ -135,7 +136,7 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
           <h3 className={isClassic ? 'text-sm font-black text-white' : 'text-sm font-semibold text-theme-text'}>
             Key sensitivity drivers
           </h3>
-          <p className={`text-[10px] ${isClassic ? 'text-white/60' : 'text-theme-muted'}`}>
+          <p className={`text-xs ${isClassic ? 'text-white/60' : 'text-theme-muted'}`}>
             Select a driver to see details.
           </p>
         </div>
@@ -196,17 +197,25 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
           </div>
         </div>
 
-        {selectedDriver && narrative && (
-          <div
-            className={
-              isClassic
-                ? 'rounded-inner border-2 border-black/25 bg-black/10 p-4'
-                : 'rounded-inner border border-theme-border/60 bg-theme-bg/40 p-4'
-            }
-          >
+        <AnimatePresence initial={false}>
+          {selectedDriver && narrative && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              style={{ overflow: 'hidden' }}
+            >
+              <div
+                className={
+                  isClassic
+                    ? 'rounded-inner border-2 border-black/25 bg-black/10 p-4'
+                    : 'rounded-inner border border-theme-border/60 bg-theme-bg/40 p-4'
+                }
+              >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
+                <p className={`text-xs font-black uppercase tracking-[0.18em] ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
                   Driver details
                 </p>
                 <p className={`text-sm font-black ${isClassic ? 'text-white' : 'text-theme-text'}`}>
@@ -220,8 +229,8 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
                   onClick={() => onJumpToDriver(selectedDriver.id)}
                   className={
                     isClassic
-                      ? `sc-btnPrimary px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-[0.16em] ${focusRing}`
-                      : `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-[0.16em] bg-theme-cyan text-theme-bg shadow-glow-cyan ${focusRing}`
+                      ? `sc-btnPrimary px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.16em] ${focusRing}`
+                      : `px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.16em] bg-theme-cyan text-theme-bg shadow-glow-cyan ${focusRing}`
                   }
                 >
                   {narrative.cta}
@@ -231,11 +240,11 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
 
             <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className={isClassic ? 'rounded-inner border-2 border-black/25 bg-black/15 p-3' : 'rounded-inner border border-theme-border/50 bg-theme-surface1/60 p-3'}>
-                <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
+                <p className={`text-xs font-black uppercase tracking-[0.18em] mb-2 ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
                   What moved
                 </p>
                 <div className="space-y-1">
-                  <div className="flex items-center justify-between gap-2 text-[10px]">
+                  <div className="flex items-center justify-between gap-2 text-xs">
                     <span className={isClassic ? 'text-white/70' : 'text-theme-muted'}>
                       {selectedDriver.upShock?.label ?? '—'}
                     </span>
@@ -243,7 +252,7 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
                       {selectedDriver.upShock ? formatDeltaMm(selectedDriver.upShock.deltaNpv) : '—'}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between gap-2 text-[10px]">
+                  <div className="flex items-center justify-between gap-2 text-xs">
                     <span className={isClassic ? 'text-white/70' : 'text-theme-muted'}>
                       {selectedDriver.downShock?.label ?? '—'}
                     </span>
@@ -255,10 +264,10 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
               </div>
 
               <div className={isClassic ? 'rounded-inner border-2 border-black/25 bg-black/15 p-3' : 'rounded-inner border border-theme-border/50 bg-theme-surface1/60 p-3'}>
-                <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
+                <p className={`text-xs font-black uppercase tracking-[0.18em] mb-2 ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
                   Why it matters
                 </p>
-                <p className={`text-[10px] leading-relaxed ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
+                <p className={`text-xs leading-relaxed ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
                   {narrative.why}
                 </p>
               </div>
@@ -266,7 +275,7 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
 
             <div className="mt-3 grid grid-cols-2 gap-3">
               <div className={isClassic ? 'rounded-inner border-2 border-black/25 bg-black/15 p-3' : 'rounded-inner border border-theme-border/50 bg-theme-surface1/60 p-3'}>
-                <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-1 ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
+                <p className={`text-xs font-black uppercase tracking-[0.18em] mb-1 ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
                   Best case
                 </p>
                 <p className={`text-sm font-black tabular-nums ${formatDeltaClass(Math.max(selectedDriver.upShock?.deltaNpv ?? 0, selectedDriver.downShock?.deltaNpv ?? 0))}`}>
@@ -276,7 +285,7 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
                 </p>
               </div>
               <div className={isClassic ? 'rounded-inner border-2 border-black/25 bg-black/15 p-3' : 'rounded-inner border border-theme-border/50 bg-theme-surface1/60 p-3'}>
-                <p className={`text-[9px] font-black uppercase tracking-[0.18em] mb-1 ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
+                <p className={`text-xs font-black uppercase tracking-[0.18em] mb-1 ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
                   Worst case
                 </p>
                 <p className={`text-sm font-black tabular-nums ${formatDeltaClass(Math.min(selectedDriver.upShock?.deltaNpv ?? 0, selectedDriver.downShock?.deltaNpv ?? 0))}`}>
@@ -286,8 +295,10 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
                 </p>
               </div>
             </div>
-          </div>
-        )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Waterfall Chart - Value Bridge */}
@@ -305,15 +316,15 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
       {/* Upside / Downside - asymmetric with color tints */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="rounded-inner border p-4 border-theme-border bg-theme-cyan/5 theme-transition">
-          <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-theme-cyan mb-1">Biggest Upside</p>
-          <p className="text-[10px] text-theme-muted mb-2">{biggestPositive?.label || '—'}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-theme-cyan mb-1">Biggest Upside</p>
+          <p className="text-xs text-theme-muted mb-2">{biggestPositive?.label || '—'}</p>
           <p className="text-xl font-black text-theme-cyan leading-none tabular-nums">
             {biggestPositive ? formatDeltaMm(biggestPositive.deltaNpv) : '—'}
           </p>
         </div>
         <div className="rounded-inner border p-4 border-theme-border bg-theme-magenta/5 theme-transition">
-          <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-theme-magenta mb-1">Biggest Downside</p>
-          <p className="text-[10px] text-theme-muted mb-2">{biggestNegative?.label || '—'}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-theme-magenta mb-1">Biggest Downside</p>
+          <p className="text-xs text-theme-muted mb-2">{biggestNegative?.label || '—'}</p>
           <p className="text-xl font-black text-theme-magenta leading-none tabular-nums">
             {biggestNegative ? formatDeltaMm(biggestNegative.deltaNpv) : '—'}
           </p>
@@ -323,32 +334,32 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
       {/* Breakeven + Payout - mixed layout for rhythm */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="rounded-inner border p-4 border-theme-border bg-theme-bg theme-transition border-l-2 border-l-theme-lavender">
-          <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-theme-muted mb-2">Breakeven Oil</p>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-theme-muted mb-2">Breakeven Oil</p>
           <p className="text-3xl font-black text-theme-text leading-none">
             {breakevenOilPrice !== null ? `$${breakevenOilPrice.toFixed(1)}` : 'N/A'}
           </p>
           {breakevenOilPrice !== null && (
-            <p className="text-[9px] text-theme-muted mt-1 uppercase tracking-wide">per barrel</p>
+            <p className="text-xs text-theme-muted mt-1 uppercase tracking-wide">per barrel</p>
           )}
         </div>
         <div className="rounded-inner border p-4 border-theme-border bg-theme-bg theme-transition border-l-2 border-l-theme-cyan">
-          <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-theme-muted mb-2">Payout Highlights</p>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-theme-muted mb-2">Payout Highlights</p>
           <p className="text-xl font-black text-theme-text leading-none">
             {payoutMonths > 0 ? `${payoutMonths} mo` : '-'}
           </p>
-          <p className="text-[10px] text-theme-muted mt-1.5">Fastest: {fastestPayoutScenarioName}</p>
+          <p className="text-xs text-theme-muted mt-1.5">Fastest: {fastestPayoutScenarioName}</p>
         </div>
       </div>
 
       {/* Scenario rankings with rank badges */}
       <div className="rounded-inner border overflow-hidden bg-theme-bg border-theme-border">
         <div className="px-4 py-2.5 border-b border-theme-border flex items-center justify-between">
-          <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Scenario Rank</p>
-          <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-theme-muted">NPV / ROI</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-theme-lavender">Scenario Rank</p>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-theme-muted">NPV / ROI</p>
         </div>
         <div className="max-h-56 overflow-y-auto divide-y divide-theme-border/20">
           {scenarioRankings.map((row, idx) => (
-            <div key={row.id} className="px-4 py-2.5 text-[10px] flex items-center gap-3 text-theme-muted">
+            <div key={row.id} className="px-4 py-2.5 text-xs flex items-center gap-3 text-theme-muted">
               <RankBadge rank={idx + 1} />
               <span className="font-semibold text-theme-text flex-1 truncate">{row.name}</span>
               <span className="tabular-nums shrink-0">

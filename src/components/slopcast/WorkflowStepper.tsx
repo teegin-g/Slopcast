@@ -56,8 +56,8 @@ const WorkflowStepper: React.FC<WorkflowStepperProps> = ({ isClassic, steps, com
         <h2
           className={
             isClassic
-              ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white'
-              : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'
+              ? 'text-xs font-black uppercase tracking-[0.24em] text-white'
+              : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan'
           }
         >
           Workflow
@@ -80,8 +80,8 @@ const WorkflowStepper: React.FC<WorkflowStepperProps> = ({ isClassic, steps, com
                   : { duration: 0.2 }
               }
             >
-              <p className="text-[9px] font-black uppercase tracking-[0.18em]">{idx + 1}. {step.label}</p>
-              <p className={`text-[9px] uppercase tracking-[0.12em] mt-1 ${isClassic ? 'opacity-90' : ''}`}>{caption(step.status)}</p>
+              <p className="text-xs font-black uppercase tracking-[0.18em]">{idx + 1}. {step.label}</p>
+              <p className={`text-xs uppercase tracking-[0.12em] mt-1 ${isClassic ? 'opacity-90' : ''}`}>{caption(step.status)}</p>
             </motion.div>
           ))}
         </div>

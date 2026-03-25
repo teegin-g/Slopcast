@@ -28,7 +28,7 @@ const MiniMapPreview: React.FC<MiniMapPreviewProps> = ({ isClassic, wells, activ
         isClassic ? 'sc-panel' : 'bg-theme-surface1/50 border-theme-border shadow-card'
       }`}>
         <div className="h-[80px] flex items-center justify-center">
-          <p className={`text-[9px] font-black uppercase tracking-[0.16em] ${isClassic ? 'text-white/50' : 'text-theme-muted/60'}`}>
+          <p className={`text-xs font-black uppercase tracking-[0.16em] ${isClassic ? 'text-white/50' : 'text-theme-muted/60'}`}>
             No wells in group
           </p>
         </div>

@@ -26,7 +26,7 @@ const FilterChips: React.FC<FilterChipsProps> = ({ filters, onRemove }) => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] bg-theme-surface2/60 text-theme-text border border-theme-border/40"
+            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs bg-theme-surface2/60 text-theme-text border border-theme-border/40"
           >
             {filter.label}
             <button

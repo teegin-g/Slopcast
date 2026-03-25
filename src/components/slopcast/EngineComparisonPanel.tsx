@@ -84,8 +84,8 @@ const EngineComparisonPanel: React.FC<EngineComparisonPanelProps> = ({
     : 'bg-theme-surface1 text-theme-text border border-theme-border rounded-panel';
 
   const headerCls = isClassic
-    ? 'text-[9px] font-black uppercase tracking-[0.14em] text-white/80'
-    : 'text-[9px] font-black uppercase tracking-[0.14em] text-theme-cyan';
+    ? 'text-xs font-black uppercase tracking-[0.14em] text-white/80'
+    : 'text-xs font-black uppercase tracking-[0.14em] text-theme-cyan';
 
   const mutedCls = isClassic ? 'text-white/50' : 'text-theme-muted';
 
@@ -128,9 +128,9 @@ const EngineComparisonPanel: React.FC<EngineComparisonPanelProps> = ({
       >
         <div className="flex items-center gap-2">
           <span className={`w-1.5 h-1.5 rounded-full ${isLoading ? 'bg-yellow-400 animate-pulse' : tsResult && pyResult ? 'bg-emerald-400' : 'bg-theme-muted/40'}`} />
-          <span className={headerCls}>ENGINE COMPARISON</span>
+          <span className={headerCls}>Calculation Comparison</span>
           {isLoading && (
-            <span className={`text-[9px] font-bold uppercase tracking-[0.1em] ${isClassic ? 'text-yellow-300/80' : 'text-yellow-400/80'}`}>
+            <span className={`text-xs font-bold uppercase tracking-[0.1em] ${isClassic ? 'text-yellow-300/80' : 'text-yellow-400/80'}`}>
               Calculating...
             </span>
           )}
@@ -149,7 +149,7 @@ const EngineComparisonPanel: React.FC<EngineComparisonPanelProps> = ({
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                <span className={`text-[10px] font-bold uppercase tracking-[0.15em] ${mutedCls}`}>Running engines...</span>
+                <span className={`text-xs font-bold uppercase tracking-[0.15em] ${mutedCls}`}>Running engines...</span>
               </div>
             </div>
           )}
@@ -162,7 +162,7 @@ const EngineComparisonPanel: React.FC<EngineComparisonPanelProps> = ({
                   <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
                 </svg>
                 <span className={`text-[11px] font-bold uppercase tracking-[0.15em] ${mutedCls} opacity-60`}>No results yet — run economics to see engine comparison</span>
-                <div className={`text-[10px] ${mutedCls} opacity-40 space-y-0.5 text-center`}>
+                <div className={`text-xs ${mutedCls} opacity-40 space-y-0.5 text-center`}>
                   {!tsResult && <p>TypeScript engine pending</p>}
                   {!pyResult && <p>Python engine pending</p>}
                 </div>
@@ -178,11 +178,11 @@ const EngineComparisonPanel: React.FC<EngineComparisonPanelProps> = ({
                 <div className={`${surfaceCls} rounded-inner border ${borderCls} overflow-hidden`}>
                   {/* Table header */}
                   <div className={`grid grid-cols-[1.2fr_1fr_1fr_0.8fr_0.7fr] gap-1 px-3 py-2 border-b ${borderCls}`}>
-                    <span className={`text-[9px] font-black uppercase tracking-[0.14em] ${mutedCls}`}>Metric</span>
-                    <span className={`text-[9px] font-black uppercase tracking-[0.14em] ${mutedCls} text-right`}>TS</span>
-                    <span className={`text-[9px] font-black uppercase tracking-[0.14em] ${mutedCls} text-right`}>Python</span>
-                    <span className={`text-[9px] font-black uppercase tracking-[0.14em] ${mutedCls} text-right`}>Delta</span>
-                    <span className={`text-[9px] font-black uppercase tracking-[0.14em] ${mutedCls} text-right`}>Delta %</span>
+                    <span className={`text-xs font-black uppercase tracking-[0.14em] ${mutedCls}`}>Metric</span>
+                    <span className={`text-xs font-black uppercase tracking-[0.14em] ${mutedCls} text-right`}>TS</span>
+                    <span className={`text-xs font-black uppercase tracking-[0.14em] ${mutedCls} text-right`}>Python</span>
+                    <span className={`text-xs font-black uppercase tracking-[0.14em] ${mutedCls} text-right`}>Delta</span>
+                    <span className={`text-xs font-black uppercase tracking-[0.14em] ${mutedCls} text-right`}>Delta %</span>
                   </div>
 
                   {/* Rows */}
@@ -218,11 +218,11 @@ const EngineComparisonPanel: React.FC<EngineComparisonPanelProps> = ({
                 <div className={`${surfaceCls} rounded-inner border ${borderCls} overflow-hidden`}>
                   {/* Table header */}
                   <div className={`grid grid-cols-[0.5fr_1fr_1fr_0.8fr_0.7fr] gap-1 px-3 py-2 border-b ${borderCls}`}>
-                    <span className={`text-[9px] font-black uppercase tracking-[0.14em] ${mutedCls}`}>Mo</span>
-                    <span className={`text-[9px] font-black uppercase tracking-[0.14em] ${mutedCls} text-right`}>TS Net CF</span>
-                    <span className={`text-[9px] font-black uppercase tracking-[0.14em] ${mutedCls} text-right`}>Py Net CF</span>
-                    <span className={`text-[9px] font-black uppercase tracking-[0.14em] ${mutedCls} text-right`}>Delta</span>
-                    <span className={`text-[9px] font-black uppercase tracking-[0.14em] ${mutedCls} text-right`}>Delta %</span>
+                    <span className={`text-xs font-black uppercase tracking-[0.14em] ${mutedCls}`}>Mo</span>
+                    <span className={`text-xs font-black uppercase tracking-[0.14em] ${mutedCls} text-right`}>TS Net CF</span>
+                    <span className={`text-xs font-black uppercase tracking-[0.14em] ${mutedCls} text-right`}>Py Net CF</span>
+                    <span className={`text-xs font-black uppercase tracking-[0.14em] ${mutedCls} text-right`}>Delta</span>
+                    <span className={`text-xs font-black uppercase tracking-[0.14em] ${mutedCls} text-right`}>Delta %</span>
                   </div>
 
                   {/* Rows - up to 12 months */}

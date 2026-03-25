@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { ThemeMeta, ColorMode } from '../../theme/themes';
 import DesignWorkspaceTabs, { DesignWorkspace } from './DesignWorkspaceTabs';
 
@@ -47,9 +48,11 @@ const ThemeDropdown: React.FC<{
   }, [open]);
 
   return (
-    <div ref={ref} className="relative shrink-0">
-      <button
+    <div ref={ref} className="relative z-10 shrink-0">
+      <motion.button
         onClick={() => setOpen(prev => !prev)}
+        whileTap={{ scale: 0.97 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 17 }}
         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-[11px] font-bold theme-transition ${
           isClassic
             ? 'bg-black/25 border-black/30 text-white hover:bg-black/35'
@@ -58,31 +61,40 @@ const ThemeDropdown: React.FC<{
       >
         <span className="text-xs">{currentTheme.icon}</span>
         <span className="hidden sm:inline">{currentTheme.label}</span>
-        <span className={`text-[8px] opacity-50 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>▼</span>
-      </button>
+        <span className={`text-[10px] opacity-50 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>▼</span>
+      </motion.button>
 
-      {open && (
-        <div
-          className={`absolute right-0 top-full mt-1 z-50 min-w-[140px] rounded-panel border shadow-card overflow-hidden theme-transition ${
-            isClassic ? 'bg-black/80 border-black/40 backdrop-blur-md' : 'bg-theme-surface1 border-theme-border backdrop-blur-md'
-          }`}
-        >
-          {themes.map(t => (
-            <button
-              key={t.id}
-              onClick={() => { onSelect(t.id); setOpen(false); }}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] font-bold transition-colors ${
-                isClassic
-                  ? `${themeId === t.id ? 'bg-theme-warning/20 text-theme-warning' : 'text-white/80 hover:bg-white/10'}`
-                  : `${themeId === t.id ? 'bg-theme-cyan/10 text-theme-cyan' : 'text-theme-muted hover:text-theme-text hover:bg-theme-bg'}`
-              }`}
-            >
-              <span className="text-xs">{t.icon}</span>
-              <span>{t.label}</span>
-            </button>
-          ))}
-        </div>
-      )}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: -4 }}
+            transition={{ duration: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
+            style={{ transformOrigin: 'top right' }}
+            className={`absolute right-0 top-full mt-1 z-50 min-w-[140px] rounded-panel border shadow-card overflow-hidden theme-transition ${
+              isClassic ? 'bg-black/80 border-black/40 backdrop-blur-md' : 'bg-theme-surface1 border-theme-border backdrop-blur-md'
+            }`}
+          >
+            {themes.map(t => (
+              <motion.button
+                key={t.id}
+                onClick={() => { onSelect(t.id); setOpen(false); }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] font-bold transition-colors ${
+                  isClassic
+                    ? `${themeId === t.id ? 'bg-theme-warning/20 text-theme-warning' : 'text-white/80 hover:bg-white/10'}`
+                    : `${themeId === t.id ? 'bg-theme-cyan/10 text-theme-cyan' : 'text-theme-muted hover:text-theme-text hover:bg-theme-bg'}`
+                }`}
+              >
+                <span className="text-xs">{t.icon}</span>
+                <span>{t.label}</span>
+              </motion.button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -132,8 +144,10 @@ const OverflowMenu: React.FC<OverflowMenuProps> = ({
 
   return (
     <div className="relative" ref={menuRef}>
-      <button
+      <motion.button
         onClick={() => setIsOpen(!isOpen)}
+        whileTap={{ scale: 0.97 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 17 }}
         className={
           isClassic
             ? 'w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center theme-transition border-2 shadow-card bg-black/15 text-white/90 border-black/25 hover:bg-black/20'
@@ -142,68 +156,81 @@ const OverflowMenu: React.FC<OverflowMenuProps> = ({
         title="More options"
       >
         <span className="text-base">⋮</span>
-      </button>
+      </motion.button>
 
-      {isOpen && (
-        <div
-          className={
-            isClassic
-              ? 'absolute right-0 top-full mt-2 w-48 rounded-md border-2 shadow-card theme-transition bg-theme-surface1 border-black/30 overflow-hidden'
-              : 'absolute right-0 top-full mt-2 w-48 rounded-panel border shadow-lg theme-transition bg-theme-surface1 border-theme-border overflow-hidden'
-          }
-        >
-          <div className="py-1">
-            {onShare && (
-              <button
-                onClick={() => {
-                  onShare();
-                  setIsOpen(false);
-                }}
-                className={
-                  isClassic
-                    ? 'w-full px-4 py-2 text-left text-[10px] uppercase font-bold tracking-widest theme-transition text-white/90 hover:bg-black/20'
-                    : 'w-full px-4 py-2 text-left text-[10px] uppercase font-bold tracking-widest theme-transition text-theme-text hover:bg-theme-surface2'
-                }
-              >
-                Share
-              </button>
-            )}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: -4 }}
+            transition={{ duration: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
+            style={{ transformOrigin: 'top right' }}
+            className={
+              isClassic
+                ? 'absolute right-0 top-full mt-2 w-48 rounded-md border-2 shadow-card theme-transition bg-theme-surface1 border-black/30 overflow-hidden'
+                : 'absolute right-0 top-full mt-2 w-48 rounded-panel border shadow-lg theme-transition bg-theme-surface1 border-theme-border overflow-hidden'
+            }
+          >
+            <div className="py-1">
+              {onShare && (
+                <motion.button
+                  onClick={() => {
+                    onShare();
+                    setIsOpen(false);
+                  }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                  className={
+                    isClassic
+                      ? 'w-full px-4 py-2 text-left text-xs uppercase font-bold tracking-widest theme-transition text-white/90 hover:bg-black/20'
+                      : 'w-full px-4 py-2 text-left text-xs uppercase font-bold tracking-widest theme-transition text-theme-text hover:bg-theme-surface2'
+                  }
+                >
+                  Share
+                </motion.button>
+              )}
 
-            {onRestartTour && (
-              <button
-                onClick={() => {
-                  onRestartTour();
-                  setIsOpen(false);
-                }}
-                className={
-                  isClassic
-                    ? 'w-full px-4 py-2 text-left text-[10px] uppercase font-bold tracking-widest theme-transition text-white/90 hover:bg-black/20'
-                    : 'w-full px-4 py-2 text-left text-[10px] uppercase font-bold tracking-widest theme-transition text-theme-text hover:bg-theme-surface2'
-                }
-              >
-                Tour
-              </button>
-            )}
+              {onRestartTour && (
+                <motion.button
+                  onClick={() => {
+                    onRestartTour();
+                    setIsOpen(false);
+                  }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                  className={
+                    isClassic
+                      ? 'w-full px-4 py-2 text-left text-xs uppercase font-bold tracking-widest theme-transition text-white/90 hover:bg-black/20'
+                      : 'w-full px-4 py-2 text-left text-xs uppercase font-bold tracking-widest theme-transition text-theme-text hover:bg-theme-surface2'
+                  }
+                >
+                  Tour
+                </motion.button>
+              )}
 
-            {onSetColorMode && theme.hasLightVariant && (
-              <button
-                onClick={() => {
-                  onSetColorMode(effectiveMode === 'dark' ? 'light' : 'dark');
-                  setIsOpen(false);
-                }}
-                className={
-                  isClassic
-                    ? 'w-full px-4 py-2 text-left text-[10px] uppercase font-bold tracking-widest theme-transition text-white/90 hover:bg-black/20 flex items-center gap-2'
-                    : 'w-full px-4 py-2 text-left text-[10px] uppercase font-bold tracking-widest theme-transition text-theme-text hover:bg-theme-surface2 flex items-center gap-2'
-                }
-              >
-                <span className="text-sm">{effectiveMode === 'dark' ? '☀' : '☾'}</span>
-                <span>{effectiveMode === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-              </button>
-            )}
-          </div>
-        </div>
-      )}
+              {onSetColorMode && theme.hasLightVariant && (
+                <motion.button
+                  onClick={() => {
+                    onSetColorMode(effectiveMode === 'dark' ? 'light' : 'dark');
+                    setIsOpen(false);
+                  }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                  className={
+                    isClassic
+                      ? 'w-full px-4 py-2 text-left text-xs uppercase font-bold tracking-widest theme-transition text-white/90 hover:bg-black/20 flex items-center gap-2'
+                      : 'w-full px-4 py-2 text-left text-xs uppercase font-bold tracking-widest theme-transition text-theme-text hover:bg-theme-surface2 flex items-center gap-2'
+                  }
+                >
+                  <span className="text-sm">{effectiveMode === 'dark' ? '☀' : '☾'}</span>
+                  <span>{effectiveMode === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                </motion.button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -232,7 +259,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
 }) => {
   return (
     <header
-      className={`px-3 md:px-6 py-3 sticky top-0 z-50 theme-transition ${
+      className={`px-3 md:px-6 py-3 sticky top-0 z-20 theme-transition ${
         isClassic ? 'sc-header' : 'backdrop-blur-md border-b shadow-sm bg-theme-surface1/80 border-theme-border'
       } ${headerAtmosphereClass} ${fxClass}`}
     >
@@ -271,14 +298,14 @@ const PageHeader: React.FC<PageHeaderProps> = ({
 
             <div className="flex flex-col min-w-0">
               <h1
-                className={`text-base md:text-xl leading-tight theme-transition tracking-tight ${
+                className={`text-lg md:text-2xl leading-tight theme-transition tracking-tight ${
                   isClassic ? 'text-white font-black uppercase' : `text-theme-cyan ${theme.features.brandFont ? 'brand-title' : 'font-bold'}`
                 }`}
               >
                 {theme.appName}
               </h1>
               <span
-                className={`text-[8px] md:text-[10px] uppercase font-bold tracking-[0.2em] theme-transition ${
+                className={`text-[10px] md:text-xs uppercase font-bold tracking-[0.2em] theme-transition ${
                   isClassic ? 'text-theme-warning' : 'text-theme-magenta'
                 }`}
               >
@@ -293,26 +320,30 @@ const PageHeader: React.FC<PageHeaderProps> = ({
           {/* Navigation tabs row */}
           <div className="flex items-center gap-2 w-full min-w-0 flex-nowrap">
             <div className={isClassic ? 'flex items-center gap-1.5 min-w-0 flex-nowrap' : 'flex items-center gap-1 p-1 rounded-panel border theme-transition bg-theme-bg border-theme-border min-w-0 flex-nowrap'}>
-              <button
+              <motion.button
                 onClick={onNavigateHub}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                 className={
                   isClassic
-                    ? 'px-2 md:px-3 lg:px-4 py-1.5 md:py-2 rounded-md text-[8px] md:text-[9px] lg:text-[10px] font-black uppercase tracking-widest theme-transition border-2 shadow-card bg-black/15 text-white/90 border-black/25 hover:bg-black/20 whitespace-nowrap'
-                    : 'px-2 md:px-3 lg:px-4 py-1.5 md:py-2 rounded-inner text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition text-theme-muted hover:text-theme-text whitespace-nowrap'
+                    ? 'px-2 md:px-3 lg:px-4 py-2.5 md:py-2.5 min-h-[44px] rounded-md text-[10px] md:text-xs lg:text-xs font-black uppercase tracking-widest theme-transition border-2 shadow-card bg-black/15 text-white/90 border-black/25 hover:bg-black/20 whitespace-nowrap'
+                    : 'px-2 md:px-3 lg:px-4 py-2.5 md:py-2.5 min-h-[44px] rounded-inner text-[10px] md:text-xs lg:text-xs font-bold uppercase tracking-widest theme-transition text-theme-muted hover:text-theme-text whitespace-nowrap'
                 }
               >
                 HUB
-              </button>
-              <button
+              </motion.button>
+              <motion.button
                 onClick={() => onSetViewMode('DASHBOARD')}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                 className={
                   isClassic
-                    ? `px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-md text-[8px] md:text-[9px] lg:text-[10px] font-black uppercase tracking-widest theme-transition border-2 shadow-card whitespace-nowrap ${
+                    ? `px-2 md:px-4 lg:px-5 py-2.5 md:py-2.5 min-h-[44px] rounded-md text-[10px] md:text-xs lg:text-xs font-black uppercase tracking-widest theme-transition border-2 shadow-card whitespace-nowrap ${
                         viewMode === 'DASHBOARD'
                           ? 'bg-theme-cyan text-white border-theme-magenta'
                         : 'bg-black/15 text-white/90 border-black/25 hover:bg-black/20'
                       }`
-                    : `px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-inner text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition whitespace-nowrap ${
+                    : `px-2 md:px-4 lg:px-5 py-2.5 md:py-2.5 min-h-[44px] rounded-inner text-[10px] md:text-xs lg:text-xs font-bold uppercase tracking-widest theme-transition whitespace-nowrap ${
                         viewMode === 'DASHBOARD'
                           ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
                         : 'text-theme-muted hover:text-theme-text'
@@ -320,17 +351,19 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                 }
               >
                 DESIGN
-              </button>
-              <button
+              </motion.button>
+              <motion.button
                 onClick={() => onSetViewMode('ANALYSIS')}
+                whileTap={{ scale: 0.97 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                 className={
                   isClassic
-                    ? `px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-md text-[8px] md:text-[9px] lg:text-[10px] font-black uppercase tracking-widest theme-transition border-2 shadow-card whitespace-nowrap ${
+                    ? `px-2 md:px-4 lg:px-5 py-2.5 md:py-2.5 min-h-[44px] rounded-md text-[10px] md:text-xs lg:text-xs font-black uppercase tracking-widest theme-transition border-2 shadow-card whitespace-nowrap ${
                         viewMode === 'ANALYSIS'
                           ? 'bg-theme-cyan text-white border-theme-magenta'
                         : 'bg-black/15 text-white/90 border-black/25 hover:bg-black/20'
                       }`
-                    : `px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-inner text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition whitespace-nowrap ${
+                    : `px-2 md:px-4 lg:px-5 py-2.5 md:py-2.5 min-h-[44px] rounded-inner text-[10px] md:text-xs lg:text-xs font-bold uppercase tracking-widest theme-transition whitespace-nowrap ${
                         viewMode === 'ANALYSIS'
                           ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
                         : 'text-theme-muted hover:text-theme-text'
@@ -338,7 +371,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                 }
               >
                 SCENARIOS
-              </button>
+              </motion.button>
             </div>
 
             {viewMode === 'DASHBOARD' && (

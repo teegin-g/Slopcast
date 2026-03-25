@@ -104,11 +104,11 @@ const WaterfallChart: React.FC<WaterfallChartProps> = ({ isClassic, baseNpv, dri
       <h3
         className={
           isClassic
-            ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white mb-3'
-            : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan mb-3'
+            ? 'text-xs font-black uppercase tracking-[0.24em] text-white mb-3'
+            : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan mb-3'
         }
       >
-        VALUE BRIDGE
+        NPV Drivers
       </h3>
 
       <div className="h-[280px] w-full" ref={waterfallChart.containerRef}>

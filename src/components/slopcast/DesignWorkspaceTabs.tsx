@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
+import { KbdBadge } from './KbdBadge';
 
 export type DesignWorkspace = 'WELLS' | 'ECONOMICS';
 
@@ -22,14 +23,14 @@ const DesignWorkspaceTabs: React.FC<DesignWorkspaceTabsProps> = ({
 }) => {
   const buttonClass = (target: DesignWorkspace) => {
     if (isClassic) {
-      return `${compact ? 'px-2 sm:px-3 py-1 text-[7px] md:text-[8px]' : 'px-4 py-2 text-[10px]'} rounded-inner font-bold uppercase tracking-[0.15em] border-2 transition-all whitespace-nowrap overflow-hidden ${
+      return `${compact ? 'px-2 sm:px-3 py-1 text-[7px] md:text-[10px]' : 'px-4 py-2 text-xs'} rounded-inner font-bold uppercase tracking-[0.15em] border-2 transition-all whitespace-nowrap overflow-hidden ${
         workspace === target
           ? 'text-black border-black/20'
           : 'bg-black/10 text-white/70 border-black/20'
       }`;
     }
 
-    return `${compact ? 'px-2 sm:px-3 py-1 text-[7px] md:text-[8px]' : 'px-4 py-2 text-[10px]'} rounded-inner font-bold uppercase tracking-[0.15em] border transition-all whitespace-nowrap overflow-hidden ${
+    return `${compact ? 'px-2 sm:px-3 py-1 text-[7px] md:text-[10px]' : 'px-4 py-2 text-xs'} rounded-inner font-bold uppercase tracking-[0.15em] border transition-all whitespace-nowrap overflow-hidden ${
       workspace === target
         ? 'text-theme-bg border-theme-cyan/60 shadow-sm'
         : 'bg-theme-bg/50 text-theme-muted/70 border-theme-border/60 hover:text-theme-muted'
@@ -47,7 +48,7 @@ const DesignWorkspaceTabs: React.FC<DesignWorkspaceTabsProps> = ({
     <div
       data-testid="design-workspace-tabs"
       className={`border ${compact ? 'p-1' : 'p-2'} theme-transition ${
-        isClassic ? 'sc-panel' : 'rounded-inner bg-theme-surface1/40 border-theme-border/50 shadow-sm backdrop-blur-sm'
+        isClassic ? 'sc-panel' : 'rounded-inner bg-theme-surface1/40 border-theme-border/50 shadow-sm'
       }`}
     >
       <div className={`grid grid-cols-2 ${compact ? 'gap-1' : 'gap-2'}`}>
@@ -68,14 +69,17 @@ const DesignWorkspaceTabs: React.FC<DesignWorkspaceTabsProps> = ({
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               />
             )}
-            <span className="relative z-10">
-              {target === 'WELLS' ? 'Wells' : 'Economics'}
-              <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[7px] md:text-[8px] font-black ${badgeClass(target === 'WELLS' ? wellsNeedsAttention : economicsNeedsAttention)}`}>
-                {target === 'WELLS'
-                  ? (wellsNeedsAttention ? 'Needs setup' : 'Ready')
-                  : (economicsNeedsAttention ? 'Rerun' : 'Current')
-                }
+            <span className="relative z-10 flex items-center">
+              <span>
+                {target === 'WELLS' ? 'Wells' : 'Economics'}
+                <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[7px] md:text-[10px] font-black ${badgeClass(target === 'WELLS' ? wellsNeedsAttention : economicsNeedsAttention)}`}>
+                  {target === 'WELLS'
+                    ? (wellsNeedsAttention ? 'Needs setup' : 'Ready')
+                    : (economicsNeedsAttention ? 'Rerun' : 'Current')
+                  }
+                </span>
               </span>
+              {!compact && <KbdBadge keys={target === 'WELLS' ? '⌘1' : '⌘2'} />}
             </span>
           </button>
         ))}

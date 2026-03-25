@@ -112,18 +112,18 @@ const CompactRunBar: React.FC<{
           <div className={isClassic ? 'p-3 flex items-center gap-2 flex-wrap' : 'p-3 flex items-center gap-2 flex-wrap'}>
             <button
               onClick={onSaveSnapshot}
-              className="px-4 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.14em] transition-all shrink-0 bg-theme-magenta text-theme-bg hover:shadow-glow-magenta"
+              className="px-4 py-2 rounded-inner text-xs font-black uppercase tracking-[0.14em] transition-all shrink-0 bg-theme-magenta text-theme-bg hover:shadow-glow-magenta"
             >
               Save Snapshot
             </button>
 
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-theme-cyan animate-pulse shrink-0" />
-              <span data-testid="economics-run-status" className="text-[10px] text-theme-muted truncate">
+              <span data-testid="economics-run-status" className="text-xs text-theme-muted truncate">
                 {statusText}
               </span>
               {actionMessage && (
-                <span className="text-[10px] text-theme-cyan truncate">{actionMessage}</span>
+                <span className="text-xs text-theme-cyan truncate">{actionMessage}</span>
               )}
             </div>
 
@@ -144,7 +144,7 @@ const CompactRunBar: React.FC<{
                     <button
                       key={item.label}
                       onClick={() => { item.action(); setShowOverflow(false); }}
-                      className="w-full text-left px-3 py-1.5 rounded-inner text-[10px] font-bold uppercase tracking-[0.1em] transition-colors text-theme-text hover:bg-theme-surface2"
+                      className="w-full text-left px-3 py-1.5 rounded-inner text-xs font-bold uppercase tracking-[0.1em] transition-colors text-theme-text hover:bg-theme-surface2"
                     >
                       {item.label}
                     </button>
@@ -159,28 +159,28 @@ const CompactRunBar: React.FC<{
             <button
               type="button"
               onClick={() => setShowDetails(prev => !prev)}
-              className="w-full px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.16em] text-theme-muted hover:text-theme-cyan transition-colors flex items-center justify-between"
+              className="w-full px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-theme-muted hover:text-theme-cyan transition-colors flex items-center justify-between"
             >
               <span>{showDetails ? 'Hide Details' : 'Guidance & Validation'}</span>
-              <span className={`transform transition-transform duration-300 text-[8px] ${showDetails ? 'rotate-180' : ''}`}>▼</span>
+              <span className={`transform transition-transform duration-300 text-[10px] ${showDetails ? 'rotate-180' : ''}`}>▼</span>
             </button>
 
             {showDetails && (
               <div className="px-3 pb-3 space-y-2">
-                <div className="rounded-inner border px-3 py-2 text-[10px] bg-theme-bg border-theme-border text-theme-muted">
+                <div className="rounded-inner border px-3 py-2 text-xs bg-theme-bg border-theme-border text-theme-muted">
                   {stepGuidance}
                 </div>
                 <div className="rounded-inner border px-3 py-2 bg-theme-bg border-theme-border space-y-1">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-theme-lavender">Validation</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-theme-lavender">Validation</p>
                   {validationWarnings.length > 0 ? (
                     <>
-                      <p className="text-[10px] text-theme-muted">{validationWarnings.length} checks need attention.</p>
+                      <p className="text-xs text-theme-muted">{validationWarnings.length} checks need attention.</p>
                       {validationWarnings.map((w) => (
-                        <p key={w} className="text-[10px] text-theme-muted pl-2 border-l-2 border-theme-warning/30">{w}</p>
+                        <p key={w} className="text-xs text-theme-muted pl-2 border-l-2 border-theme-warning/30">{w}</p>
                       ))}
                     </>
                   ) : (
-                    <p className="text-[10px] text-theme-muted">All checks passed.</p>
+                    <p className="text-xs text-theme-muted">All checks passed.</p>
                   )}
                 </div>
               </div>
@@ -191,7 +191,7 @@ const CompactRunBar: React.FC<{
         <div className="rounded-inner border p-6 bg-theme-bg border-theme-border text-center mx-3 my-3">
           <div className="text-2xl mb-3">⚙️</div>
           <p className="text-[11px] font-bold text-theme-text mb-2">Complete setup to continue</p>
-          <p className="text-[10px] text-theme-muted">{stepGuidance}</p>
+          <p className="text-xs text-theme-muted">{stepGuidance}</p>
         </div>
       )}
     </div>
@@ -277,13 +277,13 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
           <div className={isClassic ? 'flex items-center gap-2 px-4 pt-4' : 'flex items-center gap-2 p-1 rounded-inner border bg-theme-bg/70 border-theme-border'}>
             <button
               onClick={() => onOpsTabChange('SELECTION_ACTIONS')}
-              className={`px-3 py-1.5 rounded-inner text-[9px] font-black uppercase tracking-[0.16em] transition-all border ${buttonTone(isClassic, opsTab === 'SELECTION_ACTIONS')}`}
+              className={`px-3 py-1.5 rounded-inner text-xs font-black uppercase tracking-[0.16em] transition-all border ${buttonTone(isClassic, opsTab === 'SELECTION_ACTIONS')}`}
             >
               {showSelectionActions ? 'Selection' : 'Run Panel'}
             </button>
             <button
               onClick={() => onOpsTabChange('KEY_DRIVERS')}
-              className={`px-3 py-1.5 rounded-inner text-[9px] font-black uppercase tracking-[0.16em] transition-all border ${buttonTone(isClassic, opsTab === 'KEY_DRIVERS')}`}
+              className={`px-3 py-1.5 rounded-inner text-xs font-black uppercase tracking-[0.16em] transition-all border ${buttonTone(isClassic, opsTab === 'KEY_DRIVERS')}`}
             >
               Key Drivers
             </button>
@@ -293,19 +293,19 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
         <div className={isClassic ? 'p-4 space-y-4' : 'space-y-4'}>
           {!showDriverPane ? (
             <>
-              <div className="rounded-inner border px-3 py-2 text-[10px] font-black uppercase tracking-[0.16em] bg-theme-bg border-theme-border text-theme-muted">
+              <div className="rounded-inner border px-3 py-2 text-xs font-black uppercase tracking-[0.16em] bg-theme-bg border-theme-border text-theme-muted">
                 {stepGuidance}
               </div>
 
               {showSelectionSummary && (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-inner border p-3 bg-theme-bg border-theme-border">
-                    <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Selected Wells</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-theme-lavender">Selected Wells</p>
                     <p className="text-2xl font-black text-theme-text">{selectedVisibleCount}</p>
-                    <p className="text-[9px] text-theme-muted uppercase tracking-[0.16em]">of {filteredVisibleCount} visible</p>
+                    <p className="text-xs text-theme-muted uppercase tracking-[0.16em]">of {filteredVisibleCount} visible</p>
                   </div>
                   <div className="rounded-inner border p-3 bg-theme-bg border-theme-border">
-                    <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Active Group</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-theme-lavender">Active Group</p>
                     <p className="text-sm font-black text-theme-text truncate">{activeGroupName}</p>
                   </div>
                 </div>
@@ -316,7 +316,7 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
                   <button
                     onClick={onAssign}
                     disabled={!canAssign}
-                    className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
+                    className={`px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.12em] transition-all ${
                       canAssign
                         ? 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan'
                         : 'bg-theme-surface2 text-theme-muted cursor-not-allowed'
@@ -327,7 +327,7 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
                   <button
                     onClick={onCreateGroup}
                     disabled={!canAssign}
-                    className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
+                    className={`px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.12em] transition-all ${
                       canAssign
                         ? 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan'
                         : 'bg-theme-surface2 text-theme-muted cursor-not-allowed'
@@ -337,14 +337,14 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
                   </button>
                   <button
                     onClick={onSelectAll}
-                    className="px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all bg-theme-surface2 text-theme-text border border-theme-border hover:border-theme-cyan"
+                    className="px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.12em] transition-all bg-theme-surface2 text-theme-text border border-theme-border hover:border-theme-cyan"
                   >
                     Select All
                   </button>
                   <button
                     onClick={onClear}
                     disabled={!canClear}
-                    className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all border ${
+                    className={`px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.12em] transition-all border ${
                       canClear
                         ? 'bg-theme-surface2 text-theme-text border-theme-border hover:border-theme-cyan'
                         : 'bg-theme-surface2 text-theme-muted cursor-not-allowed border-theme-border'
@@ -358,14 +358,14 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
               <div className="space-y-2">
                 <button
                   onClick={onSaveSnapshot}
-                  className="w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.14em] transition-all bg-theme-magenta text-theme-bg hover:shadow-glow-magenta"
+                  className="w-full px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.14em] transition-all bg-theme-magenta text-theme-bg hover:shadow-glow-magenta"
                 >
                   Save Snapshot
                 </button>
 
                 <button
                   onClick={() => setShowSecondaryActions(prev => !prev)}
-                  className="w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.14em] transition-all border border-theme-border bg-theme-bg text-theme-muted hover:text-theme-text"
+                  className="w-full px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.14em] transition-all border border-theme-border bg-theme-bg text-theme-muted hover:text-theme-text"
                 >
                   {showSecondaryActions ? 'Hide More Actions' : 'More Actions'}
                 </button>
@@ -375,7 +375,7 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
                     <button
                       onClick={onExportCsv}
                       disabled={!canUseSecondaryActions}
-                      className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all border ${
+                      className={`px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.12em] transition-all border ${
                         canUseSecondaryActions
                           ? 'bg-theme-bg text-theme-text border-theme-border hover:border-theme-cyan'
                           : 'bg-theme-surface2 text-theme-muted border-theme-border cursor-not-allowed'
@@ -386,7 +386,7 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
                     <button
                       onClick={onExportPdf}
                       disabled={!canUseSecondaryActions}
-                      className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all border ${
+                      className={`px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.12em] transition-all border ${
                         canUseSecondaryActions
                           ? 'bg-theme-bg text-theme-text border-theme-border hover:border-theme-cyan'
                           : 'bg-theme-surface2 text-theme-muted border-theme-border cursor-not-allowed'
@@ -402,26 +402,26 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
 
               <div className="rounded-inner border p-3 bg-theme-bg border-theme-border space-y-2">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-theme-lavender">Validation</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-theme-lavender">Validation</p>
                   <button
                     type="button"
                     onClick={() => setShowValidationDetails(prev => !prev)}
-                    className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-cyan"
+                    className="text-xs font-black uppercase tracking-[0.16em] text-theme-cyan"
                   >
                     {showValidationDetails ? 'Hide' : 'Details'}
                   </button>
                 </div>
                 {validationWarnings.length > 0 ? (
-                  <p className="text-[10px] text-theme-muted">
+                  <p className="text-xs text-theme-muted">
                     {validationWarnings.length} checks need attention.
                   </p>
                 ) : (
-                  <p className="text-[10px] text-theme-muted">All checks passed.</p>
+                  <p className="text-xs text-theme-muted">All checks passed.</p>
                 )}
                 {showValidationDetails && validationWarnings.length > 0 && (
                   <div className="space-y-1">
                     {validationWarnings.map((warning) => (
-                      <p key={warning} className="text-[10px] text-theme-muted">{warning}</p>
+                      <p key={warning} className="text-xs text-theme-muted">{warning}</p>
                     ))}
                   </div>
                 )}

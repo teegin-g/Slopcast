@@ -14,10 +14,12 @@ import type { MonthlyCashFlow, CommodityPricingAssumptions } from '../../types';
 import { buildAnnualRollups, formatAccounting, type AnnualCashFlowRow } from '../../utils/cashFlowRollup';
 import { useTableFilters } from './hooks/useTableFilters';
 import FilterChips from './FilterChips';
+import { TableSkeleton, FadeIn } from './Skeleton';
 
 export interface CashFlowTableProps {
   flow: MonthlyCashFlow[];
   pricing: CommodityPricingAssumptions;
+  isLoading?: boolean;
 }
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -94,7 +96,7 @@ function monthToTableRow(
   };
 }
 
-const CashFlowTable: React.FC<CashFlowTableProps> = ({ flow, pricing }) => {
+const CashFlowTable: React.FC<CashFlowTableProps> = ({ flow, pricing, isLoading = false }) => {
   const {
     columnFilters,
     setColumnFilters,
@@ -138,7 +140,7 @@ const CashFlowTable: React.FC<CashFlowTableProps> = ({ flow, pricing }) => {
               <button
                 type="button"
                 onClick={row.getToggleExpandedHandler()}
-                className="text-[10px] text-theme-muted hover:text-theme-text transition-colors"
+                className="text-xs text-theme-muted hover:text-theme-text transition-colors"
                 aria-label={row.getIsExpanded() ? 'Collapse row' : 'Expand row'}
               >
                 {row.getIsExpanded() ? '\u25BC' : '\u25B6'}
@@ -234,19 +236,28 @@ const CashFlowTable: React.FC<CashFlowTableProps> = ({ flow, pricing }) => {
     },
   });
 
+  if (isLoading) {
+    return <TableSkeleton rows={10} cols={8} />;
+  }
+
   if (flow.length === 0) {
     return (
       <div className="rounded-panel border shadow-card bg-theme-surface1/70 border-theme-border p-8 text-center">
-        <p className="text-theme-muted text-sm">No cash flow data available. Run economics to generate projections.</p>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="text-4xl mb-3 opacity-40">📊</div>
+          <h3 className="text-sm font-bold mb-2 text-theme-text">No cash flow data</h3>
+          <p className="text-xs text-theme-muted max-w-xs">Configure economics assumptions and assign wells to generate cash flow projections.</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-panel border shadow-card bg-theme-surface1/70 border-theme-border overflow-hidden">
+    <FadeIn>
+      <div className="rounded-panel border shadow-card bg-theme-surface1/70 border-theme-border overflow-hidden">
       {/* Year filter bar */}
       <div className="px-4 py-2 border-b border-theme-border/60 flex items-center gap-2">
-        <span className="text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan">
+        <span className="text-xs font-black uppercase tracking-[0.24em] text-theme-cyan">
           Cash Flow
         </span>
         <div className="ml-auto">
@@ -275,7 +286,7 @@ const CashFlowTable: React.FC<CashFlowTableProps> = ({ flow, pricing }) => {
                 {headerGroup.headers.map(header => (
                   <th
                     key={header.id}
-                    className="py-2 px-2 text-left text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan"
+                    className="py-2 px-2 text-left text-xs font-black uppercase tracking-[0.24em] text-theme-cyan"
                     style={{ width: header.getSize() }}
                   >
                     {header.isPlaceholder ? null : (
@@ -322,7 +333,8 @@ const CashFlowTable: React.FC<CashFlowTableProps> = ({ flow, pricing }) => {
           </tbody>
         </table>
       </div>
-    </div>
+      </div>
+    </FadeIn>
   );
 };
 

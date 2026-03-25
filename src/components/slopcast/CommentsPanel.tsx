@@ -50,10 +50,10 @@ const CommentsPanel: React.FC<CommentsPanelProps> = ({
     >
       <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
         <div>
-          <h2 className={`text-[10px] font-black uppercase tracking-[0.24em] ${isClassic ? 'text-white' : 'text-theme-cyan'}`}>
+          <h2 className={`text-xs font-black uppercase tracking-[0.24em] ${isClassic ? 'text-white' : 'text-theme-cyan'}`}>
             Comments
           </h2>
-          <p className={`text-[9px] mt-0.5 ${isClassic ? 'text-white/50' : 'text-theme-muted'}`}>
+          <p className={`text-xs mt-0.5 ${isClassic ? 'text-white/50' : 'text-theme-muted'}`}>
             on {entityType}: {entityName}
           </p>
         </div>
@@ -70,18 +70,18 @@ const CommentsPanel: React.FC<CommentsPanelProps> = ({
               <div key={c.id} className="px-4 py-3">
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-black ${
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black ${
                       isClassic ? 'bg-black/30 text-white/80' : 'bg-theme-surface2 text-theme-text'
                     }`}>
                       {c.userName.charAt(0).toUpperCase()}
                     </div>
-                    <span className={`text-[10px] font-bold ${isClassic ? 'text-white/90' : 'text-theme-text'}`}>{c.userName}</span>
-                    <span className={`text-[9px] ${isClassic ? 'text-white/40' : 'text-theme-muted/60'}`}>{formatTimestamp(c.createdAt)}</span>
+                    <span className={`text-xs font-bold ${isClassic ? 'text-white/90' : 'text-theme-text'}`}>{c.userName}</span>
+                    <span className={`text-xs ${isClassic ? 'text-white/40' : 'text-theme-muted/60'}`}>{formatTimestamp(c.createdAt)}</span>
                   </div>
                   {currentUserId === c.userId && (
                     <button
                       onClick={() => onDeleteComment(c.id)}
-                      className={`text-[9px] ${isClassic ? 'text-white/30 hover:text-white/60' : 'text-theme-muted/50 hover:text-theme-magenta'}`}
+                      className={`text-xs ${isClassic ? 'text-white/30 hover:text-white/60' : 'text-theme-muted/50 hover:text-theme-magenta'}`}
                     >
                       ✕
                     </button>
@@ -111,7 +111,7 @@ const CommentsPanel: React.FC<CommentsPanelProps> = ({
           <button
             onClick={handlePost}
             disabled={!body.trim()}
-            className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-wide transition-colors ${
+            className={`px-3 py-2 rounded-inner text-xs font-black uppercase tracking-wide transition-colors ${
               isClassic
                 ? 'sc-btnPrimary disabled:opacity-40'
                 : 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan disabled:opacity-40'

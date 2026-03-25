@@ -32,7 +32,7 @@ const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ isClassic
       >
         <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-5 py-3' : 'px-5 py-3 border-b border-theme-border'}>
           <div className="flex items-center justify-between">
-            <h2 className={`text-[10px] font-black uppercase tracking-[0.24em] ${isClassic ? 'text-white' : 'text-theme-cyan'}`}>
+            <h2 className={`text-xs font-black uppercase tracking-[0.24em] ${isClassic ? 'text-white' : 'text-theme-cyan'}`}>
               Keyboard Shortcuts
             </h2>
             <button
@@ -51,7 +51,7 @@ const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = ({ isClassic
                 {s.keys.map((k, j) => (
                   <kbd
                     key={j}
-                    className={`inline-block min-w-[24px] text-center px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                    className={`inline-block min-w-[24px] text-center px-1.5 py-0.5 rounded text-xs font-bold ${
                       isClassic
                         ? 'bg-black/30 text-white/90 border border-black/40'
                         : 'bg-theme-surface2 text-theme-text border border-theme-border'

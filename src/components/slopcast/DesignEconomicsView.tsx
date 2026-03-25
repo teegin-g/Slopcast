@@ -5,6 +5,7 @@ import TaxControls from '../TaxControls';
 import DebtControls from '../DebtControls';
 import { ThemeId } from '../../theme/themes';
 import { MonthlyCashFlow, Well, WellGroup, TaxAssumptions, DebtAssumptions, ReserveCategory, DEFAULT_TAX_ASSUMPTIONS, DEFAULT_DEBT_ASSUMPTIONS } from '../../types';
+import { DEFAULT_COMMODITY_PRICING } from '../../constants';
 import KpiGrid from './KpiGrid';
 import OperationsConsole, { OperationsConsoleProps } from './OperationsConsole';
 import EconomicsDriversPanel, { DriverFamilyId } from './EconomicsDriversPanel';
@@ -19,6 +20,9 @@ import CashFlowTable from './CashFlowTable';
 import { ViewTransition } from '../layout/ViewTransition';
 import { useDebouncedRecalc } from './hooks/useDebouncedRecalc';
 import { RecalcStatusProvider } from './hooks/useRecalcStatus';
+import { KpiGridSkeleton, GroupComparisonSkeleton, FadeIn } from './Skeleton';
+import { ReadinessChecklist } from './ReadinessChecklist';
+import { useToast } from './Toast';
 
 export type EconomicsMobilePanel = 'SETUP' | 'RESULTS';
 
@@ -121,7 +125,7 @@ const QuickDrivers: React.FC<{
       }
     >
       <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
-        <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
+        <h2 className={isClassic ? 'text-xs font-black uppercase tracking-[0.24em] text-white' : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan'}>
           Quick Drivers
         </h2>
       </div>
@@ -133,10 +137,10 @@ const QuickDrivers: React.FC<{
           return (
             <div key={driver.id}>
               <div className="flex items-center justify-between gap-2 mb-1">
-                <span className={`text-[9px] font-black uppercase tracking-[0.1em] ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
+                <span className={`text-xs font-black uppercase tracking-[0.1em] ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
                   {driver.label}
                 </span>
-                <span className={`text-[9px] font-black tabular-nums ${isPositive ? (isClassic ? 'text-theme-warning' : 'text-theme-cyan') : 'text-theme-magenta'}`}>
+                <span className={`text-xs font-black tabular-nums ${isPositive ? (isClassic ? 'text-theme-warning' : 'text-theme-cyan') : 'text-theme-magenta'}`}>
                   {isPositive ? '+' : ''}${(driver.dominantDelta / 1e6).toFixed(1)}M
                 </span>
               </div>
@@ -157,10 +161,10 @@ const QuickDrivers: React.FC<{
         {breakevenOilPrice != null && (
           <div className={`mt-2 pt-2 border-t ${isClassic ? 'border-white/10' : 'border-theme-border/30'}`}>
             <div className="flex items-center justify-between">
-              <span className={`text-[9px] font-black uppercase tracking-[0.1em] ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
+              <span className={`text-xs font-black uppercase tracking-[0.1em] ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
                 Breakeven Oil
               </span>
-              <span className={`text-[10px] font-black tabular-nums ${isClassic ? 'text-theme-warning' : 'text-theme-lavender'}`}>
+              <span className={`text-xs font-black tabular-nums ${isClassic ? 'text-theme-warning' : 'text-theme-lavender'}`}>
                 ${breakevenOilPrice}/bbl
               </span>
             </div>
@@ -206,7 +210,9 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   onToggleAfterTax,
   onToggleLevered,
 }) => {
+  const { addToast } = useToast();
   const { debouncedUpdate, isRecalculating } = useDebouncedRecalc(onUpdateGroup, 400);
+  const prevRecalculating = React.useRef(isRecalculating);
   const hasReadinessBlocker = !hasGroup || !hasGroupWells || !hasCapexItems;
   const [showSetupInsights, setShowSetupInsights] = useState(hasReadinessBlocker);
   const [didAutoOpenInsights, setDidAutoOpenInsights] = useState(hasReadinessBlocker);
@@ -214,6 +220,14 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   const [taxOpen, setTaxOpen] = useState(false);
   const [leverageOpen, setLeverageOpen] = useState(false);
   const [reserveOpen, setReserveOpen] = useState(false);
+
+  // Toast on recalc complete
+  useEffect(() => {
+    if (prevRecalculating.current && !isRecalculating && hasGroup && hasGroupWells && hasCapexItems) {
+      addToast({ type: 'success', message: 'Economics recalculated' });
+    }
+    prevRecalculating.current = isRecalculating;
+  }, [isRecalculating, hasGroup, hasGroupWells, hasCapexItems, addToast]);
 
   useEffect(() => {
     if (didAutoOpenInsights) return;
@@ -313,10 +327,10 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
               onClick={() => onSetMobilePanel('SETUP')}
               className={
                 isClassic
-                  ? `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
+                  ? `px-3 py-2 rounded-inner text-xs font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
                       mobilePanel === 'SETUP' ? 'bg-theme-warning text-black border-black/20' : 'bg-black/15 text-white/90 border-black/25'
                     }`
-                  : `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border transition-colors ${
+                  : `px-3 py-2 rounded-inner text-xs font-black uppercase tracking-widest border transition-colors ${
                       mobilePanel === 'SETUP'
                         ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
                         : 'bg-theme-bg text-theme-muted border-theme-border'
@@ -329,10 +343,10 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
               onClick={() => onSetMobilePanel('RESULTS')}
               className={
                 isClassic
-                  ? `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
+                  ? `px-3 py-2 rounded-inner text-xs font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
                       mobilePanel === 'RESULTS' ? 'bg-theme-warning text-black border-black/20' : 'bg-black/15 text-white/90 border-black/25'
                     }`
-                  : `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border transition-colors ${
+                  : `px-3 py-2 rounded-inner text-xs font-black uppercase tracking-widest border transition-colors ${
                       mobilePanel === 'RESULTS'
                         ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
                         : 'bg-theme-bg text-theme-muted border-theme-border'
@@ -381,7 +395,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                     : 'border-b border-theme-border/60 hover:bg-theme-surface2/30'
                 } transition-colors`}
               >
-                <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
+                <h2 className={isClassic ? 'text-xs font-black uppercase tracking-[0.24em] text-white' : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan'}>
                   Tax &amp; Fiscal
                 </h2>
                 <span className={`transform transition-transform duration-300 text-xs ${taxOpen ? 'rotate-180' : ''} ${
@@ -423,7 +437,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                     : 'border-b border-theme-border/60 hover:bg-theme-surface2/30'
                 } transition-colors`}
               >
-                <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
+                <h2 className={isClassic ? 'text-xs font-black uppercase tracking-[0.24em] text-white' : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan'}>
                   Leverage
                 </h2>
                 <span className={`transform transition-transform duration-300 text-xs ${leverageOpen ? 'rotate-180' : ''} ${
@@ -465,7 +479,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                     : 'border-b border-theme-border/60 hover:bg-theme-surface2/30'
                 } transition-colors`}
               >
-                <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
+                <h2 className={isClassic ? 'text-xs font-black uppercase tracking-[0.24em] text-white' : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan'}>
                   Reserve Category
                 </h2>
                 <span className={`transform transition-transform duration-300 text-xs ${reserveOpen ? 'rotate-180' : ''} ${
@@ -486,7 +500,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                     onChange={(e) => onUpdateGroup({ ...activeGroup, reserveCategory: e.target.value as ReserveCategory })}
                     className={
                       isClassic
-                        ? 'w-full rounded-md px-2 py-1 text-[10px] font-black sc-inputNavy'
+                        ? 'w-full rounded-md px-2 py-1 text-xs font-black sc-inputNavy'
                         : 'w-full bg-theme-bg border border-theme-border rounded-lg px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition'
                     }
                   >
@@ -516,7 +530,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                     : 'border-b border-theme-border/60 hover:bg-theme-surface2/30'
                 } transition-colors`}
               >
-                <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
+                <h2 className={isClassic ? 'text-xs font-black uppercase tracking-[0.24em] text-white' : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan'}>
                   Advanced Settings
                 </h2>
                 <span className={`transform transition-transform duration-300 text-xs ${advancedOpen ? 'rotate-180' : ''} ${
@@ -556,14 +570,14 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <SetupProgressRing completed={completedCount} total={checklist.length} isClassic={isClassic} />
-                    <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
+                    <h2 className={isClassic ? 'text-xs font-black uppercase tracking-[0.24em] text-white' : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan'}>
                       Setup Insights
                     </h2>
                   </div>
                   <button
                     type="button"
                     onClick={() => setShowSetupInsights(prev => !prev)}
-                    className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-cyan"
+                    className="text-xs font-black uppercase tracking-[0.16em] text-theme-cyan"
                   >
                     {showSetupInsights ? 'Hide' : 'Show'}
                   </button>
@@ -571,31 +585,40 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
               </div>
               {showSetupInsights && (
                 <div className="p-4 space-y-3">
-                  <p className="text-[10px] text-theme-muted">
+                  <p className="text-xs text-theme-muted">
                     {activeWorkflowStep?.label || 'Setup'} step is <span className="uppercase font-black text-theme-cyan">{activeWorkflowStep?.status.toLowerCase()}</span>.
                   </p>
 
+                  {/* Readiness checklist with progress bar */}
+                  {hasReadinessBlocker && (
+                    <ReadinessChecklist
+                      items={checklist.map(c => ({ label: c.label, done: c.done }))}
+                    />
+                  )}
+
                   {/* Compact vertical checklist instead of tile grid */}
-                  <div className="space-y-1">
-                    {checklist.map((item) => (
-                      <div key={item.id} className="flex items-center gap-2.5 py-1.5 px-2 rounded-inner hover:bg-theme-surface2/50 transition-colors">
-                        <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 text-[8px] font-black ${
-                          item.done
-                            ? 'bg-theme-cyan/20 border-theme-cyan text-theme-cyan'
-                            : 'bg-transparent border-theme-border text-transparent'
-                        }`}>
-                          {item.done ? '✓' : ''}
-                        </span>
-                        <span className={`text-[10px] ${item.done ? 'text-theme-text' : 'text-theme-muted'}`}>
-                          {item.label}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                  {!hasReadinessBlocker && (
+                    <div className="space-y-1">
+                      {checklist.map((item) => (
+                        <div key={item.id} className="flex items-center gap-2.5 py-1.5 px-2 rounded-inner hover:bg-theme-surface2/50 transition-colors">
+                          <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 text-[10px] font-black ${
+                            item.done
+                              ? 'bg-theme-cyan/20 border-theme-cyan text-theme-cyan'
+                              : 'bg-transparent border-theme-border text-transparent'
+                          }`}>
+                            {item.done ? '✓' : ''}
+                          </span>
+                          <span className={`text-xs ${item.done ? 'text-theme-text' : 'text-theme-muted'}`}>
+                            {item.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   <div className="rounded-inner border border-theme-border bg-theme-bg px-3 py-2">
-                    <p className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-lavender">Current blocker</p>
-                    <p className="text-[10px] text-theme-muted mt-1">{readinessBlocker}</p>
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-theme-lavender">Current blocker</p>
+                    <p className="text-xs text-theme-muted mt-1">{readinessBlocker}</p>
                   </div>
                 </div>
               )}
@@ -610,40 +633,59 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
             !focusMode && mobilePanel !== 'RESULTS' ? 'hidden lg:block' : ''
           }`}
         >
-          <EconomicsResultsTabs isClassic={isClassic} tab={resultsTab} onChange={onSetResultsTab} />
+          <EconomicsResultsTabs
+            isClassic={isClassic}
+            tab={resultsTab}
+            onChange={onSetResultsTab}
+            hasFlowData={aggregateFlow.length > 0}
+          />
 
           <RecalcStatusProvider isRecalculating={isRecalculating}>
           <ViewTransition transitionKey={resultsTab}>
             {resultsTab === 'SUMMARY' && (
               <div className="space-y-4">
                 {/* Hero NPV + stat strip */}
-                <KpiGrid
-                  isClassic={isClassic}
-                  metrics={aggregateMetrics}
-                  aggregateFlow={aggregateFlow}
-                  breakevenOilPrice={breakevenOilPrice}
-                  snapshotHistory={snapshotHistory}
-                  showAfterTax={showAfterTax}
-                  showLevered={showLevered}
-                />
+                {isRecalculating ? (
+                  <KpiGridSkeleton />
+                ) : (
+                  <FadeIn>
+                    <KpiGrid
+                      isClassic={isClassic}
+                      metrics={aggregateMetrics}
+                      aggregateFlow={aggregateFlow}
+                      breakevenOilPrice={breakevenOilPrice}
+                      snapshotHistory={snapshotHistory}
+                      showAfterTax={showAfterTax}
+                      showLevered={showLevered}
+                    />
+                  </FadeIn>
+                )}
 
                 {/* Accent divider */}
                 <AccentDivider />
 
                 {/* 2-column: Group Comparison + Quick Drivers */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <GroupComparisonStrip
-                    isClassic={isClassic}
-                    groups={groups}
-                    activeGroupId={activeGroupId}
-                    onActivateGroup={onActivateGroup}
-                    scenarioRankings={operationsProps.scenarioRankings}
-                  />
-                  <QuickDrivers
-                    isClassic={isClassic}
-                    topDrivers={operationsProps.topDrivers}
-                    breakevenOilPrice={operationsProps.breakevenOilPrice}
-                  />
+                  {isRecalculating && groups.length < 2 ? (
+                    <GroupComparisonSkeleton />
+                  ) : (
+                    <FadeIn delay={0.1}>
+                      <GroupComparisonStrip
+                        isClassic={isClassic}
+                        groups={groups}
+                        activeGroupId={activeGroupId}
+                        onActivateGroup={onActivateGroup}
+                        scenarioRankings={operationsProps.scenarioRankings}
+                      />
+                    </FadeIn>
+                  )}
+                  <FadeIn delay={0.15}>
+                    <QuickDrivers
+                      isClassic={isClassic}
+                      topDrivers={operationsProps.topDrivers}
+                      breakevenOilPrice={operationsProps.breakevenOilPrice}
+                    />
+                  </FadeIn>
                 </div>
 
                 {/* Accent divider before Execution */}
@@ -652,8 +694,8 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                 {!focusMode && (
                   <div className="pt-1">
                     <p className={isClassic
-                      ? 'text-[9px] font-black uppercase tracking-[0.2em] text-white/50 mb-3'
-                      : 'text-[9px] font-black uppercase tracking-[0.2em] text-theme-muted/60 mb-3'
+                      ? 'text-xs font-black uppercase tracking-[0.2em] text-white/50 mb-3'
+                      : 'text-xs font-black uppercase tracking-[0.2em] text-theme-muted/60 mb-3'
                     }>
                       Execution
                     </p>
@@ -685,7 +727,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
             {resultsTab === 'CASH_FLOW' && (
               <CashFlowTable
                 flow={aggregateFlow}
-                pricing={activeGroup.pricing}
+                pricing={DEFAULT_COMMODITY_PRICING}
               />
             )}
 
@@ -717,7 +759,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
             <button
               type="button"
               onClick={() => onSetMobilePanel('RESULTS')}
-              className={`w-full py-2.5 rounded-inner text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${
+              className={`w-full py-2.5 rounded-inner text-xs font-black uppercase tracking-[0.2em] transition-colors ${
                 isClassic
                   ? 'bg-theme-warning text-black border-2 border-black/20 shadow-card'
                   : 'bg-theme-cyan text-theme-bg border border-theme-cyan shadow-glow-cyan'
@@ -729,7 +771,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
             <button
               type="button"
               onClick={() => onSetMobilePanel('SETUP')}
-              className={`w-full py-2.5 rounded-inner text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${
+              className={`w-full py-2.5 rounded-inner text-xs font-black uppercase tracking-[0.2em] transition-colors ${
                 isClassic
                   ? 'bg-black/30 text-white/90 border-2 border-black/25 shadow-card'
                   : 'bg-theme-surface1 text-theme-text border border-theme-border'

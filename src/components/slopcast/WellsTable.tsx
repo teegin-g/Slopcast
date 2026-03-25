@@ -12,12 +12,14 @@ import {
 import type { Well } from '../../types';
 import { useTableFilters } from './hooks/useTableFilters';
 import FilterChips from './FilterChips';
+import { TableSkeleton, FadeIn } from './Skeleton';
 
 export interface WellsTableProps {
   wells: Well[];
   selectedWellIds: Set<string>;
   onSelectWells: (ids: string[]) => void;
   onToggleWell: (id: string) => void;
+  isLoading?: boolean;
 }
 
 function formatFeet(value: number) {
@@ -29,6 +31,7 @@ const WellsTable: React.FC<WellsTableProps> = ({
   selectedWellIds,
   onSelectWells,
   onToggleWell,
+  isLoading = false,
 }) => {
   const {
     globalFilter,
@@ -154,10 +157,15 @@ const WellsTable: React.FC<WellsTableProps> = ({
     });
   };
 
+  if (isLoading) {
+    return <TableSkeleton rows={8} cols={6} />;
+  }
+
   return (
-    <div className="rounded-panel border shadow-card bg-theme-surface1/70 border-theme-border overflow-hidden">
-      {/* Search and filter bar */}
-      <div className="px-4 py-2 border-b border-theme-border/60 flex flex-col md:flex-row gap-2">
+    <FadeIn>
+      <div className="rounded-panel border shadow-card bg-theme-surface1/70 border-theme-border overflow-hidden">
+        {/* Search and filter bar */}
+        <div className="px-4 py-2 border-b border-theme-border/60 flex flex-col md:flex-row gap-2">
         <input
           type="text"
           value={globalFilter ?? ''}
@@ -192,64 +200,73 @@ const WellsTable: React.FC<WellsTableProps> = ({
 
       {/* Table */}
       <div className="overflow-auto max-h-[60vh]">
-        <table className="w-full table-fixed" style={{ width: table.getTotalSize() }}>
-          <thead className="sticky top-0 z-10 bg-theme-surface1 border-b border-theme-border">
-            {table.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map(header => (
-                  <th
-                    key={header.id}
-                    className="py-2 px-2 text-left text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan relative"
-                    style={{ width: header.getSize() }}
-                  >
-                    {header.isPlaceholder ? null : (
-                      <div
-                        className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}
-                        onClick={header.column.getToggleSortingHandler()}
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {{
-                          asc: ' \u25B2',
-                          desc: ' \u25BC',
-                        }[header.column.getIsSorted() as string] ?? ''}
-                      </div>
-                    )}
-                    {/* Resize handle */}
-                    {header.column.getCanResize() && (
-                      <div
-                        onMouseDown={header.getResizeHandler()}
-                        onTouchStart={header.getResizeHandler()}
-                        className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-theme-border/30 hover:bg-theme-cyan/50"
-                      />
-                    )}
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody className="text-[11px] text-theme-text">
-            {table.getRowModel().rows.map(row => (
-              <tr
-                key={row.id}
-                className={`border-t border-theme-border/50 hover:bg-theme-surface2/30 ${
-                  row.getIsSelected() ? 'bg-theme-cyan/10' : ''
-                }`}
-              >
-                {row.getVisibleCells().map(cell => (
-                  <td
-                    key={cell.id}
-                    className="py-1.5 px-2"
-                    style={{ width: cell.column.getSize() }}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {table.getRowModel().rows.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="text-4xl mb-3 opacity-40">🗺️</div>
+            <h3 className="text-sm font-bold mb-2 text-theme-text">No wells to display</h3>
+            <p className="text-xs text-theme-muted max-w-xs">Use the basin map to select wells, or search for specific acreage to get started.</p>
+          </div>
+        ) : (
+          <table className="w-full table-fixed" style={{ width: table.getTotalSize() }}>
+            <thead className="sticky top-0 z-10 bg-theme-surface1 border-b border-theme-border">
+              {table.getHeaderGroups().map(headerGroup => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map(header => (
+                    <th
+                      key={header.id}
+                      className="py-2 px-2 text-left text-xs font-black uppercase tracking-[0.24em] text-theme-cyan relative"
+                      style={{ width: header.getSize() }}
+                    >
+                      {header.isPlaceholder ? null : (
+                        <div
+                          className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}
+                          onClick={header.column.getToggleSortingHandler()}
+                        >
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                          {{
+                            asc: ' \u25B2',
+                            desc: ' \u25BC',
+                          }[header.column.getIsSorted() as string] ?? ''}
+                        </div>
+                      )}
+                      {/* Resize handle */}
+                      {header.column.getCanResize() && (
+                        <div
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                          className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-theme-border/30 hover:bg-theme-cyan/50"
+                        />
+                      )}
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody className="text-[11px] text-theme-text">
+              {table.getRowModel().rows.map(row => (
+                <tr
+                  key={row.id}
+                  className={`border-t border-theme-border/50 hover:bg-theme-surface2/30 ${
+                    row.getIsSelected() ? 'bg-theme-cyan/10' : ''
+                  }`}
+                >
+                  {row.getVisibleCells().map(cell => (
+                    <td
+                      key={cell.id}
+                      className="py-1.5 px-2"
+                      style={{ width: cell.column.getSize() }}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
-    </div>
+      </div>
+    </FadeIn>
   );
 };
 

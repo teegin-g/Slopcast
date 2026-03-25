@@ -19,7 +19,7 @@ const AcreageSearchBar: React.FC<AcreageSearchBarProps> = ({
   isClassic,
   onSearch,
   isLoading = false,
-  placeholder = 'Search by basin, operator, or formation...',
+  placeholder = "Search acreage — try 'Permian PUDs under $5M' or 'Devon Wolfcamp wells'",
 }) => {
   const [query, setQuery] = useState('');
   const [showExamples, setShowExamples] = useState(false);
@@ -84,7 +84,7 @@ const AcreageSearchBar: React.FC<AcreageSearchBarProps> = ({
           <button
             type="submit"
             disabled={isLoading || !query.trim()}
-            className={`px-4 py-2 mr-1.5 rounded-inner text-[10px] font-black uppercase tracking-widest transition-all ${
+            className={`px-4 py-2 mr-1.5 rounded-inner text-xs font-black uppercase tracking-widest transition-all ${
               isClassic
                 ? 'bg-theme-cyan text-white border border-theme-magenta/40 disabled:opacity-40'
                 : 'bg-theme-cyan text-theme-bg disabled:opacity-40 hover:shadow-glow-cyan'
@@ -105,7 +105,7 @@ const AcreageSearchBar: React.FC<AcreageSearchBarProps> = ({
           }`}
         >
           <div className={`px-3 py-2 border-b ${isClassic ? 'border-white/10' : 'border-theme-border/40'}`}>
-            <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${isClassic ? 'text-white/40' : 'text-theme-muted/60'}`}>
+            <span className={`text-xs font-black uppercase tracking-[0.2em] ${isClassic ? 'text-white/40' : 'text-theme-muted/60'}`}>
               Try a search
             </span>
           </div>

@@ -55,7 +55,7 @@ const ProjectSharePanel: React.FC<ProjectSharePanelProps> = ({
       >
         <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-5 py-3' : 'px-5 py-3 border-b border-theme-border'}>
           <div className="flex items-center justify-between">
-            <h2 className={`text-[10px] font-black uppercase tracking-[0.24em] ${isClassic ? 'text-white' : 'text-theme-cyan'}`}>
+            <h2 className={`text-xs font-black uppercase tracking-[0.24em] ${isClassic ? 'text-white' : 'text-theme-cyan'}`}>
               Share Project
             </h2>
             <button onClick={onClose} className={`text-xs font-black ${isClassic ? 'text-white/60 hover:text-white' : 'text-theme-muted hover:text-theme-text'}`}>
@@ -82,7 +82,7 @@ const ProjectSharePanel: React.FC<ProjectSharePanelProps> = ({
             <select
               value={inviteRole}
               onChange={e => setInviteRole(e.target.value as 'editor' | 'viewer')}
-              className={`px-2 py-2 rounded-inner text-[10px] font-bold uppercase ${
+              className={`px-2 py-2 rounded-inner text-xs font-bold uppercase ${
                 isClassic
                   ? 'sc-selectNavy'
                   : 'bg-theme-bg border border-theme-border text-theme-text'
@@ -93,7 +93,7 @@ const ProjectSharePanel: React.FC<ProjectSharePanelProps> = ({
             </select>
             <button
               onClick={handleInvite}
-              className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-wide transition-colors ${
+              className={`px-3 py-2 rounded-inner text-xs font-black uppercase tracking-wide transition-colors ${
                 isClassic
                   ? 'sc-btnPrimary'
                   : 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan'
@@ -105,7 +105,7 @@ const ProjectSharePanel: React.FC<ProjectSharePanelProps> = ({
 
           {/* Members list */}
           <div className="space-y-1.5">
-            <p className={`text-[9px] font-black uppercase tracking-[0.18em] ${isClassic ? 'text-white/60' : 'text-theme-muted'}`}>
+            <p className={`text-xs font-black uppercase tracking-[0.18em] ${isClassic ? 'text-white/60' : 'text-theme-muted'}`}>
               Members ({members.length})
             </p>
             <div className={`rounded-inner border max-h-48 overflow-y-auto divide-y ${
@@ -114,7 +114,7 @@ const ProjectSharePanel: React.FC<ProjectSharePanelProps> = ({
               {members.map(m => (
                 <div key={m.userId} className="flex items-center justify-between px-3 py-2">
                   <div className="flex items-center gap-2 min-w-0">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-black ${
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
                       isClassic ? 'bg-black/30 text-white/80' : 'bg-theme-surface2 text-theme-text'
                     }`}>
                       {m.email.charAt(0).toUpperCase()}
@@ -122,13 +122,13 @@ const ProjectSharePanel: React.FC<ProjectSharePanelProps> = ({
                     <span className={`text-[11px] truncate ${isClassic ? 'text-white/80' : 'text-theme-text'}`}>{m.email}</span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase border ${roleBadgeClass[m.role]}`}>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase border ${roleBadgeClass[m.role]}`}>
                       {m.role}
                     </span>
                     {m.role !== 'owner' && (
                       <button
                         onClick={() => onRemoveMember(m.userId)}
-                        className={`text-[10px] ${isClassic ? 'text-white/40 hover:text-white/80' : 'text-theme-muted hover:text-theme-magenta'}`}
+                        className={`text-xs ${isClassic ? 'text-white/40 hover:text-white/80' : 'text-theme-muted hover:text-theme-magenta'}`}
                       >
                         ✕
                       </button>

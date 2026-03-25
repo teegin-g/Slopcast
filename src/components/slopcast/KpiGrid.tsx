@@ -184,7 +184,7 @@ const WellsBadge: React.FC<{ count: number }> = ({ count }) => (
       <p className="text-[11px] font-bold uppercase tracking-[0.18em] mb-1.5 text-theme-text/70">Wells</p>
       <p className="text-xl font-black text-theme-text leading-none">{count}</p>
     </div>
-    <span className="ml-auto text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-theme-cyan/10 text-theme-cyan border border-theme-cyan/20">
+    <span className="ml-auto text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-theme-cyan/10 text-theme-cyan border border-theme-cyan/20">
       active
     </span>
   </div>
@@ -217,7 +217,7 @@ const MetricSparkline: React.FC<{ values: number[] }> = ({ values }) => {
 };
 
 const heroBgMap: Record<'glass' | 'solid' | 'outline', string> = {
-  glass: 'bg-theme-surface1/80',
+  glass: 'bg-theme-surface1/90',
   solid: 'bg-theme-surface1',
   outline: 'bg-theme-surface1/20',
 };
@@ -245,7 +245,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
             </div>
           )}
           <div className="sc-kpiTitlebar px-4 py-2 relative z-10">
-            <p className="text-[10px] font-black uppercase tracking-[0.25em]">PORTFOLIO NPV (10%)</p>
+            <p className="text-xs font-black uppercase tracking-[0.25em]">PORTFOLIO NPV (10%)</p>
           </div>
           <div className="px-6 py-6 flex items-baseline relative z-10">
             <span className={`sc-kpiValue text-5xl sm:text-6xl xl:text-7xl font-black tracking-tighter leading-none ${shimmerClass}`}>
@@ -255,14 +255,14 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
           </div>
           {breakevenLabel && (
             <div className="px-6 pb-4 relative z-10">
-              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-white/60">{breakevenLabel}</span>
+              <span className="text-xs font-bold uppercase tracking-[0.12em] text-white/60">{breakevenLabel}</span>
             </div>
           )}
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="sc-kpi sc-kpi--tile theme-transition">
             <div className="sc-kpiTitlebar px-3 py-1.5">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em]">Total CAPEX</p>
+              <p className="text-xs font-black uppercase tracking-[0.2em]">Total CAPEX</p>
             </div>
             <div className="px-4 py-4">
               <p className={`sc-kpiValue text-3xl font-black tracking-tight ${shimmerClass}`}>
@@ -273,7 +273,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
           </div>
           <div className="sc-kpi sc-kpi--tile theme-transition">
             <div className="sc-kpiTitlebar px-3 py-1.5">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em]">Portfolio EUR</p>
+              <p className="text-xs font-black uppercase tracking-[0.2em]">Portfolio EUR</p>
             </div>
             <div className="px-4 py-4">
               <p className={`sc-kpiValue text-3xl font-black tracking-tight ${shimmerClass}`}>
@@ -286,7 +286,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
         <div className="grid grid-cols-2 gap-4">
           <div className="sc-kpi sc-kpi--tile theme-transition">
             <div className="sc-kpiTitlebar px-3 py-1.5">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em]">Payout</p>
+              <p className="text-xs font-black uppercase tracking-[0.2em]">Payout</p>
             </div>
             <div className="px-4 py-4">
               <p className={`sc-kpiValue text-3xl font-black tracking-tight ${shimmerClass}`}>
@@ -297,7 +297,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
           </div>
           <div className="sc-kpi sc-kpi--tile sc-kpi--dangerBody theme-transition">
             <div className="sc-kpiTitlebar px-3 py-1.5">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em]">Wells</p>
+              <p className="text-xs font-black uppercase tracking-[0.2em]">Wells</p>
             </div>
             <div className="px-4 py-4">
               <p className={`sc-kpiValue text-3xl font-black tracking-tight ${shimmerClass}`}>
@@ -314,24 +314,14 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
   return (
     <div className="space-y-4">
       <motion.div
-        className={`rounded-panel border p-8 shadow-card relative overflow-hidden group theme-transition ${heroBgMap[panelStyle]} border-theme-border hover:border-theme-magenta`}
-        whileHover={{ scale: 1.005 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        className={`rounded-panel border p-8 shadow-card relative overflow-hidden group theme-transition ${heroBgMap[panelStyle]} border-theme-border hover:border-theme-border/80`}
       >
-        {panelStyle !== 'solid' && (
-          <motion.div
-            className="absolute top-0 right-0 w-80 h-80 rounded-full blur-[100px] -mr-24 -mt-24 pointer-events-none bg-theme-cyan/15"
-            initial={{ opacity: 0.6 }}
-            whileHover={{ opacity: 1 }}
-            transition={{ duration: 0.7 }}
-          />
-        )}
         {aggregateFlow && aggregateFlow.length > 1 && (
           <div className="absolute inset-0 text-theme-cyan pointer-events-none">
             <CashFlowSparkline flow={aggregateFlow} />
           </div>
         )}
-        <p className="text-theme-muted text-[10px] font-bold uppercase tracking-[0.4em] mb-2 relative z-10 heading-font">Portfolio NPV (10%)</p>
+        <p className="text-theme-muted text-xs font-bold uppercase tracking-[0.4em] mb-2 relative z-10 heading-font">Portfolio NPV (10%)</p>
         <div className="flex items-baseline relative z-10">
           <AnimatedValue
             value={metrics.npv10 / 1e6}
@@ -341,23 +331,23 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
           <span className="text-2xl font-black ml-3 text-theme-lavender italic">MM</span>
         </div>
         {breakevenLabel && (
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-theme-muted/70 mt-2 relative z-10">{breakevenLabel}</p>
+          <p className="text-xs font-bold uppercase tracking-[0.12em] text-theme-muted/70 mt-2 relative z-10">{breakevenLabel}</p>
         )}
         {/* After-tax / Levered NPV indicators */}
         {(showAfterTax || showLevered) && (
           <div className="flex items-center gap-4 mt-2 relative z-10">
             {showAfterTax && metrics.afterTaxNpv10 != null && (
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-theme-lavender">
+              <span className="text-xs font-bold uppercase tracking-[0.1em] text-theme-lavender">
                 After-Tax: ${(metrics.afterTaxNpv10 / 1e6).toFixed(1)}MM
               </span>
             )}
             {showLevered && metrics.leveredNpv10 != null && (
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-theme-magenta">
+              <span className="text-xs font-bold uppercase tracking-[0.1em] text-theme-magenta">
                 Levered: ${(metrics.leveredNpv10 / 1e6).toFixed(1)}MM
               </span>
             )}
             {showLevered && metrics.dscr != null && metrics.dscr > 0 && (
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-theme-surface2 text-theme-muted border border-theme-border">
+              <span className="text-xs font-bold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded bg-theme-surface2 text-theme-muted border border-theme-border">
                 DSCR: {metrics.dscr.toFixed(2)}x
               </span>
             )}
@@ -365,7 +355,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
         )}
       </motion.div>
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 xl:grid-cols-5 gap-3">
         <KpiStripTile
           title="Total CAPEX"
           valueNode={
@@ -395,6 +385,20 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
           shimmer={shimmerClass}
           bgClass={tileBgMap[panelStyle]}
           extra={snapshotHistory && snapshotHistory.length >= 2 ? <MetricSparkline values={snapshotHistory.map(s => s.eur)} /> : undefined}
+        />
+        <KpiStripTile
+          title="IRR"
+          valueNode={
+            <AnimatedValue
+              value={metrics.irr * 100}
+              format={(n) => `${n.toFixed(1)}`}
+              className={`text-xl font-black text-theme-text leading-none ${shimmerClass}`}
+            />
+          }
+          unit="%"
+          accent="magenta"
+          shimmer={shimmerClass}
+          bgClass={tileBgMap[panelStyle]}
         />
         <KpiStripTile
           title="Payout"

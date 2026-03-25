@@ -50,14 +50,14 @@ const MobileScenarioCards: React.FC<MobileScenarioCardsProps> = ({
             >
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: res.scenario.color }} />
-                <span className={`text-[10px] font-black uppercase tracking-[0.1em] truncate ${isClassic ? 'text-white' : 'text-theme-text'}`}>
+                <span className={`text-xs font-black uppercase tracking-[0.1em] truncate ${isClassic ? 'text-white' : 'text-theme-text'}`}>
                   {res.scenario.name}
                 </span>
               </div>
               <div className={`text-2xl font-black tracking-tight mb-2 ${isClassic ? 'text-theme-text' : 'text-theme-cyan'}`}>
                 ${(res.metrics.npv10 / 1e6).toFixed(1)}M
               </div>
-              <div className={`grid grid-cols-2 gap-2 text-[9px] ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
+              <div className={`grid grid-cols-2 gap-2 text-xs ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
                 <div>
                   <span className="font-black uppercase tracking-wide">ROI</span>
                   <span className="ml-1 font-bold">{res.metrics.roi.toFixed(2)}x</span>

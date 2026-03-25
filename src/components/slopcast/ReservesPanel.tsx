@@ -95,8 +95,8 @@ const ReservesPanel: React.FC<ReservesPanelProps> = ({ isClassic, groups }) => {
         <h3
           className={
             isClassic
-              ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white'
-              : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'
+              ? 'text-xs font-black uppercase tracking-[0.24em] text-white'
+              : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan'
           }
         >
           Reserves Classification
@@ -106,7 +106,7 @@ const ReservesPanel: React.FC<ReservesPanelProps> = ({ isClassic, groups }) => {
       <div className="p-4 space-y-4">
         {/* Summary table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-[10px]">
+          <table className="w-full text-xs">
             <thead>
               <tr className="text-theme-muted">
                 <th className="text-left py-1.5 pr-3 font-bold uppercase tracking-[0.12em]">Category</th>
@@ -169,7 +169,7 @@ const ReservesPanel: React.FC<ReservesPanelProps> = ({ isClassic, groups }) => {
             }
           >
             <p
-              className={`text-[9px] font-black uppercase tracking-[0.18em] mb-2 ${
+              className={`text-xs font-black uppercase tracking-[0.18em] mb-2 ${
                 isClassic ? 'text-white/70' : 'text-theme-muted'
               }`}
             >
@@ -208,7 +208,7 @@ const ReservesPanel: React.FC<ReservesPanelProps> = ({ isClassic, groups }) => {
                     style={{ backgroundColor: CATEGORY_COLORS[entry.name as ReserveCategory] }}
                   />
                   <span
-                    className={`text-[9px] font-bold ${
+                    className={`text-xs font-bold ${
                       isClassic ? 'text-white/70' : 'text-theme-muted'
                     }`}
                   >

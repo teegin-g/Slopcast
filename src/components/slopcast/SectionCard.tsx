@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'motion/react';
+import React, { useRef } from 'react';
+import { motion, useInView } from 'motion/react';
 
 interface SectionCardProps {
   isClassic: boolean;
@@ -30,14 +30,19 @@ const SectionCard: React.FC<SectionCardProps> = ({
   panelStyle = 'glass',
   staggerIndex = 0,
 }) => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: '-50px' });
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
+      ref={ref}
+      initial={{ opacity: 0, y: 20 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
       transition={{
-        duration: 0.35,
+        type: 'spring',
+        stiffness: 200,
+        damping: 25,
         delay: staggerIndex * 0.06,
-        ease: [0.25, 0.1, 0.25, 1],
       }}
       className={
         isClassic
@@ -57,7 +62,7 @@ const SectionCard: React.FC<SectionCardProps> = ({
             className={
               isClassic
                 ? 'text-[11px] font-black uppercase tracking-[0.24em] text-white'
-                : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan heading-font'
+                : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan heading-font'
             }
           >
             {title}

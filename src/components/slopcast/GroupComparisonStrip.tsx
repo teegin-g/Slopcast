@@ -18,7 +18,7 @@ interface GroupComparisonStripProps {
 
 const RankBadge: React.FC<{ rank: number; isClassic: boolean }> = ({ rank, isClassic }) => (
   <span
-    className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[9px] font-black ${
+    className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-xs font-black ${
       isClassic
         ? 'bg-theme-warning/20 text-theme-warning border border-theme-warning/30'
         : rank === 1
@@ -54,7 +54,7 @@ const GroupComparisonStrip: React.FC<GroupComparisonStripProps> = ({
       }
     >
       <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
-        <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
+        <h2 className={isClassic ? 'text-xs font-black uppercase tracking-[0.24em] text-white' : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan'}>
           Group Comparison
         </h2>
       </div>
@@ -71,7 +71,10 @@ const GroupComparisonStrip: React.FC<GroupComparisonStripProps> = ({
               <motion.button
                 key={ranking.id}
                 layout
-                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                 onClick={() => onActivateGroup(ranking.id)}
                 className={`w-full text-left rounded-inner border px-3 py-2 transition-colors ${
                   isActive
@@ -91,7 +94,7 @@ const GroupComparisonStrip: React.FC<GroupComparisonStripProps> = ({
                       className="w-3 h-3 rounded-full shrink-0"
                       style={{ backgroundColor: groupColor }}
                     />
-                    <span className={`text-[10px] font-black uppercase tracking-[0.1em] truncate ${
+                    <span className={`text-xs font-black uppercase tracking-[0.1em] truncate ${
                       isActive
                         ? isClassic ? 'text-white' : 'text-theme-text'
                         : isClassic ? 'text-white/80' : 'text-theme-muted'
@@ -100,14 +103,14 @@ const GroupComparisonStrip: React.FC<GroupComparisonStripProps> = ({
                     </span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className={`text-[10px] font-black tabular-nums whitespace-nowrap ${
+                    <span className={`text-xs font-black tabular-nums whitespace-nowrap ${
                       isPositive
                         ? isClassic ? 'text-theme-warning' : 'text-theme-cyan'
                         : 'text-theme-warning'
                     }`}>
                       ${(ranking.npv10 / 1e6).toFixed(1)}M
                     </span>
-                    <span className="text-[9px] tabular-nums text-theme-muted whitespace-nowrap">
+                    <span className="text-xs tabular-nums text-theme-muted whitespace-nowrap">
                       {ranking.roi.toFixed(1)}x
                     </span>
                   </div>

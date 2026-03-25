@@ -67,7 +67,7 @@ const DealsTable: React.FC<DealsTableProps> = ({ isClassic, deals, onSelectDeal,
     }
   };
 
-  const headerClass = `text-[9px] font-black uppercase tracking-[0.16em] cursor-pointer select-none transition-colors ${
+  const headerClass = `text-xs font-black uppercase tracking-[0.16em] cursor-pointer select-none transition-colors ${
     isClassic ? 'text-white/60 hover:text-white' : 'text-theme-muted hover:text-theme-text'
   }`;
 
@@ -97,14 +97,14 @@ const DealsTable: React.FC<DealsTableProps> = ({ isClassic, deals, onSelectDeal,
       }
     >
       <div className={`flex items-center justify-between gap-3 ${isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}`}>
-        <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
+        <h2 className={isClassic ? 'text-xs font-black uppercase tracking-[0.24em] text-white' : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan'}>
           Saved Deals
         </h2>
         <div className="flex items-center gap-2">
           <select
             value={filterStatus}
             onChange={e => setFilterStatus(e.target.value as DealStatus | 'all')}
-            className={`text-[10px] font-bold px-2 py-1 rounded border outline-none ${
+            className={`text-xs font-bold px-2 py-1 rounded border outline-none ${
               isClassic
                 ? 'bg-black/20 border-black/30 text-white'
                 : 'bg-theme-bg border-theme-border text-theme-text'
@@ -119,7 +119,7 @@ const DealsTable: React.FC<DealsTableProps> = ({ isClassic, deals, onSelectDeal,
           {onCreateDeal && (
             <button
               onClick={onCreateDeal}
-              className={`px-3 py-1 rounded text-[9px] font-black uppercase tracking-wide transition-colors ${
+              className={`px-3 py-1 rounded text-xs font-black uppercase tracking-wide transition-colors ${
                 isClassic
                   ? 'bg-theme-cyan text-white border border-theme-magenta/60'
                   : 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan'
@@ -153,13 +153,13 @@ const DealsTable: React.FC<DealsTableProps> = ({ isClassic, deals, onSelectDeal,
           <p className={`text-[12px] font-bold ${isClassic ? 'text-white/60' : 'text-theme-muted'}`}>
             No saved deals yet
           </p>
-          <p className={`text-[10px] max-w-xs ${isClassic ? 'text-white/35' : 'text-theme-muted/60'}`}>
+          <p className={`text-xs max-w-xs ${isClassic ? 'text-white/35' : 'text-theme-muted/60'}`}>
             Create your first deal to start evaluating economics.
           </p>
           {onCreateDeal && (
             <button
               onClick={onCreateDeal}
-              className={`mt-1 px-4 py-2 rounded-inner text-[10px] font-black uppercase tracking-widest transition-all ${
+              className={`mt-1 px-4 py-2 rounded-inner text-xs font-black uppercase tracking-widest transition-all ${
                 isClassic
                   ? 'bg-theme-cyan text-white border border-theme-magenta/40 hover:bg-theme-cyan/90'
                   : 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan'
@@ -211,7 +211,7 @@ const DealsTable: React.FC<DealsTableProps> = ({ isClassic, deals, onSelectDeal,
                       {deal.name}
                     </td>
                     <td className="px-3 py-2.5">
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wide ${statusStyle.bg} ${statusStyle.text}`}>
+                      <span className={`px-2 py-0.5 rounded text-xs font-black uppercase tracking-wide ${statusStyle.bg} ${statusStyle.text}`}>
                         {deal.status}
                       </span>
                     </td>

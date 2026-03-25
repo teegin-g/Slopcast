@@ -86,7 +86,7 @@ const ProfileSelector: React.FC<ProfileSelectorProps> = ({
       <div className="flex items-center gap-2">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={`px-3 py-1.5 rounded-inner text-[9px] font-black uppercase tracking-[0.14em] transition-all border ${
+          className={`px-3 py-1.5 rounded-inner text-xs font-black uppercase tracking-[0.14em] transition-all border ${
             isClassic
               ? 'bg-black/15 text-white border-black/30 hover:bg-black/25'
               : 'bg-theme-bg text-theme-lavender border-theme-border hover:border-theme-lavender'
@@ -98,7 +98,7 @@ const ProfileSelector: React.FC<ProfileSelectorProps> = ({
         {onSaveAsPreset && (
           <button
             onClick={() => setShowSaveForm(!showSaveForm)}
-            className={`px-3 py-1.5 rounded-inner text-[9px] font-black uppercase tracking-[0.14em] transition-all border ${
+            className={`px-3 py-1.5 rounded-inner text-xs font-black uppercase tracking-[0.14em] transition-all border ${
               isClassic
                 ? 'bg-black/15 text-white/70 border-black/30 hover:bg-black/25'
                 : 'bg-theme-bg text-theme-muted border-theme-border hover:text-theme-text'
@@ -129,7 +129,7 @@ const ProfileSelector: React.FC<ProfileSelectorProps> = ({
             <select
               value={saveType}
               onChange={e => setSaveType(e.target.value as ProfileType)}
-              className={`px-2 py-1 rounded text-[10px] outline-none ${
+              className={`px-2 py-1 rounded text-xs outline-none ${
                 isClassic
                   ? 'bg-black/20 text-white border border-black/30'
                   : 'bg-theme-surface1 text-theme-text border border-theme-border'
@@ -143,7 +143,7 @@ const ProfileSelector: React.FC<ProfileSelectorProps> = ({
           <button
             onClick={handleSave}
             disabled={!saveName.trim()}
-            className={`w-full px-3 py-1.5 rounded text-[9px] font-black uppercase tracking-wide transition-all ${
+            className={`w-full px-3 py-1.5 rounded text-xs font-black uppercase tracking-wide transition-all ${
               isClassic
                 ? 'bg-theme-cyan text-white disabled:opacity-40'
                 : 'bg-theme-cyan text-theme-bg disabled:opacity-40 hover:shadow-glow-cyan'
@@ -164,7 +164,7 @@ const ProfileSelector: React.FC<ProfileSelectorProps> = ({
             <select
               value={filterType}
               onChange={e => setFilterType(e.target.value as ProfileType | 'all')}
-              className={`text-[10px] px-2 py-1 rounded border outline-none ${
+              className={`text-xs px-2 py-1 rounded border outline-none ${
                 isClassic
                   ? 'bg-black/20 border-black/30 text-white'
                   : 'bg-theme-bg border-theme-border text-theme-text'
@@ -179,7 +179,7 @@ const ProfileSelector: React.FC<ProfileSelectorProps> = ({
               <select
                 value={filterBasin}
                 onChange={e => setFilterBasin(e.target.value)}
-                className={`text-[10px] px-2 py-1 rounded border outline-none ${
+                className={`text-xs px-2 py-1 rounded border outline-none ${
                   isClassic
                     ? 'bg-black/20 border-black/30 text-white'
                     : 'bg-theme-bg border-theme-border text-theme-text'
@@ -222,16 +222,16 @@ const ProfileSelector: React.FC<ProfileSelectorProps> = ({
                     <span className={`text-[11px] font-bold ${isClassic ? 'text-white' : 'text-theme-text'}`}>
                       {preset.name}
                     </span>
-                    <span className={`text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${
+                    <span className={`text-xs font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${
                       isClassic ? 'bg-black/30 text-white/60' : 'bg-theme-bg text-theme-muted border border-theme-border'
                     }`}>
                       {PROFILE_TYPE_LABELS[preset.profileType]}
                     </span>
                   </div>
-                  <p className={`text-[9px] ${isClassic ? 'text-white/40' : 'text-theme-muted/60'}`}>
+                  <p className={`text-xs ${isClassic ? 'text-white/40' : 'text-theme-muted/60'}`}>
                     {[preset.basin, preset.formation, preset.operator].filter(Boolean).join(' / ') || 'General'}
                   </p>
-                  <p className={`text-[9px] mt-0.5 ${isClassic ? 'text-white/30' : 'text-theme-muted/40'}`}>
+                  <p className={`text-xs mt-0.5 ${isClassic ? 'text-white/30' : 'text-theme-muted/40'}`}>
                     {formatConfig(preset)}
                   </p>
                 </button>
@@ -244,7 +244,7 @@ const ProfileSelector: React.FC<ProfileSelectorProps> = ({
             <div className={`px-3 py-2 border-t ${isClassic ? 'border-white/10' : 'border-theme-border/40'}`}>
               <button
                 onClick={handleApply}
-                className={`w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-widest transition-all ${
+                className={`w-full px-3 py-2 rounded-inner text-xs font-black uppercase tracking-widest transition-all ${
                   isClassic
                     ? 'bg-theme-magenta text-white hover:bg-theme-magenta/90'
                     : 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan'
