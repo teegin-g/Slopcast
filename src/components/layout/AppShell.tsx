@@ -62,7 +62,7 @@ export function AppShell({ workspace, children }: AppShellProps) {
   useEffect(() => {
     if (viewport === 'mid') {
       setCollapsed(true);
-    } else if (viewport === 'desktop') {
+    } else if (viewport === 'desktop' || viewport === 'wide') {
       try {
         const stored = localStorage.getItem(SIDEBAR_COLLAPSE_KEY);
         if (stored === '1') setCollapsed(true);
@@ -182,7 +182,7 @@ export function AppShell({ workspace, children }: AppShellProps) {
 
         {/* Content area */}
         <main className="flex-1 overflow-y-auto">
-          <div className="p-3 max-w-[1920px] mx-auto w-full">
+          <div className="p-3 md:p-5 xl:p-8 max-w-[1920px] mx-auto w-full">
             <ViewTransition transitionKey={section}>
               {children}
             </ViewTransition>

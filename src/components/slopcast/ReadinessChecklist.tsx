@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
+import { SPRING } from '../../theme/motion';
 
 interface CheckItem {
   label: string;
@@ -22,7 +23,7 @@ export const ReadinessChecklist: React.FC<{ items: CheckItem[]; className?: stri
           className="h-full bg-theme-cyan rounded-full"
           initial={{ width: 0 }}
           animate={{ width: `${progress * 100}%` }}
-          transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+          transition={SPRING.value}
         />
       </div>
       <div className="space-y-1.5">

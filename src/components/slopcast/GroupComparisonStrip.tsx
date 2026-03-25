@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { SPRING } from '../../theme/motion';
 
 interface GroupRanking {
   id: string;
@@ -74,9 +75,9 @@ const GroupComparisonStrip: React.FC<GroupComparisonStripProps> = ({
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                transition={SPRING.gentle}
                 onClick={() => onActivateGroup(ranking.id)}
-                className={`w-full text-left rounded-inner border px-3 py-2 transition-colors ${
+                className={`w-full text-left rounded-inner border px-3 py-2 transition-colors focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
                   isActive
                     ? isClassic
                       ? 'border-theme-warning bg-black/20 ring-1 ring-theme-warning/30'
@@ -124,7 +125,7 @@ const GroupComparisonStrip: React.FC<GroupComparisonStripProps> = ({
                       width: `${Math.max(2, barWidth)}%`,
                       opacity: isActive ? 1 : 0.6,
                     }}
-                    transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+                    transition={SPRING.gentle}
                     style={{
                       backgroundColor: isPositive ? groupColor : 'rgb(var(--danger))',
                     }}

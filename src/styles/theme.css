@@ -155,8 +155,7 @@
   --btn-secondary-text: var(--text);
 
   /* Radii */
-  --radius-panel: 18px;
-  --radius-kpi: 18px;
+  --radius-panel: 12px;
 
   /* Light inset surfaces (used by Scenario page Classic mode) */
   --inset-bg-1: 255 255 255;
@@ -172,8 +171,8 @@
   /* #0E061A */
   --bg-space: 27 14 43;
   /* #1B0E2B */
-  --surface-1: 35 37 88;
-  /* #232558 */
+  --surface-1: 38 30 72;
+  /* #261E48 */
   --surface-2: 47 56 135;
   /* #2F3887 */
   --border: 96 83 160;
@@ -217,6 +216,7 @@
   --synth-sun: 255 184 107;
   --synth-grid-cyan: 158 211 240;
   --synth-ridge-dark: 8 3 18;
+  --radius-panel: 14px;
 }
 
 /* ---------- Tropical / Tommy Bahama ---------- */
@@ -229,8 +229,8 @@
   /* driftwood dark */
   --surface-2: 42 72 82;
   /* wet palm bark */
-  --border: 45 212 191;
-  /* seafoam teal (accent border) */
+  --border: 38 160 148;
+  /* muted seafoam teal */
   --cyan: 45 212 191;
   /* teal-400  – primary accent */
   --magenta: 185 255 59;
@@ -627,7 +627,6 @@
 
   /* Tighter corners like the classic UI */
   --radius-panel: 8px;
-  --radius-kpi: 8px;
 
   /* Light inset surfaces (cream UI for controls/tables) */
   --inset-bg-1: 255 251 242;
@@ -1670,7 +1669,7 @@ body {
 
 /* KPI blocks */
 .sc-kpi {
-  border-radius: var(--radius-kpi);
+  border-radius: var(--radius-panel);
   border: 1px solid rgb(var(--_kpi-border, var(--kpi-border)) / 1);
   background: linear-gradient(to bottom,
       rgb(var(--_kpi-bg-1, var(--kpi-bg-1))),
@@ -1683,7 +1682,7 @@ body {
   position: absolute;
   inset: 1px;
   pointer-events: none;
-  border-radius: calc(var(--radius-kpi) - 2px);
+  border-radius: calc(var(--radius-panel) - 2px);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.18),
     inset 0 -1px 0 rgb(0 0 0 / 0.25);

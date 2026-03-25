@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { SPRING } from '../../theme/motion';
 
 interface AnimatedTooltipProps {
   content: string;
@@ -33,7 +34,7 @@ export const AnimatedTooltip: React.FC<AnimatedTooltipProps> = ({ content, child
             initial={{ opacity: 0, y: yOffset, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: yOffset / 2, scale: 0.95 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            transition={SPRING.snappy}
           >
             {content}
           </motion.div>

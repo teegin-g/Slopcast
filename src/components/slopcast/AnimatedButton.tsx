@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
+import { SPRING } from '../../theme/motion';
 
 interface AnimatedButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -29,10 +30,10 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   ...props
 }) => (
   <motion.button
-    className={`rounded-inner transition-colors ${variantClasses[variant]} ${sizeClasses[size]} ${disabled ? 'opacity-40 cursor-not-allowed' : ''} ${className}`}
+    className={`rounded-inner transition-colors focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${variantClasses[variant]} ${sizeClasses[size]} ${disabled ? 'opacity-40 cursor-not-allowed' : ''} ${className}`}
     whileTap={disabled ? undefined : { scale: 0.97 }}
     whileHover={disabled ? undefined : { scale: 1.02 }}
-    transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+    transition={SPRING.snappy}
     disabled={disabled}
     {...props}
   >

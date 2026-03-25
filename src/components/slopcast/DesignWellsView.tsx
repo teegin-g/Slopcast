@@ -12,7 +12,7 @@ interface DesignWellsViewProps {
   isClassic: boolean;
   theme: ThemeMeta;
   themeId: ThemeId;
-  viewportLayout: 'mobile' | 'mid' | 'desktop';
+  viewportLayout: 'mobile' | 'mid' | 'desktop' | 'wide';
   mobilePanel: WellsMobilePanel;
   onSetMobilePanel: (panel: WellsMobilePanel) => void;
   groups: WellGroup[];
@@ -235,7 +235,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
         </div>
       </div>
 
-      <div className={`grid grid-cols-1 lg:grid-cols-12 gap-6 ${viewportLayout === 'desktop' ? 'xl:min-h-[calc(100vh-11rem)] xl:auto-rows-fr' : ''}`}>
+      <div className={`grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 ${viewportLayout === 'desktop' || viewportLayout === 'wide' ? 'xl:min-h-[calc(100vh-11rem)] xl:auto-rows-fr' : ''}`}>
         <aside
           className={`xl:col-span-4 lg:col-span-5 lg:min-h-0 xl:overflow-y-auto scrollbar-hide space-y-6 pb-4 theme-transition ${
             isClassic ? 'p-1' : 'p-4 rounded-panel bg-theme-bg/60 backdrop-blur-sm border border-theme-border'

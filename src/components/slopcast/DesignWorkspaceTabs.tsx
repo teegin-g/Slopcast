@@ -57,7 +57,7 @@ const DesignWorkspaceTabs: React.FC<DesignWorkspaceTabsProps> = ({
             key={target}
             data-testid={`design-workspace-${target.toLowerCase()}`}
             onClick={() => onChange(target)}
-            className={`relative ${buttonClass(target)}`}
+            className={`relative focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${buttonClass(target)}`}
           >
             {workspace === target && (
               <motion.div

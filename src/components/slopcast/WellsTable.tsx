@@ -214,7 +214,7 @@ const WellsTable: React.FC<WellsTableProps> = ({
                   {headerGroup.headers.map(header => (
                     <th
                       key={header.id}
-                      className="py-2 px-2 text-left text-xs font-black uppercase tracking-[0.24em] text-theme-cyan relative"
+                      className="py-2 px-2 text-left text-xs font-black uppercase tracking-[0.24em] text-theme-cyan heading-font relative"
                       style={{ width: header.getSize() }}
                     >
                       {header.isPlaceholder ? null : (

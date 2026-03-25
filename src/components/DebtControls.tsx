@@ -13,8 +13,8 @@ const DebtControls: React.FC<DebtControlsProps> = ({ isClassic, debt, onChange }
     : 'text-[9px] font-black block mb-2 uppercase tracking-[0.2em] text-theme-muted';
 
   const inputClass = isClassic
-    ? 'w-full rounded-md px-2 py-1 text-[10px] font-black sc-inputNavy'
-    : 'w-full bg-theme-bg border border-theme-border rounded-lg px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition';
+    ? 'w-full rounded-inner px-2 py-1 text-[10px] font-black sc-inputNavy'
+    : 'w-full bg-theme-bg border border-theme-border rounded-inner px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition';
 
   const sectionTitleClass = isClassic
     ? 'text-[10px] font-black uppercase tracking-[0.15em] text-theme-warning mb-2'

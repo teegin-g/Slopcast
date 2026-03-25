@@ -140,7 +140,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
       className={
         isClassic
           ? 'sc-panel theme-transition p-3 min-h-[360px]'
-          : 'rounded-panel border p-1 theme-transition bg-theme-surface1/50 border-theme-border shadow-card min-h-[360px]'
+          : 'rounded-panel border p-3 theme-transition bg-theme-surface1/50 border-theme-border shadow-card min-h-[360px]'
       }
     >
       <Charts data={aggregateFlow} themeId={themeId} />
@@ -167,10 +167,10 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
             onClick={() => onSetMobilePanel('SETUP')}
             className={
               isClassic
-                ? `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
+                ? `px-3 py-2 rounded-inner text-[9px] font-bold uppercase tracking-widest border-2 shadow-card transition-colors ${
                     mobilePanel === 'SETUP' ? 'bg-theme-warning text-black border-black/20' : 'bg-black/15 text-white/90 border-black/25'
                   }`
-                : `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border transition-colors ${
+                : `px-3 py-2 rounded-inner text-[9px] font-bold uppercase tracking-widest border transition-colors ${
                     mobilePanel === 'SETUP'
                       ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
                       : 'bg-theme-bg text-theme-muted border-theme-border'
@@ -183,10 +183,10 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
             onClick={() => onSetMobilePanel('RESULTS')}
             className={
               isClassic
-                ? `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
+                ? `px-3 py-2 rounded-inner text-[9px] font-bold uppercase tracking-widest border-2 shadow-card transition-colors ${
                     mobilePanel === 'RESULTS' ? 'bg-theme-warning text-black border-black/20' : 'bg-black/15 text-white/90 border-black/25'
                   }`
-                : `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border transition-colors ${
+                : `px-3 py-2 rounded-inner text-[9px] font-bold uppercase tracking-widest border transition-colors ${
                     mobilePanel === 'RESULTS'
                       ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
                       : 'bg-theme-bg text-theme-muted border-theme-border'
@@ -198,7 +198,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:min-h-[calc(100vh-13.5rem)]">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 lg:min-h-[calc(100vh-13.5rem)]">
         <aside
           className={`lg:col-span-5 xl:col-span-4 space-y-4 lg:max-h-[calc(100vh-13.5rem)] lg:overflow-y-auto lg:pr-1 ${
             mobilePanel !== 'SETUP' ? 'hidden lg:block' : ''
@@ -233,7 +233,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <SetupProgressRing completed={completedCount} total={checklist.length} isClassic={isClassic} />
-                  <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'}>
+                  <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white heading-font' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan heading-font'}>
                     Setup Insights
                   </h2>
                 </div>

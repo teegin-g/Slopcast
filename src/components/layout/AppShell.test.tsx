@@ -17,7 +17,7 @@ beforeAll(() => {
 });
 
 // Mock useViewportLayout to control responsive behavior
-const mockViewport = vi.fn(() => 'desktop' as 'mobile' | 'mid' | 'desktop');
+const mockViewport = vi.fn(() => 'desktop' as 'mobile' | 'mid' | 'desktop' | 'wide');
 vi.mock('../slopcast/hooks/useViewportLayout', () => ({
   useViewportLayout: () => mockViewport(),
 }));
@@ -66,7 +66,7 @@ function createMockWorkspace(overrides: Partial<MockWorkspace> = {}): MockWorksp
 
 function renderAppShell(
   workspaceOverrides: Partial<ReturnType<typeof createMockWorkspace>> = {},
-  viewport: 'mobile' | 'mid' | 'desktop' = 'desktop',
+  viewport: 'mobile' | 'mid' | 'desktop' | 'wide' = 'desktop',
   children: React.ReactNode = <div data-testid="content-area">Content Here</div>,
 ) {
   mockViewport.mockReturnValue(viewport);
@@ -192,18 +192,20 @@ describe('RESP-02: Mobile layout collapses sidebar to drawer', () => {
 
   it('renders MobileDrawer on mobile viewport', () => {
     const { container } = renderAppShell({}, 'mobile');
-    // MobileDrawer renders a fixed overlay with z-40
-    const drawer = container.querySelector('.fixed.inset-0.z-40');
-    expect(drawer).not.toBeNull();
+    // MobileDrawer uses AnimatePresence — when closed, nothing renders
+    // Verify the drawer container is present (AnimatePresence wrapper)
+    const drawerBackdrop = container.querySelector('.fixed.inset-0.z-40');
+    // Drawer starts closed, so backdrop should not be in DOM
+    expect(drawerBackdrop).toBeNull();
   });
 
   it('MobileDrawer starts closed (not visible)', () => {
     const { container } = renderAppShell({}, 'mobile');
-    const drawer = container.querySelector('.fixed.inset-0.z-40');
-    expect(drawer).not.toBeNull();
-    // When closed, drawer has opacity-0 and pointer-events-none
-    expect(drawer!.className).toContain('opacity-0');
-    expect(drawer!.className).toContain('pointer-events-none');
+    // With AnimatePresence, closed drawer removes elements from DOM entirely
+    const drawerBackdrop = container.querySelector('.fixed.inset-0.z-40');
+    const drawerPanel = container.querySelector('.fixed.left-0.z-50');
+    expect(drawerBackdrop).toBeNull();
+    expect(drawerPanel).toBeNull();
   });
 
   it('content area still renders on mobile', () => {

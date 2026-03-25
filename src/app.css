@@ -52,8 +52,17 @@
   .typo-body { @apply text-sm font-normal text-theme-text; }
   .typo-caption { @apply text-xs text-theme-muted; }
   .typo-label { @apply text-xs font-medium uppercase tracking-wider text-theme-muted; }
-  .typo-section { @apply text-xs font-bold uppercase tracking-[0.2em] text-theme-cyan; }
+  .typo-section { @apply text-xs font-bold uppercase tracking-[0.2em] text-theme-cyan; font-family: var(--font-heading); }
   .typo-value { @apply font-mono tabular-nums; }
+
+  .track-label   { letter-spacing: 0.12em; }
+  .track-section { letter-spacing: 0.2em; }
+  .track-hero    { letter-spacing: 0.35em; }
+
+  .typo-hero-value  { @apply text-5xl sm:text-6xl xl:text-7xl font-black tracking-tight; }
+  .typo-kpi-value   { @apply text-2xl font-black tabular-nums leading-none; }
+  .typo-kpi-label   { @apply text-[10px] font-semibold uppercase tracking-[0.12em] text-theme-muted; }
+  .typo-button      { @apply text-[10px] font-bold uppercase tracking-[0.12em]; }
 }
 
 /* ---------- Heading font utility ---------- */

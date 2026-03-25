@@ -1,4 +1,6 @@
 import React from 'react';
+import { motion } from 'motion/react';
+import { SPRING } from '../../theme/motion';
 import { DealMetrics, MonthlyCashFlow } from '../../types';
 
 interface KpiGridProps {
@@ -92,11 +94,13 @@ const KpiStripTile: React.FC<{
   unit?: string;
   accent: AccentColor;
   extra?: React.ReactNode;
-}> = ({ title, value, unit, accent, extra }) => (
+  valueSize?: string;
+  valueColor?: string;
+}> = ({ title, value, unit, accent, extra, valueSize = 'text-xl', valueColor = 'text-theme-text' }) => (
   <div className={`rounded-inner border border-theme-border bg-theme-surface1/60 px-4 py-3 theme-transition hover:bg-theme-surface2 ${accentBorder[accent]}`}>
     <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-1.5 text-theme-muted">{title}</p>
     <div className="flex items-center gap-2">
-      <p className="text-xl font-black text-theme-text leading-none">
+      <p className={`${valueSize} font-black ${valueColor} leading-none`}>
         {value}
         {unit && <span className="text-[11px] text-theme-muted font-semibold ml-1">{unit}</span>}
       </p>
@@ -109,7 +113,7 @@ const WellsBadge: React.FC<{ count: number }> = ({ count }) => (
   <div className="rounded-inner border border-theme-border bg-theme-surface1/60 px-4 py-3 theme-transition hover:bg-theme-surface2 border-l-2 border-l-theme-muted/40 flex items-center gap-3">
     <div>
       <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-1.5 text-theme-muted">Wells</p>
-      <p className="text-xl font-black text-theme-text leading-none">{count}</p>
+      <p className="text-xl font-black text-theme-muted leading-none">{count}</p>
     </div>
     <span className="ml-auto relative text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-theme-cyan/10 text-theme-cyan border border-theme-cyan/20">
       <span className="absolute inset-0 rounded-full bg-theme-cyan/20 animate-ping" />
@@ -208,27 +212,46 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
         </div>
       </div>
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-        <KpiStripTile
-          title="Total CAPEX"
-          value={`$${(metrics.totalCapex / 1e6).toFixed(1)}`}
-          unit="MM"
-          accent="magenta"
-        />
-        <KpiStripTile
-          title="Portfolio EUR"
-          value={(metrics.eur / 1e3).toFixed(0)}
-          unit="MBOE"
-          accent="cyan"
-        />
-        <KpiStripTile
-          title="Payout"
-          value={metrics.payoutMonths > 0 ? String(metrics.payoutMonths) : '-'}
-          unit="MO"
-          accent="lavender"
-          extra={<PayoutRing months={metrics.payoutMonths} />}
-        />
-        <WellsBadge count={metrics.wellCount} />
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+        {[
+          <KpiStripTile
+            key="capex"
+            title="Total CAPEX"
+            value={`$${(metrics.totalCapex / 1e6).toFixed(1)}`}
+            unit="MM"
+            accent="magenta"
+            valueSize="text-2xl"
+            valueColor="text-theme-text"
+          />,
+          <KpiStripTile
+            key="eur"
+            title="Portfolio EUR"
+            value={(metrics.eur / 1e3).toFixed(0)}
+            unit="MBOE"
+            accent="cyan"
+            valueSize="text-2xl"
+            valueColor="text-theme-text"
+          />,
+          <KpiStripTile
+            key="payout"
+            title="Payout"
+            value={metrics.payoutMonths > 0 ? String(metrics.payoutMonths) : '-'}
+            unit="MO"
+            accent="lavender"
+            valueColor="text-theme-lavender"
+            extra={<PayoutRing months={metrics.payoutMonths} />}
+          />,
+          <WellsBadge key="wells" count={metrics.wellCount} />,
+        ].map((tile, index) => (
+          <motion.div
+            key={tile.key}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...SPRING.snappy, delay: index * 0.06 }}
+          >
+            {tile}
+          </motion.div>
+        ))}
       </div>
     </div>
   );

@@ -54,7 +54,7 @@ export function SidebarNav({
   ];
 
   return (
-    <nav className="flex flex-col gap-0.5 px-2 py-1">
+    <nav className="flex flex-col gap-1 px-2 py-1">
       {items.map(({ id, label, Icon, needsAttention }) => {
         const isActive = section === id;
         const activeStyles = isClassic
@@ -69,7 +69,7 @@ export function SidebarNav({
             key={id}
             onClick={() => onSetSection(id)}
             title={collapsed ? label : undefined}
-            className={`relative flex items-center gap-2.5 py-1.5 rounded-inner theme-transition text-sm font-medium focus-visible:outline-2 focus-visible:outline-theme-cyan focus-visible:outline-offset-[-2px] ${
+            className={`relative flex items-center gap-2.5 py-2 rounded-inner theme-transition text-sm font-medium focus-visible:outline-2 focus-visible:outline-theme-cyan focus-visible:outline-offset-[-2px] ${
               collapsed ? 'justify-center px-2' : 'px-3'
             } ${isActive ? activeStyles : inactiveStyles}`}
           >

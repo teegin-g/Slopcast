@@ -355,6 +355,9 @@ export default function HyperboreaBackground() {
 
     let W: number, H: number;
 
+    const motionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    let reduceMotion = motionQuery?.matches ?? false;
+
     const snowFar = SNOW_FAR.map(s => ({ ...s }));
     const snowNear = SNOW_NEAR.map(s => ({ ...s }));
 
@@ -380,6 +383,7 @@ export default function HyperboreaBackground() {
       canvas!.width = W;
       canvas!.height = H;
       scanlinePattern = null;
+      if (reduceMotion) draw(0);
     }
     resize();
     window.addEventListener('resize', resize);
@@ -985,15 +989,39 @@ export default function HyperboreaBackground() {
         ctx!.fillRect(0, 0, W, H);
       }
 
+      if (reduceMotion) return;
       rafRef.current = requestAnimationFrame(draw);
     }
 
-    rafRef.current = requestAnimationFrame(draw);
+    const handleMotionChange = () => {
+      reduceMotion = motionQuery?.matches ?? false;
+      cancelAnimationFrame(rafRef.current);
+      if (reduceMotion) {
+        draw(0);
+      } else {
+        rafRef.current = requestAnimationFrame(draw);
+      }
+    };
+
+    if (motionQuery) {
+      if (motionQuery.addEventListener) motionQuery.addEventListener('change', handleMotionChange);
+      else motionQuery.addListener(handleMotionChange);
+    }
+
+    if (reduceMotion) {
+      draw(0);
+    } else {
+      rafRef.current = requestAnimationFrame(draw);
+    }
 
     return () => {
       window.removeEventListener('resize', resize);
       fxObserver?.disconnect();
       cancelAnimationFrame(rafRef.current);
+      if (motionQuery) {
+        if (motionQuery.removeEventListener) motionQuery.removeEventListener('change', handleMotionChange);
+        else motionQuery.removeListener(handleMotionChange);
+      }
     };
   }, []);
 
