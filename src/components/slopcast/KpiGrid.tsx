@@ -160,7 +160,7 @@ const KpiStripTile: React.FC<{
   bgClass?: string;
 }> = ({ title, value, valueNode, unit, accent, extra, shimmer = '', bgClass = 'bg-theme-surface1/60' }) => (
   <div className={`rounded-inner border border-theme-border ${bgClass} px-4 py-3 theme-transition hover:bg-theme-surface2 ${accentBorder[accent]}`}>
-    <p className="text-[11px] font-bold uppercase tracking-[0.18em] mb-1.5 text-theme-text/70 heading-font">{title}</p>
+    <p className="text-[11px] font-bold uppercase tracking-[0.18em] mb-1.5 text-theme-muted heading-font">{title}</p>
     <div className="flex items-center gap-2">
       {valueNode ? (
         <p className="flex items-center">
@@ -181,7 +181,7 @@ const KpiStripTile: React.FC<{
 const WellsBadge: React.FC<{ count: number }> = ({ count }) => (
   <div className="rounded-inner border border-theme-border bg-theme-surface1/60 px-4 py-3 theme-transition hover:bg-theme-surface2 border-l-2 border-l-theme-muted/40 flex items-center gap-3">
     <div>
-      <p className="text-[11px] font-bold uppercase tracking-[0.18em] mb-1.5 text-theme-text/70">Wells</p>
+      <p className="text-[11px] font-bold uppercase tracking-[0.18em] mb-1.5 text-theme-muted">Wells</p>
       <p className="text-xl font-black text-theme-text leading-none">{count}</p>
     </div>
     <span className="ml-auto text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-theme-cyan/10 text-theme-cyan border border-theme-cyan/20">
@@ -217,15 +217,15 @@ const MetricSparkline: React.FC<{ values: number[] }> = ({ values }) => {
 };
 
 const heroBgMap: Record<'glass' | 'solid' | 'outline', string> = {
-  glass: 'bg-theme-surface1/90',
+  glass: 'bg-theme-surface1/85',
   solid: 'bg-theme-surface1',
-  outline: 'bg-theme-surface1/20',
+  outline: 'bg-theme-surface1/25',
 };
 
 const tileBgMap: Record<'glass' | 'solid' | 'outline', string> = {
   glass: 'bg-theme-surface1/60',
   solid: 'bg-theme-surface1',
-  outline: 'bg-theme-surface1/20',
+  outline: 'bg-theme-surface1/25',
 };
 
 const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, breakevenOilPrice, snapshotHistory, showAfterTax, showLevered }) => {

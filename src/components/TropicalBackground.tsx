@@ -116,10 +116,10 @@ interface ParrotData {
 function generateParrots(): ParrotData[] {
   const rand = seededRandom(55);
   const defs = [
-    { baseX: 0.18, baseY: 0.18, size: 5, delay: 0 },
-    { baseX: 0.25, baseY: 0.14, size: 4, delay: 2 },
-    { baseX: 0.78, baseY: 0.16, size: 4.5, delay: 4 },
-    { baseX: 0.85, baseY: 0.22, size: 3.5, delay: 1 },
+    { baseX: 0.18, baseY: 0.30, size: 5, delay: 0 },
+    { baseX: 0.25, baseY: 0.28, size: 4, delay: 2 },
+    { baseX: 0.78, baseY: 0.32, size: 4.5, delay: 4 },
+    { baseX: 0.85, baseY: 0.34, size: 3.5, delay: 1 },
   ];
   return defs.map(d => ({
     ...d,

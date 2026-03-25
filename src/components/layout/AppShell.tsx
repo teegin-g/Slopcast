@@ -129,8 +129,11 @@ export function AppShell({ workspace, children }: AppShellProps) {
         )}
       </div>
 
-      {/* Vignette overlay */}
-      <Vignette />
+      {/* Vignette overlay — skip when theme has an animated background,
+          because each canvas scene draws its own tuned vignette. Stacking
+          both darkens corners past 0.8 effective opacity, wasting the
+          background art. */}
+      {!workspace.BackgroundComponent && <Vignette />}
 
       {/* Desktop/mid sidebar */}
       {viewport !== 'mobile' && (

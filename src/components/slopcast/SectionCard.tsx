@@ -17,7 +17,7 @@ interface SectionCardProps {
 const sectionBgMap: Record<'glass' | 'solid' | 'outline', string> = {
   glass: 'bg-theme-surface1/70',
   solid: 'bg-theme-surface1',
-  outline: 'bg-theme-surface1/20',
+  outline: 'bg-theme-surface1/30',
 };
 
 const SectionCard: React.FC<SectionCardProps> = ({
