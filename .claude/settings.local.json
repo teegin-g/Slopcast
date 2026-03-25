@@ -1,4 +1,7 @@
 {
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
   "permissions": {
     "allow": [
       "WebSearch",
@@ -54,7 +57,9 @@
       "Skill(creative-exploration)",
       "mcp__playwright__browser_navigate",
       "mcp__playwright__browser_wait_for",
-      "mcp__playwright__browser_evaluate"
+      "mcp__playwright__browser_evaluate",
+      "mcp__playwright__browser_snapshot",
+      "WebFetch(domain:docs.anthropic.com)"
     ]
   }
 }
