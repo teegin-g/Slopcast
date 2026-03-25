@@ -1,9 +1,20 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeAll } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppShell } from './AppShell';
 import SectionCard from '../slopcast/SectionCard';
 import type { WellGroup } from '../../types';
+
+// Polyfill IntersectionObserver for test environment (used by motion useInView)
+beforeAll(() => {
+  if (typeof IntersectionObserver === 'undefined') {
+    (globalThis as any).IntersectionObserver = class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    };
+  }
+});
 
 // Mock useViewportLayout to control responsive behavior
 const mockViewport = vi.fn(() => 'desktop' as 'mobile' | 'mid' | 'desktop');
