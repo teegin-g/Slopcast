@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './auth/AuthProvider';
 import { ThemeProvider } from './theme/ThemeProvider';
+import { ToastProvider } from './components/slopcast/Toast';
 import './app.css';
 import './styles/theme.css';
 
@@ -20,16 +21,18 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <ThemeProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          <App />
-          {DebugProvider && (
-            <Suspense fallback={null}>
-              <DebugProvider />
-            </Suspense>
-          )}
-        </AuthProvider>
-      </BrowserRouter>
+      <ToastProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <App />
+            {DebugProvider && (
+              <Suspense fallback={null}>
+                <DebugProvider />
+              </Suspense>
+            )}
+          </AuthProvider>
+        </BrowserRouter>
+      </ToastProvider>
     </ThemeProvider>
   </React.StrictMode>
 );

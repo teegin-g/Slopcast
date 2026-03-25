@@ -40,8 +40,15 @@
   --danger: 239 68 68;
   /* #ef4444 */
 
-  --shadow-glow-cyan: 0 0 10px rgba(59, 130, 246, 0.3);
-  --shadow-glow-magenta: 0 0 10px rgba(236, 72, 153, 0.3);
+  --z-base: 0;
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-modal: 30;
+  --z-toast: 40;
+  --z-tooltip: 50;
+
+  --shadow-glow-cyan: 0 0 10px rgba(59, 130, 246, 0.15);
+  --shadow-glow-magenta: 0 0 10px rgba(236, 72, 153, 0.15);
   --shadow-card: 0 10px 30px rgba(0, 0, 0, .45);
 
   --grad-space:
@@ -200,8 +207,8 @@
   --danger: 255 79 163;
   /* #FF4FA3 */
 
-  --shadow-glow-cyan: 0 0 18px rgba(158, 211, 240, .45), 0 0 48px rgba(158, 211, 240, .25);
-  --shadow-glow-magenta: 0 0 18px rgba(229, 102, 218, .45), 0 0 48px rgba(229, 102, 218, .25);
+  --shadow-glow-cyan: 0 0 18px rgba(158, 211, 240, .22), 0 0 48px rgba(158, 211, 240, .12);
+  --shadow-glow-magenta: 0 0 18px rgba(229, 102, 218, .22), 0 0 48px rgba(229, 102, 218, .12);
   --shadow-card: 0 10px 30px rgba(0, 0, 0, .55);
 
   --grad-space:
@@ -235,44 +242,44 @@
   /* seafoam teal (accent border) */
   --cyan: 45 212 191;
   /* teal-400  – primary accent */
-  --magenta: 185 255 59;
-  /* neon lime – replaces coral/orange accents */
+  --magenta: 255 127 107;
+  /* coral */
   --violet: 192 132 252;
   /* purple-400 */
   --purple: 30 58 48;
   /* deep palm shadow */
-  --lav: 195 255 140;
-  /* soft lime highlight (secondary text) */
+  --lav: 255 182 168;
+  /* soft coral highlight (secondary text) */
   --text: 236 242 238;
   /* off-white sea-foam */
   --muted: 148 180 170;
   /* faded palm green */
   --success: 52 211 153;
   /* emerald-400 */
-  --warning: 185 255 59;
-  /* neon lime – used for tropical highlights */
+  --warning: 255 127 107;
+  /* coral – used for tropical highlights */
   --danger: 248 113 113;
   /* red-400 */
 
-  --shadow-glow-cyan: 0 0 14px rgba(45, 212, 191, 0.35), 0 0 40px rgba(45, 212, 191, 0.15);
-  --shadow-glow-magenta: 0 0 14px rgba(185, 255, 59, 0.42), 0 0 46px rgba(185, 255, 59, 0.20);
+  --shadow-glow-cyan: 0 0 14px rgba(45, 212, 191, 0.17), 0 0 40px rgba(45, 212, 191, 0.07);
+  --shadow-glow-magenta: 0 0 14px rgba(255, 127, 107, 0.21), 0 0 46px rgba(255, 127, 107, 0.10);
   --shadow-card: 0 10px 30px rgba(0, 0, 0, .45);
 
   --grad-space:
     radial-gradient(1040px circle at 12% -18%, rgba(45, 212, 191, 0.34) 0%, rgba(45, 212, 191, 0) 58%),
-    radial-gradient(980px circle at 92% -10%, rgba(185, 255, 59, 0.24) 0%, rgba(185, 255, 59, 0) 56%),
+    radial-gradient(980px circle at 92% -10%, rgba(255, 127, 107, 0.24) 0%, rgba(255, 127, 107, 0) 56%),
     linear-gradient(162deg, #1b3140 0%, #142636 52%, #0f1c2b 100%);
   --font-brand: 'Inter';
   --font-heading: 'Quicksand';
   --radius-panel: 22px;
   --ambient-left: 45 212 191;
-  --ambient-right: 185 255 59;
+  --ambient-right: 255 127 107;
   --ambient-left-alpha: 0.32;
   --ambient-right-alpha: 0.24;
   --ambient-orb-left-alpha: 0.15;
   --ambient-orb-right-alpha: 0.12;
   --tropical-sun: 255 197 124;
-  --tropical-horizon-coral: 185 255 59;
+  --tropical-horizon-coral: 255 127 107;
   --tropical-lagoon: 45 212 191;
   --tropical-ridge-dark: 9 23 31;
   --tropical-palm-shadow: 16 42 44;
@@ -311,8 +318,8 @@
   --danger: 206 103 87;
   /* #CE6757 */
 
-  --shadow-glow-cyan: 0 0 14px rgba(103, 195, 238, 0.24), 0 0 32px rgba(103, 195, 238, 0.10);
-  --shadow-glow-magenta: 0 0 12px rgba(220, 129, 96, 0.20), 0 0 28px rgba(220, 129, 96, 0.08);
+  --shadow-glow-cyan: 0 0 14px rgba(103, 195, 238, 0.12), 0 0 32px rgba(103, 195, 238, 0.05);
+  --shadow-glow-magenta: 0 0 12px rgba(220, 129, 96, 0.10), 0 0 28px rgba(220, 129, 96, 0.04);
   --shadow-card: 0 14px 32px rgba(0, 0, 0, 0.52);
 
   --grad-space:
@@ -399,8 +406,8 @@
   --danger: 216 107 91;
   /* #D86B5B */
 
-  --shadow-glow-cyan: 0 0 16px rgba(155, 196, 255, 0.28), 0 0 40px rgba(155, 196, 255, 0.12);
-  --shadow-glow-magenta: 0 0 12px rgba(242, 166, 90, 0.26), 0 0 32px rgba(242, 166, 90, 0.10);
+  --shadow-glow-cyan: 0 0 16px rgba(155, 196, 255, 0.14), 0 0 40px rgba(155, 196, 255, 0.06);
+  --shadow-glow-magenta: 0 0 12px rgba(242, 166, 90, 0.13), 0 0 32px rgba(242, 166, 90, 0.05);
   --shadow-card: 0 14px 32px rgba(0, 0, 0, 0.56);
 
   --grad-space:
@@ -663,8 +670,8 @@
   /* #5A6C87 */
   --cyan: 56 189 248;
   /* #38BDF8 */
-  --magenta: 251 188 5;
-  /* #FBBC05 window glow amber */
+  --magenta: 125 211 252;
+  /* #7DD3FC ice-blue */
   --violet: 143 159 184;
   /* #8F9FB8 snow ground */
   --purple: 20 29 46;
@@ -682,19 +689,19 @@
   --danger: 248 113 113;
   /* #F87171 */
 
-  --shadow-glow-cyan: 0 0 16px rgba(56, 189, 248, 0.28), 0 0 40px rgba(56, 189, 248, 0.12);
-  --shadow-glow-magenta: 0 0 12px rgba(251, 188, 5, 0.26), 0 0 32px rgba(251, 188, 5, 0.10);
+  --shadow-glow-cyan: 0 0 16px rgba(56, 189, 248, 0.14), 0 0 40px rgba(56, 189, 248, 0.06);
+  --shadow-glow-magenta: 0 0 12px rgba(125, 211, 252, 0.13), 0 0 32px rgba(125, 211, 252, 0.05);
   --shadow-card: 0 14px 32px rgba(0, 0, 0, 0.56);
 
   --grad-space:
     radial-gradient(1080px circle at 10% -20%, rgba(56, 189, 248, 0.15) 0%, rgba(56, 189, 248, 0) 58%),
-    radial-gradient(980px circle at 90% -12%, rgba(251, 188, 5, 0.1) 0%, rgba(251, 188, 5, 0) 56%),
+    radial-gradient(980px circle at 90% -12%, rgba(125, 211, 252, 0.1) 0%, rgba(125, 211, 252, 0) 56%),
     linear-gradient(170deg, #162338 0%, #0b1320 100%);
   --font-brand: 'Inter';
   --font-heading: 'Space Grotesk';
   --radius-panel: 12px;
   --ambient-left: 56 189 248;
-  --ambient-right: 251 188 5;
+  --ambient-right: 125 211 252;
   --ambient-left-alpha: 0.15;
   --ambient-right-alpha: 0.15;
   --ambient-orb-left-alpha: 0.1;
@@ -717,8 +724,8 @@
   --bar-blue-text: 11 19 32;
   --bar-blue-border: 22 35 56;
 
-  --bar-yellow-bg-1: 251 188 5;
-  --bar-yellow-bg-2: 245 158 11;
+  --bar-yellow-bg-1: 125 211 252;
+  --bar-yellow-bg-2: 56 189 248;
   --bar-yellow-text: 11 19 32;
   --bar-yellow-border: 22 35 56;
 
@@ -2407,8 +2414,8 @@ body {
   --border: 203 213 225;       /* #cbd5e1 */
   --text: 15 23 42;            /* #0f172a */
   --muted: 100 116 139;        /* #64748b */
-  --shadow-glow-cyan: 0 0 10px rgba(59, 130, 246, 0.15);
-  --shadow-glow-magenta: 0 0 10px rgba(236, 72, 153, 0.15);
+  --shadow-glow-cyan: 0 0 10px rgba(59, 130, 246, 0.07);
+  --shadow-glow-magenta: 0 0 10px rgba(236, 72, 153, 0.07);
   --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.08);
   --grad-space:
     radial-gradient(1200px circle at 10% -20%, rgba(59, 130, 246, 0.08) 0%, rgba(59, 130, 246, 0) 58%),

@@ -116,7 +116,7 @@ const slate: ThemeMeta = {
     retroGrid: false,
     brandFont: false,
     glowEffects: false,
-    panelStyle: 'glass',
+    panelStyle: 'solid',
     headingFont: false,
     denseSpacing: false,
   },
@@ -174,7 +174,7 @@ const tropical: ThemeMeta = {
   appSubtitle: 'Island Economics',
   chartPalette: {
     oil: '#2dd4bf',      // teal-400
-    cash: '#b9ff3b',     // neon lime (replaces orange accents)
+    cash: '#FF7F6B',     // coral
     lav: '#c084fc',      // purple-400
     grid: 'rgba(45, 212, 191, 0.15)',
     text: '#94a3b8',
@@ -184,11 +184,11 @@ const tropical: ThemeMeta = {
   mapPalette: {
     gridColor: '#2dd4bf',
     gridOpacity: 0.15,
-    selectedStroke: '#b9ff3b',
-    glowColor: '#b9ff3b',
+    selectedStroke: '#FF7F6B',
+    glowColor: '#FF7F6B',
     unassignedFill: '#5eead4',
-    lassoFill: 'rgba(185, 255, 59, 0.12)',
-    lassoStroke: '#b9ff3b',
+    lassoFill: 'rgba(255, 127, 107, 0.12)',
+    lassoStroke: '#FF7F6B',
     lassoDash: '6, 3',
   },
   features: {
@@ -299,7 +299,7 @@ const mario: ThemeMeta = {
   appSubtitle: '1-ECONOMICS',
   chartPalette: {
     oil: '#FF2A2A',                 // production line (classic red)
-    cash: '#FF2A2A',                // recovery line / fill
+    cash: '#4CAF50',                // recovery line / fill
     lav: '#BDBDBD',                 // secondary bars / accents
     grid: 'rgba(255, 255, 255, 0.10)',
     text: 'rgba(255, 255, 255, 0.75)',
@@ -341,7 +341,7 @@ const hyperborea: ThemeMeta = {
   appSubtitle: 'Arctic Operations',
   chartPalette: {
     oil: '#38BDF8',
-    cash: '#FBBC05',
+    cash: '#7DD3FC',
     lav: '#CBD5E1',
     grid: 'rgba(90, 108, 135, 0.25)',
     text: '#94A3B8',
@@ -354,8 +354,8 @@ const hyperborea: ThemeMeta = {
     selectedStroke: '#38BDF8',
     glowColor: '#38BDF8',
     unassignedFill: '#2C4365',
-    lassoFill: 'rgba(251, 188, 5, 0.15)',
-    lassoStroke: '#FBBC05',
+    lassoFill: 'rgba(125, 211, 252, 0.15)',
+    lassoStroke: '#7DD3FC',
     lassoDash: '6, 3',
   },
   features: {
