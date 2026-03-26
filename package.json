@@ -9,7 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
-    "storybook:build": "storybook build --output-dir artifacts/storybook-static",
+    "storybook:build": "storybook build --output-dir node_modules/.cache/storybook-static",
     "storybook:test": "vitest run --project storybook",
     "start": "node server.js",
     "deploy:supabase:storage": "node scripts/deploy-supabase-storage.mjs",
