@@ -3,7 +3,8 @@ import GroupList from '../GroupList';
 import MapVisualizer from '../MapVisualizer';
 import { ThemeMeta, ThemeId } from '../../theme/themes';
 import { Well, WellGroup } from '../../types';
-import WellsTable from './WellsTable';
+import GroupWellsTable from './GroupWellsTable';
+import FilterChips, { FilterChip } from './FilterChips';
 
 export type WellsMobilePanel = 'GROUPS' | 'MAP';
 
@@ -11,7 +12,7 @@ interface DesignWellsViewProps {
   isClassic: boolean;
   theme: ThemeMeta;
   themeId: ThemeId;
-  viewportLayout: 'mobile' | 'mid' | 'desktop';
+  viewportLayout: 'mobile' | 'mid' | 'desktop' | 'wide';
   mobilePanel: WellsMobilePanel;
   onSetMobilePanel: (panel: WellsMobilePanel) => void;
   groups: WellGroup[];
@@ -75,121 +76,69 @@ const FiltersPanel: React.FC<{
   filteredWellsCount,
   totalWellCount,
 }) => {
-  if (isClassic) {
-    return (
-      <div className="sc-panel theme-transition">
-        <div className="sc-panelTitlebar sc-titlebar--neutral px-4 py-3 flex items-center justify-between">
-          <h3 className="text-[11px] font-black uppercase tracking-[0.25em] text-white">Filters</h3>
-          <button
-            onClick={onResetFilters}
-            className="text-xs font-black uppercase tracking-widest text-white/90 hover:text-white transition-colors"
-          >
-            Reset
-          </button>
-        </div>
-        <div className="p-3 space-y-3 bg-black/10">
-          <div>
-            <label className="text-xs font-black uppercase tracking-[0.2em] mb-1 block text-theme-warning">Operator</label>
-            <select
-              value={operatorFilter}
-              onChange={(e) => onSetOperatorFilter(e.target.value)}
-              className="w-full rounded-md px-3 py-2 text-xs font-black sc-inputNavy"
-            >
-              <option value="ALL">All Operators</option>
-              {operatorOptions.map(operator => (
-                <option key={operator} value={operator}>{operator}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-black uppercase tracking-[0.2em] mb-1 block text-theme-warning">Formation</label>
-            <select
-              value={formationFilter}
-              onChange={(e) => onSetFormationFilter(e.target.value)}
-              className="w-full rounded-inner px-3 py-2 text-xs font-black sc-inputNavy"
-            >
-              <option value="ALL">All Formations</option>
-              {formationOptions.map(formation => (
-                <option key={formation} value={formation}>{formation}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-black uppercase tracking-[0.2em] mb-1 block text-theme-warning">Status</label>
-            <select
-              value={statusFilter}
-              onChange={(e) => onSetStatusFilter(e.target.value as Well['status'] | 'ALL')}
-              className="w-full rounded-inner px-3 py-2 text-xs font-black sc-inputNavy"
-            >
-              <option value="ALL">All Statuses</option>
-              {statusOptions.map(status => (
-                <option key={status} value={status}>{status}</option>
-              ))}
-            </select>
-          </div>
-          <div className="text-xs font-black uppercase tracking-[0.18em] text-white/80 border border-black/25 rounded-inner px-3 py-2">
-            {filteredWellsCount} visible / {totalWellCount} total
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const [expanded, setExpanded] = useState(false);
+  const hasActiveFilters = operatorFilter !== 'ALL' || formationFilter !== 'ALL' || statusFilter !== 'ALL';
+  const showSelects = expanded || hasActiveFilters;
+
+  const activeChips: FilterChip[] = [
+    ...(operatorFilter !== 'ALL' ? [{ id: 'operator', value: operatorFilter, label: `Operator: ${operatorFilter}` }] : []),
+    ...(formationFilter !== 'ALL' ? [{ id: 'formation', value: formationFilter, label: `Formation: ${formationFilter}` }] : []),
+    ...(statusFilter !== 'ALL' ? [{ id: 'status', value: statusFilter, label: `Status: ${statusFilter}` }] : []),
+  ];
+
+  const handleRemoveChip = (id: string) => {
+    if (id === 'operator') onSetOperatorFilter('ALL');
+    if (id === 'formation') onSetFormationFilter('ALL');
+    if (id === 'status') onSetStatusFilter('ALL');
+  };
+
+  const selectClass = isClassic
+    ? 'w-full rounded-md px-2 py-1.5 text-xs font-black sc-inputNavy'
+    : 'w-full bg-theme-bg border border-theme-border rounded-inner px-2 py-1.5 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition';
 
   return (
-    <div className="rounded-panel border p-4 shadow-card theme-transition bg-theme-surface1/80 border-theme-border">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className={`font-semibold text-sm uppercase tracking-wide text-theme-cyan ${theme.features.brandFont ? 'brand-font' : ''}`}>Filters</h3>
-        <button
-          onClick={onResetFilters}
-          className="text-xs px-3 py-1 rounded-inner border font-black uppercase tracking-[0.16em] border-theme-border text-theme-muted hover:text-theme-text"
-        >
-          Reset
-        </button>
+    <div className={isClassic ? 'sc-panel theme-transition' : 'rounded-panel border bg-theme-surface1/80 border-theme-border theme-transition'}>
+      {/* Header */}
+      <div className={`px-3 py-2 flex items-center justify-between ${isClassic ? 'sc-panelTitlebar sc-titlebar--neutral' : 'border-b border-theme-border/60'}`}>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setExpanded(!expanded)}
+            className={`text-[11px] font-black uppercase tracking-[0.2em] ${isClassic ? 'text-white' : 'text-theme-cyan'}`}>
+            Filters
+          </button>
+          <span className={`text-[10px] font-black tabular-nums ${isClassic ? 'text-white/60' : 'text-theme-muted'}`}>
+            {filteredWellsCount}/{totalWellCount}
+          </span>
+        </div>
+        {hasActiveFilters && (
+          <button onClick={onResetFilters}
+            className={`text-[10px] font-black uppercase tracking-widest ${isClassic ? 'text-white/70 hover:text-white' : 'text-theme-muted hover:text-theme-text'} transition-colors`}>
+            Reset
+          </button>
+        )}
       </div>
-      <div className="grid grid-cols-1 gap-3">
-        <div>
-          <label className="text-xs font-black uppercase tracking-[0.2em] mb-1 block text-theme-muted">Operator</label>
-          <select
-            value={operatorFilter}
-            onChange={(e) => onSetOperatorFilter(e.target.value)}
-            className="w-full bg-theme-bg border rounded-inner px-3 py-2 text-xs text-theme-text outline-none border-theme-border"
-          >
+
+      {/* Active filter chips */}
+      {activeChips.length > 0 && (
+        <FilterChips filters={activeChips} onRemove={handleRemoveChip} />
+      )}
+
+      {/* Compact inline selects */}
+      {showSelects && (
+        <div className="px-3 py-2 grid grid-cols-3 gap-2">
+          <select value={operatorFilter} onChange={(e) => onSetOperatorFilter(e.target.value)} className={selectClass}>
             <option value="ALL">All Operators</option>
-            {operatorOptions.map(operator => (
-              <option key={operator} value={operator}>{operator}</option>
-            ))}
+            {operatorOptions.map(op => <option key={op} value={op}>{op}</option>)}
           </select>
-        </div>
-        <div>
-          <label className="text-xs font-black uppercase tracking-[0.2em] mb-1 block text-theme-muted">Formation</label>
-          <select
-            value={formationFilter}
-            onChange={(e) => onSetFormationFilter(e.target.value)}
-            className="w-full bg-theme-bg border rounded-inner px-3 py-2 text-xs text-theme-text outline-none border-theme-border"
-          >
+          <select value={formationFilter} onChange={(e) => onSetFormationFilter(e.target.value)} className={selectClass}>
             <option value="ALL">All Formations</option>
-            {formationOptions.map(formation => (
-              <option key={formation} value={formation}>{formation}</option>
-            ))}
+            {formationOptions.map(f => <option key={f} value={f}>{f}</option>)}
           </select>
-        </div>
-        <div>
-          <label className="text-xs font-black uppercase tracking-[0.2em] mb-1 block text-theme-muted">Status</label>
-          <select
-            value={statusFilter}
-            onChange={(e) => onSetStatusFilter(e.target.value as Well['status'] | 'ALL')}
-            className="w-full bg-theme-bg border rounded-inner px-3 py-2 text-xs text-theme-text outline-none border-theme-border"
-          >
+          <select value={statusFilter} onChange={(e) => onSetStatusFilter(e.target.value as any)} className={selectClass}>
             <option value="ALL">All Statuses</option>
-            {statusOptions.map(status => (
-              <option key={status} value={status}>{status}</option>
-            ))}
+            {statusOptions.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
-      </div>
-      <div className="mt-3 rounded-inner border px-3 py-2 text-xs font-black uppercase tracking-[0.16em] text-theme-muted border-theme-border bg-theme-bg">
-        {filteredWellsCount} visible / {totalWellCount} total
-      </div>
+      )}
     </div>
   );
 };
@@ -255,10 +204,10 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
             onClick={() => onSetMobilePanel('GROUPS')}
             className={
               isClassic
-                ? `px-3 py-2 rounded-inner text-xs font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
+                ? `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
                     mobilePanel === 'GROUPS' ? 'bg-theme-warning text-black border-black/20' : 'bg-black/15 text-white/90 border-black/25'
                   }`
-                : `px-3 py-2 rounded-inner text-xs font-black uppercase tracking-widest border transition-colors ${
+                : `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border transition-colors ${
                     mobilePanel === 'GROUPS'
                       ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
                       : 'bg-theme-bg text-theme-muted border-theme-border'
@@ -271,10 +220,10 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
             onClick={() => onSetMobilePanel('MAP')}
             className={
               isClassic
-                ? `px-3 py-2 rounded-inner text-xs font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
+                ? `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border-2 shadow-card transition-colors ${
                     mobilePanel === 'MAP' ? 'bg-theme-warning text-black border-black/20' : 'bg-black/15 text-white/90 border-black/25'
                   }`
-                : `px-3 py-2 rounded-inner text-xs font-black uppercase tracking-widest border transition-colors ${
+                : `px-3 py-2 rounded-inner text-[9px] font-black uppercase tracking-widest border transition-colors ${
                     mobilePanel === 'MAP'
                       ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
                       : 'bg-theme-bg text-theme-muted border-theme-border'
@@ -286,29 +235,12 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
         </div>
       </div>
 
-      <div className={`grid grid-cols-1 lg:grid-cols-12 gap-6 ${viewportLayout === 'desktop' ? 'xl:min-h-[calc(100vh-11rem)] xl:auto-rows-fr' : ''}`}>
+      <div className={`grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 ${viewportLayout === 'desktop' || viewportLayout === 'wide' ? 'xl:min-h-[calc(100vh-11rem)] xl:auto-rows-fr' : ''}`}>
         <aside
           className={`xl:col-span-4 lg:col-span-5 lg:min-h-0 xl:overflow-y-auto scrollbar-hide space-y-6 pb-4 theme-transition ${
             isClassic ? 'p-1' : 'p-4 rounded-panel bg-theme-bg/60 backdrop-blur-sm border border-theme-border'
           } ${mobilePanel !== 'GROUPS' ? 'hidden lg:block' : ''}`}
         >
-          <GroupList
-            groups={groups}
-            activeGroupId={activeGroupId}
-            onActivateGroup={onActivateGroup}
-            onAddGroup={onAddGroup}
-            onCloneGroup={onCloneGroup}
-          />
-
-          {activeGroup && (
-            <WellsTable
-              wells={wells.filter(w => activeGroup.wellIds.has(w.id))}
-              selectedWellIds={selectedWellIds}
-              onSelectWells={onSelectWells}
-              onToggleWell={onToggleWell}
-            />
-          )}
-
           <FiltersPanel
             isClassic={isClassic}
             theme={theme}
@@ -325,6 +257,24 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
             filteredWellsCount={filteredWellsCount}
             totalWellCount={totalWellCount}
           />
+
+          <GroupList
+            groups={groups}
+            activeGroupId={activeGroupId}
+            onActivateGroup={onActivateGroup}
+            onAddGroup={onAddGroup}
+            onCloneGroup={onCloneGroup}
+          />
+
+          {activeGroup && (
+            <GroupWellsTable
+              isClassic={isClassic}
+              group={activeGroup}
+              wells={wells}
+              title="Wells in active group"
+              defaultSort={{ key: 'name', dir: 'asc' }}
+            />
+          )}
         </aside>
 
         <section className={`xl:col-span-8 lg:col-span-7 lg:min-h-0 flex flex-col space-y-6 ${mobilePanel !== 'MAP' ? 'hidden lg:flex' : ''}`}>
@@ -338,14 +288,14 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                 <div className="flex items-center gap-3">
                   <button
                     onClick={onSelectAll}
-                    className="text-xs font-black uppercase tracking-[0.2em] text-white/90 hover:text-white transition-colors"
+                    className="text-[10px] font-black uppercase tracking-[0.2em] text-white/90 hover:text-white transition-colors"
                   >
                     {selectFilteredLabel.toUpperCase()}
                   </button>
                   <button
                     onClick={onClearSelection}
                     disabled={selectedWellCount === 0}
-                    className={`text-xs font-black uppercase tracking-[0.2em] transition-colors ${
+                    className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${
                       selectedWellCount > 0 ? 'text-white/70 hover:text-white' : 'text-white/30 cursor-not-allowed'
                     }`}
                   >
@@ -373,19 +323,19 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
           ) : (
             <div className={`w-full shrink-0 min-h-[360px] ${mapHeightClass} ${isMobileMap ? 'mb-24' : ''} rounded-panel border shadow-card relative overflow-hidden group theme-transition bg-theme-bg border-theme-border`}>
               <div className="absolute inset-0 bg-gradient-to-t from-theme-bg via-transparent to-transparent pointer-events-none"></div>
-              <div className="flex justify-between items-center px-4 py-3 relative z-10 bg-theme-surface1/30 backdrop-blur-sm border-b border-theme-border/20">
+              <div className="flex justify-between items-center px-4 py-3 relative z-10 bg-black/10 backdrop-blur-sm border-b border-white/5">
                 <h2 className="text-[11px] font-bold uppercase tracking-[0.3em] flex items-center gap-2 theme-transition text-theme-cyan">
                   <span className="w-2 h-2 rounded-full animate-pulse bg-theme-cyan"></span>
                   Basin Visualizer
                 </h2>
                 <div className="flex items-center gap-2">
-                  <button onClick={onSelectAll} className="text-xs font-bold tracking-[0.1em] theme-transition hover:scale-105 text-theme-lavender">
+                  <button onClick={onSelectAll} className="text-[10px] font-bold tracking-[0.1em] theme-transition hover:scale-105 text-theme-lavender">
                     {selectFilteredLabel.toUpperCase()}
                   </button>
                   <button
                     onClick={onClearSelection}
                     disabled={selectedWellCount === 0}
-                    className={`px-2 py-1 rounded-inner border text-xs font-black uppercase tracking-[0.14em] transition-colors ${
+                    className={`px-2 py-1 rounded-inner border text-[9px] font-black uppercase tracking-[0.14em] transition-colors ${
                       selectedWellCount > 0
                         ? 'bg-theme-bg/60 border-theme-border text-theme-muted hover:text-theme-text'
                         : 'bg-theme-bg/40 border-theme-border/60 text-theme-muted/50 cursor-not-allowed'
@@ -414,42 +364,44 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
 
           {!isMobileMap && (
             <div className={isClassic ? 'sc-panel theme-transition' : 'rounded-panel border shadow-card p-4 theme-transition bg-theme-surface1 border-theme-border'}>
-              <h3 className={isClassic ? 'text-xs font-black uppercase tracking-[0.2em] text-white mb-3' : 'text-xs font-black uppercase tracking-[0.2em] text-theme-cyan mb-3'}>
+              <h3 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.2em] text-white mb-3' : 'text-[10px] font-black uppercase tracking-[0.2em] text-theme-cyan mb-3'}>
                 Selection Actions
               </h3>
-              {selectedWellCount === 0 ? (
-                <div className="py-8 text-center">
-                  <div className="text-2xl mb-2">📍</div>
-                  <p className="text-[11px] text-theme-muted">Select wells on the map to get started</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={onAssignWells}
-                    className="px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.12em] transition-all bg-theme-cyan text-theme-bg hover:shadow-glow-cyan"
-                  >
-                    Assign to active group
-                  </button>
-                  <button
-                    onClick={onCreateGroupFromSelection}
-                    className="px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.12em] transition-all bg-theme-cyan text-theme-bg hover:shadow-glow-cyan"
-                  >
-                    Create group from selection
-                  </button>
-                  <button
-                    onClick={onSelectAll}
-                    className="px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.12em] transition-all bg-theme-surface2 text-theme-text border border-theme-border hover:border-theme-cyan"
-                  >
-                    {selectFilteredLabel}
-                  </button>
-                  <button
-                    onClick={onClearSelection}
-                    className="px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.12em] transition-all border bg-theme-surface2 text-theme-text border-theme-border hover:border-theme-cyan"
-                  >
-                    Clear
-                  </button>
-                </div>
-              )}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={onAssignWells}
+                  disabled={selectedWellCount === 0}
+                  className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
+                    selectedWellCount > 0 ? 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan' : 'bg-theme-surface2 text-theme-muted cursor-not-allowed'
+                  }`}
+                >
+                  Assign to active group
+                </button>
+                <button
+                  onClick={onCreateGroupFromSelection}
+                  disabled={selectedWellCount === 0}
+                  className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
+                    selectedWellCount > 0 ? 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan' : 'bg-theme-surface2 text-theme-muted cursor-not-allowed'
+                  }`}
+                >
+                  Create group from selection
+                </button>
+                <button
+                  onClick={onSelectAll}
+                  className="px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all bg-theme-surface2 text-theme-text border border-theme-border hover:border-theme-cyan"
+                >
+                  {selectFilteredLabel}
+                </button>
+                <button
+                  onClick={onClearSelection}
+                  disabled={selectedWellCount === 0}
+                  className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all border ${
+                    selectedWellCount > 0 ? 'bg-theme-surface2 text-theme-text border-theme-border hover:border-theme-cyan' : 'bg-theme-surface2 text-theme-muted border-theme-border cursor-not-allowed'
+                  }`}
+                >
+                  Clear
+                </button>
+              </div>
             </div>
           )}
         </section>
@@ -467,7 +419,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
             <div className="p-3 space-y-2">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className={isClassic ? 'text-white font-black text-[11px] uppercase tracking-[0.18em]' : 'text-theme-muted text-xs font-black uppercase tracking-[0.18em]'}>
+                  <div className={isClassic ? 'text-white font-black text-[11px] uppercase tracking-[0.18em]' : 'text-theme-muted text-[10px] font-black uppercase tracking-[0.18em]'}>
                     Selected {selectedWellCount} / Visible {filteredWellsCount}
                   </div>
                   <div className={isClassic ? 'text-white/85 text-sm font-black truncate' : 'text-theme-text text-sm font-black truncate'}>
@@ -479,8 +431,8 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                   onClick={() => setMobileTrayExpanded(v => !v)}
                   className={
                     isClassic
-                      ? 'sc-btnSecondary px-3 py-1.5 rounded-inner text-xs font-black uppercase tracking-widest transition-all'
-                      : 'px-3 py-1.5 rounded-inner border border-theme-border bg-theme-bg text-theme-muted text-xs font-black uppercase tracking-[0.16em] hover:text-theme-text transition-colors'
+                      ? 'sc-btnSecondary px-3 py-1.5 rounded-inner text-[9px] font-black uppercase tracking-widest transition-all'
+                      : 'px-3 py-1.5 rounded-inner border border-theme-border bg-theme-bg text-theme-muted text-[9px] font-black uppercase tracking-[0.16em] hover:text-theme-text transition-colors'
                   }
                   aria-expanded={mobileTrayExpanded}
                 >
@@ -494,10 +446,10 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                   disabled={selectedWellCount === 0}
                   className={
                     isClassic
-                      ? `sc-btnPrimary w-full px-3 py-2 rounded-inner text-xs font-black uppercase tracking-widest transition-all ${
+                      ? `sc-btnPrimary w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-widest transition-all ${
                           selectedWellCount > 0 ? '' : 'opacity-60 cursor-not-allowed'
                         }`
-                      : `w-full px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.12em] transition-all ${
+                      : `w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
                           selectedWellCount > 0 ? 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan' : 'bg-theme-surface2 text-theme-muted cursor-not-allowed'
                         }`
                   }
@@ -509,10 +461,10 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                   disabled={selectedWellCount === 0}
                   className={
                     isClassic
-                      ? `sc-btnSecondary w-full px-3 py-2 rounded-inner text-xs font-black uppercase tracking-widest transition-all ${
+                      ? `sc-btnSecondary w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-widest transition-all ${
                           selectedWellCount > 0 ? '' : 'opacity-60 cursor-not-allowed'
                         }`
-                      : `w-full px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.12em] transition-all border ${
+                      : `w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all border ${
                           selectedWellCount > 0 ? 'bg-theme-surface2 text-theme-text border-theme-border hover:border-theme-cyan' : 'bg-theme-surface2 text-theme-muted border-theme-border cursor-not-allowed'
                         }`
                   }
@@ -528,10 +480,10 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                     disabled={selectedWellCount === 0}
                     className={
                       isClassic
-                        ? `sc-btnSecondary w-full px-3 py-2 rounded-inner text-xs font-black uppercase tracking-widest transition-all ${
+                        ? `sc-btnSecondary w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-widest transition-all ${
                             selectedWellCount > 0 ? '' : 'opacity-60 cursor-not-allowed'
                           }`
-                        : `w-full px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.12em] transition-all border ${
+                        : `w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all border ${
                             selectedWellCount > 0 ? 'bg-theme-surface2 text-theme-text border-theme-border hover:border-theme-cyan' : 'bg-theme-surface2 text-theme-muted border-theme-border cursor-not-allowed'
                           }`
                     }
@@ -542,8 +494,8 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                     onClick={onSelectAll}
                     className={
                       isClassic
-                        ? 'sc-btnSecondary w-full px-3 py-2 rounded-inner text-xs font-black uppercase tracking-widest transition-all'
-                        : 'w-full px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.12em] transition-all bg-theme-surface2 text-theme-text border border-theme-border hover:border-theme-cyan'
+                        ? 'sc-btnSecondary w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-widest transition-all'
+                        : 'w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all bg-theme-surface2 text-theme-text border border-theme-border hover:border-theme-cyan'
                     }
                   >
                     {selectFilteredLabel}
@@ -558,4 +510,4 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
   );
 };
 
-export default React.memo(DesignWellsView);
+export default DesignWellsView;

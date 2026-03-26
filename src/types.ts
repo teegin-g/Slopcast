@@ -241,7 +241,7 @@ export type ModelPresetScope = 'user' | 'organization';
 
 export interface ProjectUiState {
   designWorkspace?: 'WELLS' | 'ECONOMICS';
-  economicsResultsTab?: 'SUMMARY' | 'CHARTS' | 'CASH_FLOW' | 'DRIVERS' | 'RESERVES';
+  economicsResultsTab?: 'OVERVIEW' | 'CASH_FLOW' | 'RESERVES';
   operatorFilter?: string;
   formationFilter?: string;
   statusFilter?: Well['status'] | 'ALL';

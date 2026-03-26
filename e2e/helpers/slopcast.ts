@@ -96,8 +96,19 @@ export class SlopcastApp {
   }
 
   async setTheme(theme: ThemeCase): Promise<void> {
-    await this.page.getByTestId('theme-dropdown-toggle').click();
-    await this.page.getByTestId(`theme-option-${theme.id}`).click();
+    const hasDropdown = await this.page
+      .getByTestId('theme-dropdown-toggle')
+      .first()
+      .isVisible()
+      .catch(() => false);
+
+    if (hasDropdown) {
+      await this.page.getByTestId('theme-dropdown-toggle').click();
+      await this.page.getByTestId(`theme-option-${theme.id}`).click();
+    } else {
+      await this.page.locator(`button[title="${theme.title}"]`).first().click();
+    }
+
     await this.page.waitForFunction(
       (themeId) => document.documentElement.dataset.theme === themeId,
       theme.id,

@@ -100,7 +100,7 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ isClassic }) => {
             </span>
             <button
               onClick={handleDone}
-              className={`text-xs font-bold ${isClassic ? 'text-white/50 hover:text-white' : 'text-theme-muted hover:text-theme-text'}`}
+              className={`text-xs font-bold focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none rounded-sm ${isClassic ? 'text-white/50 hover:text-white' : 'text-theme-muted hover:text-theme-text'}`}
             >
               Skip
             </button>
@@ -109,7 +109,7 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ isClassic }) => {
           <p className={`text-[11px] leading-relaxed mb-3 ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>{step.description}</p>
           <button
             onClick={handleNext}
-            className={`w-full py-2 rounded-inner text-xs font-black uppercase tracking-[0.14em] transition-colors ${
+            className={`w-full py-2 rounded-inner text-xs font-black uppercase tracking-[0.14em] transition-colors focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
               isClassic
                 ? 'sc-btnPrimary'
                 : 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan'

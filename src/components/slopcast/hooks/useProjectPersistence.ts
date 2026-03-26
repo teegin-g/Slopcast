@@ -282,13 +282,20 @@ export function useProjectPersistence({
           setDesignWorkspace(storedUi.designWorkspace);
         }
         if (
+          storedUi.economicsResultsTab === 'OVERVIEW' ||
+          storedUi.economicsResultsTab === 'CASH_FLOW' ||
+          storedUi.economicsResultsTab === 'RESERVES'
+        ) {
+          setEconomicsResultsTab(storedUi.economicsResultsTab);
+        } else if (
           storedUi.economicsResultsTab === 'SUMMARY' ||
           storedUi.economicsResultsTab === 'CHARTS' ||
           storedUi.economicsResultsTab === 'CASH_FLOW' ||
           storedUi.economicsResultsTab === 'DRIVERS' ||
           storedUi.economicsResultsTab === 'RESERVES'
         ) {
-          setEconomicsResultsTab(storedUi.economicsResultsTab);
+          // Migrate old tabs to OVERVIEW
+          setEconomicsResultsTab('OVERVIEW');
         }
         if (typeof storedUi.operatorFilter === 'string') setOperatorFilter(storedUi.operatorFilter);
         if (typeof storedUi.formationFilter === 'string') setFormationFilter(storedUi.formationFilter);

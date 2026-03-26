@@ -116,10 +116,10 @@ interface ParrotData {
 function generateParrots(): ParrotData[] {
   const rand = seededRandom(55);
   const defs = [
-    { baseX: 0.18, baseY: 0.18, size: 5, delay: 0 },
-    { baseX: 0.25, baseY: 0.14, size: 4, delay: 2 },
-    { baseX: 0.78, baseY: 0.16, size: 4.5, delay: 4 },
-    { baseX: 0.85, baseY: 0.22, size: 3.5, delay: 1 },
+    { baseX: 0.18, baseY: 0.30, size: 5, delay: 0 },
+    { baseX: 0.25, baseY: 0.28, size: 4, delay: 2 },
+    { baseX: 0.78, baseY: 0.32, size: 4.5, delay: 4 },
+    { baseX: 0.85, baseY: 0.34, size: 3.5, delay: 1 },
   ];
   return defs.map(d => ({
     ...d,
@@ -162,6 +162,9 @@ export default function TropicalBackground() {
 
     let W: number, H: number;
 
+    const motionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    let reduceMotion = motionQuery?.matches ?? false;
+
     // Mutable copies for animated state
     const clouds = CLOUDS.map(c => ({ ...c, puffs: c.puffs.map(p => ({ ...p })) }));
     const birds = BIRDS.map(b => ({ ...b }));
@@ -178,6 +181,7 @@ export default function TropicalBackground() {
       canvas!.height = H;
       // Rebuild scanline pattern on resize
       scanlinePattern = null;
+      if (reduceMotion) draw(0);
     }
     resize();
     window.addEventListener('resize', resize);
@@ -919,14 +923,38 @@ export default function TropicalBackground() {
       drawVignette();
       drawScanlines();
 
+      if (reduceMotion) return;
       rafRef.current = requestAnimationFrame(draw);
     }
 
-    rafRef.current = requestAnimationFrame(draw);
+    const handleMotionChange = () => {
+      reduceMotion = motionQuery?.matches ?? false;
+      cancelAnimationFrame(rafRef.current);
+      if (reduceMotion) {
+        draw(0);
+      } else {
+        rafRef.current = requestAnimationFrame(draw);
+      }
+    };
+
+    if (motionQuery) {
+      if (motionQuery.addEventListener) motionQuery.addEventListener('change', handleMotionChange);
+      else motionQuery.addListener(handleMotionChange);
+    }
+
+    if (reduceMotion) {
+      draw(0);
+    } else {
+      rafRef.current = requestAnimationFrame(draw);
+    }
 
     return () => {
       window.removeEventListener('resize', resize);
       cancelAnimationFrame(rafRef.current);
+      if (motionQuery) {
+        if (motionQuery.removeEventListener) motionQuery.removeEventListener('change', handleMotionChange);
+        else motionQuery.removeListener(handleMotionChange);
+      }
     };
   }, []);
 

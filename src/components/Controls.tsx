@@ -12,6 +12,8 @@ interface ControlsProps {
   group: WellGroup;
   onUpdateGroup: (updatedGroup: WellGroup) => void;
   onMarkDirty?: () => void;
+  openSectionKey?: 'TYPE_CURVE' | 'CAPEX' | 'OPEX' | 'OWNERSHIP' | null;
+  onOpenSectionHandled?: () => void;
 }
 
 const Controls: React.FC<ControlsProps> = ({
@@ -124,7 +126,7 @@ const Controls: React.FC<ControlsProps> = ({
             </span>
             <button
               onClick={() => setShowTemplateMenu(prev => !prev)}
-              className={`px-3 py-1.5 rounded-inner text-[9px] font-black uppercase tracking-[0.14em] transition-all border ${
+              className={`px-3 py-1.5 rounded-inner text-[9px] font-bold uppercase tracking-[0.14em] transition-all border ${
                 isClassic
                   ? 'bg-black/15 text-white border-black/30 hover:bg-black/25'
                   : 'bg-theme-bg text-theme-cyan border-theme-border hover:border-theme-cyan'
@@ -171,13 +173,13 @@ const Controls: React.FC<ControlsProps> = ({
               <div className="flex gap-2">
                 <button
                   onClick={() => applyTemplate(pendingTemplate)}
-                  className="flex-1 px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] bg-theme-magenta text-white hover:shadow-glow-magenta transition-all"
+                  className="flex-1 px-3 py-2 rounded-inner text-[10px] font-bold uppercase tracking-[0.12em] bg-theme-magenta text-white hover:shadow-glow-magenta transition-all"
                 >
                   Apply
                 </button>
                 <button
                   onClick={() => setPendingTemplate(null)}
-                  className={`flex-1 px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] border transition-all ${
+                  className={`flex-1 px-3 py-2 rounded-inner text-[10px] font-bold uppercase tracking-[0.12em] border transition-all ${
                     isClassic
                       ? 'bg-black/15 text-white border-black/30'
                       : 'bg-theme-bg text-theme-muted border-theme-border'
@@ -206,19 +208,19 @@ const Controls: React.FC<ControlsProps> = ({
         </div>
 
         <div className="grid grid-cols-3 gap-2">
-          <div className={isClassic ? 'rounded-md border border-black/30 bg-black/10 p-2' : 'rounded-inner border border-theme-border bg-theme-bg p-2'}>
+          <div className={isClassic ? 'rounded-inner border border-black/30 bg-black/10 p-2' : 'rounded-inner border border-theme-border bg-theme-bg p-2'}>
             <p className={labelClass}>Total</p>
             <p className={isClassic ? 'text-white text-base font-black' : 'text-theme-text text-base font-black'}>
               ${(capexSummary.total / 1e6).toFixed(2)}M
             </p>
           </div>
-          <div className={isClassic ? 'rounded-md border border-black/30 bg-black/10 p-2' : 'rounded-inner border border-theme-border bg-theme-bg p-2'}>
+          <div className={isClassic ? 'rounded-inner border border-black/30 bg-black/10 p-2' : 'rounded-inner border border-theme-border bg-theme-bg p-2'}>
             <p className={labelClass}>Per Well</p>
             <p className={isClassic ? 'text-white text-base font-black' : 'text-theme-text text-base font-black'}>
               ${(capexSummary.perWell / 1e6).toFixed(2)}M
             </p>
           </div>
-          <div className={isClassic ? 'rounded-md border border-black/30 bg-black/10 p-2' : 'rounded-inner border border-theme-border bg-theme-bg p-2'}>
+          <div className={isClassic ? 'rounded-inner border border-black/30 bg-black/10 p-2' : 'rounded-inner border border-theme-border bg-theme-bg p-2'}>
             <p className={labelClass}>Line Items</p>
             <p className={isClassic ? 'text-white text-base font-black' : 'text-theme-text text-base font-black'}>
               {capexSummary.itemCount}

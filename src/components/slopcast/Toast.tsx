@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { SPRING } from '../../theme/motion';
 
 type ToastType = 'success' | 'info' | 'warning' | 'error';
 
@@ -25,10 +26,10 @@ export const useToast = () => {
 };
 
 const toastStyles: Record<ToastType, string> = {
-  success: 'border-l-2 border-l-green-400',
+  success: 'border-l-2 border-l-theme-cyan',
   info: 'border-l-2 border-l-theme-cyan',
-  warning: 'border-l-2 border-l-yellow-400',
-  error: 'border-l-2 border-l-red-400',
+  warning: 'border-l-2 border-l-theme-warning',
+  error: 'border-l-2 border-l-theme-danger',
 };
 
 const toastIcons: Record<ToastType, string> = {
@@ -50,7 +51,7 @@ const ToastItem: React.FC<{ toast: Toast; onDismiss: () => void }> = ({ toast, o
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, x: 60, scale: 0.95 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+      transition={SPRING.snappy}
       className={`flex items-center gap-3 px-4 py-3 rounded-inner bg-theme-surface1 border border-theme-border shadow-lg backdrop-blur-sm min-w-[280px] max-w-[400px] ${toastStyles[toast.type]}`}
     >
       <span className="text-sm shrink-0">{toastIcons[toast.type]}</span>
@@ -63,7 +64,7 @@ const ToastItem: React.FC<{ toast: Toast; onDismiss: () => void }> = ({ toast, o
           {toast.action.label}
         </button>
       )}
-      <button onClick={onDismiss} className="text-theme-muted hover:text-theme-text text-xs ml-1 shrink-0">✕</button>
+      <button onClick={onDismiss} className="text-theme-muted hover:text-theme-text text-xs ml-1 shrink-0 focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none rounded-sm">✕</button>
     </motion.div>
   );
 };

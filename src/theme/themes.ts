@@ -153,7 +153,7 @@ const synthwave: ThemeMeta = {
     retroGrid: true,
     brandFont: true,
     glowEffects: true,
-    panelStyle: 'outline',
+    panelStyle: 'glass',
     headingFont: false,
     denseSpacing: false,
   },

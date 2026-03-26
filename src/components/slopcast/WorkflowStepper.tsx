@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
+import { SPRING } from '../../theme/motion';
 
 export type DesignStep = 'SETUP' | 'SELECT' | 'RUN' | 'REVIEW';
 export type StepStatus = 'NOT_STARTED' | 'ACTIVE' | 'COMPLETE' | 'STALE';
@@ -56,8 +57,8 @@ const WorkflowStepper: React.FC<WorkflowStepperProps> = ({ isClassic, steps, com
         <h2
           className={
             isClassic
-              ? 'text-xs font-black uppercase tracking-[0.24em] text-white'
-              : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan'
+              ? 'text-xs font-black uppercase tracking-[0.24em] text-white heading-font'
+              : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan heading-font'
           }
         >
           Workflow
@@ -69,18 +70,11 @@ const WorkflowStepper: React.FC<WorkflowStepperProps> = ({ isClassic, steps, com
             <motion.div
               key={step.id}
               className={`rounded-inner border px-3 py-2 ${statusTone(step.status, isClassic)} transition-colors`}
-              animate={
-                step.status === 'ACTIVE'
-                  ? { scale: [1, 1.03, 1] }
-                  : { scale: 1 }
-              }
-              transition={
-                step.status === 'ACTIVE'
-                  ? { duration: 0.4, ease: 'easeInOut' }
-                  : { duration: 0.2 }
-              }
+              initial={{ scale: step.status === 'ACTIVE' ? 0.97 : 1 }}
+              animate={{ scale: 1 }}
+              transition={SPRING.snappy}
             >
-              <p className="text-xs font-black uppercase tracking-[0.18em]">{idx + 1}. {step.label}</p>
+              <p className="text-xs font-black uppercase tracking-[0.18em] heading-font">{idx + 1}. {step.label}</p>
               <p className={`text-xs uppercase tracking-[0.12em] mt-1 ${isClassic ? 'opacity-90' : ''}`}>{caption(step.status)}</p>
             </motion.div>
           ))}

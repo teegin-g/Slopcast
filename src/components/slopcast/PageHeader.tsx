@@ -1,6 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
-import { ThemeMeta, ColorMode } from '../../theme/themes';
+import React from 'react';
+import { ThemeMeta } from '../../theme/themes';
 import DesignWorkspaceTabs, { DesignWorkspace } from './DesignWorkspaceTabs';
 
 type ViewMode = 'DASHBOARD' | 'ANALYSIS';
@@ -21,221 +20,7 @@ interface PageHeaderProps {
   atmosphericOverlays: string[];
   headerAtmosphereClass: string;
   fxClass: string;
-  colorMode?: ColorMode;
-  onSetColorMode?: (mode: ColorMode) => void;
-  effectiveMode?: 'dark' | 'light';
-  onShare?: () => void;
-  onRestartTour?: () => void;
 }
-
-const ThemeDropdown: React.FC<{
-  themes: ThemeMeta[];
-  themeId: string;
-  currentTheme: ThemeMeta;
-  isClassic: boolean;
-  onSelect: (id: string) => void;
-}> = ({ themes, themeId, currentTheme, isClassic, onSelect }) => {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
-
-  return (
-    <div ref={ref} className="relative z-10 shrink-0">
-      <motion.button
-        onClick={() => setOpen(prev => !prev)}
-        whileTap={{ scale: 0.97 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-        data-testid="theme-dropdown-toggle"
-        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-[11px] font-bold theme-transition ${
-          isClassic
-            ? 'bg-black/25 border-black/30 text-white hover:bg-black/35'
-            : 'bg-theme-bg border-theme-border text-theme-text hover:border-theme-cyan'
-        }`}
-      >
-        <span className="text-xs">{currentTheme.icon}</span>
-        <span className="hidden sm:inline">{currentTheme.label}</span>
-        <span className={`text-[10px] opacity-50 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>▼</span>
-      </motion.button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.92, y: -4 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.92, y: -4 }}
-            transition={{ duration: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
-            style={{ transformOrigin: 'top right' }}
-            className={`absolute right-0 top-full mt-1 z-50 min-w-[140px] rounded-panel border shadow-card overflow-hidden theme-transition ${
-              isClassic ? 'bg-black/80 border-black/40 backdrop-blur-md' : 'bg-theme-surface1 border-theme-border backdrop-blur-md'
-            }`}
-          >
-            {themes.map(t => (
-              <motion.button
-                key={t.id}
-                onClick={() => { onSelect(t.id); setOpen(false); }}
-                whileTap={{ scale: 0.97 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                data-testid={`theme-option-${t.id}`}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] font-bold transition-colors ${
-                  isClassic
-                    ? `${themeId === t.id ? 'bg-theme-warning/20 text-theme-warning' : 'text-white/80 hover:bg-white/10'}`
-                    : `${themeId === t.id ? 'bg-theme-cyan/10 text-theme-cyan' : 'text-theme-muted hover:text-theme-text hover:bg-theme-bg'}`
-                }`}
-              >
-                <span className="text-xs">{t.icon}</span>
-                <span>{t.label}</span>
-              </motion.button>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-interface OverflowMenuProps {
-  isClassic: boolean;
-  theme: ThemeMeta;
-  onShare?: () => void;
-  onRestartTour?: () => void;
-  onSetColorMode?: (mode: ColorMode) => void;
-  colorMode?: ColorMode;
-  effectiveMode?: 'dark' | 'light';
-}
-
-const OverflowMenu: React.FC<OverflowMenuProps> = ({
-  isClassic,
-  theme,
-  onShare,
-  onRestartTour,
-  onSetColorMode,
-  effectiveMode = 'dark',
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen]);
-
-  const hasAnyActions = onShare || onRestartTour || (onSetColorMode && theme.hasLightVariant);
-
-  if (!hasAnyActions) {
-    return null;
-  }
-
-  return (
-    <div className="relative" ref={menuRef}>
-      <motion.button
-        onClick={() => setIsOpen(!isOpen)}
-        whileTap={{ scale: 0.97 }}
-        transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-        className={
-          isClassic
-            ? 'w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center theme-transition border-2 shadow-card bg-black/15 text-white/90 border-black/25 hover:bg-black/20'
-            : 'w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center theme-transition bg-theme-surface2 border border-theme-border text-theme-text hover:bg-theme-surface3'
-        }
-        title="More options"
-      >
-        <span className="text-base">⋮</span>
-      </motion.button>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.92, y: -4 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.92, y: -4 }}
-            transition={{ duration: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
-            style={{ transformOrigin: 'top right' }}
-            className={
-              isClassic
-                ? 'absolute right-0 top-full mt-2 w-48 rounded-md border-2 shadow-card theme-transition bg-theme-surface1 border-black/30 overflow-hidden'
-                : 'absolute right-0 top-full mt-2 w-48 rounded-panel border shadow-lg theme-transition bg-theme-surface1 border-theme-border overflow-hidden'
-            }
-          >
-            <div className="py-1">
-              {onShare && (
-                <motion.button
-                  onClick={() => {
-                    onShare();
-                    setIsOpen(false);
-                  }}
-                  whileTap={{ scale: 0.97 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                  className={
-                    isClassic
-                      ? 'w-full px-4 py-2 text-left text-xs uppercase font-bold tracking-widest theme-transition text-white/90 hover:bg-black/20'
-                      : 'w-full px-4 py-2 text-left text-xs uppercase font-bold tracking-widest theme-transition text-theme-text hover:bg-theme-surface2'
-                  }
-                >
-                  Share
-                </motion.button>
-              )}
-
-              {onRestartTour && (
-                <motion.button
-                  onClick={() => {
-                    onRestartTour();
-                    setIsOpen(false);
-                  }}
-                  whileTap={{ scale: 0.97 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                  className={
-                    isClassic
-                      ? 'w-full px-4 py-2 text-left text-xs uppercase font-bold tracking-widest theme-transition text-white/90 hover:bg-black/20'
-                      : 'w-full px-4 py-2 text-left text-xs uppercase font-bold tracking-widest theme-transition text-theme-text hover:bg-theme-surface2'
-                  }
-                >
-                  Tour
-                </motion.button>
-              )}
-
-              {onSetColorMode && theme.hasLightVariant && (
-                <motion.button
-                  onClick={() => {
-                    onSetColorMode(effectiveMode === 'dark' ? 'light' : 'dark');
-                    setIsOpen(false);
-                  }}
-                  whileTap={{ scale: 0.97 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                  className={
-                    isClassic
-                      ? 'w-full px-4 py-2 text-left text-xs uppercase font-bold tracking-widest theme-transition text-white/90 hover:bg-black/20 flex items-center gap-2'
-                      : 'w-full px-4 py-2 text-left text-xs uppercase font-bold tracking-widest theme-transition text-theme-text hover:bg-theme-surface2 flex items-center gap-2'
-                  }
-                >
-                  <span className="text-sm">{effectiveMode === 'dark' ? '☀' : '☾'}</span>
-                  <span>{effectiveMode === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-                </motion.button>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-};
 
 const PageHeader: React.FC<PageHeaderProps> = ({
   isClassic,
@@ -253,24 +38,18 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   atmosphericOverlays,
   headerAtmosphereClass,
   fxClass,
-  colorMode,
-  onSetColorMode,
-  effectiveMode = 'dark',
-  onShare,
-  onRestartTour,
 }) => {
   return (
     <header
-      className={`px-3 md:px-6 py-3 sticky top-0 z-20 theme-transition ${
+      className={`px-3 md:px-6 lg:px-8 py-3 md:py-4 sticky top-0 z-50 theme-transition ${
         isClassic ? 'sc-header' : 'backdrop-blur-md border-b shadow-sm bg-theme-surface1/80 border-theme-border'
       } ${headerAtmosphereClass} ${fxClass}`}
     >
       {atmosphericOverlays.map(cls => (
-        <div key={cls} className={`${cls} ${fxClass}`} />
+        <div key={cls} className={`${cls} ${fxClass} pointer-events-none`} />
       ))}
       <div className="relative z-10 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-3 md:gap-4 items-start md:items-center">
-        <div className="min-w-0 flex flex-col gap-2">
-          {/* Brand row */}
+        <div className="min-w-0 flex flex-col md:flex-row md:items-center gap-3 md:gap-10">
           <div className="flex items-center gap-3 md:gap-4 min-w-0">
             <div
               className={`w-10 h-10 md:w-12 md:h-12 flex items-center justify-center theme-transition overflow-hidden shrink-0 ${
@@ -298,16 +77,16 @@ const PageHeader: React.FC<PageHeaderProps> = ({
               )}
             </div>
 
-            <div className="flex flex-col min-w-0">
+            <div className={`flex flex-col pr-2 md:pr-8 min-w-0 ${isClassic ? 'md:border-r md:border-black/20' : 'md:border-r md:border-white/5'}`}>
               <h1
-                className={`text-lg md:text-2xl leading-tight theme-transition tracking-tight ${
+                className={`text-base md:text-xl leading-tight theme-transition tracking-tight ${
                   isClassic ? 'text-white font-black uppercase' : `text-theme-cyan ${theme.features.brandFont ? 'brand-title' : 'font-bold'}`
                 }`}
               >
                 {theme.appName}
               </h1>
               <span
-                className={`text-[10px] md:text-xs uppercase font-bold tracking-[0.2em] theme-transition ${
+                className={`text-[8px] md:text-[10px] uppercase font-bold tracking-[0.2em] theme-transition ${
                   isClassic ? 'text-theme-warning' : 'text-theme-magenta'
                 }`}
               >
@@ -316,36 +95,28 @@ const PageHeader: React.FC<PageHeaderProps> = ({
             </div>
           </div>
 
-          {/* Separator between brand and nav */}
-          <div className={`border-t theme-transition ${isClassic ? 'border-black/15' : 'border-theme-border/40'}`} />
-
-          {/* Navigation tabs row */}
           <div className="flex items-center gap-2 w-full min-w-0 flex-nowrap">
             <div className={isClassic ? 'flex items-center gap-1.5 min-w-0 flex-nowrap' : 'flex items-center gap-1 p-1 rounded-panel border theme-transition bg-theme-bg border-theme-border min-w-0 flex-nowrap'}>
-              <motion.button
+              <button
                 onClick={onNavigateHub}
-                whileTap={{ scale: 0.97 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                 className={
                   isClassic
-                    ? 'px-2 md:px-3 lg:px-4 py-2.5 md:py-2.5 min-h-[44px] rounded-md text-[10px] md:text-xs lg:text-xs font-black uppercase tracking-widest theme-transition border-2 shadow-card bg-black/15 text-white/90 border-black/25 hover:bg-black/20 whitespace-nowrap'
-                    : 'px-2 md:px-3 lg:px-4 py-2.5 md:py-2.5 min-h-[44px] rounded-inner text-[10px] md:text-xs lg:text-xs font-bold uppercase tracking-widest theme-transition text-theme-muted hover:text-theme-text whitespace-nowrap'
+                    ? 'min-h-[44px] px-2 md:px-3 lg:px-4 py-1.5 md:py-2 rounded-md text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition border-2 shadow-card bg-black/15 text-white/90 border-black/25 hover:bg-black/20 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none'
+                    : 'min-h-[44px] px-2 md:px-3 lg:px-4 py-1.5 md:py-2 rounded-inner text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition text-theme-muted hover:text-theme-text whitespace-nowrap focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none'
                 }
               >
                 HUB
-              </motion.button>
-              <motion.button
+              </button>
+              <button
                 onClick={() => onSetViewMode('DASHBOARD')}
-                whileTap={{ scale: 0.97 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                 className={
                   isClassic
-                    ? `px-2 md:px-4 lg:px-5 py-2.5 md:py-2.5 min-h-[44px] rounded-md text-[10px] md:text-xs lg:text-xs font-black uppercase tracking-widest theme-transition border-2 shadow-card whitespace-nowrap ${
+                    ? `min-h-[44px] px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-md text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition border-2 shadow-card whitespace-nowrap focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
                         viewMode === 'DASHBOARD'
                           ? 'bg-theme-cyan text-white border-theme-magenta'
                         : 'bg-black/15 text-white/90 border-black/25 hover:bg-black/20'
                       }`
-                    : `px-2 md:px-4 lg:px-5 py-2.5 md:py-2.5 min-h-[44px] rounded-inner text-[10px] md:text-xs lg:text-xs font-bold uppercase tracking-widest theme-transition whitespace-nowrap ${
+                    : `min-h-[44px] px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-inner text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition whitespace-nowrap focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
                         viewMode === 'DASHBOARD'
                           ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
                         : 'text-theme-muted hover:text-theme-text'
@@ -353,19 +124,17 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                 }
               >
                 DESIGN
-              </motion.button>
-              <motion.button
+              </button>
+              <button
                 onClick={() => onSetViewMode('ANALYSIS')}
-                whileTap={{ scale: 0.97 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                 className={
                   isClassic
-                    ? `px-2 md:px-4 lg:px-5 py-2.5 md:py-2.5 min-h-[44px] rounded-md text-[10px] md:text-xs lg:text-xs font-black uppercase tracking-widest theme-transition border-2 shadow-card whitespace-nowrap ${
+                    ? `min-h-[44px] px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-md text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition border-2 shadow-card whitespace-nowrap focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
                         viewMode === 'ANALYSIS'
                           ? 'bg-theme-cyan text-white border-theme-magenta'
                         : 'bg-black/15 text-white/90 border-black/25 hover:bg-black/20'
                       }`
-                    : `px-2 md:px-4 lg:px-5 py-2.5 md:py-2.5 min-h-[44px] rounded-inner text-[10px] md:text-xs lg:text-xs font-bold uppercase tracking-widest theme-transition whitespace-nowrap ${
+                    : `min-h-[44px] px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-inner text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition whitespace-nowrap focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
                         viewMode === 'ANALYSIS'
                           ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
                         : 'text-theme-muted hover:text-theme-text'
@@ -373,7 +142,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                 }
               >
                 SCENARIOS
-              </motion.button>
+              </button>
             </div>
 
             {viewMode === 'DASHBOARD' && (
@@ -391,25 +160,28 @@ const PageHeader: React.FC<PageHeaderProps> = ({
           </div>
         </div>
 
-        <div className="min-w-0 flex items-center justify-between md:justify-end gap-2">
-          {/* Overflow menu for secondary actions */}
-          <OverflowMenu
-            isClassic={isClassic}
-            theme={theme}
-            onShare={onShare}
-            onRestartTour={onRestartTour}
-            onSetColorMode={onSetColorMode}
-            effectiveMode={effectiveMode}
-          />
-
-          {/* Theme dropdown selector */}
-          <ThemeDropdown
-            themes={themes}
-            themeId={themeId}
-            currentTheme={theme}
-            isClassic={isClassic}
-            onSelect={setThemeId}
-          />
+        <div className="min-w-0 flex items-center justify-between md:justify-end gap-3">
+          <div className={`flex items-center rounded-full p-1 border theme-transition shrink-0 ${isClassic ? 'bg-black/25 border-black/30' : 'bg-theme-bg border-theme-border'}`}>
+            {themes.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setThemeId(t.id)}
+                data-testid={`theme-option-${t.id}`}
+                className={
+                  isClassic
+                    ? `w-7 h-7 md:w-8 md:h-8 min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 rounded-full flex items-center justify-center theme-transition focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
+                        themeId === t.id ? 'bg-theme-warning text-black scale-110 shadow-card' : 'text-white/80 hover:text-white'
+                      }`
+                    : `w-7 h-7 md:w-8 md:h-8 min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 rounded-full flex items-center justify-center theme-transition focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
+                        themeId === t.id ? 'bg-theme-cyan text-theme-bg scale-110 shadow-glow-cyan' : 'text-theme-muted hover:text-theme-text'
+                      }`
+                }
+                title={t.label}
+              >
+                <span className="text-xs">{t.icon}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -417,4 +189,4 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   );
 };
 
-export default React.memo(PageHeader);
+export default PageHeader;

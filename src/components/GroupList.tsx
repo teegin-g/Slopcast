@@ -146,16 +146,16 @@ const GroupList: React.FC<GroupListProps> = ({
                           </div>
                           
                           {group.metrics && (
-                              <div className="grid grid-cols-2 gap-2 text-[10px] mt-2 pt-2 border-t transition-all border-theme-border/30 text-theme-muted">
+                              <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t transition-all border-theme-border/30 text-theme-muted">
                                   <div>
-                                      <span className="block font-bold uppercase text-[9px] text-theme-lavender">NPV10</span>
-                                      <span className={`font-mono ${group.metrics.npv10 >= 0 ? "text-theme-cyan" : "text-red-400"}`}>
+                                      <span className="block font-semibold uppercase text-[10px] tracking-[0.12em] text-theme-lavender">NPV10</span>
+                                      <span className={`text-sm font-bold tabular-nums ${group.metrics.npv10 >= 0 ? "text-theme-cyan" : "text-red-400"}`}>
                                           ${(group.metrics.npv10 / 1e6).toFixed(1)}M
                                       </span>
                                   </div>
                                   <div>
-                                      <span className="block font-bold uppercase text-[9px] text-theme-lavender">EUR</span>
-                                      <span className="text-theme-text font-mono">{(group.metrics.eur / 1e3).toFixed(0)} MBoe</span>
+                                      <span className="block font-semibold uppercase text-[10px] tracking-[0.12em] text-theme-lavender">EUR</span>
+                                      <span className="text-sm font-bold tabular-nums text-theme-text">{(group.metrics.eur / 1e3).toFixed(0)} MBoe</span>
                                   </div>
                               </div>
                           )}

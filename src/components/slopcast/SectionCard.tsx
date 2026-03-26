@@ -1,5 +1,4 @@
-import React, { useRef } from 'react';
-import { motion, useInView } from 'motion/react';
+import React from 'react';
 
 interface SectionCardProps {
   isClassic: boolean;
@@ -8,16 +7,13 @@ interface SectionCardProps {
   className?: string;
   bodyClassName?: string;
   children: React.ReactNode;
-  /** Panel surface treatment: glass (default), solid, or outline */
   panelStyle?: 'glass' | 'solid' | 'outline';
-  /** Stagger delay index for entrance animation (multiply by 0.06s) */
-  staggerIndex?: number;
 }
 
-const sectionBgMap: Record<'glass' | 'solid' | 'outline', string> = {
-  glass: 'bg-theme-surface1/70',
-  solid: 'bg-theme-surface1',
-  outline: 'bg-theme-surface1/20',
+const sectionStyleMap: Record<'glass' | 'solid' | 'outline', string> = {
+  glass: 'bg-theme-surface1/70 border-theme-border shadow-card',
+  solid: 'bg-theme-surface1 border-theme-border shadow-card',
+  outline: 'bg-theme-surface1/30 border-theme-border/60',
 };
 
 const SectionCard: React.FC<SectionCardProps> = ({
@@ -28,26 +24,14 @@ const SectionCard: React.FC<SectionCardProps> = ({
   bodyClassName = '',
   children,
   panelStyle = 'glass',
-  staggerIndex = 0,
 }) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-50px' });
 
   return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 20 }}
-      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-      transition={{
-        type: 'spring',
-        stiffness: 200,
-        damping: 25,
-        delay: staggerIndex * 0.06,
-      }}
+    <div
       className={
         isClassic
           ? `sc-panel theme-transition overflow-hidden ${className}`
-          : `rounded-panel border shadow-card theme-transition ${sectionBgMap[panelStyle]} border-theme-border ${className}`
+          : `rounded-panel border theme-transition ${sectionStyleMap[panelStyle]} ${className}`
       }
     >
       {(title || action) && (
@@ -62,7 +46,7 @@ const SectionCard: React.FC<SectionCardProps> = ({
             className={
               isClassic
                 ? 'text-[11px] font-black uppercase tracking-[0.24em] text-white'
-                : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan heading-font'
+                : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan'
             }
           >
             {title}
@@ -71,7 +55,7 @@ const SectionCard: React.FC<SectionCardProps> = ({
         </div>
       )}
       <div className={isClassic ? `p-4 ${bodyClassName}` : `p-4 ${bodyClassName}`}>{children}</div>
-    </motion.div>
+    </div>
   );
 };
 

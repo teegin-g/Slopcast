@@ -7,6 +7,7 @@ import { EconomicsResultsTab } from '../components/slopcast/EconomicsResultsTabs
 import { DesignStep, StepStatus, WorkflowStep } from '../components/slopcast/WorkflowStepper';
 import { WellsMobilePanel } from '../components/slopcast/DesignWellsView';
 import { EconomicsMobilePanel } from '../components/slopcast/DesignEconomicsView';
+import type { OperationsConsoleProps } from '../components/slopcast/OperationsConsole';
 import { useViewportLayout } from '../components/slopcast/hooks/useViewportLayout';
 import { useProjectPersistence } from '../components/slopcast/hooks/useProjectPersistence';
 import { useAuth } from '../auth/AuthProvider';
@@ -69,11 +70,11 @@ const readStoredDesignWorkspace = (): DesignWorkspace => {
 const readStoredEconomicsResultsTab = (): EconomicsResultsTab => {
   try {
     const raw = localStorage.getItem(ECONOMICS_RESULTS_TAB_STORAGE_KEY);
-    if (raw === 'SUMMARY' || raw === 'CHARTS' || raw === 'CASH_FLOW' || raw === 'DRIVERS' || raw === 'RESERVES') return raw;
+    if (raw === 'OVERVIEW' || raw === 'CASH_FLOW' || raw === 'RESERVES') return raw; if (raw === 'SUMMARY' || raw === 'CHARTS' || raw === 'DRIVERS') return 'OVERVIEW';
   } catch {
     // no-op
   }
-  return 'SUMMARY';
+  return 'OVERVIEW';
 };
 
 const readStoredEconomicsFocusMode = (): boolean => {
@@ -777,7 +778,7 @@ export function useSlopcastWorkspace() {
     actionMessage,
     validationWarnings,
     stepGuidance,
-    topDrivers: keyDriverInsights.topDrivers,
+    topDrivers: keyDriverInsights.topDrivers as OperationsConsoleProps['topDrivers'],
     biggestPositive: keyDriverInsights.biggestPositive,
     biggestNegative: keyDriverInsights.biggestNegative,
     breakevenOilPrice,

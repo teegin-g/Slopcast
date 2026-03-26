@@ -6,13 +6,11 @@ import EconomicsResultsTabs, { type EconomicsResultsTab } from './EconomicsResul
 interface StoryHarnessProps {
   isClassic: boolean;
   initialTab: EconomicsResultsTab;
-  hasFlowData?: boolean;
 }
 
 function EconomicsResultsTabsHarness({
   isClassic,
   initialTab,
-  hasFlowData = true,
 }: StoryHarnessProps) {
   const [tab, setTab] = useState<EconomicsResultsTab>(initialTab);
 
@@ -22,7 +20,6 @@ function EconomicsResultsTabsHarness({
         isClassic={isClassic}
         tab={tab}
         onChange={setTab}
-        hasFlowData={hasFlowData}
       />
       <p className="typo-body text-theme-muted">
         Active results tab: <span className="text-theme-text">{tab}</span>
@@ -36,8 +33,7 @@ const meta = {
   component: EconomicsResultsTabsHarness,
   args: {
     isClassic: false,
-    initialTab: 'SUMMARY',
-    hasFlowData: true,
+    initialTab: 'OVERVIEW',
   },
 } satisfies Meta<typeof EconomicsResultsTabsHarness>;
 
@@ -49,26 +45,25 @@ export const Interactive: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
 
-    await userEvent.click(canvas.getByRole('button', { name: /drivers/i }));
-    await expect(canvas.getByText(/active results tab:/i)).toHaveTextContent(/drivers/i);
+    await userEvent.click(canvas.getByRole('button', { name: /reserves/i }));
+    await expect(canvas.getByText(/active results tab:/i)).toHaveTextContent(/reserves/i);
   },
 };
 
-export const CashFlowDisabled: Story = {
+export const CashFlow: Story = {
   args: {
-    initialTab: 'CHARTS',
-    hasFlowData: false,
+    initialTab: 'CASH_FLOW',
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole('button', { name: /cash flow/i })).toBeDisabled();
+    await expect(canvas.getByText(/active results tab:/i)).toHaveTextContent(/cash_flow/i);
   },
 };
 
 export const ClassicTheme: Story = {
   args: {
     isClassic: true,
-    initialTab: 'DRIVERS',
+    initialTab: 'OVERVIEW',
   },
   globals: {
     theme: 'mario',

@@ -1,4 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import { SPRING } from '../../theme/motion';
 
 interface MobileDrawerProps {
   open: boolean;
@@ -7,8 +9,6 @@ interface MobileDrawerProps {
 }
 
 export function MobileDrawer({ open, onClose, children }: MobileDrawerProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
-
   // Close on Escape key
   useEffect(() => {
     if (!open) return;
@@ -32,30 +32,31 @@ export function MobileDrawer({ open, onClose, children }: MobileDrawerProps) {
   }, [open]);
 
   return (
-    <div
-      className={`fixed inset-0 z-40 transition-opacity duration-300 ${
-        open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-      }`}
-    >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 hover:bg-black/65 transition-colors"
-        onClick={onClose}
-      />
-
-      {/* Drawer panel */}
-      <div
-        ref={panelRef}
-        className={`absolute top-0 left-0 h-full w-64 transition-transform duration-300 ease-in-out ${
-          open ? 'translate-x-0' : '-translate-x-full'
-        }`}
-        style={{
-          background: 'var(--glass-sidebar-bg)',
-          borderRight: '1px solid var(--glass-sidebar-border)',
-        }}
-      >
-        {children}
-      </div>
-    </div>
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/60 z-40"
+          />
+          <motion.div
+            initial={{ x: '-100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '-100%' }}
+            transition={SPRING.entrance}
+            className="fixed left-0 top-0 bottom-0 w-64 z-50"
+            style={{
+              background: 'var(--glass-sidebar-bg)',
+              borderRight: '1px solid var(--glass-sidebar-border)',
+            }}
+          >
+            {children}
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 }

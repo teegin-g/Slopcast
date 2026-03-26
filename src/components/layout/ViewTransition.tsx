@@ -1,5 +1,6 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { SPRING } from '../../theme/motion';
 
 interface ViewTransitionProps {
   /** Key that triggers the crossfade when it changes */
@@ -15,13 +16,13 @@ interface ViewTransitionProps {
  */
 export function ViewTransition({ transitionKey, children, className }: ViewTransitionProps) {
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="popLayout">
       <motion.div
         key={transitionKey}
         initial={{ opacity: 0, x: 20, scale: 0.98 }}
         animate={{ opacity: 1, x: 0, scale: 1 }}
         exit={{ opacity: 0, x: -20, scale: 0.98 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
+        transition={SPRING.entrance}
         className={className}
       >
         {children}

@@ -133,7 +133,7 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
       {/* Key drivers - list surface (selectable rows) */}
       <div className="space-y-2">
         <div className="flex items-baseline justify-between gap-3">
-          <h3 className={isClassic ? 'text-sm font-black text-white' : 'text-sm font-semibold text-theme-text'}>
+          <h3 className={isClassic ? 'text-sm font-black text-white heading-font' : 'text-sm font-semibold text-theme-text heading-font'}>
             Key sensitivity drivers
           </h3>
           <p className={`text-xs ${isClassic ? 'text-white/60' : 'text-theme-muted'}`}>
@@ -316,14 +316,14 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
       {/* Upside / Downside - asymmetric with color tints */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="rounded-inner border p-4 border-theme-border bg-theme-cyan/5 theme-transition">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-theme-cyan mb-1">Biggest Upside</p>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-theme-cyan mb-1 heading-font">Biggest Upside</p>
           <p className="text-xs text-theme-muted mb-2">{biggestPositive?.label || '—'}</p>
           <p className="text-xl font-black text-theme-cyan leading-none tabular-nums">
             {biggestPositive ? formatDeltaMm(biggestPositive.deltaNpv) : '—'}
           </p>
         </div>
         <div className="rounded-inner border p-4 border-theme-border bg-theme-magenta/5 theme-transition">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-theme-magenta mb-1">Biggest Downside</p>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-theme-magenta mb-1 heading-font">Biggest Downside</p>
           <p className="text-xs text-theme-muted mb-2">{biggestNegative?.label || '—'}</p>
           <p className="text-xl font-black text-theme-magenta leading-none tabular-nums">
             {biggestNegative ? formatDeltaMm(biggestNegative.deltaNpv) : '—'}
@@ -334,7 +334,7 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
       {/* Breakeven + Payout - mixed layout for rhythm */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="rounded-inner border p-4 border-theme-border bg-theme-bg theme-transition border-l-2 border-l-theme-lavender">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-theme-muted mb-2">Breakeven Oil</p>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-theme-muted mb-2 heading-font">Breakeven Oil</p>
           <p className="text-3xl font-black text-theme-text leading-none">
             {breakevenOilPrice !== null ? `$${breakevenOilPrice.toFixed(1)}` : 'N/A'}
           </p>
@@ -343,7 +343,7 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
           )}
         </div>
         <div className="rounded-inner border p-4 border-theme-border bg-theme-bg theme-transition border-l-2 border-l-theme-cyan">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-theme-muted mb-2">Payout Highlights</p>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-theme-muted mb-2 heading-font">Payout Highlights</p>
           <p className="text-xl font-black text-theme-text leading-none">
             {payoutMonths > 0 ? `${payoutMonths} mo` : '-'}
           </p>
@@ -354,7 +354,7 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
       {/* Scenario rankings with rank badges */}
       <div className="rounded-inner border overflow-hidden bg-theme-bg border-theme-border">
         <div className="px-4 py-2.5 border-b border-theme-border flex items-center justify-between">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-theme-lavender">Scenario Rank</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-theme-lavender heading-font">Scenario Rank</p>
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-theme-muted">NPV / ROI</p>
         </div>
         <div className="max-h-56 overflow-y-auto divide-y divide-theme-border/20">
