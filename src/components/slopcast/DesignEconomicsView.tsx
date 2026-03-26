@@ -4,7 +4,7 @@ import Charts from '../Charts';
 import TaxControls from '../TaxControls';
 import DebtControls from '../DebtControls';
 import { ThemeId } from '../../theme/themes';
-import { MonthlyCashFlow, Well, WellGroup, TaxAssumptions, DebtAssumptions, ReserveCategory, DEFAULT_TAX_ASSUMPTIONS, DEFAULT_DEBT_ASSUMPTIONS } from '../../types';
+import { DealMetrics, MonthlyCashFlow, Well, WellGroup, TaxAssumptions, DebtAssumptions, ReserveCategory, DEFAULT_TAX_ASSUMPTIONS, DEFAULT_DEBT_ASSUMPTIONS } from '../../types';
 import { DEFAULT_COMMODITY_PRICING } from '../../constants';
 import KpiGrid from './KpiGrid';
 import OperationsConsole, { OperationsConsoleProps } from './OperationsConsole';
@@ -54,16 +54,7 @@ interface DesignEconomicsViewProps {
   hasGroup: boolean;
   hasGroupWells: boolean;
   hasCapexItems: boolean;
-  aggregateMetrics: {
-    npv10: number;
-    totalCapex: number;
-    eur: number;
-    payoutMonths: number;
-    wellCount: number;
-    afterTaxNpv10?: number;
-    leveredNpv10?: number;
-    dscr?: number;
-  };
+  aggregateMetrics: DealMetrics;
   aggregateFlow: MonthlyCashFlow[];
   operationsProps: OperationsConsoleProps;
   breakevenOilPrice?: number | null;

@@ -27,5 +27,5 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["src", "supabase"]
+  "include": ["src", "supabase", ".storybook", "e2e", "playwright.config.ts"]
 }

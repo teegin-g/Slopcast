@@ -25,6 +25,7 @@ When decomposing a feature request:
   - **Patterns to follow**: Reference existing code patterns from CLAUDE.md
   - **Test cases**: 2-3 concrete input→output examples that implementer will use as RED phase tests
     Example: `Given NRI=0.75, royalty=0.20 → WI=0.9375`
+- For UI tasks, specify whether the work requires Storybook stories, Storybook MCP validation, or Playwright E2E coverage before merge
 
 ## Worktree Management
 
@@ -55,7 +56,7 @@ git log main --oneline -1                # Confirm main is unchanged
 git checkout main
 git merge --no-ff agent/{task-slug}
 # Run integration validation
-npm run typecheck && npm run build && npm test
+npm run typecheck && npm run build && npm test && npm run ui:components
 # If pass → continue. If fail → git merge --abort, report to user
 ```
 
@@ -84,9 +85,9 @@ bash .agents/validation/capture-baseline.sh
 ## Merge Protocol
 
 1. Merge worktrees one at a time into main
-2. After each merge, run: `npm run typecheck && npm run build && npm test`
+2. After each merge, run: `npm run typecheck && npm run build && npm test && npm run ui:components`
 3. If integration validation fails, abort the merge and report
-4. After all merges complete, run `npm run ui:verify` as a final check
+4. After all merges complete, run `npm run ui:verify` as the final integrated browser check
 5. Clean up all worktrees and branches
 
 ## Activity Logging

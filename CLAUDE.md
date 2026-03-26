@@ -38,12 +38,16 @@ playground/            # Playwright test specs
 |---------|---------|
 | `npm run dev` | Start Vite dev server at localhost:3000 |
 | `npm run build` | Production build to dist/ |
+| `npm run storybook` | Start Storybook at localhost:6006 |
+| `npm run storybook:build` | Build the Storybook static bundle |
+| `npm run storybook:test` | Run Storybook story tests via Vitest |
+| `npm run ui:components` | Run Storybook build + story tests |
 | `npm run typecheck` | Type-check with `tsc --noEmit` |
 | `npm test` | Run Vitest unit tests |
 | `npm run test:watch` | Run Vitest in watch mode |
 | `npm run ui:audit` | Check for forbidden CSS classnames / style drift |
 | `npm run ui:shots` | Playwright UI snapshots |
-| `npm run ui:verify` | Playwright UI flow verification |
+| `npm run ui:verify` | Playwright E2E flow verification |
 
 ## Architecture Patterns
 
@@ -92,7 +96,8 @@ Syncs groups/scenarios/UI state to Supabase when authenticated; falls back to lo
 ## Testing
 
 - **Unit tests:** Vitest (`npm test`) — economics functions in `src/utils/economics.test.ts`
-- **UI tests:** Playwright (`npm run ui:shots`, `npm run ui:verify`)
+- **Component tests:** Storybook (`npm run storybook:test`) — colocated stories under `src/components/**/*.stories.tsx`
+- **UI tests:** Playwright (`npm run ui:shots`, `npm run ui:verify`) with shared specs under `e2e/`
 - Test data: reuse `DEFAULT_*` constants with small well sets
 
 ## Multi-Agent Development System
@@ -116,7 +121,7 @@ This project includes a multi-agent system in `.agents/` for structured feature 
 - `.agents/roles/implementer.md` — Implementer: builds in worktrees, follows TDD
 - `.agents/roles/validator.md` — Validator: runs gate, reports pass/fail
 - `.agents/workflows/feature-pipeline.md` — Full end-to-end pipeline
-- `.agents/validation/gate.sh` — Automated validation gate (typecheck → build → test → audit → screenshots)
+- `.agents/validation/gate.sh` — Automated validation gate (typecheck → build → test → storybook → audit → screenshots → E2E)
 
 ### Rules
 - Implementers MUST verify they're in a worktree before writing code

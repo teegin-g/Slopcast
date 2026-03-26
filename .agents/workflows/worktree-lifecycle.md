@@ -29,6 +29,9 @@ cd .worktrees/{task-slug}
 npm run typecheck
 npm test
 npm run build
+# For reusable UI or browser validation changes
+npm run ui:components
+npm run ui:verify
 
 # Commit
 git add {specific-files}
@@ -67,7 +70,7 @@ UI_BASE_URL=http://127.0.0.1:3001/ UI_OUT_DIR=.agents/state/validation-{task}/af
 # Run diff against baseline
 node .agents/validation/screenshot-diff.mjs .agents/state/baseline .agents/state/validation-{task}/after
 
-# Run UI flow verification
+# Run Playwright E2E verification
 UI_BASE_URL=http://127.0.0.1:3001/ npm run ui:verify
 
 # Cleanup
@@ -86,7 +89,7 @@ git checkout main
 git merge --no-ff agent/{task-slug} -m "merge: {task-slug} - brief description"
 
 # Validate main after merge
-npm run typecheck && npm run build && npm test
+npm run typecheck && npm run build && npm test && npm run ui:components
 
 # If validation fails:
 # git merge --abort  (if merge hasn't been committed yet)

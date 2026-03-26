@@ -35,12 +35,22 @@ npm run build
 npm test
 ```
 
-### Stage 4: Style Drift
+### Stage 4: Storybook Build
+```bash
+npm run storybook:build
+```
+
+### Stage 5: Storybook Tests
+```bash
+npm run storybook:test
+```
+
+### Stage 6: Style Drift
 ```bash
 npm run ui:audit
 ```
 
-### Stage 5: Screenshot Diff
+### Stage 7: Screenshot Diff
 Requires dev server running on the worktree (port 3001) and baseline screenshots.
 
 ```bash
@@ -54,7 +64,7 @@ node .agents/validation/screenshot-diff.mjs .agents/state/baseline .agents/state
 # Stop dev server
 ```
 
-### Stage 6: UI Flow Validation
+### Stage 8: Playwright E2E
 ```bash
 UI_BASE_URL=http://127.0.0.1:3001/ npm run ui:verify
 ```
@@ -73,9 +83,11 @@ Generate a report in this format:
 | Typecheck | PASS/FAIL | {error count or "clean"} |
 | Build | PASS/FAIL | {error details or "clean"} |
 | Tests | PASS/FAIL | {X passed, Y failed} |
+| Storybook Build | PASS/FAIL | {error details or "clean"} |
+| Storybook Tests | PASS/FAIL | {X passed, Y failed} |
 | UI Audit | PASS/FAIL | {violations or "clean"} |
 | Screenshots | PASS/FAIL | {max diff % or "within threshold"} |
-| UI Verify | PASS/FAIL | {flow errors or "all flows pass"} |
+| Playwright E2E | PASS/FAIL | {flow errors or "all flows pass"} |
 
 ### Failures (if any)
 {Detailed error output for each failing stage}

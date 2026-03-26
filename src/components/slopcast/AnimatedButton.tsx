@@ -1,7 +1,7 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion, type HTMLMotionProps } from 'motion/react';
 
-interface AnimatedButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface AnimatedButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   children: React.ReactNode;
