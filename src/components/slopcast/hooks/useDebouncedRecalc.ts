@@ -6,8 +6,8 @@ export function useDebouncedRecalc(
   delay = 400,
 ) {
   const latestGroupRef = useRef<WellGroup | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
-  const settleRef = useRef<ReturnType<typeof setTimeout>>();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const settleRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isRecalculating, setIsRecalculating] = useState(false);
 
   const debouncedUpdate = useCallback(

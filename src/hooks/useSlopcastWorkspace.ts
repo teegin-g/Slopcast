@@ -69,7 +69,7 @@ const readStoredDesignWorkspace = (): DesignWorkspace => {
 const readStoredEconomicsResultsTab = (): EconomicsResultsTab => {
   try {
     const raw = localStorage.getItem(ECONOMICS_RESULTS_TAB_STORAGE_KEY);
-    if (raw === 'SUMMARY' || raw === 'CHARTS' || raw === 'DRIVERS' || raw === 'RESERVES') return raw;
+    if (raw === 'SUMMARY' || raw === 'CHARTS' || raw === 'CASH_FLOW' || raw === 'DRIVERS' || raw === 'RESERVES') return raw;
   } catch {
     // no-op
   }
