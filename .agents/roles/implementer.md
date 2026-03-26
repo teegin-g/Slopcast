@@ -34,6 +34,7 @@ bash .agents/activity-log.sh worktree_verified task={task-slug} worktree=$(basen
 - Read the files you plan to modify — understand existing patterns first
 - Check `src/types.ts` for relevant type definitions
 - Check `src/constants.ts` for relevant defaults
+- For reusable UI work, inspect existing `*.stories.tsx` files first and use Storybook MCP documentation when available before inventing props or states
 
 ### While Writing Code
 - Follow all naming conventions from CLAUDE.md
@@ -72,6 +73,12 @@ bash .agents/activity-log.sh worktree_verified task={task-slug} worktree=$(basen
 npm run typecheck    # Must pass with zero errors
 npm test             # Must pass all tests
 npm run build        # Must produce a clean build
+```
+
+When the task touches reusable UI, Storybook, or browser validation, also run:
+```bash
+npm run ui:components  # Storybook build + story tests
+npm run ui:verify      # Playwright E2E coverage
 ```
 
 If any check fails, fix the issue before proceeding. Do NOT signal completion with failing checks.

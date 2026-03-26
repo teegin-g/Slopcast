@@ -7,7 +7,7 @@ set -euo pipefail
 #
 # Usage:
 #   bash .agents/validation/gate.sh                    # All stages
-#   bash .agents/validation/gate.sh --skip-screenshots  # Skip screenshot diff (stages 5-6)
+#   bash .agents/validation/gate.sh --skip-screenshots  # Skip browser validation (stages 7-8)
 #
 # Environment variables:
 #   VALIDATION_PORT   — Dev server port for screenshots (default: 3001)
@@ -47,25 +47,47 @@ PASS_COUNT=0
 FAIL_COUNT=0
 SKIP_COUNT=0
 
-# Associative array to track stage results for validation record
-declare -A STAGE_RESULTS
+STAGE_TYPECHECK="SKIP"
+STAGE_BUILD="SKIP"
+STAGE_TESTS="SKIP"
+STAGE_STORYBOOK_BUILD="SKIP"
+STAGE_STORYBOOK_TEST="SKIP"
+STAGE_UI_AUDIT="SKIP"
+STAGE_SCREENSHOTS="SKIP"
+STAGE_UI_VERIFY="SKIP"
+
+set_stage_result() {
+  local label="$1"
+  local value="$2"
+
+  case "$label" in
+    typecheck*) STAGE_TYPECHECK="$value" ;;
+    build*) STAGE_BUILD="$value" ;;
+    tests*) STAGE_TESTS="$value" ;;
+    storybook:build*) STAGE_STORYBOOK_BUILD="$value" ;;
+    storybook:test*) STAGE_STORYBOOK_TEST="$value" ;;
+    ui:audit*) STAGE_UI_AUDIT="$value" ;;
+    screenshots*) STAGE_SCREENSHOTS="$value" ;;
+    ui:verify*) STAGE_UI_VERIFY="$value" ;;
+  esac
+}
 
 stage_pass() {
   echo -e "  ${GREEN}PASS${NC} $1"
   PASS_COUNT=$((PASS_COUNT + 1))
-  STAGE_RESULTS["$1"]="PASS"
+  set_stage_result "$1" "PASS"
 }
 
 stage_fail() {
   echo -e "  ${RED}FAIL${NC} $1"
   FAIL_COUNT=$((FAIL_COUNT + 1))
-  STAGE_RESULTS["$1"]="FAIL"
+  set_stage_result "$1" "FAIL"
 }
 
 stage_skip() {
   echo -e "  ${YELLOW}SKIP${NC} $1"
   SKIP_COUNT=$((SKIP_COUNT + 1))
-  STAGE_RESULTS["$1"]="SKIP"
+  set_stage_result "$1" "SKIP"
 }
 
 # Write validation record and log result
@@ -90,12 +112,14 @@ write_validation_record() {
   "failed": ${FAIL_COUNT},
   "skipped": ${SKIP_COUNT},
   "stages": {
-    "typecheck": "${STAGE_RESULTS[typecheck]:-SKIP}",
-    "build": "${STAGE_RESULTS[build]:-SKIP}",
-    "tests": "${STAGE_RESULTS[tests]:-SKIP}",
-    "ui_audit": "${STAGE_RESULTS[ui:audit]:-SKIP}",
-    "screenshots": "${STAGE_RESULTS[screenshots]:-SKIP}",
-    "ui_verify": "${STAGE_RESULTS[ui:verify]:-SKIP}"
+    "typecheck": "${STAGE_TYPECHECK}",
+    "build": "${STAGE_BUILD}",
+    "tests": "${STAGE_TESTS}",
+    "storybook_build": "${STAGE_STORYBOOK_BUILD}",
+    "storybook_test": "${STAGE_STORYBOOK_TEST}",
+    "ui_audit": "${STAGE_UI_AUDIT}",
+    "screenshots": "${STAGE_SCREENSHOTS}",
+    "ui_verify": "${STAGE_UI_VERIFY}"
   }
 }
 RECORD_EOF
@@ -187,38 +211,60 @@ else
 fi
 echo ""
 
-# ── Stage 4: Style Drift ─────────────────────────────────────
-echo -e "${CYAN}Stage 4: Style Drift Check${NC}"
-if npm run ui:audit 2>&1; then
-  stage_pass "ui:audit"
+# ── Stage 4: Storybook Build ────────────────────────────────
+echo -e "${CYAN}Stage 4: Storybook Build${NC}"
+if npm run storybook:build 2>&1; then
+  stage_pass "storybook:build"
 else
-  stage_fail "ui:audit"
-  echo -e "\n${RED}Gate failed at Stage 4: Style drift detected.${NC}"
+  stage_fail "storybook:build"
+  echo -e "\n${RED}Gate failed at Stage 4: Storybook build failed.${NC}"
   write_validation_record "FAIL"
   exit 1
 fi
 echo ""
 
-# ── Stage 5: Screenshot Diff ─────────────────────────────────
+# ── Stage 5: Storybook Tests ────────────────────────────────
+echo -e "${CYAN}Stage 5: Storybook Tests${NC}"
+if npm run storybook:test 2>&1; then
+  stage_pass "storybook:test"
+else
+  stage_fail "storybook:test"
+  echo -e "\n${RED}Gate failed at Stage 5: Storybook tests failed.${NC}"
+  write_validation_record "FAIL"
+  exit 1
+fi
+echo ""
+
+# ── Stage 6: Style Drift ─────────────────────────────────────
+echo -e "${CYAN}Stage 6: Style Drift Check${NC}"
+if npm run ui:audit 2>&1; then
+  stage_pass "ui:audit"
+else
+  stage_fail "ui:audit"
+  echo -e "\n${RED}Gate failed at Stage 6: Style drift detected.${NC}"
+  write_validation_record "FAIL"
+  exit 1
+fi
+echo ""
+
+# ── Stage 7: Screenshot Diff ─────────────────────────────────
 if [ "$SKIP_SCREENSHOTS" = true ]; then
-  echo -e "${CYAN}Stage 5: Screenshot Diff${NC}"
+  echo -e "${CYAN}Stage 7: Screenshot Diff${NC}"
   stage_skip "screenshots (--skip-screenshots)"
   echo ""
-  echo -e "${CYAN}Stage 6: UI Flow Validation${NC}"
+  echo -e "${CYAN}Stage 8: Playwright E2E${NC}"
   stage_skip "ui:verify (--skip-screenshots)"
   echo ""
 else
-  echo -e "${CYAN}Stage 5: Screenshot Diff${NC}"
+  echo -e "${CYAN}Stage 7: Screenshot Diff${NC}"
+  TASK_SLUG=$(basename "$(pwd)")
+  AFTER_DIR=".agents/state/validation-${TASK_SLUG}/after"
 
   if [ ! -d "$BASELINE_DIR" ] || [ -z "$(ls -A "$BASELINE_DIR" 2>/dev/null)" ]; then
     stage_skip "screenshots (no baseline — run capture-baseline.sh first)"
-    echo ""
   else
-    TASK_SLUG=$(basename "$(pwd)")
-    AFTER_DIR=".agents/state/validation-${TASK_SLUG}/after"
-
     # Start dev server
-    npx vite --port "$VALIDATION_PORT" &
+    npx vite --host 127.0.0.1 --strictPort --port "$VALIDATION_PORT" &
     DEV_PID=$!
 
     # Wait for server to be ready
@@ -244,7 +290,7 @@ else
 
       if echo "$DIFF_RESULT" | grep -q "SCREENSHOT_DIFF_FAIL"; then
         stage_fail "screenshots (diff exceeds ${DIFF_THRESHOLD}% threshold)"
-        echo -e "\n${RED}Gate failed at Stage 5: Screenshot regression detected.${NC}"
+        echo -e "\n${RED}Gate failed at Stage 7: Screenshot regression detected.${NC}"
         write_validation_record "FAIL"
         exit 1
       else
@@ -253,36 +299,36 @@ else
     else
       stage_skip "screenshots (capture failed — check dev server)"
     fi
-    echo ""
+  fi
+  echo ""
 
-    # ── Stage 6: UI Flow Validation ─────────────────────────────
-    echo -e "${CYAN}Stage 6: UI Flow Validation${NC}"
+  # ── Stage 8: Playwright E2E ───────────────────────────────────
+  echo -e "${CYAN}Stage 8: Playwright E2E${NC}"
 
-    # Restart dev server for ui:verify
-    npx vite --port "$VALIDATION_PORT" &
-    DEV_PID=$!
-    for i in $(seq 1 30); do
-      if curl -s "http://127.0.0.1:${VALIDATION_PORT}/" > /dev/null 2>&1; then
-        break
-      fi
-      sleep 1
-    done
-
-    if UI_BASE_URL="http://127.0.0.1:${VALIDATION_PORT}/" npm run ui:verify 2>&1; then
-      stage_pass "ui:verify"
-    else
-      stage_fail "ui:verify"
-      kill "$DEV_PID" 2>/dev/null || true
-      wait "$DEV_PID" 2>/dev/null || true
-      echo -e "\n${RED}Gate failed at Stage 6: UI flow verification failed.${NC}"
-      write_validation_record "FAIL"
-      exit 1
+  # Start dev server for ui:verify
+  npx vite --host 127.0.0.1 --strictPort --port "$VALIDATION_PORT" &
+  DEV_PID=$!
+  for i in $(seq 1 30); do
+    if curl -s "http://127.0.0.1:${VALIDATION_PORT}/" > /dev/null 2>&1; then
+      break
     fi
+    sleep 1
+  done
 
+  if UI_BASE_URL="http://127.0.0.1:${VALIDATION_PORT}/" npm run ui:verify 2>&1; then
+    stage_pass "ui:verify"
+  else
+    stage_fail "ui:verify"
     kill "$DEV_PID" 2>/dev/null || true
     wait "$DEV_PID" 2>/dev/null || true
-    echo ""
+    echo -e "\n${RED}Gate failed at Stage 8: Playwright E2E failed.${NC}"
+    write_validation_record "FAIL"
+    exit 1
   fi
+
+  kill "$DEV_PID" 2>/dev/null || true
+  wait "$DEV_PID" 2>/dev/null || true
+  echo ""
 fi
 
 # ── Summary ───────────────────────────────────────────────────

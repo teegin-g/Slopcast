@@ -35,7 +35,8 @@ For each task (parallel if independent, sequential if dependent):
 4. **GREEN**: Implement minimum code to pass tests
 5. **REFACTOR**: Clean up while keeping tests green
 6. Final verification: `typecheck` + `test` + `build`
-7. Implementer commits and signals completion
+7. For reusable UI or browser-workflow changes, also run `ui:components` + `ui:verify`
+8. Implementer commits and signals completion
 
 In manual mode: user runs `/implement` in each worktree
 
@@ -58,10 +59,10 @@ Sequential merge of validated worktrees:
 2. For each worktree (in dependency order):
    a. **Verify commits are on expected branch** (see `roles/supervisor.md` Pre-Merge Validation)
    b. `git merge --no-ff agent/{task-slug}`
-   b. Run integration check: `npm run typecheck && npm run build && npm test`
+   b. Run integration check: `npm run typecheck && npm run build && npm test && npm run ui:components`
    c. If fail: `git merge --abort`, report to user
    d. If pass: continue to next worktree
-3. After all merges: `npm run ui:verify` as final check
+3. After all merges: `npm run ui:verify` as final integrated browser check
 
 ### Phase 6: Cleanup (Supervisor)
 

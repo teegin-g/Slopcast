@@ -9,6 +9,16 @@ const config: StorybookConfig = {
     '@storybook/addon-docs',
     '@storybook/addon-a11y',
     '@storybook/addon-vitest',
+    {
+      name: '@storybook/addon-mcp',
+      options: {
+        toolsets: {
+          dev: true,
+          docs: true,
+          test: true,
+        },
+      },
+    },
   ],
   framework: {
     name: '@storybook/react-vite',
