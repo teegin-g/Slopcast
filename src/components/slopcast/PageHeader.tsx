@@ -53,6 +53,7 @@ const ThemeDropdown: React.FC<{
         onClick={() => setOpen(prev => !prev)}
         whileTap={{ scale: 0.97 }}
         transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+        data-testid="theme-dropdown-toggle"
         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-[11px] font-bold theme-transition ${
           isClassic
             ? 'bg-black/25 border-black/30 text-white hover:bg-black/35'
@@ -82,6 +83,7 @@ const ThemeDropdown: React.FC<{
                 onClick={() => { onSelect(t.id); setOpen(false); }}
                 whileTap={{ scale: 0.97 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                data-testid={`theme-option-${t.id}`}
                 className={`w-full flex items-center gap-2 px-3 py-2 text-left text-[11px] font-bold transition-colors ${
                   isClassic
                     ? `${themeId === t.id ? 'bg-theme-warning/20 text-theme-warning' : 'text-white/80 hover:bg-white/10'}`
