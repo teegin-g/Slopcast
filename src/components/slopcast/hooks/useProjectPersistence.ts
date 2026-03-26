@@ -284,7 +284,9 @@ export function useProjectPersistence({
         if (
           storedUi.economicsResultsTab === 'SUMMARY' ||
           storedUi.economicsResultsTab === 'CHARTS' ||
-          storedUi.economicsResultsTab === 'DRIVERS'
+          storedUi.economicsResultsTab === 'CASH_FLOW' ||
+          storedUi.economicsResultsTab === 'DRIVERS' ||
+          storedUi.economicsResultsTab === 'RESERVES'
         ) {
           setEconomicsResultsTab(storedUi.economicsResultsTab);
         }
