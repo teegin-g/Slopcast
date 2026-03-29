@@ -134,7 +134,7 @@ describe('STYLE-06: Animated canvas backgrounds visible through glass UI shell',
     expect(panel!.className).toContain('border');
     expect(panel!.className).toContain('shadow-card');
     expect(panel!.className).toContain('theme-transition');
-    expect(panel!.className).toContain('bg-theme-surface1/70');
+    expect(panel!.className).toContain('bg-theme-surface1/72');
     expect(panel!.className).toContain('border-theme-border');
   });
 

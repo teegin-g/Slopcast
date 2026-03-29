@@ -58,13 +58,14 @@ const ToastItem: React.FC<{ toast: Toast; onDismiss: () => void }> = ({ toast, o
       <p className="text-xs text-theme-text flex-1">{toast.message}</p>
       {toast.action && (
         <button
+          type="button"
           onClick={toast.action.onClick}
           className="text-xs font-bold text-theme-cyan hover:text-theme-text transition-colors shrink-0"
         >
           {toast.action.label}
         </button>
       )}
-      <button onClick={onDismiss} className="text-theme-muted hover:text-theme-text text-xs ml-1 shrink-0 focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none rounded-sm">✕</button>
+      <button type="button" onClick={onDismiss} className="focus-ring ml-1 shrink-0 rounded-full text-xs text-theme-muted hover:text-theme-text">✕</button>
     </motion.div>
   );
 };
