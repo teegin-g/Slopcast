@@ -16,13 +16,16 @@ test.describe('Slopcast persistence coverage', () => {
         await slopcast.openWellsWorkspace();
         await slopcast.expectWellsWorkspace();
         await slopcast.assertSaveSnapshotHidden();
+        await slopcast.resetWellsWorkspaceState();
 
         const operatorValue = await slopcast.setNonDefaultOperator();
         expect(operatorValue).not.toBeNull();
+        const filteredCount = await slopcast.readFilteredWellCount();
+        expect(filteredCount).toBeGreaterThan(0);
 
         await slopcast.selectAllVisibleWells();
-        const selectedCountAfterSelection = await slopcast.readSelectedWellsBadgeCount();
-        expect(selectedCountAfterSelection).toBeGreaterThan(0);
+        await expect.poll(async () => slopcast.readSelectedVisibleWellCount()).toBe(filteredCount);
+        const selectedCountAfterSelection = await slopcast.readSelectedVisibleWellCount();
 
         await slopcast.openEconomicsWorkspace();
         await slopcast.assertSaveSnapshotVisible();
@@ -30,8 +33,8 @@ test.describe('Slopcast persistence coverage', () => {
         await slopcast.openWellsWorkspace();
         await slopcast.expectWellsWorkspace();
 
-        await expect(await slopcast.readOperatorValue()).toBe(operatorValue);
-        await expect(await slopcast.readSelectedWellsBadgeCount()).toBe(selectedCountAfterSelection);
+        await expect.poll(async () => slopcast.readOperatorValue()).toBe(operatorValue);
+        await expect.poll(async () => slopcast.readSelectedVisibleWellCount()).toBe(selectedCountAfterSelection);
       });
     }
 
