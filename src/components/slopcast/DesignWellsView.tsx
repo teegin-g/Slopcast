@@ -93,16 +93,19 @@ const FiltersPanel: React.FC<{
   };
 
   const selectClass = isClassic
-    ? 'w-full rounded-md px-2 py-1.5 text-xs font-black sc-inputNavy'
-    : 'w-full bg-theme-bg border border-theme-border rounded-inner px-2 py-1.5 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition';
+    ? 'w-full rounded-inner px-2 py-1.5 text-xs font-black sc-inputNavy focus-ring'
+    : 'w-full rounded-inner border border-theme-border bg-theme-bg px-2 py-1.5 text-xs text-theme-text theme-transition focus-ring focus:border-theme-cyan';
 
   return (
     <div className={isClassic ? 'sc-panel theme-transition' : 'rounded-panel border bg-theme-surface1/80 border-theme-border theme-transition'}>
       {/* Header */}
       <div className={`px-3 py-2 flex items-center justify-between ${isClassic ? 'sc-panelTitlebar sc-titlebar--neutral' : 'border-b border-theme-border/60'}`}>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setExpanded(!expanded)}
-            className={`text-[11px] font-black uppercase tracking-[0.2em] ${isClassic ? 'text-white' : 'text-theme-cyan'}`}>
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
+            data-testid="wells-filters-toggle"
+            className={`focus-ring rounded-inner px-1 text-[11px] font-black uppercase tracking-[0.2em] ${isClassic ? 'text-white' : 'text-theme-cyan'}`}>
             Filters
           </button>
           <span className={`text-[10px] font-black tabular-nums ${isClassic ? 'text-white/60' : 'text-theme-muted'}`}>
@@ -125,15 +128,30 @@ const FiltersPanel: React.FC<{
       {/* Compact inline selects */}
       {showSelects && (
         <div className="px-3 py-2 grid grid-cols-3 gap-2">
-          <select value={operatorFilter} onChange={(e) => onSetOperatorFilter(e.target.value)} className={selectClass}>
+          <select
+            value={operatorFilter}
+            onChange={(e) => onSetOperatorFilter(e.target.value)}
+            data-testid="wells-filter-operator"
+            className={selectClass}
+          >
             <option value="ALL">All Operators</option>
             {operatorOptions.map(op => <option key={op} value={op}>{op}</option>)}
           </select>
-          <select value={formationFilter} onChange={(e) => onSetFormationFilter(e.target.value)} className={selectClass}>
+          <select
+            value={formationFilter}
+            onChange={(e) => onSetFormationFilter(e.target.value)}
+            data-testid="wells-filter-formation"
+            className={selectClass}
+          >
             <option value="ALL">All Formations</option>
             {formationOptions.map(f => <option key={f} value={f}>{f}</option>)}
           </select>
-          <select value={statusFilter} onChange={(e) => onSetStatusFilter(e.target.value as any)} className={selectClass}>
+          <select
+            value={statusFilter}
+            onChange={(e) => onSetStatusFilter(e.target.value as any)}
+            data-testid="wells-filter-status"
+            className={selectClass}
+          >
             <option value="ALL">All Statuses</option>
             {statusOptions.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
@@ -194,6 +212,11 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
 
   return (
     <>
+      <div className="sr-only">
+        <span data-testid="wells-selected-visible-count">{selectedWellCount}</span>
+        <span data-testid="wells-filtered-count">{filteredWellsCount}</span>
+      </div>
+
       <div
         className={`lg:hidden mb-4 border p-2 theme-transition ${
           isClassic ? 'sc-panel' : 'rounded-panel bg-theme-surface1/60 border-theme-border shadow-card backdrop-blur-sm'
@@ -288,6 +311,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                 <div className="flex items-center gap-3">
                   <button
                     onClick={onSelectAll}
+                    data-testid="wells-select-filtered"
                     className="text-[10px] font-black uppercase tracking-[0.2em] text-white/90 hover:text-white transition-colors"
                   >
                     {selectFilteredLabel.toUpperCase()}
@@ -329,7 +353,11 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                   Basin Visualizer
                 </h2>
                 <div className="flex items-center gap-2">
-                  <button onClick={onSelectAll} className="text-[10px] font-bold tracking-[0.1em] theme-transition hover:scale-105 text-theme-lavender">
+                  <button
+                    onClick={onSelectAll}
+                    data-testid="wells-select-filtered"
+                    className="text-[10px] font-bold tracking-[0.1em] theme-transition hover:scale-105 text-theme-lavender"
+                  >
                     {selectFilteredLabel.toUpperCase()}
                   </button>
                   <button
@@ -388,6 +416,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                 </button>
                 <button
                   onClick={onSelectAll}
+                  data-testid="wells-selection-actions-select-filtered"
                   className="px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all bg-theme-surface2 text-theme-text border border-theme-border hover:border-theme-cyan"
                 >
                   {selectFilteredLabel}
@@ -395,6 +424,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                 <button
                   onClick={onClearSelection}
                   disabled={selectedWellCount === 0}
+                  data-testid="wells-selection-actions-clear"
                   className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all border ${
                     selectedWellCount > 0 ? 'bg-theme-surface2 text-theme-text border-theme-border hover:border-theme-cyan' : 'bg-theme-surface2 text-theme-muted border-theme-border cursor-not-allowed'
                   }`}
@@ -459,6 +489,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                 <button
                   onClick={onClearSelection}
                   disabled={selectedWellCount === 0}
+                  data-testid="wells-mobile-clear"
                   className={
                     isClassic
                       ? `sc-btnSecondary w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-widest transition-all ${
@@ -492,6 +523,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                   </button>
                   <button
                     onClick={onSelectAll}
+                  data-testid="wells-mobile-select-filtered"
                     className={
                       isClassic
                         ? 'sc-btnSecondary w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-widest transition-all'
