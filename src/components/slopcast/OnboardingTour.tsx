@@ -1,4 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
+import { SPRING } from '../../theme/motion';
+import AnimatedButton from './AnimatedButton';
 
 const STORAGE_KEY = 'slopcast-onboarding-done';
 
@@ -25,6 +28,7 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ isClassic }) => {
   const [visible, setVisible] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number }>({ top: 100, left: 100 });
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     try {
@@ -49,8 +53,12 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ isClassic }) => {
   useEffect(() => {
     if (!visible) return;
     updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
     window.addEventListener('resize', updatePosition);
-    return () => window.removeEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
   }, [visible, updatePosition]);
 
   const handleNext = () => {
@@ -70,55 +78,71 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ isClassic }) => {
 
   const step = TOUR_STEPS[stepIndex];
   const isLast = stepIndex === TOUR_STEPS.length - 1;
+  const maxLeft = typeof window === 'undefined' ? position.left : Math.min(position.left, window.innerWidth - 300);
+  const panelMotion = prefersReducedMotion
+    ? { initial: { opacity: 1 }, animate: { opacity: 1 } }
+    : { initial: { opacity: 0, y: 12, scale: 0.98 }, animate: { opacity: 1, y: 0, scale: 1 } };
 
   return (
     <div className="fixed inset-0 z-50 pointer-events-none">
       <div className="absolute inset-0 bg-black/30 pointer-events-auto" onClick={handleDone} />
       {targetRect && (
-        <div
-          className="absolute rounded-lg border-2 border-theme-cyan shadow-glow-cyan pointer-events-none transition-all duration-300"
-          style={{
+        <motion.div
+          className="pointer-events-none absolute rounded-panel border-2 border-theme-cyan shadow-glow-cyan"
+          initial={false}
+          animate={{
             top: targetRect.top - 4,
             left: targetRect.left - 4,
             width: targetRect.width + 8,
             height: targetRect.height + 8,
           }}
+          transition={prefersReducedMotion ? { duration: 0 } : SPRING.gentle}
         />
       )}
-      <div
+      <motion.div
+        key={step.target}
+        initial={panelMotion.initial}
+        animate={panelMotion.animate}
+        transition={prefersReducedMotion ? { duration: 0 } : SPRING.gentle}
         className={`absolute z-10 w-72 pointer-events-auto ${
           isClassic
             ? 'sc-panel overflow-hidden'
-            : 'rounded-panel border shadow-card bg-theme-surface1 border-theme-cyan'
+            : 'rounded-panel border border-theme-cyan bg-theme-surface1 shadow-card backdrop-blur-sm'
         }`}
-        style={{ top: position.top, left: Math.min(position.left, window.innerWidth - 300) }}
+        style={{ top: position.top, left: maxLeft }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="onboarding-tour-title"
+        aria-describedby="onboarding-tour-description"
       >
         <div className="p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className={`text-xs font-black uppercase tracking-[0.18em] ${isClassic ? 'text-theme-warning' : 'text-theme-cyan'}`}>
+            <span className={`heading-font text-xs font-black uppercase tracking-[0.18em] ${isClassic ? 'text-theme-warning' : 'text-theme-cyan'}`}>
               Step {stepIndex + 1} of {TOUR_STEPS.length}
             </span>
-            <button
+            <AnimatedButton
               onClick={handleDone}
-              className={`text-xs font-bold focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none rounded-sm ${isClassic ? 'text-white/50 hover:text-white' : 'text-theme-muted hover:text-theme-text'}`}
+              isClassic={isClassic}
+              variant="ghost"
+              size="sm"
+              className="min-h-8 px-2 py-1"
             >
               Skip
-            </button>
+            </AnimatedButton>
           </div>
-          <h3 className={`text-sm font-black mb-1 ${isClassic ? 'text-white' : 'text-theme-text'}`}>{step.title}</h3>
-          <p className={`text-[11px] leading-relaxed mb-3 ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>{step.description}</p>
-          <button
+          <h3 id="onboarding-tour-title" className={`heading-font mb-1 text-sm font-black ${isClassic ? 'text-white' : 'text-theme-text'}`}>{step.title}</h3>
+          <p id="onboarding-tour-description" className={`mb-3 text-[11px] leading-relaxed ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>{step.description}</p>
+          <AnimatedButton
             onClick={handleNext}
-            className={`w-full py-2 rounded-inner text-xs font-black uppercase tracking-[0.14em] transition-colors focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
-              isClassic
-                ? 'sc-btnPrimary'
-                : 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan'
-            }`}
+            isClassic={isClassic}
+            variant="primary"
+            size="md"
+            className="w-full justify-center"
           >
             {isLast ? 'Done' : 'Next'}
-          </button>
+          </AnimatedButton>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

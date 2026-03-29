@@ -13,6 +13,10 @@ function hasVisibleToastMessage(messages: HTMLElement[]) {
   return messages.some(message => message.checkVisibility());
 }
 
+function hasVisibleElement(elements: HTMLElement[]) {
+  return elements.some(element => element.checkVisibility());
+}
+
 const ToastStoryHarness = ({ message, type, withAction }: ToastStoryHarnessProps) => {
   const { addToast } = useToast();
 
@@ -60,7 +64,8 @@ export const Interactive: Story = {
     const page = within(document.body);
     const toastMessages = await page.findAllByText(args.message);
     await expect(hasVisibleToastMessage(toastMessages as HTMLElement[])).toBe(true);
-    await expect(page.getByRole('button', { name: /undo/i })).toBeVisible();
+    const actionButtons = await page.findAllByRole('button', { name: /undo/i });
+    await expect(hasVisibleElement(actionButtons as HTMLElement[])).toBe(true);
   },
 };
 
