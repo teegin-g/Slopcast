@@ -1,5 +1,5 @@
 import { DEFAULT_CAPEX, DEFAULT_OWNERSHIP, DEFAULT_OPEX, DEFAULT_TYPE_CURVE } from '../../constants';
-import type { DealMetrics, WellGroup } from '../../types';
+import type { DealMetrics, MonthlyCashFlow, WellGroup } from '../../types';
 import type { WorkflowStep } from './WorkflowStepper';
 
 function createMetrics(overrides: Partial<DealMetrics>): DealMetrics {
@@ -85,6 +85,55 @@ export const storyScenarioRankings = storyGroups.map((group) => ({
   totalCapex: group.metrics?.totalCapex ?? 0,
   wellCount: group.metrics?.wellCount ?? group.wellIds.size,
 }));
+
+export const storyDealMetrics: DealMetrics = createMetrics({
+  npv10: 13_400_000,
+  totalCapex: 9_200_000,
+  eur: 1_420_000,
+  irr: 0.46,
+  payoutMonths: 16,
+  wellCount: 3,
+});
+
+const storyNetCashFlowSeries = [
+  -2_300_000,
+  -1_700_000,
+  -950_000,
+  -180_000,
+  320_000,
+  890_000,
+  1_150_000,
+  1_260_000,
+  1_340_000,
+  1_210_000,
+  1_050_000,
+  940_000,
+  860_000,
+  740_000,
+  620_000,
+  520_000,
+  430_000,
+  360_000,
+];
+
+export const storyAggregateFlow: MonthlyCashFlow[] = storyNetCashFlowSeries.map((netCashFlow, index) => {
+  const month = index + 1;
+  const cumulativeCashFlow = storyNetCashFlowSeries
+    .slice(0, month)
+    .reduce((runningTotal, value) => runningTotal + value, 0);
+
+  return {
+    month,
+    date: `2026-${String(month).padStart(2, '0')}-01`,
+    oilProduction: Math.max(0, 18_000 - index * 680),
+    gasProduction: Math.max(0, 11_500 - index * 420),
+    revenue: Math.max(0, 2_450_000 - index * 82_000),
+    capex: month <= 4 ? Math.max(0, 2_900_000 - index * 650_000) : 0,
+    opex: 180_000 + index * 8_000,
+    netCashFlow,
+    cumulativeCashFlow,
+  };
+});
 
 export const storyWorkflowSteps: WorkflowStep[] = [
   { id: 'SETUP', label: 'Setup', status: 'COMPLETE' },
