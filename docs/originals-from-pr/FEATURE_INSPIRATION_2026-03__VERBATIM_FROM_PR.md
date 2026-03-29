@@ -164,6 +164,7 @@ If you want something you can finish over lunch and feel great about:
 3. **Monte Carlo Mode** — biggest credibility upgrade with technical users, transforms the product category
 
 ---
+
 ---
 
 ## Part 2: UI/UX Audit
@@ -187,14 +188,17 @@ If you want something you can finish over lunch and feel great about:
 
 ### Executive Summary
 
+
 | Severity | Count |
-|----------|-------|
-| Critical | 2 |
-| High | 5 |
-| Medium | 8 |
-| Low | 6 |
+| -------- | ----- |
+| Critical | 2     |
+| High     | 5     |
+| Medium   | 8     |
+| Low      | 6     |
+
 
 **Top 5 issues:**
+
 1. Missing ARIA roles and labels on most interactive elements (sidebar nav, group tree, tab controls, map tools)
 2. `max-h` + `opacity` used for expand/collapse animation — animates layout properties, causes jank
 3. `isClassic` ternary branching in every component creates exponential maintenance burden and inconsistency
@@ -206,6 +210,7 @@ If you want something you can finish over lunch and feel great about:
 ### Critical Issues
 
 #### CRIT-01: Map tools have no keyboard access or ARIA labels
+
 - **Location:** `MapVisualizer.tsx` — lasso, rectangle, formation select, heatmap toggle
 - **Category:** Accessibility
 - **Description:** Map interaction tools (lasso, rectangle select, grid toggle, heatmap toggle) are clickable elements without `role="button"`, `aria-label`, or keyboard event handlers. Screen readers cannot discover or operate them.
@@ -215,6 +220,7 @@ If you want something you can finish over lunch and feel great about:
 - **Suggested command:** `/harden`
 
 #### CRIT-02: Tab controls lack ARIA tab pattern
+
 - **Location:** `EconomicsResultsTabs.tsx`, mobile panel toggles in `DesignEconomicsView.tsx`, `DesignWellsView.tsx`
 - **Category:** Accessibility
 - **Description:** Tab-like navigation (SUMMARY / CHARTS / DRIVERS / RESERVES, SETUP / RESULTS, GROUPS / MAP) uses plain `<button>` elements without `role="tablist"`, `role="tab"`, `aria-selected`, or `role="tabpanel"` on the content areas. Arrow key navigation is not implemented.
@@ -228,6 +234,7 @@ If you want something you can finish over lunch and feel great about:
 ### High-Severity Issues
 
 #### HIGH-01: Expand/collapse animates `max-height` and `opacity`
+
 - **Location:** `DesignEconomicsView.tsx` (Advanced Configuration), `SlopcastPage.tsx` (Forecast Grid, Engine Comparison)
 - **Category:** Performance
 - **Description:** Collapsible sections use `max-h-[2000px]` / `max-h-0` with `opacity` transitions. Animating `max-height` triggers layout recalculation on every frame. The `max-h-[2000px]` value causes the transition duration to be unpredictable (CSS transitions traverse the full 0–2000px range even if actual content is 200px).
@@ -236,6 +243,7 @@ If you want something you can finish over lunch and feel great about:
 - **Suggested command:** `/animate`
 
 #### HIGH-02: Mobile experience amputates rather than adapts
+
 - **Location:** `DesignEconomicsView.tsx` (line 291-293), `DesignWellsView.tsx`
 - **Category:** Responsive
 - **Description:** On mobile, the economics view hides either SETUP or RESULTS entirely with `hidden lg:block`. The wells view hides either GROUPS or MAP. Users must toggle between them — they can never see context and results simultaneously. The mobile sticky action bar at the bottom uses `fixed` positioning that could overlap content.
@@ -244,6 +252,7 @@ If you want something you can finish over lunch and feel great about:
 - **Suggested command:** `/adapt`
 
 #### HIGH-03: No focus management on view transitions
+
 - **Location:** `ViewTransition.tsx`, all tab/panel switches
 - **Category:** Accessibility
 - **Description:** When switching between tabs (SUMMARY → CHARTS → DRIVERS) or views (WELLS → ECONOMICS), focus is not programmatically moved to the new content area. The `ViewTransition` component handles the animation but not focus.
@@ -253,6 +262,7 @@ If you want something you can finish over lunch and feel great about:
 - **Suggested command:** `/harden`
 
 #### HIGH-04: `isClassic` ternary branching throughout every component
+
 - **Location:** Systemic — `DesignEconomicsView`, `DesignWellsView`, `KpiGrid`, `LandingPage`, `Sidebar`, every component
 - **Category:** Theming
 - **Description:** Virtually every className and style decision branches on `isClassic` with ternary expressions (e.g., `isClassic ? 'sc-panel' : 'rounded-panel bg-theme-surface1/60 ...'`). This means:
@@ -265,6 +275,7 @@ If you want something you can finish over lunch and feel great about:
 - **Suggested command:** `/normalize`, `/extract`
 
 #### HIGH-05: Touch targets below 44px throughout
+
 - **Location:** Filter chips, tab buttons, advanced config sub-tabs, sidebar nav items (when collapsed)
 - **Category:** Responsive / Accessibility
 - **Description:** Many interactive elements use `py-1.5` or `py-2` with `text-[9px]` or `text-[10px]`, resulting in tap targets well under 44x44px. The collapsed sidebar icons, filter chip "×" dismiss buttons, and advanced config sub-tabs are the worst offenders.
@@ -277,6 +288,7 @@ If you want something you can finish over lunch and feel great about:
 ### Medium-Severity Issues
 
 #### MED-01: Landing page search is a simulated stub
+
 - **Location:** `LandingPage.tsx` line 98-99 — `setTimeout(() => setIsSearching(false), 600)`
 - **Category:** UX / Discoverability
 - **Description:** The acreage search bar appears fully functional but uses a hardcoded 600ms `setTimeout` to simulate loading, then does a local keyword parse against a fixed list of operators/basins. The "Showing results for:" message appears but results don't actually filter deals.
@@ -285,6 +297,7 @@ If you want something you can finish over lunch and feel great about:
 - **Suggested command:** `/clarify`
 
 #### MED-02: Portfolio Summary stats on landing page are a stale card grid
+
 - **Location:** `LandingPage.tsx` lines 193-228
 - **Category:** Anti-pattern
 - **Description:** The Portfolio Summary is a 2x2 grid of identical tiles (Total Deals, Active, Total PV10, Total Wells) — the "identical card grid" anti-pattern called out in the frontend-design skill. Each tile is structurally identical: label + big number.
@@ -293,6 +306,7 @@ If you want something you can finish over lunch and feel great about:
 - **Suggested command:** `/bolder`, `/distill`
 
 #### MED-03: Onboarding tour tooltip positioning is fragile
+
 - **Location:** `OnboardingTour.tsx` — `getBoundingClientRect` on `data-tour-step` targets
 - **Category:** Responsive / UX
 - **Description:** Tour step positioning uses `getBoundingClientRect` with static offsets. On mobile or when the layout shifts (sidebar collapse, tab switch), the tooltip can appear off-screen or overlapping the target element. No repositioning logic handles viewport edges.
@@ -301,6 +315,7 @@ If you want something you can finish over lunch and feel great about:
 - **Suggested command:** `/onboard`
 
 #### MED-04: AI assistant panel has no dismiss affordance on mobile
+
 - **Location:** `AiAssistant.tsx` — floating panel
 - **Category:** Responsive
 - **Description:** The AI assistant renders as a floating chat panel. On small screens, it may overlap critical UI content. There's no swipe-to-dismiss or dedicated mobile layout — it's the same floating panel that works on desktop.
@@ -309,6 +324,7 @@ If you want something you can finish over lunch and feel great about:
 - **Suggested command:** `/adapt`
 
 #### MED-05: ProjectSharePanel renders with empty handlers
+
 - **Location:** `SlopcastPage.tsx` line 232-238
 - **Description:** The share panel is rendered with `members={[]}`, `onInvite={() => {}}`, `onRemoveMember={() => {}}`, `onUpdateRole={() => {}}`. It's accessible from the UI but does nothing.
 - **Impact:** Users who find the share feature will attempt to invite team members and get no feedback. Silent failure erodes trust.
@@ -316,6 +332,7 @@ If you want something you can finish over lunch and feel great about:
 - **Suggested command:** `/clarify`, `/onboard`
 
 #### MED-06: KPI hero card blur orb is decorative noise on non-glass themes
+
 - **Location:** `KpiGrid.tsx` line 252-253
 - **Description:** The NPV hero card renders a `blur-[100px]` cyan orb in the top-right corner when `panelStyle !== 'solid'`. This means both `glass` AND `outline` themes get the orb. For `outline` themes (which aim for minimal, drawn-line aesthetics), a giant blurred circle undercuts the design intent.
 - **Impact:** Themes that are supposed to feel structurally different end up looking similar because they share decorative effects.
@@ -323,6 +340,7 @@ If you want something you can finish over lunch and feel great about:
 - **Suggested command:** `/normalize`
 
 #### MED-07: No loading skeletons anywhere
+
 - **Location:** Systemic — all data views
 - **Category:** Performance / UX
 - **Description:** When economics recalculate (via `useDebouncedRecalc`), the `animate-shimmer` class is applied to KPI values. But there are no skeleton states for the initial load, for chart rendering, for the deals table, or for the map. The `Suspense` fallback in `SlopcastPage` is a spinner.
@@ -331,6 +349,7 @@ If you want something you can finish over lunch and feel great about:
 - **Suggested command:** `/polish`, `/delight`
 
 #### MED-08: Color-only status communication in several places
+
 - **Location:** `QuickDrivers` (positive/negative uses only cyan/magenta), `GroupComparisonStrip`, `EconomicsDriversPanel`
 - **Category:** Accessibility
 - **Description:** Positive vs. negative delta values are communicated solely through color (cyan = positive, magenta = negative). The `+`/`-` sign prefix helps, but the bar charts, border accents, and ring charts rely entirely on color to distinguish meaning.
@@ -343,36 +362,42 @@ If you want something you can finish over lunch and feel great about:
 ### Low-Severity Issues
 
 #### LOW-01: `text-[9px]` and `text-[10px]` used inconsistently
+
 - **Location:** Systemic — labels, section headers, badges
 - **Description:** Some labels use `text-[9px]`, others `text-[10px]`, with no clear rule for which gets which. Both are extremely small and below the generally recommended 12px minimum for body text.
 - **Recommendation:** Establish a `typo-micro` token at a fixed size (e.g., 10px) and use it consistently. Consider bumping to 11px — the uppercase tracking makes it readable, but just barely.
 - **Suggested command:** `/normalize`
 
 #### LOW-02: Redundant `theme-transition` class on nearly every element
+
 - **Location:** Systemic
 - **Description:** Many elements apply `theme-transition` alongside other transition classes (`transition-colors`, `transition-all`). If `theme-transition` applies transitions to background/border/color, the additional Tailwind transition utilities may conflict or duplicate.
 - **Recommendation:** Audit whether `theme-transition` alone is sufficient or if the Tailwind utilities are needed. Standardize on one approach.
 - **Suggested command:** `/optimize`
 
 #### LOW-03: `onMarkDirty={() => {}}` is a no-op
+
 - **Location:** `SlopcastPage.tsx` line 115
 - **Description:** The `onMarkDirty` prop is passed as an empty function. This suggests the dirty-tracking system was planned but not connected. Any component calling `onMarkDirty` is silently doing nothing.
 - **Recommendation:** Either wire it to the persistence layer or remove the prop from the interface to avoid confusion.
 - **Suggested command:** `/distill`
 
 #### LOW-04: Sidebar `SidebarGroupTree` has no empty state
+
 - **Location:** `Sidebar.tsx` → `SidebarGroupTree`
 - **Description:** When there are no groups, the sidebar group tree renders nothing — just empty space below the nav. New users won't know what should be there.
 - **Recommendation:** Show a subtle "No groups yet — create one in the Wells workspace" hint with a small icon.
 - **Suggested command:** `/onboard`
 
 #### LOW-05: `PayoutRing` benchmark is hardcoded to 60 months
+
 - **Location:** `KpiGrid.tsx` line 75
 - **Description:** The payout progress ring benchmarks against 60 months. This is a reasonable default for Permian Basin economics but won't make sense for all plays or deal types. There's no way to configure it.
 - **Recommendation:** Make benchmark configurable via scenario assumptions or a user preference.
 - **Suggested command:** `/clarify`
 
 #### LOW-06: No `prefers-reduced-motion` respect
+
 - **Location:** Systemic — `ViewTransition`, atmospheric backgrounds, theme switch animations
 - **Description:** Users who prefer reduced motion (accessibility setting on macOS/Windows) still get all animations — atmospheric backgrounds, view transitions, blur orb hover effects, shimmer recalc animation.
 - **WCAG:** 2.3.3 Animation from Interactions (AAA)
@@ -383,26 +408,24 @@ If you want something you can finish over lunch and feel great about:
 
 ### Patterns & Systemic Issues
 
-| Pattern | Occurrences | Impact |
-|---------|-------------|--------|
-| `isClassic` ternary forking in className | Every component | Doubles maintenance, limits per-theme differentiation for non-classic themes |
-| `text-[9px]`/`text-[10px]` without tokens | 30+ locations | Inconsistent micro-typography, below-minimum readability |
-| Missing ARIA on custom interactive elements | Tabs, map tools, collapsibles, sidebar tree | Core workflows inaccessible to assistive technology |
-| `hidden lg:block` mobile strategy | Wells view, Economics view | Content amputation rather than adaptation |
-| No skeleton/loading states | All initial renders | Flash of empty layout before content paints |
+
+| Pattern                                     | Occurrences                                 | Impact                                                                       |
+| ------------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------- |
+| `isClassic` ternary forking in className    | Every component                             | Doubles maintenance, limits per-theme differentiation for non-classic themes |
+| `text-[9px]`/`text-[10px]` without tokens   | 30+ locations                               | Inconsistent micro-typography, below-minimum readability                     |
+| Missing ARIA on custom interactive elements | Tabs, map tools, collapsibles, sidebar tree | Core workflows inaccessible to assistive technology                          |
+| `hidden lg:block` mobile strategy           | Wells view, Economics view                  | Content amputation rather than adaptation                                    |
+| No skeleton/loading states                  | All initial renders                         | Flash of empty layout before content paints                                  |
+
 
 ---
 
 ### Positive Findings
 
 1. **Theme system architecture is excellent.** The `ThemeFeatures` concept (panelStyle, headingFont, denseSpacing, retroGrid, brandFont) is the right abstraction. The problem is downstream — components don't always honor these features. But the bones are there.
-
 2. **Sparkline in the NPV hero card is genuinely useful.** The `CashFlowSparkline` showing cumulative cash flow behind the NPV number is the kind of "data has gravity" visualization the design principles call for. It communicates more than a number alone.
-
 3. **Debounced recalc with visual shimmer is good UX.** The `useDebouncedRecalc` hook plus `animate-shimmer` on KPI values gives users a clear signal that values are updating. This is a pattern worth extending to other areas.
-
 4. **Driver panel with "Jump to Driver" navigation is smart.** Clicking a driver in `EconomicsDriversPanel` scrolls/navigates to the relevant control section. This bidirectional link between insight and action is exactly right for a power-user tool.
-
 5. **The `WaterfallChart` component exists.** This is already a differentiator — most O&G economics tools don't visualize value bridges. It's quietly excellent.
 
 ---
@@ -410,47 +433,54 @@ If you want something you can finish over lunch and feel great about:
 ### Recommendations by Priority
 
 #### Immediate (this session)
+
 1. Add `role="tablist"` / `role="tab"` / `aria-selected` to `EconomicsResultsTabs` and mobile panel toggles
 2. Add `aria-label` to all map tool buttons
 3. Gate the blur orb in KpiGrid to `panelStyle === 'glass'` only
 
 #### Short-term (next few sessions)
-4. Replace `max-h` expand/collapse with `grid-template-rows` transitions
-5. Add `@media (prefers-reduced-motion: reduce)` global rule
-6. Add skeleton placeholders for KpiGrid and Charts
-7. Either wire the acreage search to filter deals or replace with an honest "coming soon" state
-8. Gate ProjectSharePanel behind a "coming soon" badge
+
+1. Replace `max-h` expand/collapse with `grid-template-rows` transitions
+2. Add `@media (prefers-reduced-motion: reduce)` global rule
+3. Add skeleton placeholders for KpiGrid and Charts
+4. Either wire the acreage search to filter deals or replace with an honest "coming soon" state
+5. Gate ProjectSharePanel behind a "coming soon" badge
 
 #### Medium-term (next milestone)
-9. Begin migrating `isClassic` ternary forks into CSS-layer `[data-theme='mario']` overrides
-10. Redesign the landing page Portfolio Summary to break the identical-card-grid pattern
-11. Implement mobile bottom sheet for AI assistant
-12. Add viewport-aware repositioning to the onboarding tour
+
+1. Begin migrating `isClassic` ternary forks into CSS-layer `[data-theme='mario']` overrides
+2. Redesign the landing page Portfolio Summary to break the identical-card-grid pattern
+3. Implement mobile bottom sheet for AI assistant
+4. Add viewport-aware repositioning to the onboarding tour
 
 #### Long-term (strategic)
-13. Introduce a second accent color per theme to reduce cyan-on-dark uniformity
-14. Add loading skeletons to all data views as a systemic pattern
-15. Build a proper ARIA tab pattern component and use it everywhere
+
+1. Introduce a second accent color per theme to reduce cyan-on-dark uniformity
+2. Add loading skeletons to all data views as a systemic pattern
+3. Build a proper ARIA tab pattern component and use it everywhere
 
 ---
 
 ### Suggested Commands for Fixes
 
-| Command | Addresses |
-|---------|-----------|
-| `/harden` | CRIT-01, CRIT-02, HIGH-03, HIGH-05, MED-08, LOW-06 — accessibility gaps, ARIA patterns, keyboard nav, reduced motion |
-| `/normalize` | HIGH-04, MED-06, LOW-01, LOW-02 — theme consistency, `isClassic` branching, token standardization |
-| `/adapt` | HIGH-02, HIGH-05, MED-04 — mobile experience, touch targets, responsive layouts |
-| `/animate` | HIGH-01 — expand/collapse animation using GPU-friendly properties |
-| `/onboard` | MED-03, MED-05, LOW-04 — tour positioning, empty states, feature gating |
-| `/clarify` | MED-01, MED-05, LOW-05 — stub features, misleading UI, configurable defaults |
-| `/distill` | MED-02, LOW-03 — remove noise, clean up dead props |
-| `/bolder` | MED-02 — redesign Portfolio Summary with asymmetric layout |
-| `/polish` | MED-07 — skeleton states, loading refinement |
-| `/delight` | MED-07 — shimmer extensions, micro-interactions during data loading |
-| `/optimize` | LOW-02 — transition class audit, deduplication |
+
+| Command      | Addresses                                                                                                            |
+| ------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `/harden`    | CRIT-01, CRIT-02, HIGH-03, HIGH-05, MED-08, LOW-06 — accessibility gaps, ARIA patterns, keyboard nav, reduced motion |
+| `/normalize` | HIGH-04, MED-06, LOW-01, LOW-02 — theme consistency, `isClassic` branching, token standardization                    |
+| `/adapt`     | HIGH-02, HIGH-05, MED-04 — mobile experience, touch targets, responsive layouts                                      |
+| `/animate`   | HIGH-01 — expand/collapse animation using GPU-friendly properties                                                    |
+| `/onboard`   | MED-03, MED-05, LOW-04 — tour positioning, empty states, feature gating                                              |
+| `/clarify`   | MED-01, MED-05, LOW-05 — stub features, misleading UI, configurable defaults                                         |
+| `/distill`   | MED-02, LOW-03 — remove noise, clean up dead props                                                                   |
+| `/bolder`    | MED-02 — redesign Portfolio Summary with asymmetric layout                                                           |
+| `/polish`    | MED-07 — skeleton states, loading refinement                                                                         |
+| `/delight`   | MED-07 — shimmer extensions, micro-interactions during data loading                                                  |
+| `/optimize`  | LOW-02 — transition class audit, deduplication                                                                       |
+
 
 ---
+
 ---
 
 ## Part 3: Design Critique
@@ -485,9 +515,7 @@ The classic theme (Mario) actually avoids most of these because it has its own v
 ### What's Working
 
 1. **The driver panel's "Jump to Driver" interaction.** Clicking "CAPEX" in the drivers analysis scrolls to the CAPEX controls section. This bidirectional link between insight and action is exactly what a power-user economics tool needs. It says: "we understand your workflow." This pattern should be extended everywhere — clicking any metric should navigate to the input that controls it.
-
 2. **The cumulative cash flow sparkline behind the hero NPV.** This is subtle, smart, and genuinely informative. A single number says "how much." The sparkline says "how it gets there" — when payout happens, the cash flow shape, whether returns are front-loaded. It communicates without demanding attention. More of this.
-
 3. **The atmospheric background system.** The themed backgrounds (Synthwave's retro grid, the ambient orbs on the landing page) create genuine mood that distinguishes Slopcast from every other O&G tool in the market. This is the "impressed & engaged" emotional goal delivered.
 
 ---
@@ -495,6 +523,7 @@ The classic theme (Mario) actually avoids most of these because it has its own v
 ### Priority Issues
 
 #### 1. All non-classic themes wear the same clothes
+
 - **What:** Despite 6 distinct theme IDs with unique backgrounds, chart palettes, and `ThemeFeatures`, the component markup renders identical foreground UI for all of them. Same `rounded-panel`, same `text-theme-cyan` headings, same `text-[10px] font-black uppercase tracking-[0.24em]` labels.
 - **Why it matters:** Users who switch themes expect a real transformation — not just a wallpaper swap. The brand promise is "every theme should feel like a deliberate creative choice, not a skin swap," but the current execution is closer to a skin swap with a really good background layer.
 - **Fix:** Choose 2-3 themes and give their components distinct foreground treatments. Examples:
@@ -504,6 +533,7 @@ The classic theme (Mario) actually avoids most of these because it has its own v
 - **Command:** `/normalize` to establish per-theme component variants, `/bolder` to push each theme further
 
 #### 2. The landing page doesn't tell a story
+
 - **What:** The landing page is: title → subtitle → search bar → two buttons → deals table + map + stats grid. It's functional but emotionally flat. There's no narrative — no "here's what you did last time, here's what needs attention, here's where the opportunity is."
 - **Why it matters:** The landing page is the first thing users see in every session. The emotional goal is "energized & ambitious — deal-making should feel exciting." A static grid of deals and a dormant search bar doesn't generate excitement.
 - **Fix:** Lead with a contextual hero:
@@ -514,6 +544,7 @@ The classic theme (Mario) actually avoids most of these because it has its own v
 - **Command:** `/bolder`, `/onboard`
 
 #### 3. The economics setup column is visually monotonous
+
 - **What:** The left panel in Economics view is a vertical stack of collapsible sections (Type Curve, CAPEX, OPEX, Ownership, Advanced Configuration) that all look identical — same header style, same expand/collapse chevron, same nested content layout. It reads as an endless form.
 - **Why it matters:** Users building economics need to quickly scan which sections are configured and which need attention. When every section looks the same, there's no visual hierarchy to guide them. The "readiness blocker" message at the top is helpful, but it's too subtle — a tiny `text-[9px]` label that could easily be missed.
 - **Fix:**
@@ -524,6 +555,7 @@ The classic theme (Mario) actually avoids most of these because it has its own v
 - **Command:** `/clarify`, `/delight`
 
 #### 4. Scenario dashboard (Analysis mode) is under-designed relative to the rest
+
 - **What:** The `ScenarioDashboard` is the payoff of the entire workflow — you've built groups, configured economics, now you compare scenarios. But compared to the rich SUMMARY/CHARTS/DRIVERS tabs in the economics view, the scenario comparison feels like an afterthought.
 - **Why it matters:** This is where deal decisions happen. "Which scenario gives the best risk-adjusted return?" is the million-dollar question. If this view doesn't feel dramatic and authoritative, the product's climax falls flat.
 - **Fix:**
@@ -534,6 +566,7 @@ The classic theme (Mario) actually avoids most of these because it has its own v
 - **Command:** `/bolder`, `/animate`
 
 #### 5. The AI assistant is hiding in the corner
+
 - **What:** The AI assistant is a floating chat panel activated by a button. It's positioned as an overlay — you open it, chat, close it. It feels bolted on rather than woven into the experience.
 - **Why it matters:** If the AI can parse "what if oil drops to $55?" and adjust scenario parameters, that's magical. But users have to know it exists, open a separate panel, type in natural language, and trust the result. That's a lot of friction for a feature that could be the product's signature interaction.
 - **Fix:**
@@ -558,11 +591,8 @@ The classic theme (Mario) actually avoids most of these because it has its own v
 ### Questions to Consider
 
 - **What if each theme had a signature KPI visualization?** Instead of the same hero NPV card in every theme, what if Synthwave rendered NPV as a neon sign, Stormwatch as a gauge/dial, and Tropical as a progress bar toward a target? Same data, completely different emotional resonance.
-
 - **What if the economics setup was visual instead of form-based?** Instead of collapsible sections with input fields, what if the type curve was a drag-to-shape interactive chart, the CAPEX was a stacked bar you could click to expand, and OPEX was a timeline you could annotate? The data is numeric, but the entry doesn't have to be.
-
 - **What would it look like if confidence was the design principle?** Right now, many elements hedge — small text, muted colors, hidden behind collapsibles. What if the app was more opinionated? Bigger numbers. Bolder colors. Fewer options visible, stronger defaults. "We've configured the best defaults for Permian Basin economics. Adjust if you know better."
-
 - **What if the map and economics were never separate?** The current flow is: select wells (map) → configure economics (form) → view results (charts). What if all three were visible simultaneously in a triptych layout? Select a well on the map, see its economics update in real-time in the adjacent panel, with the chart responding below.
-
 - **What's the "screenshot moment"?** Every great product has a view that users screenshot and share. For Slopcast, is it the NPV hero card? The waterfall chart? The atmospheric background? Identify it, and make it twice as impressive. Design the feature that people put in their LinkedIn posts.
+
