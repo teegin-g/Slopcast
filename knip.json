@@ -1,0 +1,47 @@
+{
+  "entry": [
+    "src/index.tsx",
+    "src/App.tsx",
+    "server.js",
+    "scripts/**/*.mjs",
+    "vite.config.ts",
+    "vitest.config.ts",
+    ".storybook/main.ts",
+    "playwright.config.ts"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    ".storybook/**/*.{ts,tsx}",
+    "e2e/**/*.{ts,tsx}"
+  ],
+  "ignore": [
+    "src/vite-env.d.ts"
+  ],
+  "ignoreBinaries": [
+    "dot"
+  ],
+  "ignoreFiles": [
+    "apps/**"
+  ],
+  "ignoreIssues": {
+    "apps/**": [
+      "unlisted"
+    ]
+  },
+  "ignoreWorkspaces": [
+    "apps/rig-scheduler"
+  ],
+  "ignoreDependencies": [
+    "@tailwindcss/vite"
+  ],
+  "vite": {
+    "config": [
+      "vite.config.ts"
+    ]
+  },
+  "vitest": {
+    "config": [
+      "vitest.config.ts"
+    ]
+  }
+}

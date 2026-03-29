@@ -13,6 +13,8 @@ import { useViewportLayout } from '../components/slopcast/hooks/useViewportLayou
 import { useProjectPersistence } from '../components/slopcast/hooks/useProjectPersistence';
 import { useAuth } from '../auth/AuthProvider';
 import { hasSupabaseEnv } from '../services/supabaseClient';
+import { useWellFiltering } from '../hooks/useWellFiltering';
+import { useWellSelection } from '../hooks/useWellSelection';
 import { useTheme } from '../theme/ThemeProvider';
 import { aggregateEconomics, calculateEconomics } from '../utils/economics';
 
@@ -209,12 +211,40 @@ const SlopcastPage: React.FC = () => {
   ]);
   
   const [activeGroupId, setActiveGroupId] = useState<string>('g-1');
-  const [selectedWellIds, setSelectedWellIds] = useState<Set<string>>(new Set());
   const [lastSnapshotAt, setLastSnapshotAt] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState('');
-  const [operatorFilter, setOperatorFilter] = useState<string>('ALL');
-  const [formationFilter, setFormationFilter] = useState<string>('ALL');
-  const [statusFilter, setStatusFilter] = useState<Well['status'] | 'ALL'>('ALL');
+
+  const {
+    operatorFilter,
+    setOperatorFilter,
+    formationFilter,
+    setFormationFilter,
+    statusFilter,
+    setStatusFilter,
+    operatorOptions,
+    formationOptions,
+    statusOptions,
+    filteredWells,
+    visibleWellIds,
+    dimmedWellIds,
+    handleResetFilters,
+  } = useWellFiltering(MOCK_WELLS);
+
+  const {
+    selectedWellIds,
+    setSelectedWellIds,
+    selectedVisibleCount,
+    handleToggleWell,
+    handleSelectWells,
+    handleSelectAll,
+    handleClearSelection,
+  } = useWellSelection({
+    visibleWellIds,
+    filteredWellsCount: filteredWells.length,
+    onEmptyVisibleSelection: () => {
+      setActionMessage('No visible wells match current filters.');
+    },
+  });
 
   // --- Computed Economics per Group ---
   const processedGroups = useMemo(() => {
@@ -231,47 +261,6 @@ const SlopcastPage: React.FC = () => {
   const { flow: aggregateFlow, metrics: aggregateMetrics } = useMemo(() => {
     return aggregateEconomics(processedGroups);
   }, [processedGroups]);
-
-  const operatorOptions = useMemo(() => {
-    return Array.from(new Set(MOCK_WELLS.map(well => well.operator))).sort();
-  }, []);
-
-  const formationOptions = useMemo(() => {
-    return Array.from(new Set(MOCK_WELLS.map(well => well.formation))).sort();
-  }, []);
-
-  const statusOptions = useMemo(() => {
-    return Array.from(new Set(MOCK_WELLS.map(well => well.status)));
-  }, []);
-
-  const filteredWells = useMemo(() => {
-    return MOCK_WELLS.filter(well => {
-      if (operatorFilter !== 'ALL' && well.operator !== operatorFilter) return false;
-      if (formationFilter !== 'ALL' && well.formation !== formationFilter) return false;
-      if (statusFilter !== 'ALL' && well.status !== statusFilter) return false;
-      return true;
-    });
-  }, [formationFilter, operatorFilter, statusFilter]);
-
-  const visibleWellIds = useMemo(() => {
-    return new Set(filteredWells.map(well => well.id));
-  }, [filteredWells]);
-
-  const dimmedWellIds = useMemo(() => {
-    const ids = new Set<string>();
-    MOCK_WELLS.forEach(well => {
-      if (!visibleWellIds.has(well.id)) ids.add(well.id);
-    });
-    return ids;
-  }, [visibleWellIds]);
-
-  const selectedVisibleCount = useMemo(() => {
-    let count = 0;
-    selectedWellIds.forEach(id => {
-      if (visibleWellIds.has(id)) count += 1;
-    });
-    return count;
-  }, [selectedWellIds, visibleWellIds]);
 
   const supabasePersistenceEnabled =
     status === 'authenticated' && session?.provider === 'supabase' && hasSupabaseEnv();
@@ -395,76 +384,6 @@ const SlopcastPage: React.FC = () => {
     setSelectedWellIds(new Set());
 
   };
-
-  const handleToggleWell = (id: string) => {
-    if (!visibleWellIds.has(id)) return;
-    setSelectedWellIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-
-  };
-
-  const handleSelectWells = (ids: string[]) => {
-      setSelectedWellIds(prev => {
-          const next = new Set(prev);
-          ids.forEach(id => {
-            if (visibleWellIds.has(id)) next.add(id);
-          });
-          return next;
-      });
-  
-  };
-
-  const handleSelectAll = () => {
-    if (filteredWells.length === 0) {
-      setActionMessage('No visible wells match current filters.');
-      return;
-    }
-
-    if (selectedVisibleCount === filteredWells.length) {
-      setSelectedWellIds(prev => {
-        const next = new Set(prev);
-        visibleWellIds.forEach(id => next.delete(id));
-        return next;
-      });
-    } else {
-      setSelectedWellIds(prev => {
-        const next = new Set(prev);
-        visibleWellIds.forEach(id => next.add(id));
-        return next;
-      });
-    }
-
-  };
-
-  const handleClearSelection = () => {
-    setSelectedWellIds(new Set());
-
-  };
-
-  const handleResetFilters = () => {
-    setOperatorFilter('ALL');
-    setFormationFilter('ALL');
-    setStatusFilter('ALL');
-  };
-
-  useEffect(() => {
-    setSelectedWellIds(prev => {
-      let changed = false;
-      const next = new Set<string>();
-      prev.forEach(id => {
-        if (visibleWellIds.has(id)) {
-          next.add(id);
-        } else {
-          changed = true;
-        }
-      });
-      return changed ? next : prev;
-    });
-  }, [visibleWellIds]);
 
   const scenarioRankings = useMemo(() => {
     return processedGroups

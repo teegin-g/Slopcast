@@ -46,7 +46,13 @@ NC='\033[0m'
 PASS_COUNT=0
 FAIL_COUNT=0
 SKIP_COUNT=0
+WARN_COUNT=0
 
+STAGE_FORMAT_CHECK="SKIP"
+STAGE_LINT="SKIP"
+STAGE_CIRCULAR="SKIP"
+STAGE_KNIP="SKIP"
+STAGE_DEPS_CHECK="SKIP"
 STAGE_TYPECHECK="SKIP"
 STAGE_BUILD="SKIP"
 STAGE_TESTS="SKIP"
@@ -61,6 +67,11 @@ set_stage_result() {
   local value="$2"
 
   case "$label" in
+    format:check*) STAGE_FORMAT_CHECK="$value" ;;
+    lint*) STAGE_LINT="$value" ;;
+    circular*) STAGE_CIRCULAR="$value" ;;
+    knip*) STAGE_KNIP="$value" ;;
+    deps:check*) STAGE_DEPS_CHECK="$value" ;;
     typecheck*) STAGE_TYPECHECK="$value" ;;
     build*) STAGE_BUILD="$value" ;;
     tests*) STAGE_TESTS="$value" ;;
@@ -90,6 +101,12 @@ stage_skip() {
   set_stage_result "$1" "SKIP"
 }
 
+stage_warn() {
+  echo -e "  ${YELLOW}WARN${NC} $1"
+  WARN_COUNT=$((WARN_COUNT + 1))
+  set_stage_result "$1" "WARN"
+}
+
 # Write validation record and log result
 write_validation_record() {
   local result="$1"
@@ -109,9 +126,15 @@ write_validation_record() {
   "timestamp": "${timestamp}",
   "result": "${result}",
   "passed": ${PASS_COUNT},
+  "warnings": ${WARN_COUNT},
   "failed": ${FAIL_COUNT},
   "skipped": ${SKIP_COUNT},
   "stages": {
+    "format_check": "${STAGE_FORMAT_CHECK}",
+    "lint": "${STAGE_LINT}",
+    "circular": "${STAGE_CIRCULAR}",
+    "knip": "${STAGE_KNIP}",
+    "deps_check": "${STAGE_DEPS_CHECK}",
     "typecheck": "${STAGE_TYPECHECK}",
     "build": "${STAGE_BUILD}",
     "tests": "${STAGE_TESTS}",
@@ -134,44 +157,96 @@ echo ""
 
 log_event validation_start task="$TASK_NAME"
 
-# ── Stage 1: Type Safety ──────────────────────────────────────
-echo -e "${CYAN}Stage 1: Type Safety${NC}"
+# ── Stage 1: Format Check (warning-only rollout) ──────────────
+echo -e "${CYAN}Stage 1: Format Check${NC}"
+if npm run format:check 2>&1; then
+  stage_pass "format:check"
+else
+  stage_warn "format:check"
+  echo -e "  ${YELLOW}Continuing:${NC} formatting is warning-only during the vibe-slop-stopper rollout."
+fi
+echo ""
+
+# ── Stage 2: Lint (warning-only rollout) ──────────────────────
+echo -e "${CYAN}Stage 2: Lint${NC}"
+if npm run lint 2>&1; then
+  stage_pass "lint"
+else
+  stage_warn "lint"
+  echo -e "  ${YELLOW}Continuing:${NC} lint is warning-only during the vibe-slop-stopper rollout."
+fi
+echo ""
+
+# ── Stage 3: Circular Dependencies (warning-only rollout) ─────
+echo -e "${CYAN}Stage 3: Circular Dependencies${NC}"
+if npm run circular 2>&1; then
+  stage_pass "circular"
+else
+  stage_warn "circular"
+  echo -e "  ${YELLOW}Continuing:${NC} circular dependency checks are warning-only during rollout."
+fi
+echo ""
+
+# ── Stage 4: Dead Code Scan (warning-only rollout) ────────────
+echo -e "${CYAN}Stage 4: Dead Code Scan${NC}"
+KNIP_OUTPUT="$(npm run knip -- --no-exit-code 2>&1 || true)"
+echo "$KNIP_OUTPUT"
+if echo "$KNIP_OUTPUT" | grep -qE "Unused |Unlisted |Configuration hints"; then
+  stage_warn "knip"
+else
+  stage_pass "knip"
+fi
+echo ""
+
+# ── Stage 5: Architecture Rules (warning-only rollout) ────────
+echo -e "${CYAN}Stage 5: Architecture Rules${NC}"
+DEPS_OUTPUT="$(npm run deps:check 2>&1 || true)"
+echo "$DEPS_OUTPUT"
+if echo "$DEPS_OUTPUT" | grep -q " warn "; then
+  stage_warn "deps:check"
+else
+  stage_pass "deps:check"
+fi
+echo ""
+
+# ── Stage 6: Type Safety ──────────────────────────────────────
+echo -e "${CYAN}Stage 6: Type Safety${NC}"
 if npm run typecheck 2>&1; then
   stage_pass "typecheck"
 else
   stage_fail "typecheck"
-  echo -e "\n${RED}Gate failed at Stage 1: Type errors found.${NC}"
+  echo -e "\n${RED}Gate failed at Stage 6: Type errors found.${NC}"
   write_validation_record "FAIL"
   exit 1
 fi
 echo ""
 
-# ── Stage 2: Production Build ─────────────────────────────────
-echo -e "${CYAN}Stage 2: Production Build${NC}"
+# ── Stage 7: Production Build ─────────────────────────────────
+echo -e "${CYAN}Stage 7: Production Build${NC}"
 if npm run build 2>&1; then
   stage_pass "build"
 else
   stage_fail "build"
-  echo -e "\n${RED}Gate failed at Stage 2: Build errors found.${NC}"
+  echo -e "\n${RED}Gate failed at Stage 7: Build errors found.${NC}"
   write_validation_record "FAIL"
   exit 1
 fi
 echo ""
 
-# ── Stage 3: Unit Tests ──────────────────────────────────────
-echo -e "${CYAN}Stage 3: Unit Tests${NC}"
+# ── Stage 8: Unit Tests ──────────────────────────────────────
+echo -e "${CYAN}Stage 8: Unit Tests${NC}"
 if npm test 2>&1; then
   stage_pass "tests"
 else
   stage_fail "tests"
-  echo -e "\n${RED}Gate failed at Stage 3: Test failures found.${NC}"
+  echo -e "\n${RED}Gate failed at Stage 8: Test failures found.${NC}"
   write_validation_record "FAIL"
   exit 1
 fi
 echo ""
 
-# ── Stage 3.5: Test Coverage Warning ─────────────────────────
-echo -e "${CYAN}Stage 3.5: Test Coverage Check${NC}"
+# ── Stage 8.5: Test Coverage Warning ─────────────────────────
+echo -e "${CYAN}Stage 8.5: Test Coverage Check${NC}"
 
 # Files that don't need unit tests
 SKIP_TEST_PATTERNS="App.tsx|index.tsx|main.tsx|pages/.*\.tsx|types\.ts|constants\.ts|constants/.*\.ts|theme/.*\.ts|styles/.*|auth/.*Provider|\.d\.ts"
@@ -211,52 +286,52 @@ else
 fi
 echo ""
 
-# ── Stage 4: Storybook Build ────────────────────────────────
-echo -e "${CYAN}Stage 4: Storybook Build${NC}"
+# ── Stage 9: Storybook Build ────────────────────────────────
+echo -e "${CYAN}Stage 9: Storybook Build${NC}"
 if npm run storybook:build 2>&1; then
   stage_pass "storybook:build"
 else
   stage_fail "storybook:build"
-  echo -e "\n${RED}Gate failed at Stage 4: Storybook build failed.${NC}"
+  echo -e "\n${RED}Gate failed at Stage 9: Storybook build failed.${NC}"
   write_validation_record "FAIL"
   exit 1
 fi
 echo ""
 
-# ── Stage 5: Storybook Tests ────────────────────────────────
-echo -e "${CYAN}Stage 5: Storybook Tests${NC}"
+# ── Stage 10: Storybook Tests ────────────────────────────────
+echo -e "${CYAN}Stage 10: Storybook Tests${NC}"
 if npm run storybook:test 2>&1; then
   stage_pass "storybook:test"
 else
   stage_fail "storybook:test"
-  echo -e "\n${RED}Gate failed at Stage 5: Storybook tests failed.${NC}"
+  echo -e "\n${RED}Gate failed at Stage 10: Storybook tests failed.${NC}"
   write_validation_record "FAIL"
   exit 1
 fi
 echo ""
 
-# ── Stage 6: Style Drift ─────────────────────────────────────
-echo -e "${CYAN}Stage 6: Style Drift Check${NC}"
+# ── Stage 11: Style Drift ─────────────────────────────────────
+echo -e "${CYAN}Stage 11: Style Drift Check${NC}"
 if npm run ui:audit 2>&1; then
   stage_pass "ui:audit"
 else
   stage_fail "ui:audit"
-  echo -e "\n${RED}Gate failed at Stage 6: Style drift detected.${NC}"
+  echo -e "\n${RED}Gate failed at Stage 11: Style drift detected.${NC}"
   write_validation_record "FAIL"
   exit 1
 fi
 echo ""
 
-# ── Stage 7: Screenshot Diff ─────────────────────────────────
+# ── Stage 12: Screenshot Diff ────────────────────────────────
 if [ "$SKIP_SCREENSHOTS" = true ]; then
-  echo -e "${CYAN}Stage 7: Screenshot Diff${NC}"
+  echo -e "${CYAN}Stage 12: Screenshot Diff${NC}"
   stage_skip "screenshots (--skip-screenshots)"
   echo ""
-  echo -e "${CYAN}Stage 8: Playwright E2E${NC}"
+  echo -e "${CYAN}Stage 13: Playwright E2E${NC}"
   stage_skip "ui:verify (--skip-screenshots)"
   echo ""
 else
-  echo -e "${CYAN}Stage 7: Screenshot Diff${NC}"
+  echo -e "${CYAN}Stage 12: Screenshot Diff${NC}"
   TASK_SLUG=$(basename "$(pwd)")
   AFTER_DIR=".agents/state/validation-${TASK_SLUG}/after"
 
@@ -290,7 +365,7 @@ else
 
       if echo "$DIFF_RESULT" | grep -q "SCREENSHOT_DIFF_FAIL"; then
         stage_fail "screenshots (diff exceeds ${DIFF_THRESHOLD}% threshold)"
-        echo -e "\n${RED}Gate failed at Stage 7: Screenshot regression detected.${NC}"
+        echo -e "\n${RED}Gate failed at Stage 12: Screenshot regression detected.${NC}"
         write_validation_record "FAIL"
         exit 1
       else
@@ -302,8 +377,8 @@ else
   fi
   echo ""
 
-  # ── Stage 8: Playwright E2E ───────────────────────────────────
-  echo -e "${CYAN}Stage 8: Playwright E2E${NC}"
+  # ── Stage 13: Playwright E2E ──────────────────────────────────
+  echo -e "${CYAN}Stage 13: Playwright E2E${NC}"
 
   # Start dev server for ui:verify
   npx vite --host 127.0.0.1 --strictPort --port "$VALIDATION_PORT" &
@@ -321,7 +396,7 @@ else
     stage_fail "ui:verify"
     kill "$DEV_PID" 2>/dev/null || true
     wait "$DEV_PID" 2>/dev/null || true
-    echo -e "\n${RED}Gate failed at Stage 8: Playwright E2E failed.${NC}"
+    echo -e "\n${RED}Gate failed at Stage 13: Playwright E2E failed.${NC}"
     write_validation_record "FAIL"
     exit 1
   fi
@@ -333,7 +408,7 @@ fi
 
 # ── Summary ───────────────────────────────────────────────────
 echo -e "${CYAN}═══════════════════════════════════════${NC}"
-echo -e "  ${GREEN}${PASS_COUNT} passed${NC}  ${SKIP_COUNT} skipped  ${RED}${FAIL_COUNT} failed${NC}"
+echo -e "  ${GREEN}${PASS_COUNT} passed${NC}  ${YELLOW}${WARN_COUNT} warned${NC}  ${SKIP_COUNT} skipped  ${RED}${FAIL_COUNT} failed${NC}"
 if [ "$FAIL_COUNT" -eq 0 ]; then
   echo -e "  ${GREEN}VALIDATION GATE: PASS${NC}"
   write_validation_record "PASS"
