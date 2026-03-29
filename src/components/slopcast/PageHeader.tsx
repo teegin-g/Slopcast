@@ -1,6 +1,7 @@
 import React from 'react';
 import { ThemeMeta } from '../../theme/themes';
 import DesignWorkspaceTabs, { DesignWorkspace } from './DesignWorkspaceTabs';
+import { AnimatedButton } from './AnimatedButton';
 
 type ViewMode = 'DASHBOARD' | 'ANALYSIS';
 
@@ -39,6 +40,10 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   headerAtmosphereClass,
   fxClass,
 }) => {
+  const controlGroupClass = isClassic
+    ? 'grid grid-cols-3 gap-1.5 min-w-0 w-full md:flex md:w-auto md:items-center'
+    : 'grid grid-cols-3 gap-1 rounded-panel border border-theme-border bg-theme-bg/80 p-1 min-w-0 w-full md:flex md:w-auto md:items-center';
+
   return (
     <header
       className={`px-3 md:px-6 lg:px-8 py-3 md:py-4 sticky top-0 z-50 theme-transition ${
@@ -95,58 +100,43 @@ const PageHeader: React.FC<PageHeaderProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 w-full min-w-0 flex-nowrap">
-            <div className={isClassic ? 'flex items-center gap-1.5 min-w-0 flex-nowrap' : 'flex items-center gap-1 p-1 rounded-panel border theme-transition bg-theme-bg border-theme-border min-w-0 flex-nowrap'}>
-              <button
+          <div className="flex flex-col gap-2 w-full min-w-0 md:flex-row md:items-center">
+            <div className={controlGroupClass}>
+              <AnimatedButton
                 onClick={onNavigateHub}
-                className={
-                  isClassic
-                    ? 'min-h-[44px] px-2 md:px-3 lg:px-4 py-1.5 md:py-2 rounded-md text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition border-2 shadow-card bg-black/15 text-white/90 border-black/25 hover:bg-black/20 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none'
-                    : 'min-h-[44px] px-2 md:px-3 lg:px-4 py-1.5 md:py-2 rounded-inner text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition text-theme-muted hover:text-theme-text whitespace-nowrap focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none'
-                }
+                isClassic={isClassic}
+                variant={isClassic ? 'secondary' : 'ghost'}
+                size="sm"
+                className="flex-1 md:flex-none px-2 md:px-3 lg:px-4 whitespace-nowrap"
               >
                 HUB
-              </button>
-              <button
+              </AnimatedButton>
+              <AnimatedButton
                 onClick={() => onSetViewMode('DASHBOARD')}
-                className={
-                  isClassic
-                    ? `min-h-[44px] px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-md text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition border-2 shadow-card whitespace-nowrap focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
-                        viewMode === 'DASHBOARD'
-                          ? 'bg-theme-cyan text-white border-theme-magenta'
-                        : 'bg-black/15 text-white/90 border-black/25 hover:bg-black/20'
-                      }`
-                    : `min-h-[44px] px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-inner text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition whitespace-nowrap focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
-                        viewMode === 'DASHBOARD'
-                          ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
-                        : 'text-theme-muted hover:text-theme-text'
-                      }`
-                }
+                isClassic={isClassic}
+                variant="tab"
+                active={viewMode === 'DASHBOARD'}
+                aria-pressed={viewMode === 'DASHBOARD'}
+                size="sm"
+                className="flex-1 md:flex-none px-2 md:px-4 lg:px-5 whitespace-nowrap"
               >
                 DESIGN
-              </button>
-              <button
+              </AnimatedButton>
+              <AnimatedButton
                 onClick={() => onSetViewMode('ANALYSIS')}
-                className={
-                  isClassic
-                    ? `min-h-[44px] px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-md text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition border-2 shadow-card whitespace-nowrap focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
-                        viewMode === 'ANALYSIS'
-                          ? 'bg-theme-cyan text-white border-theme-magenta'
-                        : 'bg-black/15 text-white/90 border-black/25 hover:bg-black/20'
-                      }`
-                    : `min-h-[44px] px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-inner text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition whitespace-nowrap focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
-                        viewMode === 'ANALYSIS'
-                          ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
-                        : 'text-theme-muted hover:text-theme-text'
-                      }`
-                }
+                isClassic={isClassic}
+                variant="tab"
+                active={viewMode === 'ANALYSIS'}
+                aria-pressed={viewMode === 'ANALYSIS'}
+                size="sm"
+                className="flex-1 md:flex-none px-2 md:px-4 lg:px-5 whitespace-nowrap"
               >
                 SCENARIOS
-              </button>
+              </AnimatedButton>
             </div>
 
             {viewMode === 'DASHBOARD' && (
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 w-full md:w-auto md:flex-1">
                 <DesignWorkspaceTabs
                   isClassic={isClassic}
                   workspace={designWorkspace}
@@ -160,26 +150,25 @@ const PageHeader: React.FC<PageHeaderProps> = ({
           </div>
         </div>
 
-        <div className="min-w-0 flex items-center justify-between md:justify-end gap-3">
-          <div className={`flex items-center rounded-full p-1 border theme-transition shrink-0 ${isClassic ? 'bg-black/25 border-black/30' : 'bg-theme-bg border-theme-border'}`}>
+        <div className="min-w-0 flex items-center justify-start md:justify-end gap-3 overflow-x-auto pb-1 md:pb-0">
+          <div className={`flex w-max items-center rounded-full p-1 border theme-transition shrink-0 ${isClassic ? 'bg-black/25 border-black/30' : 'bg-theme-bg border-theme-border'}`}>
             {themes.map(t => (
-              <button
+              <AnimatedButton
                 key={t.id}
                 onClick={() => setThemeId(t.id)}
+                isClassic={isClassic}
+                variant="icon"
+                active={themeId === t.id}
+                size="icon"
+                shape="circle"
                 data-testid={`theme-option-${t.id}`}
-                className={
-                  isClassic
-                    ? `w-7 h-7 md:w-8 md:h-8 min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 rounded-full flex items-center justify-center theme-transition focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
-                        themeId === t.id ? 'bg-theme-warning text-black scale-110 shadow-card' : 'text-white/80 hover:text-white'
-                      }`
-                    : `w-7 h-7 md:w-8 md:h-8 min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 rounded-full flex items-center justify-center theme-transition focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
-                        themeId === t.id ? 'bg-theme-cyan text-theme-bg scale-110 shadow-glow-cyan' : 'text-theme-muted hover:text-theme-text'
-                      }`
-                }
+                aria-label={`Switch theme to ${t.label}`}
+                aria-pressed={themeId === t.id}
+                className="h-11 w-11 min-h-[44px] min-w-[44px] md:h-10 md:w-10 md:min-h-10 md:min-w-10"
                 title={t.label}
               >
                 <span className="text-xs">{t.icon}</span>
-              </button>
+              </AnimatedButton>
             ))}
           </div>
         </div>

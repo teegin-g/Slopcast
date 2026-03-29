@@ -77,7 +77,7 @@ const GroupComparisonStrip: React.FC<GroupComparisonStripProps> = ({
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={SPRING.gentle}
                 onClick={() => onActivateGroup(ranking.id)}
-                className={`w-full text-left rounded-inner border px-3 py-2 transition-colors focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
+                className={`focus-ring w-full rounded-inner border px-3 py-2 text-left transition-colors ${
                   isActive
                     ? isClassic
                       ? 'border-theme-warning bg-black/20 ring-1 ring-theme-warning/30'

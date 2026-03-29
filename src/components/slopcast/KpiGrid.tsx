@@ -98,11 +98,11 @@ const KpiStripTile: React.FC<{
   valueColor?: string;
 }> = ({ title, value, unit, accent, extra, valueSize = 'text-xl', valueColor = 'text-theme-text' }) => (
   <div className={`rounded-inner border border-theme-border bg-theme-surface1/60 px-4 py-3 theme-transition hover:bg-theme-surface2 ${accentBorder[accent]}`}>
-    <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-1.5 text-theme-muted">{title}</p>
+    <p className="typo-kpi-label heading-font mb-1.5">{title}</p>
     <div className="flex items-center gap-2">
-      <p className={`${valueSize} font-black ${valueColor} leading-none`}>
+      <p className={`typo-value ${valueSize} font-black ${valueColor} leading-none`}>
         {value}
-        {unit && <span className="text-[11px] text-theme-muted font-semibold ml-1">{unit}</span>}
+        {unit && <span className="typo-kpi-label ml-1 text-theme-muted">{unit}</span>}
       </p>
       {extra}
     </div>
@@ -112,11 +112,11 @@ const KpiStripTile: React.FC<{
 const WellsBadge: React.FC<{ count: number }> = ({ count }) => (
   <div className="rounded-inner border border-theme-border bg-theme-surface1/60 px-4 py-3 theme-transition hover:bg-theme-surface2 border-l-2 border-l-theme-muted/40 flex items-center gap-3">
     <div>
-      <p className="text-[9px] font-bold uppercase tracking-[0.18em] mb-1.5 text-theme-muted">Wells</p>
-      <p className="text-xl font-black text-theme-muted leading-none">{count}</p>
+      <p className="typo-kpi-label heading-font mb-1.5">Wells</p>
+      <p className="typo-kpi-value text-theme-muted">{count}</p>
     </div>
-    <span className="ml-auto relative text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full bg-theme-cyan/10 text-theme-cyan border border-theme-cyan/20">
-      <span className="absolute inset-0 rounded-full bg-theme-cyan/20 animate-ping" />
+    <span className="typo-button ml-auto relative rounded-full border border-theme-cyan/20 bg-theme-cyan/10 px-2 py-0.5 text-[8px] text-theme-cyan">
+      <span className="absolute inset-0 rounded-full bg-theme-cyan/20 motion-safe:animate-ping" />
       <span className="relative">active</span>
     </span>
   </div>
@@ -203,12 +203,12 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
             <CashFlowSparkline flow={aggregateFlow} />
           </div>
         )}
-        <p className="text-theme-muted text-[10px] font-bold uppercase tracking-[0.4em] mb-2 relative z-10">Portfolio NPV (10%)</p>
+        <p className="typo-section heading-font relative z-10 mb-3 text-theme-muted">Portfolio NPV (10%)</p>
         <div className="flex items-baseline relative z-10">
-          <span className="text-5xl sm:text-6xl xl:text-7xl font-black tracking-tighter leading-none text-theme-cyan">
+          <span className="typo-hero-value text-theme-cyan">
             ${(metrics.npv10 / 1e6).toFixed(1)}
           </span>
-          <span className="text-2xl font-black ml-3 text-theme-lavender italic">MM</span>
+          <span className="typo-kpi-value ml-3 italic text-theme-lavender">MM</span>
         </div>
       </div>
 

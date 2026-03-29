@@ -7,6 +7,8 @@ import { generateSensitivityMatrix } from '../utils/economics';
 import { useTheme } from '../theme/ThemeProvider';
 import { DEFAULT_COMMODITY_PRICING } from '../constants';
 import { useStableChartContainer } from './slopcast/hooks/useStableChartContainer';
+import { AnimatedButton } from './slopcast/AnimatedButton';
+import SectionCard from './slopcast/SectionCard';
 
 interface ScenarioDashboardProps {
   groups: WellGroup[]; 
@@ -33,20 +35,24 @@ interface AccordionItemProps {
 const AccordionItem: React.FC<AccordionItemProps> = ({ title, isOpen, onClick, children, useBrandFont }) => {
   const { theme } = useTheme();
   const isClassic = theme.id === 'mario';
+  const sectionId = `scenario-dashboard-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
   if (isClassic) {
     return (
       <div className="sc-panel theme-transition mb-3">
         <button
+          type="button"
           onClick={onClick}
-          className="w-full flex items-center justify-between px-5 py-4 text-left transition-all sc-panelTitlebar sc-titlebar--red"
+          aria-expanded={isOpen}
+          aria-controls={`${sectionId}-content`}
+          className="w-full flex items-center justify-between px-5 py-4 text-left transition-all sc-panelTitlebar sc-titlebar--red focus-ring"
         >
-          <span className={`text-[10px] font-black uppercase tracking-[0.2em] text-white ${useBrandFont ? 'brand-font' : ''}`}>{title}</span>
-          <span className={`transform transition-transform opacity-30 text-white ${isOpen ? 'rotate-180' : ''}`}>▼</span>
+          <span className={`text-[10px] font-black uppercase tracking-[0.2em] text-white ${useBrandFont ? 'brand-font' : 'heading-font'}`}>{title}</span>
+          <span className={`transform transition-transform opacity-30 text-white motion-reduce:transition-none ${isOpen ? 'rotate-180' : ''}`}>▼</span>
         </button>
         {isOpen && (
-          <div className="p-4">
-            <div className="sc-insetDark rounded-lg p-4">
+          <div id={`${sectionId}-content`} className="p-4">
+            <div className="sc-insetDark rounded-inner p-4">
               {children}
             </div>
           </div>
@@ -56,12 +62,18 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ title, isOpen, onClick, c
   }
 
   return (
-    <div className={`border rounded-panel overflow-hidden transition-all duration-300 mb-3 ${isOpen ? 'bg-theme-surface1 border-theme-magenta shadow-glow-magenta' : 'bg-theme-surface1/40 border-theme-border'}`}>
-      <button onClick={onClick} className={`w-full flex items-center justify-between px-5 py-4 text-left transition-all ${isOpen ? 'text-theme-cyan' : 'text-theme-muted'}`}>
-        <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${useBrandFont ? 'brand-font' : ''}`}>{title}</span>
-        <span className={`transform transition-transform opacity-30 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
+    <div className={`mb-3 overflow-hidden rounded-panel border transition-all duration-300 motion-reduce:transition-none ${isOpen ? 'border-theme-magenta bg-theme-surface1 shadow-glow-magenta' : 'border-theme-border bg-theme-surface1/40'}`}>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-expanded={isOpen}
+        aria-controls={`${sectionId}-content`}
+        className={`focus-ring flex w-full items-center justify-between px-5 py-4 text-left transition-all motion-reduce:transition-none ${isOpen ? 'text-theme-cyan' : 'text-theme-muted hover:text-theme-text'}`}
+      >
+        <span className={`typo-section ${useBrandFont ? 'brand-font' : 'heading-font'}`}>{title}</span>
+        <span className={`transform transition-transform opacity-30 motion-reduce:transition-none ${isOpen ? 'rotate-180' : ''}`}>▼</span>
       </button>
-      {isOpen && <div className="p-5 border-t border-theme-border/20">{children}</div>}
+      {isOpen && <div id={`${sectionId}-content`} className="border-t border-theme-border/20 p-5">{children}</div>}
     </div>
   );
 };
@@ -181,130 +193,136 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, sc
 
   const activeScenario = scenarios.find(s => s.id === activeScenarioId);
   const inputClass = isClassic
-    ? 'w-full rounded-lg px-3 py-2 text-xs font-black sc-inputNavy'
-    : 'w-full bg-theme-bg border rounded-lg px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition border-theme-border';
+    ? 'w-full rounded-inner px-3 py-2 text-xs font-black sc-inputNavy focus-ring'
+    : 'w-full rounded-inner border border-theme-border bg-theme-bg/85 px-3 py-2 text-xs text-theme-text theme-transition focus-ring focus:border-theme-cyan focus:bg-theme-surface1';
   const labelClass = isClassic
-    ? `text-[9px] font-black block mb-2 uppercase tracking-[0.2em] text-theme-warning ${theme.features.brandFont ? 'brand-font' : ''}`
-    : `text-[9px] font-black text-theme-muted block mb-2 uppercase tracking-[0.2em] ${theme.features.brandFont ? 'brand-font' : ''}`;
+    ? `typo-label heading-font block mb-2 text-theme-warning ${theme.features.brandFont ? 'brand-font' : ''}`
+    : `typo-label heading-font block mb-2 ${theme.features.brandFont ? 'brand-font' : ''}`;
+  const scenarioCardTitleClass = theme.features.brandFont ? 'brand-font' : 'heading-font';
+  const colorInputClass = isClassic
+    ? 'h-10 w-full cursor-pointer rounded-inner sc-inputNavy focus-ring'
+    : 'h-10 w-full cursor-pointer rounded-inner border border-theme-border bg-theme-bg theme-transition focus-ring focus:border-theme-magenta';
+  const compactNumberInputClass = isClassic
+    ? 'w-full rounded-inner py-1.5 text-center text-[11px] font-black sc-inputNavy focus-ring'
+    : 'w-full rounded-inner border border-theme-border bg-theme-surface1 py-1.5 text-center text-[11px] font-black text-theme-cyan transition-colors focus-ring focus:border-theme-magenta';
+  const selectClass = isClassic
+    ? 'sc-selectNavy rounded-inner px-3 py-2 text-[10px] font-black outline-none transition-all cursor-pointer focus-ring'
+    : 'rounded-inner border border-theme-border bg-theme-bg px-3 py-2 text-[10px] font-black text-theme-text transition-all cursor-pointer focus-ring';
 
   return (
     <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
       
       {/* LEFT: Scenario Management */}
       <div className="xl:col-span-3 space-y-6">
-          <div className={isClassic ? 'sc-panel theme-transition overflow-hidden' : 'rounded-panel border p-6 shadow-card transition-all bg-theme-surface1 border-theme-border'}>
-              {isClassic ? (
-                <>
-                  <div className="sc-panelTitlebar sc-titlebar--red px-5 py-4 flex justify-between items-center">
-                    <h3 className={`text-[10px] font-black uppercase tracking-[0.3em] text-white ${theme.features.brandFont ? 'brand-font' : ''}`}>MODEL STACK</h3>
-                    <button onClick={handleAddScenario} className="sc-btnPrimary text-[9px] px-4 py-2 rounded-lg font-black uppercase tracking-widest transition-all">
-                      + NEW
-                    </button>
-                  </div>
-                  <div className="p-4">
-                    <div className="sc-insetDark rounded-lg p-3 space-y-3">
-                      {scenarios.map(s => (
-                        <div
-                          key={s.id}
-                          onClick={() => { setActiveScenarioId(s.id); setEditingScenario(true); }}
-                          className={`group p-3 rounded-lg border cursor-pointer transition-all ${
-                            s.id === activeScenarioId ? 'border-theme-warning bg-black/25' : 'border-black/25 bg-black/10 hover:bg-black/20'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-3 min-w-0">
-                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 10px ${s.color}66` }}></div>
-                              <span className={`font-black text-[11px] uppercase tracking-[0.1em] truncate text-white ${theme.features.brandFont ? 'brand-font' : ''}`}>{s.name}</span>
-                            </div>
-                            <div className="w-1.5 h-1.5 rounded-full bg-black/20 group-hover:bg-black/40 animate-pulse"></div>
-                          </div>
-                          <div className="flex justify-between text-[10px] font-mono tracking-tight text-white/75">
-                            <span>OIL: ${s.pricing.oilPrice}</span>
-                            <span className="font-black uppercase text-theme-warning">
-                              {Math.max(...s.schedule.annualRigs)} RIGS
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+        <SectionCard
+          isClassic={isClassic}
+          title="MODEL STACK"
+          action={(
+            <AnimatedButton
+              onClick={handleAddScenario}
+              isClassic={isClassic}
+              variant="primary"
+              size="sm"
+              className="px-4"
+            >
+              + NEW
+            </AnimatedButton>
+          )}
+          panelStyle="solid"
+          headerClassName={isClassic ? 'sc-titlebar--red px-5 py-4' : ''}
+          titleClassName={scenarioCardTitleClass}
+          bodyClassName={isClassic ? '' : 'space-y-3'}
+        >
+          <div className={isClassic ? 'sc-insetDark rounded-inner p-3 space-y-3' : 'space-y-3'}>
+            {scenarios.map(s => {
+              const isActive = s.id === activeScenarioId;
+
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveScenarioId(s.id);
+                    setEditingScenario(true);
+                  }}
+                  aria-pressed={isActive}
+                  aria-label={`Edit scenario ${s.name}`}
+                  className={`group focus-ring w-full rounded-inner border p-3 text-left transition-all motion-reduce:transition-none ${
+                    isClassic
+                      ? isActive
+                        ? 'border-theme-warning bg-black/25'
+                        : 'border-black/25 bg-black/10 hover:bg-black/20'
+                      : isActive
+                        ? 'border-theme-magenta bg-theme-surface2 shadow-glow-magenta'
+                        : 'border-theme-border bg-theme-bg hover:border-theme-cyan hover:-translate-y-0.5 motion-reduce:hover:translate-y-0'
+                  }`}
+                >
+                  <div className="mb-2 flex items-center justify-between">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 10px ${s.color}66` }} />
+                      <span className={`truncate text-[11px] font-black uppercase tracking-[0.1em] ${isClassic ? 'text-white' : 'text-theme-text'} ${scenarioCardTitleClass}`}>
+                        {s.name}
+                      </span>
                     </div>
+                    <div
+                      className={`h-1.5 w-1.5 rounded-full motion-safe:animate-pulse ${
+                        isClassic ? 'bg-black/20 group-hover:bg-black/40' : 'bg-theme-cyan/20 group-hover:bg-theme-cyan'
+                      }`}
+                    />
                   </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex justify-between items-center mb-6">
-                      <h3 className={`text-xs font-black uppercase tracking-[0.3em] text-theme-cyan ${theme.features.brandFont ? 'brand-font' : ''}`}>MODEL STACK</h3>
-                      <button onClick={handleAddScenario} className="text-[9px] px-4 py-2 rounded-lg text-theme-bg font-black uppercase tracking-widest hover:shadow-glow-cyan transition-all bg-theme-cyan">
-                          + NEW
-                      </button>
+                  <div className={`flex justify-between text-[10px] font-mono tracking-tight ${isClassic ? 'text-white/75' : 'text-theme-muted'}`}>
+                    <span>OIL: ${s.pricing.oilPrice}</span>
+                    <span className={`font-black uppercase ${isClassic ? 'text-theme-warning' : 'text-theme-cyan'}`}>
+                      {Math.max(...s.schedule.annualRigs)} RIGS
+                    </span>
                   </div>
-                  <div className="space-y-3">
-                      {scenarios.map(s => (
-                          <div 
-                            key={s.id} 
-                            onClick={() => { setActiveScenarioId(s.id); setEditingScenario(true); }}
-	                            className={`group p-4 rounded-inner border cursor-pointer transition-all ${s.id === activeScenarioId ? 'bg-theme-surface2 border-theme-magenta shadow-glow-magenta' : 'bg-theme-bg border-theme-border hover:border-theme-cyan hover:scale-[1.02]'}`}
-                          >
-                              <div className="flex items-center justify-between mb-3">
-                                  <div className="flex items-center space-x-3">
-                                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color, boxShadow: `0 0 10px ${s.color}66` }}></div>
-                                      <span className={`font-black text-[11px] uppercase tracking-[0.1em] text-theme-text ${theme.features.brandFont ? 'brand-font' : ''}`}>{s.name}</span>
-                                  </div>
-                                  <div className="w-1.5 h-1.5 rounded-full bg-theme-cyan/20 group-hover:bg-theme-cyan animate-pulse"></div>
-                              </div>
-                              <div className="flex justify-between text-[10px] text-theme-muted font-mono tracking-tight">
-                                  <span>OIL: ${s.pricing.oilPrice}</span>
-                                  <span className="font-bold uppercase text-theme-cyan">
-                                      {Math.max(...s.schedule.annualRigs)} RIGS
-                                  </span>
-                              </div>
-                          </div>
-                      ))}
-                  </div>
-                </>
-              )}
+                </button>
+              );
+            })}
           </div>
+        </SectionCard>
 
-          {activeScenario && editingScenario && (
-	              <div className="theme-transition">
-	                   <div className={isClassic ? 'sc-panel theme-transition overflow-hidden rounded-b-none' : 'rounded-t-panel border border-b-0 p-6 theme-transition bg-theme-surface1 border-theme-border'}>
-                       {isClassic ? (
-                         <>
-                           <div className="sc-panelTitlebar sc-titlebar--red px-5 py-4 flex justify-between items-center">
-                             <h3 className={`text-[10px] font-black uppercase tracking-[0.3em] text-white ${theme.features.brandFont ? 'brand-font' : ''}`}>EDIT SELECTED MODEL</h3>
-                           </div>
-                           <div className="p-4">
-                             <div className="sc-insetDark rounded-lg p-4">
-                               <div className="mb-4">
-                                   <label className={labelClass}>MODEL NAME</label>
-                                   <input type="text" value={activeScenario.name} onChange={e => updateScenario(activeScenario.id, { name: e.target.value.toUpperCase() })} className={inputClass} />
-                               </div>
-                               <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className={labelClass}>INDICATOR</label>
-                                        <input type="color" value={activeScenario.color} onChange={e => updateScenario(activeScenario.id, { color: e.target.value })} className="w-full h-10 rounded-lg cursor-pointer sc-inputNavy" />
-                                    </div>
-                               </div>
-                             </div>
-                           </div>
-                         </>
-                       ) : (
-                         <>
-                           <h3 className={labelClass}>Edit Selected Model</h3>
-                           <div className="mb-4">
-                               <label className={labelClass}>MODEL NAME</label>
-                               <input type="text" value={activeScenario.name} onChange={e => updateScenario(activeScenario.id, { name: e.target.value.toUpperCase() })} className={inputClass} />
-                           </div>
-                           <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className={labelClass}>INDICATOR</label>
-                                    <input type="color" value={activeScenario.color} onChange={e => updateScenario(activeScenario.id, { color: e.target.value })} className="w-full h-10 bg-theme-bg border border-theme-border rounded-lg cursor-pointer" />
-                                </div>
-                           </div>
-                         </>
-                       )}
-                   </div>
+        {activeScenario && editingScenario && (
+          <div className="theme-transition">
+            <SectionCard
+              isClassic={isClassic}
+              title="EDIT SELECTED MODEL"
+              panelStyle="solid"
+              className="rounded-b-none"
+              headerClassName={isClassic ? 'sc-titlebar--red px-5 py-4' : ''}
+              titleClassName={scenarioCardTitleClass}
+            >
+              <div className={isClassic ? 'sc-insetDark rounded-inner p-4' : ''}>
+                <div className="mb-4">
+                  <label className={labelClass}>MODEL NAME</label>
+                  <input
+                    type="text"
+                    value={activeScenario.name}
+                    onChange={e => updateScenario(activeScenario.id, { name: e.target.value.toUpperCase() })}
+                    className={inputClass}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass}>INDICATOR</label>
+                    <input
+                      type="color"
+                      value={activeScenario.color}
+                      onChange={e => updateScenario(activeScenario.id, { color: e.target.value })}
+                      className={colorInputClass}
+                    />
+                  </div>
+                </div>
+              </div>
+            </SectionCard>
 
-	                   <div className={isClassic ? 'sc-panel theme-transition p-2 space-y-1 rounded-t-none' : 'rounded-b-panel border p-2 space-y-1 theme-transition shadow-card bg-theme-bg border-theme-border'}>
+            <SectionCard
+              isClassic={isClassic}
+              panelStyle="outline"
+              className="rounded-t-none"
+              noBodyPadding
+              bodyClassName={isClassic ? 'space-y-1 p-2' : 'space-y-1 bg-theme-bg p-2'}
+            >
                        <AccordionItem title="Pricing" isOpen={openSection === 'PRICING'} onClick={() => setOpenSection('PRICING')} useBrandFont={theme.features.brandFont}>
                            <div className="grid grid-cols-2 gap-4">
                                <div><label className={labelClass}>OIL PRICE</label><input type="number" value={activeScenario.pricing.oilPrice} onChange={e => updatePricing(activeScenario.id, 'oilPrice', parseFloat(e.target.value))} className={inputClass} /></div>
@@ -325,17 +343,13 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, sc
                                    <div className="grid grid-cols-5 gap-2">
                                        {activeScenario.schedule.annualRigs.slice(0,5).map((count, idx) => (
                                            <div key={idx} className="text-center">
-                                               <span className="text-[9px] text-theme-muted font-black block mb-1">Y{idx+1}</span>
+                                               <span className={`mb-1 block text-[9px] font-black ${isClassic ? 'text-theme-warning' : 'text-theme-muted'}`}>Y{idx + 1}</span>
                                                <input
                                                  type="number"
                                                  min="0"
                                                  value={count}
                                                  onChange={e => updateAnnualRig(activeScenario.id, idx, parseFloat(e.target.value))}
-                                                 className={
-                                                   isClassic
-                                                     ? 'w-full sc-inputNavy text-center text-[11px] font-black rounded-lg py-1.5'
-                                                     : 'w-full bg-theme-surface1 border border-theme-border text-center text-[11px] font-black rounded-lg py-1.5 text-theme-cyan focus:border-theme-magenta outline-none transition-colors'
-                                                 }
+                                                 className={compactNumberInputClass}
                                                />
                                            </div>
                                        ))}
@@ -357,8 +371,8 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, sc
                                      onChange={e => updateScenario(activeScenario.id, { capexScalar: parseFloat(e.target.value) })}
                                      className={
                                        isClassic
-                                         ? 'w-full h-1.5 sc-rangeNavy appearance-none cursor-pointer'
-                                         : 'w-full h-1.5 bg-theme-surface1 border border-theme-border rounded-lg appearance-none cursor-pointer accent-theme-cyan'
+                                         ? 'w-full h-1.5 sc-rangeNavy appearance-none cursor-pointer focus-ring'
+                                         : 'w-full h-1.5 appearance-none cursor-pointer rounded-full border border-theme-border bg-theme-surface1 accent-theme-cyan focus-ring'
                                      }
                                    />
                                </div>
@@ -373,147 +387,133 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, sc
                                      onChange={e => updateScenario(activeScenario.id, { productionScalar: parseFloat(e.target.value) })}
                                      className={
                                        isClassic
-                                         ? 'w-full h-1.5 sc-rangeNavy appearance-none cursor-pointer'
-                                         : 'w-full h-1.5 bg-theme-surface1 border border-theme-border rounded-lg appearance-none cursor-pointer accent-theme-magenta'
+                                         ? 'w-full h-1.5 sc-rangeNavy appearance-none cursor-pointer focus-ring'
+                                         : 'w-full h-1.5 appearance-none cursor-pointer rounded-full border border-theme-border bg-theme-surface1 accent-theme-magenta focus-ring'
                                      }
                                    />
                                </div>
                            </div>
                        </AccordionItem>
-                   </div>
-              </div>
-          )}
+            </SectionCard>
+          </div>
+        )}
       </div>
 
       <div className="xl:col-span-9 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
-              {scenarioResults.map((res) => (
-	                  <div key={res.scenario.id} className={isClassic ? 'sc-panel theme-transition overflow-hidden group' : 'rounded-panel border p-6 relative overflow-hidden theme-transition shadow-card group bg-theme-surface1/80 border-theme-border hover:border-theme-cyan'}>
-                      <div className="absolute top-0 left-0 w-1.5 h-full opacity-60" style={{ backgroundColor: res.scenario.color }}></div>
-                      <div className="absolute top-0 right-0 w-32 h-32 blur-[50px] opacity-10 pointer-events-none" style={{ backgroundColor: res.scenario.color }}></div>
-                      
-                      {isClassic ? (
-                        <>
-                          <div className="sc-panelTitlebar sc-titlebar--red px-5 py-3 flex items-center min-w-0">
-                            <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] text-white truncate ${theme.features.brandFont ? 'brand-font' : ''}`}>{res.scenario.name}</h4>
-                          </div>
-                          <div className="p-5">
-                            <div className="text-3xl font-black tracking-tight theme-transition text-theme-text">
-                              ${(res.metrics.npv10 / 1e6).toFixed(1)}M <span className="text-[10px] text-theme-muted font-black tracking-[0.1em] ml-1">NPV10</span>
-                            </div>
-                            <div className="flex justify-between mt-6 text-[10px] text-theme-muted font-bold tracking-widest border-t border-white/5 pt-3">
-                              <span>ROI: {res.metrics.roi.toFixed(2)}X</span>
-                              <span>FLEET: {Math.max(...res.scenario.schedule.annualRigs)} RIGS</span>
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] mb-4 ml-2 transition-all text-theme-cyan group-hover:text-theme-magenta truncate ${theme.features.brandFont ? 'brand-font' : ''}`}>{res.scenario.name}</h4>
-                          <div className="ml-2">
-                              <div className="text-3xl font-black tracking-tight theme-transition text-theme-text">${(res.metrics.npv10 / 1e6).toFixed(1)}M <span className="text-[10px] text-theme-muted font-black tracking-[0.1em] ml-1">NPV10</span></div>
-                              <div className="flex justify-between mt-6 text-[10px] text-theme-muted font-bold tracking-widest border-t border-white/5 pt-3">
-                                  <span>ROI: {res.metrics.roi.toFixed(2)}X</span>
-                                  <span>FLEET: {Math.max(...res.scenario.schedule.annualRigs)} RIGS</span>
-                              </div>
-                          </div>
-                        </>
-                      )}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 2xl:grid-cols-3">
+          {scenarioResults.map(res => (
+            <div
+              key={res.scenario.id}
+              className={`group relative overflow-hidden theme-transition ${
+                isClassic
+                  ? 'sc-panel overflow-hidden'
+                  : 'rounded-panel border border-theme-border bg-theme-surface1/80 p-6 shadow-card hover:border-theme-cyan'
+              }`}
+            >
+              <div className="absolute left-0 top-0 h-full w-1.5 opacity-60" style={{ backgroundColor: res.scenario.color }} />
+              <div className="pointer-events-none absolute right-0 top-0 h-32 w-32 blur-[50px] opacity-10" style={{ backgroundColor: res.scenario.color }} />
+
+              {isClassic ? (
+                <>
+                  <div className="sc-panelTitlebar sc-titlebar--red flex min-w-0 items-center px-5 py-3">
+                    <h4 className={`truncate text-[10px] font-black uppercase tracking-[0.3em] text-white ${scenarioCardTitleClass}`}>
+                      {res.scenario.name}
+                    </h4>
                   </div>
-              ))}
-          </div>
-
-	          <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">
-	                <div className={isClassic ? 'sc-panel theme-transition overflow-hidden' : 'rounded-panel border p-8 shadow-card theme-transition bg-theme-surface1/60 border-theme-border'}>
-                    {isClassic ? (
-                      <div className="sc-panelTitlebar sc-titlebar--red px-5 py-4">
-                        <h3 className={`text-[10px] font-black uppercase tracking-[0.4em] text-white ${theme.features.brandFont ? 'brand-font' : ''}`}>
-                          PORTFOLIO OVERLAY
-                        </h3>
-                      </div>
-                    ) : (
-                      <h3 className={`text-[11px] font-black uppercase tracking-[0.4em] mb-8 flex items-center gap-3 text-theme-lavender ${theme.features.brandFont ? 'brand-font' : ''}`}>
-                        <span className="w-1.5 h-1.5 rounded-full bg-theme-magenta shadow-glow-magenta"></span>
-                        PORTFOLIO OVERLAY
-                      </h3>
-                    )}
-
-                    <div className={isClassic ? 'p-5' : ''}>
-                      {groups.length === 0 || groups.every(g => g.wellIds.size === 0) ? (
-                        <div className="text-center py-8 space-y-3">
-                          <div className="w-16 h-16 mx-auto rounded-full border-2 border-theme-border/40 flex items-center justify-center">
-                            <svg className="w-8 h-8 text-theme-muted/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
-                            </svg>
-                          </div>
-                          <p className="text-sm font-semibold text-theme-text">Portfolio Overlay</p>
-                          <p className="text-xs text-theme-muted max-w-xs mx-auto">
-                            Create multiple well groups with economics to compare portfolio-level metrics across scenarios.
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="h-[320px] w-full" ref={overlayChart.containerRef}>
-                          {overlayChart.ready ? (
-                            <ResponsiveContainer width={overlayChart.width} height={overlayChart.height}>
-                                <LineChart data={cfChartData}>
-                                    <CartesianGrid strokeDasharray="6 6" stroke={chartPalette.grid} vertical={false} />
-                                    <XAxis dataKey="month" stroke={chartPalette.text} fontSize={9} tickFormatter={(v) => v % 12 === 0 ? `Y${v/12}` : ''} axisLine={false} tickLine={false} />
-                                    <YAxis stroke={chartPalette.text} fontSize={9} tickFormatter={(v) => `$${(v/1e6).toFixed(0)}M`} axisLine={false} tickLine={false} />
-                                    <Tooltip
-                                      contentStyle={{ backgroundColor: chartPalette.surface, borderRadius: '12px', borderColor: chartPalette.border, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)' }}
-                                      formatter={(val: number) => [`$${(val/1e6).toFixed(2)}MM`, '']}
-                                    />
-                                    <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '20px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em' }} iconType="circle" />
-                                    {scenarios.map(s => <Line key={s.id} type="monotone" dataKey={s.id} name={s.name} stroke={s.color} strokeWidth={4} dot={false} animationDuration={2000} />)}
-                                </LineChart>
-                            </ResponsiveContainer>
-                          ) : (
-                            <div className={`h-full w-full rounded-inner ${isClassic ? 'bg-black/20' : 'bg-theme-bg/40 animate-pulse'}`} />
-                          )}
-                        </div>
-                      )}
+                  <div className="p-5">
+                    <div className="text-3xl font-black tracking-tight text-theme-text theme-transition">
+                      ${(res.metrics.npv10 / 1e6).toFixed(1)}M <span className="ml-1 text-[10px] font-black tracking-[0.1em] text-theme-muted">NPV10</span>
                     </div>
-                </div>
+                    <div className="mt-6 flex justify-between border-t border-white/5 pt-3 text-[10px] font-bold tracking-widest text-theme-muted">
+                      <span>ROI: {res.metrics.roi.toFixed(2)}X</span>
+                      <span>FLEET: {Math.max(...res.scenario.schedule.annualRigs)} RIGS</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h4 className={`mb-4 ml-2 truncate typo-section transition-colors group-hover:text-theme-magenta ${scenarioCardTitleClass}`}>
+                    {res.scenario.name}
+                  </h4>
+                  <div className="ml-2">
+                    <div className="text-3xl font-black tracking-tight text-theme-text theme-transition">
+                      ${(res.metrics.npv10 / 1e6).toFixed(1)}M <span className="ml-1 text-[10px] font-black tracking-[0.1em] text-theme-muted">NPV10</span>
+                    </div>
+                    <div className="mt-6 flex justify-between border-t border-white/5 pt-3 text-[10px] font-bold tracking-widest text-theme-muted">
+                      <span>ROI: {res.metrics.roi.toFixed(2)}X</span>
+                      <span>FLEET: {Math.max(...res.scenario.schedule.annualRigs)} RIGS</span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
 
-                <div className="space-y-6">
-                    {isClassic ? (
-                      <div className="sc-insetDark rounded-lg p-3 flex items-center space-x-4 justify-end">
-                        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-theme-warning">Primary Variable</span>
-                        <select value={sensY} onChange={(e) => setSensY(e.target.value as SensitivityVariable)} className="sc-selectNavy text-[10px] font-black rounded-lg px-3 py-1.5 outline-none transition-all cursor-pointer">
-                            <option value="CAPEX_SCALAR">CAPEX SCALAR</option>
-                            <option value="EUR_SCALAR">RECOVERY SCALAR</option>
-                            <option value="OIL_PRICE">OIL BENCHMARK</option>
-                            <option value="RIG_COUNT">FLEET SIZE</option>
-                        </select>
-                        <span className="text-[10px] font-black text-white/60 opacity-60">VS</span>
-                        <select value={sensX} onChange={(e) => setSensX(e.target.value as SensitivityVariable)} className="sc-selectNavy text-[10px] font-black rounded-lg px-3 py-1.5 outline-none transition-all cursor-pointer">
-                            <option value="OIL_PRICE">OIL BENCHMARK</option>
-                            <option value="CAPEX_SCALAR">CAPEX SCALAR</option>
-                            <option value="EUR_SCALAR">RECOVERY SCALAR</option>
-                            <option value="RIG_COUNT">FLEET SIZE</option>
-                        </select>
-                      </div>
-                    ) : (
-                      <div className="flex items-center space-x-4 justify-end pr-2">
-                          <span className="text-[9px] font-black uppercase tracking-[0.2em] theme-transition text-theme-muted">Primary Variable</span>
-                          <select value={sensY} onChange={(e) => setSensY(e.target.value as SensitivityVariable)} className="text-[10px] font-black rounded-lg px-3 py-1.5 outline-none transition-all cursor-pointer bg-theme-bg border border-theme-border text-theme-cyan focus:border-theme-magenta">
-                              <option value="CAPEX_SCALAR">CAPEX SCALAR</option>
-                              <option value="EUR_SCALAR">RECOVERY SCALAR</option>
-                              <option value="OIL_PRICE">OIL BENCHMARK</option>
-                              <option value="RIG_COUNT">FLEET SIZE</option>
-                          </select>
-                          <span className="text-[10px] font-black theme-transition text-theme-lavender opacity-40">VS</span>
-                          <select value={sensX} onChange={(e) => setSensX(e.target.value as SensitivityVariable)} className="text-[10px] font-black rounded-lg px-3 py-1.5 outline-none transition-all cursor-pointer bg-theme-bg border border-theme-border text-theme-magenta focus:border-theme-cyan">
-                              <option value="OIL_PRICE">OIL BENCHMARK</option>
-                              <option value="CAPEX_SCALAR">CAPEX SCALAR</option>
-                              <option value="EUR_SCALAR">RECOVERY SCALAR</option>
-                              <option value="RIG_COUNT">FLEET SIZE</option>
-                          </select>
-                      </div>
-                    )}
-                    <SensitivityMatrix data={sensitivityData} xVar={sensX} yVar={sensY} />
+        <div className="grid grid-cols-1 gap-6 2xl:grid-cols-2">
+          <SectionCard
+            isClassic={isClassic}
+            title="PORTFOLIO OVERLAY"
+            panelStyle="glass"
+            headerClassName={isClassic ? 'sc-titlebar--red px-5 py-4' : ''}
+            titleClassName={isClassic ? scenarioCardTitleClass : `${scenarioCardTitleClass} text-theme-lavender`}
+            bodyClassName={isClassic ? 'p-5' : 'p-8'}
+          >
+            {groups.length === 0 || groups.every(g => g.wellIds.size === 0) ? (
+              <div className="space-y-3 py-8 text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-theme-border/40">
+                  <svg className="h-8 w-8 text-theme-muted/50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                  </svg>
                 </div>
+                <p className="text-sm font-semibold text-theme-text">Portfolio Overlay</p>
+                <p className="mx-auto max-w-xs text-xs text-theme-muted">
+                  Create multiple well groups with economics to compare portfolio-level metrics across scenarios.
+                </p>
+              </div>
+            ) : (
+              <div className="h-[320px] w-full" ref={overlayChart.containerRef}>
+                {overlayChart.ready ? (
+                  <ResponsiveContainer width={overlayChart.width} height={overlayChart.height}>
+                    <LineChart data={cfChartData}>
+                      <CartesianGrid strokeDasharray="6 6" stroke={chartPalette.grid} vertical={false} />
+                      <XAxis dataKey="month" stroke={chartPalette.text} fontSize={9} tickFormatter={(v) => v % 12 === 0 ? `Y${v / 12}` : ''} axisLine={false} tickLine={false} />
+                      <YAxis stroke={chartPalette.text} fontSize={9} tickFormatter={(v) => `$${(v / 1e6).toFixed(0)}M`} axisLine={false} tickLine={false} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: chartPalette.surface, borderRadius: 'var(--radius-inner)', borderColor: chartPalette.border, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)' }}
+                        formatter={(val: number) => [`$${(val / 1e6).toFixed(2)}MM`, '']}
+                      />
+                      <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '20px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em' }} iconType="circle" />
+                      {scenarios.map(s => <Line key={s.id} type="monotone" dataKey={s.id} name={s.name} stroke={s.color} strokeWidth={4} dot={false} animationDuration={2000} />)}
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className={`h-full w-full rounded-inner ${isClassic ? 'bg-black/20' : 'animate-pulse bg-theme-bg/40'}`} />
+                )}
+              </div>
+            )}
+          </SectionCard>
+
+          <div className="space-y-6">
+            <div className={isClassic ? 'sc-insetDark rounded-inner p-3 flex items-center justify-end gap-4' : 'flex items-center justify-end gap-4 pr-2'}>
+              <span className={`heading-font text-[9px] font-black uppercase tracking-[0.2em] ${isClassic ? 'text-theme-warning' : 'text-theme-muted'}`}>Primary Variable</span>
+              <select value={sensY} onChange={(e) => setSensY(e.target.value as SensitivityVariable)} className={`${selectClass} ${isClassic ? '' : 'text-theme-cyan focus:border-theme-magenta'}`}>
+                <option value="CAPEX_SCALAR">CAPEX SCALAR</option>
+                <option value="EUR_SCALAR">RECOVERY SCALAR</option>
+                <option value="OIL_PRICE">OIL BENCHMARK</option>
+                <option value="RIG_COUNT">FLEET SIZE</option>
+              </select>
+              <span className={`text-[10px] font-black ${isClassic ? 'text-white/60 opacity-60' : 'text-theme-lavender opacity-40'}`}>VS</span>
+              <select value={sensX} onChange={(e) => setSensX(e.target.value as SensitivityVariable)} className={`${selectClass} ${isClassic ? '' : 'text-theme-magenta focus:border-theme-cyan'}`}>
+                <option value="OIL_PRICE">OIL BENCHMARK</option>
+                <option value="CAPEX_SCALAR">CAPEX SCALAR</option>
+                <option value="EUR_SCALAR">RECOVERY SCALAR</option>
+                <option value="RIG_COUNT">FLEET SIZE</option>
+              </select>
+            </div>
+            <SensitivityMatrix data={sensitivityData} xVar={sensX} yVar={sensY} />
           </div>
+        </div>
       </div>
     </div>
   );
