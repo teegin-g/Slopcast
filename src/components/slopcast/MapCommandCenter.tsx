@@ -1,0 +1,289 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMapboxMap } from '../../hooks/useMapboxMap';
+import { useTheme } from '../../theme/ThemeProvider';
+import type { Well, WellGroup } from '../../types';
+import { OverlayGroupsPanel } from './map/OverlayGroupsPanel';
+import { OverlayFiltersBar } from './map/OverlayFiltersBar';
+import { OverlayToolbar } from './map/OverlayToolbar';
+import { OverlaySelectionBar } from './map/OverlaySelectionBar';
+
+export type WellsMobilePanel = 'GROUPS' | 'MAP';
+
+type SelectionTool = 'lasso' | 'rectangle';
+
+interface MapCommandCenterProps {
+  isClassic: boolean;
+  theme: any;
+  themeId: string;
+  viewportLayout: 'mobile' | 'mid' | 'desktop' | 'wide';
+  mobilePanel: WellsMobilePanel;
+  onSetMobilePanel: (panel: WellsMobilePanel) => void;
+  groups: WellGroup[];
+  activeGroupId: string;
+  selectedWellCount: number;
+  onActivateGroup: (id: string) => void;
+  onAddGroup: () => void;
+  onCloneGroup: (groupId: string) => void;
+  onAssignWells: () => void;
+  onCreateGroupFromSelection: () => void;
+  onSelectAll: () => void;
+  onClearSelection: () => void;
+  operatorFilter: string;
+  formationFilter: string;
+  statusFilter: Well['status'] | 'ALL';
+  operatorOptions: string[];
+  formationOptions: string[];
+  statusOptions: Well['status'][];
+  onSetOperatorFilter: (value: string) => void;
+  onSetFormationFilter: (value: string) => void;
+  onSetStatusFilter: (value: Well['status'] | 'ALL') => void;
+  onResetFilters: () => void;
+  filteredWellsCount: number;
+  totalWellCount: number;
+  wells: Well[];
+  selectedWellIds: Set<string>;
+  visibleWellIds: Set<string>;
+  dimmedWellIds: Set<string>;
+  onToggleWell: (id: string) => void;
+  onSelectWells: (ids: string[]) => void;
+}
+
+export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
+  isClassic,
+  groups,
+  activeGroupId,
+  selectedWellCount,
+  onActivateGroup,
+  onAddGroup,
+  onCloneGroup,
+  onAssignWells,
+  onCreateGroupFromSelection,
+  onSelectAll,
+  onClearSelection,
+  operatorFilter,
+  formationFilter,
+  statusFilter,
+  operatorOptions,
+  formationOptions,
+  statusOptions,
+  onSetOperatorFilter,
+  onSetFormationFilter,
+  onSetStatusFilter,
+  onResetFilters,
+  filteredWellsCount,
+  totalWellCount,
+  wells,
+  selectedWellIds,
+  visibleWellIds,
+  dimmedWellIds,
+  onToggleWell,
+}) => {
+  const { theme } = useTheme();
+  const mp = theme.mapPalette;
+  const { map, isLoaded, mapContainerRef } = useMapboxMap();
+
+  const [activeTool, setActiveTool] = useState<SelectionTool | null>(null);
+  const [layers, setLayers] = useState<Record<string, boolean>>({ grid: false, heatmap: false, satellite: false });
+  const [groupsPanelOpen, setGroupsPanelOpen] = useState(true);
+
+  // Track lasso/rectangle selection state
+  const [isSelecting, setIsSelecting] = useState(false);
+  const lassoPointsRef = useRef<[number, number][]>([]);
+  const rectStartRef = useRef<[number, number] | null>(null);
+
+  const getWellColor = useCallback((wellId: string): string => {
+    for (const group of groups) {
+      if (group.wellIds.has(wellId)) return group.color;
+    }
+    return mp.unassignedFill;
+  }, [groups, mp.unassignedFill]);
+
+  // Build GeoJSON for wells
+  const wellsGeoJson = useMemo(() => ({
+    type: 'FeatureCollection' as const,
+    features: wells.map(w => ({
+      type: 'Feature' as const,
+      geometry: { type: 'Point' as const, coordinates: [w.lng, w.lat] },
+      properties: {
+        id: w.id,
+        name: w.name,
+        groupColor: getWellColor(w.id),
+        selected: selectedWellIds.has(w.id),
+        dimmed: dimmedWellIds.has(w.id),
+        visible: visibleWellIds.has(w.id),
+      },
+    })),
+  }), [wells, getWellColor, selectedWellIds, dimmedWellIds, visibleWellIds]);
+
+  // Build color match expression for Mapbox
+  const colorMatchExpr = useMemo(() => {
+    const pairs: (string)[] = [];
+    const colorMap = new Map<string, string>();
+    wells.forEach(w => {
+      const color = getWellColor(w.id);
+      if (!colorMap.has(w.id)) colorMap.set(w.id, color);
+    });
+    colorMap.forEach((color, id) => {
+      pairs.push(id, color);
+    });
+    return ['match', ['get', 'id'], ...pairs, mp.unassignedFill] as any;
+  }, [wells, getWellColor, mp.unassignedFill]);
+
+  // Add/update wells layer on the map
+  useEffect(() => {
+    if (!map || !isLoaded) return;
+
+    const sourceId = 'wells-source';
+    const layerId = 'wells-circles';
+
+    const source = map.getSource(sourceId);
+    if (source) {
+      source.setData(wellsGeoJson);
+      // Update paint properties
+      map.setPaintProperty(layerId, 'circle-color', colorMatchExpr);
+      return;
+    }
+
+    // First time — add source and layer
+    map.addSource(sourceId, { type: 'geojson', data: wellsGeoJson });
+
+    map.addLayer({
+      id: layerId,
+      type: 'circle',
+      source: sourceId,
+      paint: {
+        'circle-radius': [
+          'interpolate', ['linear'], ['zoom'],
+          6, 3,
+          10, 6,
+          14, 10,
+        ],
+        'circle-color': colorMatchExpr,
+        'circle-stroke-width': ['case', ['get', 'selected'], 2, 0],
+        'circle-stroke-color': mp.selectedStroke,
+        'circle-opacity': ['case', ['get', 'dimmed'], 0.3, ['get', 'visible'], 1, 0.3],
+      },
+    });
+
+    // Click handler
+    map.on('click', layerId, (e: any) => {
+      const feature = e.features?.[0];
+      if (feature?.properties?.id) {
+        onToggleWell(feature.properties.id);
+      }
+    });
+
+    // Cursor change on hover
+    map.on('mouseenter', layerId, () => { map.getCanvas().style.cursor = 'pointer'; });
+    map.on('mouseleave', layerId, () => { map.getCanvas().style.cursor = ''; });
+  }, [map, isLoaded, wellsGeoJson, colorMatchExpr, mp.selectedStroke, onToggleWell]);
+
+  // Toggle satellite style
+  useEffect(() => {
+    if (!map || !isLoaded) return;
+    const style = layers.satellite
+      ? 'mapbox://styles/mapbox/satellite-streets-v12'
+      : 'mapbox://styles/mapbox/dark-v11';
+    map.setStyle(style);
+    // Re-add wells source/layer after style change
+    map.once('style.load', () => {
+      const sourceId = 'wells-source';
+      if (!map.getSource(sourceId)) {
+        map.addSource(sourceId, { type: 'geojson', data: wellsGeoJson });
+        map.addLayer({
+          id: 'wells-circles',
+          type: 'circle',
+          source: sourceId,
+          paint: {
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 6, 3, 10, 6, 14, 10],
+            'circle-color': colorMatchExpr,
+            'circle-stroke-width': ['case', ['get', 'selected'], 2, 0],
+            'circle-stroke-color': mp.selectedStroke,
+            'circle-opacity': ['case', ['get', 'dimmed'], 0.3, ['get', 'visible'], 1, 0.3],
+          },
+        });
+      }
+    });
+  }, [layers.satellite]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleToggleLayer = useCallback((layer: string) => {
+    setLayers(prev => ({ ...prev, [layer]: !prev[layer] }));
+  }, []);
+
+  return (
+    <div className="relative w-full h-[calc(100vh-64px)]">
+      {/* Mapbox canvas */}
+      <div ref={mapContainerRef} className="absolute inset-0" />
+
+      {/* Fallback when no Mapbox token */}
+      {!isLoaded && (
+        <div className={`absolute inset-0 flex items-center justify-center ${
+          isClassic ? 'bg-[#101010]' : 'bg-[var(--bg-deep)]'
+        }`}>
+          <div className="text-center space-y-2">
+            <div className={`text-[11px] font-black uppercase tracking-[0.2em] ${
+              isClassic ? 'text-white/40' : 'text-[var(--text-muted)]'
+            }`}>
+              Map Command Center
+            </div>
+            <div className={`text-[10px] ${
+              isClassic ? 'text-white/25' : 'text-[var(--text-muted)]/60'
+            }`}>
+              Set VITE_MAPBOX_TOKEN to enable the interactive map
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay container */}
+      <div className="absolute inset-0 z-10 pointer-events-none">
+        <OverlayGroupsPanel
+          isClassic={isClassic}
+          groups={groups}
+          activeGroupId={activeGroupId}
+          onActivateGroup={onActivateGroup}
+          onAddGroup={onAddGroup}
+          onCloneGroup={onCloneGroup}
+          wells={wells}
+          selectedWellIds={selectedWellIds}
+          visibleWellIds={visibleWellIds}
+        />
+
+        <OverlayFiltersBar
+          isClassic={isClassic}
+          visibleCount={visibleWellIds.size}
+          selectedCount={selectedWellIds.size}
+          totalCount={totalWellCount}
+          groupsPanelOpen={groupsPanelOpen}
+          operatorFilter={operatorFilter}
+          formationFilter={formationFilter}
+          statusFilter={statusFilter}
+          operatorOptions={operatorOptions}
+          formationOptions={formationOptions}
+          statusOptions={statusOptions}
+          onSetOperatorFilter={onSetOperatorFilter}
+          onSetFormationFilter={onSetFormationFilter}
+          onSetStatusFilter={onSetStatusFilter}
+          onResetFilters={onResetFilters}
+        />
+
+        <OverlayToolbar
+          isClassic={isClassic}
+          activeTool={activeTool}
+          onSetTool={setActiveTool}
+          layers={layers}
+          onToggleLayer={handleToggleLayer}
+        />
+
+        <OverlaySelectionBar
+          isClassic={isClassic}
+          selectedCount={selectedWellCount}
+          onAssignWells={onAssignWells}
+          onCreateGroupFromSelection={onCreateGroupFromSelection}
+          onSelectAll={onSelectAll}
+          onClearSelection={onClearSelection}
+        />
+      </div>
+    </div>
+  );
+};

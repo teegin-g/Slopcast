@@ -4,7 +4,8 @@ import { DEFAULT_CAPEX, DEFAULT_COMMODITY_PRICING, DEFAULT_OPEX, DEFAULT_OWNERSH
 import { Scenario, ScheduleParams, Well, WellGroup } from '../types';
 import ScenarioDashboard from '../components/ScenarioDashboard';
 import DesignEconomicsView, { EconomicsMobilePanel } from '../components/slopcast/DesignEconomicsView';
-import DesignWellsView, { WellsMobilePanel } from '../components/slopcast/DesignWellsView';
+import DesignWellsView from '../components/slopcast/DesignWellsView';
+import { MapCommandCenter, WellsMobilePanel } from '../components/slopcast/MapCommandCenter';
 import { DesignWorkspace } from '../components/slopcast/DesignWorkspaceTabs';
 import { EconomicsResultsTab } from '../components/slopcast/EconomicsResultsTabs';
 import PageHeader from '../components/slopcast/PageHeader';
@@ -762,7 +763,7 @@ const SlopcastPage: React.FC = () => {
         fxClass={fxClass}
       />
 
-      <main className="p-4 md:p-6 max-w-[1920px] mx-auto w-full">
+      <main className={designWorkspace === 'WELLS' && viewMode === 'DASHBOARD' ? 'relative flex-1' : 'p-4 md:p-6 max-w-[1920px] mx-auto w-full'}>
         
         {viewMode === 'ANALYSIS' ? (
              <ScenarioDashboard
@@ -774,7 +775,7 @@ const SlopcastPage: React.FC = () => {
         ) : (
              <>
                {designWorkspace === 'WELLS' ? (
-                 <DesignWellsView
+                 <MapCommandCenter
                    isClassic={isClassic}
                    theme={theme}
                    themeId={themeId}

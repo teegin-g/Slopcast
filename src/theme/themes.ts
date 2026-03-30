@@ -19,6 +19,15 @@ export interface ChartPalette {
   border: string;
 }
 
+/** Mapbox GL style overrides per theme. */
+export interface MapboxOverrides {
+  bgColor: string;
+  waterColor: string;
+  landColor: string;
+  labelColor: string;
+  roadOpacity: number;
+}
+
 /** Per-theme map visualization colors. */
 export interface MapPalette {
   gridColor: string;
@@ -29,6 +38,7 @@ export interface MapPalette {
   lassoFill: string;
   lassoStroke: string;
   lassoDash: string;
+  mapboxOverrides?: MapboxOverrides;
 }
 
 /** Optional per-theme visual features. */
@@ -111,6 +121,7 @@ const slate: ThemeMeta = {
     lassoFill: 'rgba(59, 130, 246, 0.1)',
     lassoStroke: '#3b82f6',
     lassoDash: '4',
+    mapboxOverrides: { bgColor: '#0f172a', waterColor: '#1e293b', landColor: '#1a2744', labelColor: '#64748b', roadOpacity: 0.15 },
   },
   features: {
     retroGrid: false,
@@ -148,6 +159,7 @@ const synthwave: ThemeMeta = {
     lassoFill: 'rgba(229, 102, 218, 0.15)',
     lassoStroke: '#E566DA',
     lassoDash: '8, 4',
+    mapboxOverrides: { bgColor: '#0a0015', waterColor: '#120825', landColor: '#0E061A', labelColor: '#6053A0', roadOpacity: 0.08 },
   },
   features: {
     retroGrid: true,
@@ -190,6 +202,7 @@ const tropical: ThemeMeta = {
     lassoFill: 'rgba(255, 127, 107, 0.12)',
     lassoStroke: '#FF7F6B',
     lassoDash: '6, 3',
+    mapboxOverrides: { bgColor: '#0a1520', waterColor: '#0d2030', landColor: '#1a2332', labelColor: '#5eead4', roadOpacity: 0.10 },
   },
   features: {
     retroGrid: false,
@@ -232,6 +245,7 @@ const league: ThemeMeta = {
     lassoFill: 'rgba(233, 176, 103, 0.15)',
     lassoStroke: '#e9b067',
     lassoDash: '5, 3',
+    mapboxOverrides: { bgColor: '#0b1424', waterColor: '#0f1c35', landColor: '#122040', labelColor: '#44638f', roadOpacity: 0.10 },
   },
   features: {
     retroGrid: false,
@@ -273,6 +287,7 @@ const stormwatch: ThemeMeta = {
     lassoFill: 'rgba(242, 166, 90, 0.14)',
     lassoStroke: '#f2a65a',
     lassoDash: '6, 3',
+    mapboxOverrides: { bgColor: '#101a2d', waterColor: '#152540', landColor: '#1a2a45', labelColor: '#4e6e9f', roadOpacity: 0.12 },
   },
   features: {
     retroGrid: false,
@@ -315,6 +330,7 @@ const mario: ThemeMeta = {
     lassoFill: 'rgba(255, 213, 0, 0.10)',
     lassoStroke: '#FFD500',
     lassoDash: '0',
+    mapboxOverrides: { bgColor: '#101010', waterColor: '#1a1a2e', landColor: '#181818', labelColor: '#666666', roadOpacity: 0.12 },
   },
   features: {
     retroGrid: false,
@@ -357,6 +373,7 @@ const hyperborea: ThemeMeta = {
     lassoFill: 'rgba(125, 211, 252, 0.15)',
     lassoStroke: '#7DD3FC',
     lassoDash: '6, 3',
+    mapboxOverrides: { bgColor: '#0a1525', waterColor: '#0f1d35', landColor: '#141D2E', labelColor: '#5A6C87', roadOpacity: 0.10 },
   },
   features: {
     retroGrid: false,

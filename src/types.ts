@@ -543,3 +543,16 @@ export interface DealTypeCurvePreset {
   createdAt: string;
   updatedAt: string;
 }
+
+// ---------------------------------------------------------------------------
+// Map Command Center types
+// ---------------------------------------------------------------------------
+
+export interface MapViewState {
+  center: [number, number];
+  zoom: number;
+  pitch: number;
+  bearing: number;
+}
+
+export type MapLayerVisibility = Record<string, boolean>;
