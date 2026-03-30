@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMapboxMap } from '../../hooks/useMapboxMap';
 import { useTheme } from '../../theme/ThemeProvider';
-import type { Well, WellGroup } from '../../types';
+import type { Well, WellGroup, SpatialLayerFilter } from '../../types';
+import { useViewportData } from '../../hooks/useViewportData';
 import { OverlayGroupsPanel } from './map/OverlayGroupsPanel';
 import { OverlayFiltersBar } from './map/OverlayFiltersBar';
 import { OverlayToolbar } from './map/OverlayToolbar';
@@ -86,6 +87,40 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   const [layers, setLayers] = useState<Record<string, boolean>>({ grid: false, heatmap: false, satellite: false });
   const [groupsPanelOpen, setGroupsPanelOpen] = useState(true);
 
+  const [dataLayers, setDataLayers] = useState<Record<string, boolean>>({
+    producing: true,
+    duc: true,
+    permit: true,
+    laterals: false,
+  });
+
+  const spatialFilters = useMemo<SpatialLayerFilter>(() => {
+    const statuses: Well['status'][] = [];
+    if (dataLayers.producing) statuses.push('PRODUCING');
+    if (dataLayers.duc) statuses.push('DUC');
+    if (dataLayers.permit) statuses.push('PERMIT');
+    return { statuses: statuses.length > 0 ? statuses : undefined };
+  }, [dataLayers]);
+
+  const {
+    wells: viewportWells,
+    isLoading: spatialLoading,
+    source: spatialSource,
+    totalCount: spatialTotalCount,
+    truncated: spatialTruncated,
+  } = useViewportData({
+    map,
+    isLoaded,
+    filters: spatialFilters,
+  });
+
+  const effectiveWells = useMemo(() => {
+    if (viewportWells.length > 0 && spatialSource !== null) {
+      return viewportWells;
+    }
+    return wells;
+  }, [viewportWells, spatialSource, wells]);
+
   // Track lasso/rectangle selection state
   const [isSelecting, setIsSelecting] = useState(false);
   const lassoPointsRef = useRef<[number, number][]>([]);
@@ -101,7 +136,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   // Build GeoJSON for wells
   const wellsGeoJson = useMemo(() => ({
     type: 'FeatureCollection' as const,
-    features: wells.map(w => ({
+    features: effectiveWells.map(w => ({
       type: 'Feature' as const,
       geometry: { type: 'Point' as const, coordinates: [w.lng, w.lat] },
       properties: {
@@ -113,7 +148,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
         visible: visibleWellIds.has(w.id),
       },
     })),
-  }), [wells, getWellColor, selectedWellIds, dimmedWellIds, visibleWellIds]);
+  }), [effectiveWells, getWellColor, selectedWellIds, dimmedWellIds, visibleWellIds]);
 
   // Build color match expression for Mapbox
   const colorMatchExpr = useMemo(() => {
@@ -267,12 +302,30 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
           onResetFilters={onResetFilters}
         />
 
+        {spatialLoading && (
+          <div className="absolute top-14 right-14 z-20 pointer-events-none">
+            <div className={`px-2 py-1 rounded text-[9px] font-bold uppercase tracking-widest ${
+              isClassic
+                ? 'bg-black/60 text-white/60'
+                : 'bg-[var(--surface-1)]/80 text-[var(--text-muted)] backdrop-blur-sm'
+            }`}>
+              Loading wells…
+            </div>
+          </div>
+        )}
+
         <OverlayToolbar
           isClassic={isClassic}
           activeTool={activeTool}
           onSetTool={setActiveTool}
           layers={layers}
           onToggleLayer={handleToggleLayer}
+          dataLayers={dataLayers}
+          onToggleDataLayer={(layer) => setDataLayers(prev => ({ ...prev, [layer]: !prev[layer] }))}
+          isLoading={spatialLoading}
+          source={spatialSource}
+          totalCount={spatialTotalCount}
+          truncated={spatialTruncated}
         />
 
         <OverlaySelectionBar

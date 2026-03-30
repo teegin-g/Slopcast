@@ -28,6 +28,10 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    from .spatial_routes import create_spatial_router
+
+    app.include_router(create_spatial_router())
+
     @app.get("/api/health")
     def health() -> dict:
         return {"ok": True}

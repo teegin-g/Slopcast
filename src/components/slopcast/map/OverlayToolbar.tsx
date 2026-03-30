@@ -1,5 +1,7 @@
 import React from 'react';
 
+const spinKeyframes = `@keyframes spin { to { transform: rotate(360deg) } }`;
+
 type SelectionTool = 'lasso' | 'rectangle';
 
 interface OverlayToolbarProps {
@@ -8,6 +10,12 @@ interface OverlayToolbarProps {
   onSetTool: (tool: SelectionTool | null) => void;
   layers: Record<string, boolean>;
   onToggleLayer: (layer: string) => void;
+  dataLayers: Record<string, boolean>;
+  onToggleDataLayer: (layer: string) => void;
+  isLoading?: boolean;
+  source?: 'databricks' | 'mock' | null;
+  totalCount?: number;
+  truncated?: boolean;
 }
 
 const ToolButton: React.FC<{
@@ -41,6 +49,12 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
   onSetTool,
   layers,
   onToggleLayer,
+  dataLayers,
+  onToggleDataLayer,
+  isLoading,
+  source,
+  totalCount,
+  truncated,
 }) => {
   const panelClass = isClassic
     ? 'sc-panel theme-transition'
@@ -48,6 +62,7 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
 
   return (
     <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-auto">
+      <style>{spinKeyframes}</style>
       <div className={`${panelClass} p-1.5 flex flex-col gap-1`}>
         {/* Selection tools */}
         <ToolButton
@@ -110,6 +125,90 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
             <path d="M2 8H14M8 2C6 4 5.5 6 5.5 8S6 12 8 14M8 2C10 4 10.5 6 10.5 8S10 12 8 14" stroke="currentColor" strokeWidth="1" />
           </svg>
         </ToolButton>
+
+        {/* Divider */}
+        <div className={`h-px my-0.5 ${isClassic ? 'bg-white/20' : 'bg-[var(--border)]'}`} />
+
+        {/* Data layers header */}
+        <div className={`text-[9px] font-bold uppercase tracking-widest px-1 py-0.5 ${
+          isClassic ? 'text-white/40' : 'text-[var(--text-muted)]'
+        }`}>
+          Data
+        </div>
+
+        {/* Data layer toggles */}
+        <ToolButton
+          isClassic={isClassic}
+          active={!!dataLayers.producing}
+          onClick={() => onToggleDataLayer('producing')}
+          title="Producing Wells"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle cx="7" cy="7" r="4" fill="currentColor" />
+          </svg>
+        </ToolButton>
+
+        <ToolButton
+          isClassic={isClassic}
+          active={!!dataLayers.duc}
+          onClick={() => onToggleDataLayer('duc')}
+          title="DUCs"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M7 2L12 11H2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" fill="none" />
+          </svg>
+        </ToolButton>
+
+        <ToolButton
+          isClassic={isClassic}
+          active={!!dataLayers.permit}
+          onClick={() => onToggleDataLayer('permit')}
+          title="Permits"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <rect x="2" y="1.5" width="10" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" fill="none" />
+            <path d="M5 5H9M5 7.5H8" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+          </svg>
+        </ToolButton>
+
+        <ToolButton
+          isClassic={isClassic}
+          active={!!dataLayers.laterals}
+          onClick={() => onToggleDataLayer('laterals')}
+          title="Laterals"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M2 7H12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </ToolButton>
+
+        {/* Footer: count + source */}
+        <div className={`flex flex-col items-center gap-0.5 pt-1 ${
+          isClassic ? 'text-white/40' : 'text-[var(--text-muted)]'
+        } text-[8px]`}>
+          {isLoading ? (
+            <div
+              className={`w-3 h-3 border-[1.5px] border-t-transparent rounded-full ${
+                isClassic ? 'border-white/40' : 'border-[var(--text-muted)]'
+              }`}
+              style={{ animation: 'spin 0.8s linear infinite' }}
+            />
+          ) : (
+            <>
+              <span className="font-bold tabular-nums">
+                {totalCount != null ? totalCount.toLocaleString() : '—'}
+                {truncated && '+'}
+              </span>
+              {source && (
+                <span className={`px-1 rounded text-[7px] leading-tight ${
+                  isClassic ? 'bg-white/10' : 'bg-[var(--surface-2)]'
+                }`}>
+                  {source === 'mock' ? 'Mock' : 'DB'}
+                </span>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
