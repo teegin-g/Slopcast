@@ -1,5 +1,10 @@
+from pathlib import Path
+
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+load_dotenv(Path(__file__).parent / ".env")
 
 from .economics import aggregate_economics, calculate_economics
 from .models import (

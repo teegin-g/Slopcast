@@ -1,5 +1,8 @@
+import os
+
 from backend.spatial_models import SpatialLayerFilter, ViewportBounds
-from backend.spatial_service import get_available_layers, get_wells_in_bounds, _cache
+from backend.spatial_service import get_available_layers, get_wells_in_bounds, _cache, _get_db_connection
+import backend.spatial_service as _svc
 
 
 def _wide_bounds() -> ViewportBounds:
@@ -13,8 +16,12 @@ def _narrow_bounds() -> ViewportBounds:
 
 
 def setup_function():
-    """Clear the cache before each test."""
+    """Clear the cache and force mock mode by removing DB env vars."""
     _cache.clear()
+    # Force mock fallback by clearing credentials and resetting connection
+    for key in ("DATABRICKS_SERVER_HOSTNAME", "DATABRICKS_HTTP_PATH", "DATABRICKS_TOKEN"):
+        os.environ.pop(key, None)
+    _svc._db_connection = None
 
 
 def test_mock_fallback_returns_wells():

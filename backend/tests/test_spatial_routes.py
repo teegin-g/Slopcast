@@ -1,11 +1,23 @@
+import os
+
 from fastapi.testclient import TestClient
 
-from backend.main import create_app
+import backend.spatial_service as _svc
 from backend.spatial_service import _cache
+
+# Force mock mode before app creation
+for _k in ("DATABRICKS_SERVER_HOSTNAME", "DATABRICKS_HTTP_PATH", "DATABRICKS_TOKEN"):
+    os.environ.pop(_k, None)
+_svc._db_connection = None
+
+from backend.main import create_app
 
 
 def setup_function():
     _cache.clear()
+    for _k in ("DATABRICKS_SERVER_HOSTNAME", "DATABRICKS_HTTP_PATH", "DATABRICKS_TOKEN"):
+        os.environ.pop(_k, None)
+    _svc._db_connection = None
 
 
 client = TestClient(create_app())

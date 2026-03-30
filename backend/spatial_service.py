@@ -77,6 +77,18 @@ def _cache_key(bounds: ViewportBounds, filters: SpatialLayerFilter | None, limit
 # ---------------------------------------------------------------------------
 
 _STATUSES = ["PRODUCING", "DUC", "PERMIT"]
+
+
+def _map_well_status(raw: str) -> str:
+    """Map Databricks well_status values to our Well status enum."""
+    upper = raw.upper().strip()
+    if "PRODUC" in upper or "ACTIVE" in upper:
+        return "PRODUCING"
+    if "DUC" in upper or "DRILLED" in upper or "UNCOMPLETE" in upper:
+        return "DUC"
+    if "PERMIT" in upper or "APPROVED" in upper:
+        return "PERMIT"
+    return "PRODUCING"  # safe default
 _OPERATORS = ["Strata Ops LLC", "Blue Mesa Energy", "Atlas Peak Resources"]
 _FORMATIONS = ["Wolfcamp A", "Wolfcamp B", "Bone Spring"]
 
@@ -191,17 +203,20 @@ def _query_databricks(
     table = os.environ.get("DATABRICKS_WELLS_TABLE", "tbl_well_summary_all")
 
     query = (
-        f"SELECT id, name, lat, lng, lateral_length AS lateralLength, "
-        f"status, operator, formation "
+        f"SELECT api_14, well_name, sh_latitude_nad27, sh_longitude_nad27, "
+        f"lateral_length, well_status, operator, formation "
         f"FROM {catalog}.{schema}.{table} "
-        f"WHERE lat BETWEEN ? AND ? AND lng BETWEEN ? AND ?"
+        f"WHERE sh_latitude_nad27 BETWEEN ? AND ? "
+        f"AND sh_longitude_nad27 BETWEEN ? AND ? "
+        f"AND sh_latitude_nad27 IS NOT NULL "
+        f"AND sh_longitude_nad27 IS NOT NULL"
     )
     params: list = [bounds.sw_lat, bounds.ne_lat, bounds.sw_lng, bounds.ne_lng]
 
     if filters:
         if filters.statuses:
             placeholders = ", ".join("?" for _ in filters.statuses)
-            query += f" AND status IN ({placeholders})"
+            query += f" AND well_status IN ({placeholders})"
             params.extend(filters.statuses)
         if filters.operators:
             placeholders = ", ".join("?" for _ in filters.operators)
@@ -225,16 +240,16 @@ def _query_databricks(
 
         wells = [
             Well(
-                id=str(r[0]),
-                name=str(r[1]),
+                id=str(r[0]) if r[0] else f"db-{i}",
+                name=str(r[1]) if r[1] else "",
                 lat=float(r[2]),
                 lng=float(r[3]),
-                lateralLength=float(r[4]),
-                status=str(r[5]),
-                operator=str(r[6]),
+                lateralLength=float(r[4]) if r[4] else 0.0,
+                status=_map_well_status(str(r[5]) if r[5] else ""),
+                operator=str(r[6]) if r[6] else "",
                 formation=str(r[7]) if r[7] else "",
             )
-            for r in result_rows
+            for i, r in enumerate(result_rows)
         ]
 
         return SpatialWellsResponse(
