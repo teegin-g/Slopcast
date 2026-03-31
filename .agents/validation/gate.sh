@@ -383,8 +383,70 @@ else
   fi
   echo ""
 
-  # ── Stage 13: Playwright E2E ──────────────────────────────────
-  echo -e "${CYAN}Stage 13: Playwright E2E${NC}"
+  # ── Stage 12a: Storybook Component Screenshots ────────────────
+  echo -e "${CYAN}Stage 12a: Storybook Component Screenshots${NC}"
+  STORIES_BASELINE="${BASELINE_DIR}/stories"
+  STORIES_AFTER=".agents/state/validation-${TASK_SLUG}/stories-after"
+
+  if [ -d "$STORIES_BASELINE" ] && [ -n "$(ls -A "$STORIES_BASELINE" 2>/dev/null)" ]; then
+    # Storybook should already be built from Stage 9
+    if [ -d "node_modules/.cache/storybook-static" ]; then
+      STORYBOOK_OUT_DIR="$STORIES_AFTER" npm run ui:shots:stories 2>&1 || true
+      if [ -d "$STORIES_AFTER" ]; then
+        STORIES_DIFF_RESULT=$(node .agents/validation/screenshot-diff.mjs "$STORIES_BASELINE" "$STORIES_AFTER" --threshold 2 2>&1) || true
+        echo "$STORIES_DIFF_RESULT"
+        if echo "$STORIES_DIFF_RESULT" | grep -q "SCREENSHOT_DIFF_FAIL"; then
+          stage_warn "storybook-shots (component diffs exceed 2% threshold)"
+        else
+          stage_pass "storybook-shots"
+        fi
+      else
+        stage_skip "storybook-shots (capture failed)"
+      fi
+    else
+      stage_skip "storybook-shots (no Storybook build)"
+    fi
+  else
+    stage_skip "storybook-shots (no baseline — run capture-baseline.sh first)"
+  fi
+  echo ""
+
+  # ── Stage 13: AI Visual Review ──────────────────────────────────
+  echo -e "${CYAN}Stage 13: AI Visual Review${NC}"
+  DIFF_SUMMARY_FILE=".agents/state/validation-${TASK_SLUG}/diff/summary.json"
+  STORIES_DIFF_SUMMARY=".agents/state/validation-${TASK_SLUG}/stories-diff/summary.json"
+
+  if [ -f "$DIFF_SUMMARY_FILE" ] && [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+    REVIEW_ARGS="--diff-summary $DIFF_SUMMARY_FILE --baseline-dir $BASELINE_DIR --after-dir $AFTER_DIR"
+    if [ -f "$STORIES_DIFF_SUMMARY" ]; then
+      REVIEW_ARGS="$REVIEW_ARGS --stories-summary $STORIES_DIFF_SUMMARY"
+    fi
+    if [ -n "${TASK_BRIEF_FILE:-}" ] && [ -f "${TASK_BRIEF_FILE}" ]; then
+      REVIEW_ARGS="$REVIEW_ARGS --task-brief-file $TASK_BRIEF_FILE"
+    fi
+
+    REVIEW_RESULT=$(node scripts/visual-review.mjs $REVIEW_ARGS --output "artifacts/ui/visual-review.md" 2>&1) || true
+    echo "$REVIEW_RESULT"
+
+    if echo "$REVIEW_RESULT" | grep -q "^REGRESSION"; then
+      stage_fail "ai-visual-review (regressions detected)"
+      echo -e "\n${RED}Gate failed at Stage 13: AI visual review found regressions.${NC}"
+      write_validation_record "FAIL"
+      exit 1
+    elif echo "$REVIEW_RESULT" | grep -q "^CONCERN"; then
+      stage_warn "ai-visual-review (concerns flagged — see artifacts/ui/visual-review.md)"
+    else
+      stage_pass "ai-visual-review"
+    fi
+  elif [ ! -f "$DIFF_SUMMARY_FILE" ]; then
+    stage_skip "ai-visual-review (no diff summary)"
+  else
+    stage_skip "ai-visual-review (no ANTHROPIC_API_KEY)"
+  fi
+  echo ""
+
+  # ── Stage 14: Playwright E2E ──────────────────────────────────
+  echo -e "${CYAN}Stage 14: Playwright E2E${NC}"
 
   # Start dev server for ui:verify
   npx vite --host 127.0.0.1 --strictPort --port "$VALIDATION_PORT" &
@@ -402,7 +464,7 @@ else
     stage_fail "ui:verify"
     kill "$DEV_PID" 2>/dev/null || true
     wait "$DEV_PID" 2>/dev/null || true
-    echo -e "\n${RED}Gate failed at Stage 13: Playwright E2E failed.${NC}"
+    echo -e "\n${RED}Gate failed at Stage 14: Playwright E2E failed.${NC}"
     write_validation_record "FAIL"
     exit 1
   fi
