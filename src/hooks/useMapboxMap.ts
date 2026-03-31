@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { MapViewState } from '../types';
 
-const MAPBOX_TOKEN = typeof import.meta !== 'undefined'
+const MAPBOX_TOKEN = (typeof import.meta !== 'undefined'
   ? (import.meta as any).env?.VITE_MAPBOX_TOKEN
-  : '';
+  : '')?.trim() ?? '';
 
 const PERMIAN_CENTER: [number, number] = [-102.3, 31.9];
 
@@ -90,8 +90,8 @@ export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapRes
             bearing: map.getBearing(),
           });
         });
-      } catch {
-        // Mapbox failed to load — stay in fallback mode
+      } catch (err) {
+        console.error('[useMapboxMap] Failed to initialize:', err);
       }
     })();
 
