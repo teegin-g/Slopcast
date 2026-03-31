@@ -20,6 +20,7 @@ Use the `Agent` tool with `isolation: "worktree"` — this creates worktrees aut
 ```
 Agent(
   subagent_type: "general-purpose",
+  model: "opus",
   isolation: "worktree",
   prompt: "<full task brief here>
 
@@ -32,6 +33,7 @@ Read and follow .agents/roles/implementer.md and CLAUDE.md."
 ```
 
 Key rules:
+- **ALWAYS include `model: "opus"` (or `"sonnet"`)** — without this, agents get the raw model ID which fails on Databricks-proxied setups. The alias resolves through `ANTHROPIC_DEFAULT_OPUS_MODEL` env var.
 - Do NOT pre-create worktrees — `isolation: "worktree"` handles this
 - Independent tasks can be spawned in parallel (multiple Agent calls in one message)
 - Dependent tasks must be spawned sequentially
@@ -45,6 +47,7 @@ Use the `Agent` tool WITHOUT isolation (validator reads the worktree but runs ga
 ```
 Agent(
   subagent_type: "general-purpose",
+  model: "opus",
   prompt: "Validate the worktree at {path}. Run: cd {path} && bash .agents/validation/gate.sh --skip-screenshots
 Read and follow .agents/roles/validator.md."
 )

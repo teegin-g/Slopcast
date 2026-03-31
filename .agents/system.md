@@ -111,6 +111,20 @@ The gate script writes structured JSON records to `.agents/state/validations/{ta
 - `.agents/state/validations/` — Structured validation records (JSON)
 - `.worktrees/` — Git worktrees for isolated work (gitignored)
 
+## Model Configuration (Databricks Proxy)
+
+This project routes API calls through a Databricks proxy. When spawning agents with the `Agent` tool, **always include `model: "opus"` or `model: "sonnet"`**. Without an explicit model alias, spawned agents receive the raw model ID (e.g. `claude-opus-4-6`) which fails silently against the Databricks endpoint. The alias triggers env var resolution (`ANTHROPIC_DEFAULT_OPUS_MODEL`) to the correct Databricks-specific model name.
+
+```
+# CORRECT — alias resolves to databricks-claude-opus-4-6
+Agent(model: "opus", ...)
+
+# WRONG — raw ID fails on Databricks proxy
+Agent(...)
+```
+
+This applies to all agent spawning: `Agent` tool, `team_name` teammates, worktree agents.
+
 ## Project Conventions
 
 All agents MUST follow `CLAUDE.md` in the repo root. Key rules:

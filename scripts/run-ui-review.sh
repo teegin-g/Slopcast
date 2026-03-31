@@ -26,9 +26,9 @@ Execute ALL 6 workstreams described in the plan to implement the full UI review 
 
 ## Critical Agent Spawning Rules
 
-**DO NOT use `isolation: "worktree"`** — worktree creation fails on this Databricks-proxied setup.
-**DO NOT use `TeamCreate` or `team_name`** — team agent model routing is broken on Databricks.
+**ALWAYS include `model: "opus"` (or `"sonnet"`)** in every `Agent` tool call — without this, agents get the raw model ID which fails silently on the Databricks proxy.
 **DO use regular `Agent` tool calls** with `mode: "bypassPermissions"` — these work correctly.
+**`TeamCreate` / `team_name` also work** as long as all spawned agents include `model: "opus"`.
 
 ## Execution Strategy
 

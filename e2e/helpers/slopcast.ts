@@ -177,7 +177,7 @@ export class SlopcastApp {
   }
 
   async expectWellsWorkspace(): Promise<void> {
-    await expect(this.page.getByText('Basin Visualizer', { exact: false }).first()).toBeVisible({
+    await expect(this.page.getByTestId('map-command-center').first()).toBeVisible({
       timeout: 15_000,
     });
   }

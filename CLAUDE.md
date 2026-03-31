@@ -115,6 +115,8 @@ This project includes a multi-agent system in `.agents/` for structured feature 
 
 **IMPORTANT (Claude Code):** The supervisor must run as the main interactive session (not as a sub-agent). It spawns implementers using the `Agent` tool with `isolation: "worktree"`. Sub-agents cannot prompt for permission — all commands they need must be pre-allowed in `.claude/settings.local.json`.
 
+**IMPORTANT (Databricks Proxy):** When spawning any agent (implementer, validator, team member), **always include `model: "opus"`** (or `"sonnet"`) in the `Agent` tool call. Without this, agents get the raw model ID which fails silently on the Databricks-proxied endpoint. The alias resolves through `ANTHROPIC_DEFAULT_OPUS_MODEL` to the correct model name.
+
 ### Key files
 - `.agents/system.md` — Architecture overview
 - `.agents/roles/supervisor.md` — Supervisor: decomposes, coordinates, merges

@@ -4,7 +4,6 @@ import { DEFAULT_CAPEX, DEFAULT_COMMODITY_PRICING, DEFAULT_OPEX, DEFAULT_OWNERSH
 import { Scenario, ScheduleParams, Well, WellGroup } from '../types';
 import ScenarioDashboard from '../components/ScenarioDashboard';
 import DesignEconomicsView, { EconomicsMobilePanel } from '../components/slopcast/DesignEconomicsView';
-import DesignWellsView from '../components/slopcast/DesignWellsView';
 import { MapCommandCenter, WellsMobilePanel } from '../components/slopcast/MapCommandCenter';
 import { DesignWorkspace } from '../components/slopcast/DesignWorkspaceTabs';
 import { EconomicsResultsTab } from '../components/slopcast/EconomicsResultsTabs';
