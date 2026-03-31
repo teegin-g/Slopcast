@@ -1,32 +1,39 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Slopcast
 
-# Run and deploy your AI Studio app
+Slopcast is an oil and gas economics modeling app built with a React + Vite frontend and a Python FastAPI backend. Users assemble well groups, tune assumptions, and compare economics across scenarios.
 
-This contains everything you need to run your app locally.
+## Start Here
 
-View your app in AI Studio: https://ai.studio/apps/drive/12YB-fbdVhBUTK7AIo6AYspbot-rowbB7
+If you are trying to understand or modify this repo, use these files first:
 
-## Run Locally
+- [CLAUDE.md](CLAUDE.md): global project conventions, architecture, commands, and design principles
+- [docs/CODING_AGENT_HARNESS.md](docs/CODING_AGENT_HARNESS.md): how Cursor, Claude Code, and Codex are wired into the repo
+- [docs/README.md](docs/README.md): curated docs index with canonical vs historical guidance
+- [src/README.md](src/README.md): frontend routing map for the main app
 
-**Prerequisites:**  Node.js
+## Core Commands
 
+- `npm install`: install frontend dependencies
+- `npm run dev`: start the Vite app on `localhost:3000`
+- `npm run build`: create a production build
+- `npm run typecheck`: run TypeScript checks
+- `npm test`: run Vitest unit tests
+- `npm run storybook`: start Storybook on `localhost:6006`
+- `npm run ui:audit`: check for style drift and forbidden classnames
+- `npm run ui:verify`: run Playwright UI verification
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Main App Surfaces
 
-## Launch and deploy (no cloud-specific tooling)
+- `src/pages/SlopcastPage.tsx`: live route entry for the Slopcast workspace
+- `src/components/slopcast/`: product-specific UI, including map and economics panels
+- `src/services/`: adapter layer for Supabase, economics engine selection, and spatial data
+- `src/utils/economics.ts`: deterministic TypeScript economics engine
+- `backend/`: FastAPI backend endpoints and services
+- `supabase/`: schema migrations, generated types, and local data setup
 
-Use the provided shell script to build and run the app locally without any
-Google Cloud deployment tooling:
+## Agent And Docs Routing
 
-- Production build and run:
-  `bash deploy.sh`
-- Development server:
-  `bash deploy.sh --dev`
-- Build only:
-  `bash deploy.sh --build-only`
+- Root guidance is canonical: `CLAUDE.md`, `.cursorrules`, `AGENTS.md`, and `.agents/`
+- For folder-specific work, check the nearest local `FEATURE.md` or `README.md` before broad repo search
+- Product specs live under `docs/specs/`
+- Historical snapshots live under `docs/originals-from-pr/` and should not be treated as the default source of truth
