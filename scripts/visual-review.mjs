@@ -34,9 +34,16 @@ import process from 'node:process';
 // ---------------------------------------------------------------------------
 const args = process.argv.slice(2);
 const opts = {};
+const BOOLEAN_FLAGS = new Set(['dry-run']);
+
 for (let i = 0; i < args.length; i++) {
-  if (args[i].startsWith('--') && args[i + 1]) {
-    opts[args[i].slice(2)] = args[++i];
+  if (args[i].startsWith('--')) {
+    const key = args[i].slice(2);
+    if (BOOLEAN_FLAGS.has(key)) {
+      opts[key] = true;
+    } else if (args[i + 1] && !args[i + 1].startsWith('--')) {
+      opts[key] = args[++i];
+    }
   }
 }
 
@@ -45,6 +52,7 @@ const baselineDir = opts['baseline-dir'];
 const afterDir = opts['after-dir'];
 const diffDir = opts['diff-dir'];
 const storiesSummaryPath = opts['stories-summary'];
+const dryRun = !!opts['dry-run'];
 const outputPath = opts.output || path.join('artifacts', 'ui', 'visual-review.md');
 
 const taskBrief =
@@ -89,6 +97,13 @@ async function loadPromptTemplate() {
   const templatePath = path.join(path.dirname(new URL(import.meta.url).pathname), 'visual-review-prompt.md');
   const template = await fs.readFile(templatePath, 'utf8');
   return template.replace('{{TASK_BRIEF}}', taskBrief);
+}
+
+function classifyByDiffPct(diffPct) {
+  if (diffPct <= 0.5) return { classification: 'EXPECTED', summary: `${diffPct}% diff — within noise threshold` };
+  if (diffPct <= 2)   return { classification: 'ACCEPTABLE', summary: `${diffPct}% diff — minor change` };
+  if (diffPct <= 5)   return { classification: 'CONCERN', summary: `${diffPct}% diff — notable change, review recommended` };
+  return { classification: 'REGRESSION', summary: `${diffPct}% diff — significant change, likely regression` };
 }
 
 // ---------------------------------------------------------------------------
@@ -181,6 +196,35 @@ async function main() {
     return;
   }
 
+  if (dryRun) {
+    console.log('Dry-run mode — generating synthetic review from pixelmatch data (no API call).');
+    const syntheticFindings = (summary.files || [])
+      .filter(f => f.status !== 'PASS' || (f.diffPct && f.diffPct > 0))
+      .map(entry => {
+        const { viewport, theme, view } = parseScreenshotName(entry.file);
+        const { classification, summary: desc } = classifyByDiffPct(entry.diffPct ?? 0);
+        return {
+          file: entry.file, theme, viewport, view, classification,
+          summary: desc,
+          details: (classification === 'CONCERN' || classification === 'REGRESSION')
+            ? `Pixelmatch: ${entry.diffPct}% diff (${entry.numDiffPixels ?? '?'}/${entry.totalPixels ?? '?'} pixels). Manual review recommended.`
+            : undefined,
+        };
+      });
+
+    const report = generateFullReport(syntheticFindings, changedStories, summary, storiesSummary, totalFiles, totalStories, 'pixelmatch-heuristic (dry-run)');
+    await fs.mkdir(path.dirname(outputPath), { recursive: true });
+    await fs.writeFile(outputPath, report, 'utf8');
+    console.log(`Dry-run report written to ${outputPath}`);
+
+    const regCount = syntheticFindings.filter(f => f.classification === 'REGRESSION').length;
+    if (regCount > 0) {
+      console.log(`REGRESSION — ${regCount} regression(s) flagged by heuristic`);
+      process.exit(1);
+    }
+    return;
+  }
+
   if (changedFiles.length === 0 && changedStories.length === 0) {
     console.log('No visual changes detected. Skipping AI review.');
     const report = generateNoChangesReport(totalFiles, totalStories);
@@ -255,22 +299,20 @@ async function main() {
 
     try {
       const response = await callClaude(systemPrompt, userContent);
-      // Parse JSON from response (strip markdown fences if present)
-      const jsonStr = response.replace(/^```(?:json)?\n?/m, '').replace(/\n?```\s*$/m, '').trim();
-      const findings = JSON.parse(jsonStr);
+      // Extract JSON array from response — strip fences and surrounding text
+      const jsonMatch = response.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) throw new Error('No JSON array found in AI response');
+      const findings = JSON.parse(jsonMatch[0]);
       allFindings.push(...(Array.isArray(findings) ? findings : [findings]));
     } catch (err) {
       console.error(`Batch ${Math.floor(i / BATCH_SIZE) + 1} failed: ${err.message}`);
       // Fall back to pixelmatch-only classification for this batch
       for (const entry of batch) {
         const { viewport, theme, view } = parseScreenshotName(entry.file);
+        const { classification, summary: desc } = classifyByDiffPct(entry.diffPct ?? 0);
         allFindings.push({
-          file: entry.file,
-          theme,
-          viewport,
-          view,
-          classification: entry.diffPct > 5 ? 'CONCERN' : 'ACCEPTABLE',
-          summary: `${entry.diffPct}% pixel diff (AI review failed — manual check recommended)`,
+          file: entry.file, theme, viewport, view, classification,
+          summary: `${desc} (AI review failed — manual check recommended)`,
           details: `AI review error: ${err.message}`,
         });
       }
@@ -302,7 +344,7 @@ async function main() {
 // Report generators
 // ---------------------------------------------------------------------------
 
-function generateFullReport(findings, changedStories, summary, storiesSummary, totalFiles, totalStories) {
+function generateFullReport(findings, changedStories, summary, storiesSummary, totalFiles, totalStories, reviewerLabel = 'Claude Sonnet (automated)') {
   const counts = { EXPECTED: 0, ACCEPTABLE: 0, CONCERN: 0, REGRESSION: 0 };
   for (const f of findings) {
     counts[f.classification] = (counts[f.classification] || 0) + 1;
@@ -315,8 +357,8 @@ function generateFullReport(findings, changedStories, summary, storiesSummary, t
   let md = `# Visual Regression Review
 
 **Date:** ${new Date().toISOString()}
-**Reviewer:** Claude Sonnet (automated)
-**Model:** ${modelId}
+**Reviewer:** ${reviewerLabel}
+**Model:** ${reviewerLabel.includes('dry-run') ? 'N/A (no API call)' : modelId}
 **Scope:** ${findings.length} screenshots changed out of ${totalFiles} total
 
 ## Summary

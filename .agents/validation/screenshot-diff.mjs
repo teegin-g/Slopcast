@@ -40,16 +40,6 @@ if (!baselineDir || !afterDir) {
 const diffDir = path.join(path.dirname(afterDir), 'diff');
 await fs.mkdir(diffDir, { recursive: true });
 
-function readPNG(filePath) {
-  return new Promise((resolve, reject) => {
-    const data = [];
-    const rs = require('node:fs').createReadStream(filePath);
-    rs.pipe(new PNG())
-      .on('parsed', function () { resolve(this); })
-      .on('error', reject);
-  });
-}
-
 // Use dynamic import-friendly approach
 async function loadPNG(filePath) {
   const buffer = await fs.readFile(filePath);
@@ -127,7 +117,7 @@ for (const file of baselineFiles) {
     await writePNG(diff, path.join(diffDir, file));
   }
 
-  const icon = status === 'PASS' ? '  ' : '  ';
+  const icon = status === 'PASS' ? '[OK]' : '[!!]';
   console.log(`${icon}${file}: ${diffPct.toFixed(2)}% diff (${numDiffPixels}/${totalPixels} pixels) — ${status}`);
 }
 
