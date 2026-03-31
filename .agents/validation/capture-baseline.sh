@@ -66,9 +66,17 @@ if ! curl -s "http://127.0.0.1:${BASELINE_PORT}/" > /dev/null 2>&1; then
   exit 1
 fi
 
-# Capture screenshots
-echo "  Capturing screenshots..."
-UI_BASE_URL="http://127.0.0.1:${BASELINE_PORT}/" UI_OUT_DIR="$BASELINE_DIR" npm run ui:shots 2>&1
+# Capture screenshots (all 7 themes for full baseline coverage)
+echo "  Capturing app screenshots (all themes)..."
+UI_BASE_URL="http://127.0.0.1:${BASELINE_PORT}/" UI_OUT_DIR="$BASELINE_DIR" UI_ALL_THEMES=1 npm run ui:shots 2>&1
+
+# Capture Storybook component screenshots
+echo "  Building Storybook for component screenshots..."
+npm run storybook:build 2>&1 || echo -e "${RED}  Storybook build failed — skipping component shots${NC}"
+if [ -d "node_modules/.cache/storybook-static" ]; then
+  echo "  Capturing Storybook screenshots (all themes)..."
+  STORYBOOK_OUT_DIR="${BASELINE_DIR}/stories" npm run ui:shots:stories 2>&1 || echo -e "${RED}  Storybook screenshots failed${NC}"
+fi
 
 # Stop dev server
 kill "$DEV_PID" 2>/dev/null || true

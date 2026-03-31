@@ -60,6 +60,8 @@ STAGE_STORYBOOK_BUILD="SKIP"
 STAGE_STORYBOOK_TEST="SKIP"
 STAGE_UI_AUDIT="SKIP"
 STAGE_SCREENSHOTS="SKIP"
+STAGE_STORYBOOK_SHOTS="SKIP"
+STAGE_AI_REVIEW="SKIP"
 STAGE_UI_VERIFY="SKIP"
 
 set_stage_result() {
@@ -79,6 +81,8 @@ set_stage_result() {
     storybook:test*) STAGE_STORYBOOK_TEST="$value" ;;
     ui:audit*) STAGE_UI_AUDIT="$value" ;;
     screenshots*) STAGE_SCREENSHOTS="$value" ;;
+    storybook-shots*) STAGE_STORYBOOK_SHOTS="$value" ;;
+    ai-visual-review*) STAGE_AI_REVIEW="$value" ;;
     ui:verify*) STAGE_UI_VERIFY="$value" ;;
   esac
 }
@@ -142,6 +146,8 @@ write_validation_record() {
     "storybook_test": "${STAGE_STORYBOOK_TEST}",
     "ui_audit": "${STAGE_UI_AUDIT}",
     "screenshots": "${STAGE_SCREENSHOTS}",
+    "storybook_shots": "${STAGE_STORYBOOK_SHOTS}",
+    "ai_visual_review": "${STAGE_AI_REVIEW}",
     "ui_verify": "${STAGE_UI_VERIFY}"
   }
 }
@@ -351,8 +357,8 @@ else
       sleep 1
     done
 
-    # Capture screenshots
-    UI_BASE_URL="http://127.0.0.1:${VALIDATION_PORT}/" UI_OUT_DIR="$AFTER_DIR" npm run ui:shots 2>&1 || true
+    # Capture screenshots (all 7 themes for full regression coverage)
+    UI_BASE_URL="http://127.0.0.1:${VALIDATION_PORT}/" UI_OUT_DIR="$AFTER_DIR" UI_ALL_THEMES=1 npm run ui:shots 2>&1 || true
 
     # Kill dev server
     kill "$DEV_PID" 2>/dev/null || true

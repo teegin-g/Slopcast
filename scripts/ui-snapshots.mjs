@@ -15,10 +15,19 @@ const fxMode = (process.env.UI_FX_MODE === 'cinematic' || process.env.UI_FX_MODE
   ? process.env.UI_FX_MODE
   : null;
 
-const THEMES = [
+const ALL_THEMES = [
   { id: 'slate', title: 'Slate' },
+  { id: 'synthwave', title: 'Synthwave' },
+  { id: 'tropical', title: 'Tropical' },
+  { id: 'league', title: 'Nocturne' },
+  { id: 'stormwatch', title: 'Stormwatch' },
   { id: 'mario', title: 'Classic' },
+  { id: 'hyperborea', title: 'Hyperborea' },
 ];
+
+const THEMES = process.env.UI_ALL_THEMES === '1'
+  ? ALL_THEMES
+  : [ALL_THEMES[0], ALL_THEMES[5]]; // slate + mario (fast default)
 
 const DEFAULT_AUTH_SESSION = {
   provider: 'dev-bypass',
@@ -120,6 +129,8 @@ async function main() {
         localStorage.setItem(storageKey, JSON.stringify(session));
         localStorage.setItem('slopcast-design-workspace', 'WELLS');
         localStorage.setItem('slopcast-econ-results-tab', 'SUMMARY');
+        // Freeze animated backgrounds for deterministic screenshot captures
+        localStorage.setItem('slopcast-disable-bg-animations', '1');
         if (mode === 'cinematic' || mode === 'max') {
           localStorage.setItem('slopcast-fx-synthwave', mode);
           localStorage.setItem('slopcast-fx-tropical', mode);
