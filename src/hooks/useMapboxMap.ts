@@ -45,6 +45,9 @@ export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapRes
     if (!MAPBOX_TOKEN || !mapContainerRef.current || mapRef.current) return;
 
     let cancelled = false;
+    // Track the map instance locally so cleanup can always remove it,
+    // even if it was created after the async import resolved.
+    let mapInstance: any = null;
 
     (async () => {
       try {
@@ -63,21 +66,39 @@ export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapRes
           attributionControl: false,
         });
 
-        map.on('load', () => {
-          if (cancelled) return;
+        mapInstance = map;
 
-          // Add 3D terrain
-          map.addSource('mapbox-dem', {
-            type: 'raster-dem',
-            url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
-            tileSize: 512,
-            maxzoom: 14,
-          });
-          map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.2 });
+        const markReady = () => {
+          if (cancelled || mapRef.current) return;
+
+          // Add 3D terrain (best-effort — may fail in headless/WebGL-limited envs)
+          try {
+            if (!map.getSource('mapbox-dem')) {
+              map.addSource('mapbox-dem', {
+                type: 'raster-dem',
+                url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+                tileSize: 512,
+                maxzoom: 14,
+              });
+              map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.2 });
+            }
+          } catch {
+            // Terrain is optional
+          }
 
           mapRef.current = map;
           setIsLoaded(true);
-        });
+        };
+
+        // Try the load event first
+        map.on('load', markReady);
+
+        // Fallback: poll for style loaded state in case the event was missed
+        const poll = setInterval(() => {
+          if (cancelled) { clearInterval(poll); return; }
+          if (map.isStyleLoaded()) { clearInterval(poll); markReady(); }
+        }, 200);
+        setTimeout(() => clearInterval(poll), 30000);
 
         // Track view state changes
         map.on('moveend', () => {
@@ -97,11 +118,17 @@ export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapRes
 
     return () => {
       cancelled = true;
+      // Remove the locally-tracked instance (handles StrictMode where
+      // mapRef.current may not yet be set when cleanup runs).
+      if (mapInstance) {
+        mapInstance.remove();
+        mapInstance = null;
+      }
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
-        setIsLoaded(false);
       }
+      setIsLoaded(false);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

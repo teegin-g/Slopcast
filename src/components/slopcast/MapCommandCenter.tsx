@@ -83,6 +83,29 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   const mp = theme.mapPalette;
   const { map, isLoaded, mapContainerRef } = useMapboxMap();
 
+  // Detect map canvas presence as a fallback for isLoaded (handles StrictMode race)
+  const [canvasDetected, setCanvasDetected] = useState(false);
+  useEffect(() => {
+    if (isLoaded || canvasDetected) return;
+    const container = mapContainerRef.current;
+    if (!container) return;
+    const observer = new MutationObserver(() => {
+      if (container.querySelector('canvas.mapboxgl-canvas')) {
+        setCanvasDetected(true);
+        observer.disconnect();
+      }
+    });
+    // Check immediately
+    if (container.querySelector('canvas.mapboxgl-canvas')) {
+      setCanvasDetected(true);
+      return;
+    }
+    observer.observe(container, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [isLoaded, canvasDetected, mapContainerRef]);
+
+  const mapReady = isLoaded || canvasDetected;
+
   const [activeTool, setActiveTool] = useState<SelectionTool | null>(null);
   const [layers, setLayers] = useState<Record<string, boolean>>({ grid: false, heatmap: false, satellite: false });
   const [groupsPanelOpen, setGroupsPanelOpen] = useState(true);
@@ -251,7 +274,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
       <div ref={mapContainerRef} className="absolute inset-0" />
 
       {/* Fallback when no Mapbox token */}
-      {!isLoaded && (
+      {!mapReady && (
         <div className={`absolute inset-0 flex items-center justify-center ${
           isClassic ? 'bg-[#101010]' : 'bg-[var(--bg-deep)]'
         }`}>
