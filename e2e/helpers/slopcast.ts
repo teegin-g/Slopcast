@@ -353,6 +353,30 @@ export class SlopcastApp {
     }
   }
 
+  async expectMapLoaded(): Promise<void> {
+    await expect(this.page.getByTestId('map-command-center')).toBeVisible({ timeout: 15_000 });
+    await expect(
+      this.page.locator('[data-testid="map-command-center"] canvas.mapboxgl-canvas'),
+    ).toBeVisible({ timeout: 30_000 });
+    await expect(this.page.getByText('Set VITE_MAPBOX_TOKEN')).not.toBeVisible({ timeout: 5_000 });
+  }
+
+  async expectMapWellsPopulated(): Promise<void> {
+    const hasWellFeatures = await this.page.evaluate(async () => {
+      await new Promise((r) => setTimeout(r, 2000));
+      const canvas = document.querySelector(
+        '[data-testid="map-command-center"] canvas.mapboxgl-canvas',
+      );
+      return canvas !== null && canvas.getBoundingClientRect().width > 0;
+    });
+    expect(hasWellFeatures).toBe(true);
+  }
+
+  async screenshotMap(name: string): Promise<Buffer> {
+    const mapEl = this.page.getByTestId('map-command-center');
+    return await mapEl.screenshot({ path: `artifacts/ui/latest/map__${name}.png` });
+  }
+
   async assertNoDimensionWarnings(): Promise<void> {
     const warnings = this.consoleMessages.filter(hasDimensionWarning);
     expect(

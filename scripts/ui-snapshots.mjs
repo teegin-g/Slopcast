@@ -183,6 +183,20 @@ async function main() {
           await page.screenshot({ path: path.join(outDir, fileName), fullPage: true });
         }
 
+        // Map screenshot capture — wait for Mapbox canvas to load
+        await click(page.getByRole('button', { name: /^Wells/i }).first());
+        try {
+          const mapCanvas = page.locator('[data-testid="map-command-center"] canvas.mapboxgl-canvas');
+          await mapCanvas.waitFor({ state: 'visible', timeout: 30_000 });
+          await page.waitForTimeout(3000); // Wait for well layer to render
+          const mapFileName = `${viewport.id}__${theme.id}__map-wells-loaded.png`;
+          await page.screenshot({ path: path.join(outDir, mapFileName), fullPage: false });
+        } catch {
+          // Map may not load without token — capture fallback state
+          const mapFileName = `${viewport.id}__${theme.id}__map-fallback.png`;
+          await page.screenshot({ path: path.join(outDir, mapFileName), fullPage: false });
+        }
+
         for (const view of VIEWS) {
           await click(page.getByRole('button', { name: view.tabName }));
           await page.getByText(view.expectText, { exact: false }).first().waitFor({ timeout: 15_000 });
