@@ -186,16 +186,7 @@ async function main() {
 
   console.log(`Review scope: ${changedFiles.length}/${totalFiles} app screenshots changed, ${changedStories.length}/${totalStories} stories changed`);
 
-  // If no API key, output pixelmatch-only summary
-  if (!apiKey) {
-    console.log('No ANTHROPIC_API_KEY set — generating pixelmatch-only report (no AI review).');
-    const report = generatePixelmatchReport(summary, storiesSummary, changedFiles, changedStories, totalFiles, totalStories);
-    await fs.mkdir(path.dirname(outputPath), { recursive: true });
-    await fs.writeFile(outputPath, report, 'utf8');
-    console.log(`Report written to ${outputPath}`);
-    return;
-  }
-
+  // Dry-run mode — generate synthetic review from pixelmatch data (no API call needed)
   if (dryRun) {
     console.log('Dry-run mode — generating synthetic review from pixelmatch data (no API call).');
     const syntheticFindings = (summary.files || [])
@@ -222,6 +213,16 @@ async function main() {
       console.log(`REGRESSION — ${regCount} regression(s) flagged by heuristic`);
       process.exit(1);
     }
+    return;
+  }
+
+  // If no API key, output pixelmatch-only summary
+  if (!apiKey) {
+    console.log('No ANTHROPIC_API_KEY set — generating pixelmatch-only report (no AI review).');
+    const report = generatePixelmatchReport(summary, storiesSummary, changedFiles, changedStories, totalFiles, totalStories);
+    await fs.mkdir(path.dirname(outputPath), { recursive: true });
+    await fs.writeFile(outputPath, report, 'utf8');
+    console.log(`Report written to ${outputPath}`);
     return;
   }
 
