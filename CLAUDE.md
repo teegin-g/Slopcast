@@ -131,6 +131,12 @@ This project includes a multi-agent system in `.agents/` for structured feature 
 - Implementers follow TDD: write failing tests first, then implement
 - All activity is logged to `.agents/state/activity.jsonl`
 
+### Local Context First
+- Keep `CLAUDE.md`, `.cursorrules`, `AGENTS.md`, and `.agents/` as the canonical global harness.
+- Before broad repo search, check the nearest local `FEATURE.md` or `README.md` in the folder you are working in.
+- Use local manifests as routing docs: they should point you to the right entrypoints, neighboring files, tests, stories, and specs for that area.
+- Do not create full per-folder copies of the root harness unless a tool absolutely requires a tiny shim.
+
 ## Design Context
 
 ### Users
