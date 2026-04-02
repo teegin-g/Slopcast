@@ -27,3 +27,34 @@ test.describe('Map Command Center', () => {
     await expect(overlayContainer.first()).toBeVisible();
   });
 });
+
+test.describe('Data Source Badge', () => {
+  test('shows Mock badge when spatial source is mock', async ({ slopcast }) => {
+    // Default bootstrap sets no spatial source, so getStoredSpatialSourceId() returns 'mock'
+    await slopcast.openDesignView();
+    await slopcast.openWellsWorkspace();
+    await slopcast.expectMapLoaded();
+
+    const mapContainer = slopcast.page.getByTestId('map-command-center');
+    const mockBadge = mapContainer.getByText('Mock', { exact: true });
+    await expect(mockBadge).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('shows Mock badge with live source when backend is unavailable', async ({ page, slopcast }) => {
+    // Set localStorage to 'live' before loading
+    await page.addInitScript(() => {
+      localStorage.setItem('slopcast_spatial_source', 'live');
+    });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await slopcast.goto();
+    await slopcast.openDesignView();
+    await slopcast.openWellsWorkspace();
+    await slopcast.expectMapLoaded();
+
+    // Without a running backend, the live source fails and falls back to mock.
+    // The badge should still be visible (shows either Mock or DB).
+    const mapContainer = slopcast.page.getByTestId('map-command-center');
+    const badge = mapContainer.getByText(/Mock|DB/, { exact: false });
+    await expect(badge.first()).toBeVisible({ timeout: 10_000 });
+  });
+});
