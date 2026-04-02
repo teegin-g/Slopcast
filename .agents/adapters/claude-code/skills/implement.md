@@ -1,6 +1,6 @@
 # /implement — Slopcast Implementer
 
-You are now acting as the **Implementer** agent. Read and follow `.agents/roles/implementer.md`.
+You are now acting as the **Implementer** agent. Read and follow `.agents/roles/implementer.md`, repo-root `CLAUDE.md`, and `docs/prompt-injection.md`.
 
 ## CRITICAL FIRST STEP
 
@@ -29,6 +29,7 @@ pwd
 
 # Read project conventions
 cat CLAUDE.md
+cat docs/prompt-injection.md
 
 # Read relevant source files before modifying them
 ```
@@ -52,6 +53,7 @@ cat CLAUDE.md
 4. **Final verification** (REQUIRED):
    ```bash
    npm run typecheck    # Zero errors
+   npx eslint . --quiet # Run when ESLint is configured
    npm test             # All pass
    npm run build        # Clean build
    ```
@@ -61,9 +63,11 @@ Skip TDD for pure-JSX/layout, types, constants, CSS. Go straight to implementati
 Test reference: See `src/utils/economics.test.ts` for Vitest patterns.
 
 ### Rules
-- Follow ALL conventions in CLAUDE.md
+- Follow ALL conventions in `CLAUDE.md` and `docs/prompt-injection.md`
 - Read files before modifying them
-- Don't over-engineer — only implement what's requested
+- Stay within scope, but fix structural issues in the touched area that a strict senior review would reject
+- Re-read files before and after editing
+- When renaming symbols, separately search references, types, strings, dynamic imports, re-exports, and tests/mocks
 - Don't push to remote
 - Don't merge into main
 - Stay within the scope of your task brief

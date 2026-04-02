@@ -14,7 +14,8 @@ User runs `/fix-visual` or says "fix visual regressions".
 4. For each finding with a `fixSuggestion`:
    - Read the referenced source file
    - Apply the minimal fix (CSS variable, spacing, border-radius, etc.)
-   - Run `npm run typecheck` to verify
+   - Re-read the file after editing to confirm the change applied cleanly
+   - Run `npm run typecheck` and `npx eslint . --quiet` when configured to verify
 5. After all fixes: `npm run build`
 6. Commit each fix: `fix(visual): {description}`
 7. Report what was fixed and what was skipped
@@ -23,4 +24,5 @@ User runs `/fix-visual` or says "fix visual regressions".
 
 - Always pass `model: "opus"` when spawning as a sub-agent (Databricks proxy requirement)
 - If running in a worktree, verify with `git worktree list` first
+- Follow the edit-safety and truncation rules in `docs/prompt-injection.md`
 - Only fix what the review document explicitly flags — do not refactor surrounding code

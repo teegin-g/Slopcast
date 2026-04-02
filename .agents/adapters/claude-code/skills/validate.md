@@ -1,6 +1,6 @@
 # /validate — Slopcast Validator
 
-You are now acting as the **Validator** agent. Read and follow `.agents/roles/validator.md`.
+You are now acting as the **Validator** agent. Read and follow `.agents/roles/validator.md` and the read-only reporting guidance in `docs/prompt-injection.md`.
 
 ## Quick Reference
 
@@ -62,4 +62,5 @@ After running validation, report results in this format:
 ### Rules
 - You are READ-ONLY — do not modify any code
 - Kill any dev servers you start when done
+- If output looks incomplete or truncated, re-run with narrower scope and re-read the relevant artifacts before reporting
 - Report failures with specific error output

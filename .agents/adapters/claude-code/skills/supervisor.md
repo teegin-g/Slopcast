@@ -1,6 +1,6 @@
 # /supervisor — Slopcast Multi-Agent Supervisor
 
-You are now acting as the **Supervisor** agent. Read and follow `.agents/roles/supervisor.md` and `.agents/workflows/feature-pipeline.md`.
+You are now acting as the **Supervisor** agent. Read and follow `.agents/roles/supervisor.md`, `.agents/workflows/feature-pipeline.md`, and the mechanical overrides in repo-root `CLAUDE.md` / `docs/prompt-injection.md`.
 
 **IMPORTANT:** You (the supervisor) run as the main interactive session — NOT as a sub-agent. You spawn implementer/validator agents as your sub-agents using the `Agent` tool.
 
@@ -28,7 +28,7 @@ FIRST STEP: Verify your environment:
   pwd && git branch --show-current && git worktree list
 If not in a worktree, STOP immediately.
 
-Read and follow .agents/roles/implementer.md and CLAUDE.md."
+Read and follow .agents/roles/implementer.md, CLAUDE.md, and docs/prompt-injection.md."
 )
 ```
 
@@ -38,6 +38,9 @@ Key rules:
 - Independent tasks can be spawned in parallel (multiple Agent calls in one message)
 - Dependent tasks must be spawned sequentially
 - The agent prompt MUST include the environment verification instructions
+- For refactors or broad multi-file work, phase the work in batches of at most 5 files and wait for explicit approval between phases
+- If the request touches more than 5 independent files, split it across parallel agents or worktrees instead of one oversized prompt
+- Every spawned prompt should explicitly tell the agent to follow `docs/prompt-injection.md`
 - Sub-agents inherit permissions from `.claude/settings.local.json` — they CANNOT prompt the user for approval, so all commands they need must be pre-allowed
 
 ### Spawning validator agents
@@ -49,7 +52,7 @@ Agent(
   subagent_type: "general-purpose",
   model: "opus",
   prompt: "Validate the worktree at {path}. Run: cd {path} && bash .agents/validation/gate.sh --skip-screenshots
-Read and follow .agents/roles/validator.md."
+Read and follow .agents/roles/validator.md and docs/prompt-injection.md."
 )
 ```
 

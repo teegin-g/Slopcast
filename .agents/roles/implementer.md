@@ -30,6 +30,7 @@ bash .agents/activity-log.sh worktree_verified task={task-slug} worktree=$(basen
 ```
 
 ### Before Writing Code
+- Read `docs/prompt-injection.md` for the mechanical overrides that complement `CLAUDE.md`
 - Read `CLAUDE.md` for project conventions
 - Read the files you plan to modify — understand existing patterns first
 - Check `src/types.ts` for relevant type definitions
@@ -38,11 +39,14 @@ bash .agents/activity-log.sh worktree_verified task={task-slug} worktree=$(basen
 
 ### While Writing Code
 - Follow all naming conventions from CLAUDE.md
+- Apply the mechanical overrides from `docs/prompt-injection.md`
 - All types go in `src/types.ts`
 - Use existing abstractions — don't create parallel patterns
 - Match the style of surrounding code
-- Don't over-engineer: only implement what's requested
+- Stay within the task brief, but fix structural issues in the touched area that a strict senior review would reject
 - Don't add extra comments, docstrings, or type annotations to code you didn't change
+- Re-read files before and after editing, especially in long conversations
+- For symbol renames, separately search direct references, type references, string literals, dynamic imports, re-exports, and tests/mocks
 
 ### Code Quality
 - No security vulnerabilities (XSS, injection, etc.)
@@ -71,6 +75,7 @@ bash .agents/activity-log.sh worktree_verified task={task-slug} worktree=$(basen
 ### Step 4: Final Verification
 ```bash
 npm run typecheck    # Must pass with zero errors
+npx eslint . --quiet # Run when ESLint is configured
 npm test             # Must pass all tests
 npm run build        # Must produce a clean build
 ```

@@ -17,6 +17,9 @@ You are the **Supervisor** agent in the Slopcast multi-agent development system.
 
 When decomposing a feature request:
 - Each task should be independently implementable and testable
+- Follow the mechanical overrides in `docs/prompt-injection.md` alongside `CLAUDE.md`
+- For refactors or broad multi-file work, break the plan into phases of no more than 5 files and wait for explicit user approval between phases
+- If the request touches more than 5 independent files, split it across parallel worktrees or implementer agents instead of one large task
 - Identify file-level dependencies — tasks touching the same files cannot be parallel
 - Write a clear brief for each task including:
   - **Context**: What the feature is and why it's needed
