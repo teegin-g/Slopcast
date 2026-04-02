@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMapboxMap } from '../../hooks/useMapboxMap';
 import { useTheme } from '../../theme/ThemeProvider';
-import type { Well, WellGroup, SpatialLayerFilter } from '../../types';
+import type { Well, WellGroup, SpatialLayerFilter, SpatialDataSourceId } from '../../types';
 import { useViewportData } from '../../hooks/useViewportData';
 import { OverlayGroupsPanel } from './map/OverlayGroupsPanel';
 import { OverlayFiltersBar } from './map/OverlayFiltersBar';
@@ -47,6 +47,8 @@ interface MapCommandCenterProps {
   dimmedWellIds: Set<string>;
   onToggleWell: (id: string) => void;
   onSelectWells: (ids: string[]) => void;
+  dataSourceId?: SpatialDataSourceId;
+  onSourceChange?: (id: SpatialDataSourceId) => void;
 }
 
 export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
@@ -78,6 +80,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   visibleWellIds,
   dimmedWellIds,
   onToggleWell,
+  dataSourceId,
 }) => {
   const { theme } = useTheme();
   const mp = theme.mapPalette;
@@ -135,6 +138,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     map,
     isLoaded,
     filters: spatialFilters,
+    dataSourceId,
   });
 
   const effectiveWells = useMemo(() => {

@@ -1,7 +1,7 @@
-import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DEFAULT_CAPEX, DEFAULT_COMMODITY_PRICING, DEFAULT_OPEX, DEFAULT_OWNERSHIP, DEFAULT_TYPE_CURVE, GROUP_COLORS, MOCK_WELLS } from '../constants';
-import { Scenario, ScheduleParams, Well, WellGroup } from '../types';
+import { Scenario, ScheduleParams, SpatialDataSourceId, Well, WellGroup } from '../types';
 import ScenarioDashboard from '../components/ScenarioDashboard';
 import DesignEconomicsView, { EconomicsMobilePanel } from '../components/slopcast/DesignEconomicsView';
 import { MapCommandCenter, WellsMobilePanel } from '../components/slopcast/MapCommandCenter';
@@ -17,6 +17,7 @@ import { useWellFiltering } from '../hooks/useWellFiltering';
 import { useWellSelection } from '../hooks/useWellSelection';
 import { useTheme } from '../theme/ThemeProvider';
 import { aggregateEconomics, calculateEconomics } from '../utils/economics';
+import { getStoredSpatialSourceId, setStoredSpatialSourceId } from '../services/spatialService';
 
 type ViewMode = 'DASHBOARD' | 'ANALYSIS'; 
 type OpsTab = 'SELECTION_ACTIONS' | 'KEY_DRIVERS';
@@ -157,6 +158,11 @@ const SlopcastPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('DASHBOARD');
   const [designWorkspace, setDesignWorkspace] = useState<DesignWorkspace>(readStoredDesignWorkspace);
   const [wellsMobilePanel, setWellsMobilePanel] = useState<WellsMobilePanel>('MAP');
+  const [spatialSourceId, setSpatialSourceId] = useState<SpatialDataSourceId>(getStoredSpatialSourceId());
+  const handleSourceChange = useCallback((id: SpatialDataSourceId) => {
+    setSpatialSourceId(id);
+    setStoredSpatialSourceId(id);
+  }, []);
   const [economicsMobilePanel, setEconomicsMobilePanel] = useState<EconomicsMobilePanel>('RESULTS');
   const [economicsResultsTab, setEconomicsResultsTab] = useState<EconomicsResultsTab>(readStoredEconomicsResultsTab);
   const [opsTab, setOpsTab] = useState<OpsTab>('SELECTION_ACTIONS');
@@ -809,6 +815,8 @@ const SlopcastPage: React.FC = () => {
                    dimmedWellIds={dimmedWellIds}
                    onToggleWell={handleToggleWell}
                    onSelectWells={handleSelectWells}
+                   dataSourceId={spatialSourceId}
+                   onSourceChange={handleSourceChange}
                  />
                ) : (
                  <DesignEconomicsView

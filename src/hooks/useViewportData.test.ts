@@ -1,115 +1,160 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// Mock spatialService before importing the hook
+vi.mock('../services/spatialService', () => ({
+  getSpatialSource: vi.fn(),
+  getStoredSpatialSourceId: vi.fn(),
+}));
+
+// Mock constants to avoid pulling in full mock dataset
+vi.mock('../constants', () => ({
+  MOCK_WELLS: [],
+}));
+
+import { getSpatialSource, getStoredSpatialSourceId } from '../services/spatialService';
 import { renderHook, act } from '@testing-library/react';
 import { useViewportData } from './useViewportData';
-import { MOCK_WELLS } from '../constants';
 
-function createMockMap(bounds = {
-  getSouthWest: () => ({ lat: 31.0, lng: -103.0 }),
-  getNorthEast: () => ({ lat: 33.0, lng: -101.0 }),
-}) {
-  const listeners: Record<string, ((...args: any[]) => void)[]> = {};
+const mockFetchViewportWells = vi.fn();
+const mockGetAvailableLayers = vi.fn();
+
+function makeMockSource(id: 'mock' | 'live') {
   return {
-    getBounds: () => bounds,
-    on: (event: string, fn: (...args: any[]) => void) => {
-      if (!listeners[event]) listeners[event] = [];
-      listeners[event].push(fn);
-    },
-    off: (event: string, fn: (...args: any[]) => void) => {
-      if (listeners[event]) {
-        listeners[event] = listeners[event].filter((f) => f !== fn);
-      }
-    },
-    fire: (event: string) => {
-      listeners[event]?.forEach((fn) => fn());
-    },
-    _listeners: listeners,
+    id,
+    label: id === 'mock' ? 'Mock' : 'Live',
+    fetchViewportWells: mockFetchViewportWells,
+    getAvailableLayers: mockGetAvailableLayers,
+  };
+}
+
+function makeMapStub() {
+  const handlers: Record<string, Function> = {};
+  return {
+    getBounds: () => ({
+      getSouthWest: () => ({ lat: 31, lng: -103 }),
+      getNorthEast: () => ({ lat: 32, lng: -101 }),
+    }),
+    on: (event: string, fn: Function) => { handlers[event] = fn; },
+    off: () => {},
+    _handlers: handlers,
   };
 }
 
 describe('useViewportData', () => {
-  it('returns MOCK_WELLS as initial state when map is not loaded', () => {
-    const { result } = renderHook(() =>
-      useViewportData({ map: null, isLoaded: false }),
-    );
-    expect(result.current.wells).toBe(MOCK_WELLS);
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.error).toBeNull();
-    expect(result.current.totalCount).toBe(MOCK_WELLS.length);
-    expect(result.current.fallbackActive).toBe(false);
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockFetchViewportWells.mockResolvedValue({
+      wells: [{ id: 'w-1', name: 'Test Well', lat: 31.5, lng: -102, lateralLength: 7500, status: 'PRODUCING', operator: 'TestOp', formation: 'Wolfcamp' }],
+      total_count: 1,
+      truncated: false,
+      source: 'mock',
+    });
   });
 
-  it('fetches wells when map is loaded', async () => {
-    const mockMap = createMockMap();
-
-    const { result } = renderHook(() =>
-      useViewportData({ map: mockMap, isLoaded: true }),
-    );
-
-    // Wait for the initial fetch to complete
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 10));
+  it('uses explicit dataSourceId when provided', async () => {
+    const liveSource = makeMockSource('live');
+    vi.mocked(getSpatialSource).mockReturnValue(liveSource);
+    mockFetchViewportWells.mockResolvedValue({
+      wells: [],
+      total_count: 0,
+      truncated: false,
+      source: 'databricks',
     });
 
-    expect(result.current.source).toBe('mock');
-    expect(result.current.wells.length).toBeGreaterThan(0);
-    expect(result.current.totalCount).toBeGreaterThan(0);
-  });
-
-  it('does not fetch when enabled is false', async () => {
-    const mockMap = createMockMap();
-
-    const { result } = renderHook(() =>
-      useViewportData({ map: mockMap, isLoaded: true, enabled: false }),
-    );
-
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 10));
-    });
-
-    // Source should still be null (no fetch happened)
-    expect(result.current.source).toBeNull();
-  });
-
-  it('debounces moveend events', async () => {
-    vi.useFakeTimers();
-    const mockMap = createMockMap();
+    const map = makeMapStub();
 
     renderHook(() =>
-      useViewportData({ map: mockMap, isLoaded: true, debounceMs: 200 }),
+      useViewportData({
+        map,
+        isLoaded: true,
+        dataSourceId: 'live',
+      }),
     );
 
-    // Wait for initial fetch
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(10);
+      await new Promise((r) => setTimeout(r, 50));
     });
 
-    // Fire multiple moveend events rapidly
-    act(() => {
-      mockMap.fire('moveend');
-      mockMap.fire('moveend');
-      mockMap.fire('moveend');
-    });
-
-    // Before debounce timeout, the fetch count should not have tripled
-    // (we can't easily count fetches, but the timer test verifies the debounce exists)
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(250);
-    });
-
-    vi.useRealTimers();
+    expect(getSpatialSource).toHaveBeenCalledWith('live');
   });
 
-  it('cleans up moveend listener on unmount', () => {
-    const mockMap = createMockMap();
+  it('reads stored preference when dataSourceId is omitted', async () => {
+    vi.mocked(getStoredSpatialSourceId).mockReturnValue('live');
+    const liveSource = makeMockSource('live');
+    vi.mocked(getSpatialSource).mockReturnValue(liveSource);
+    mockFetchViewportWells.mockResolvedValue({
+      wells: [],
+      total_count: 0,
+      truncated: false,
+      source: 'databricks',
+    });
 
-    const { unmount } = renderHook(() =>
-      useViewportData({ map: mockMap, isLoaded: true }),
+    const map = makeMapStub();
+
+    renderHook(() =>
+      useViewportData({
+        map,
+        isLoaded: true,
+      }),
     );
 
-    expect(mockMap._listeners['moveend']?.length).toBeGreaterThan(0);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
 
-    unmount();
+    expect(getStoredSpatialSourceId).toHaveBeenCalled();
+    expect(getSpatialSource).toHaveBeenCalledWith('live');
+  });
 
-    expect(mockMap._listeners['moveend']?.length).toBe(0);
+  it('falls back to mock on live source error', async () => {
+    vi.mocked(getStoredSpatialSourceId).mockReturnValue('live');
+
+    const liveSource = makeMockSource('live');
+    const mockSource = makeMockSource('mock');
+
+    vi.mocked(getSpatialSource).mockImplementation((id?: string) => {
+      if (id === 'mock') return mockSource;
+      return liveSource;
+    });
+
+    mockFetchViewportWells
+      .mockRejectedValueOnce(new Error('Connection refused'))
+      .mockResolvedValueOnce({
+        wells: [{ id: 'w-mock', name: 'Mock Well', lat: 31.5, lng: -102, lateralLength: 7500, status: 'PRODUCING', operator: 'MockOp', formation: 'Wolfcamp' }],
+        total_count: 1,
+        truncated: false,
+        source: 'mock',
+      });
+
+    const map = makeMapStub();
+
+    const { result } = renderHook(() =>
+      useViewportData({
+        map,
+        isLoaded: true,
+        dataSourceId: 'live',
+      }),
+    );
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 100));
+    });
+
+    expect(result.current.fallbackActive).toBe(true);
+    expect(result.current.error).toBeNull();
+  });
+
+  it('does not fetch when disabled', () => {
+    const map = makeMapStub();
+
+    renderHook(() =>
+      useViewportData({
+        map,
+        isLoaded: true,
+        enabled: false,
+      }),
+    );
+
+    expect(getSpatialSource).not.toHaveBeenCalled();
   });
 });

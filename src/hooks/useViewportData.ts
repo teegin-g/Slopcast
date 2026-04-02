@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Well, ViewportBounds, SpatialLayerFilter, SpatialDataSourceId } from '../types';
 import { MOCK_WELLS } from '../constants';
-import { getSpatialSource } from '../services/spatialService';
+import { getSpatialSource, getStoredSpatialSourceId } from '../services/spatialService';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -108,7 +108,7 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
     setIsLoading(true);
     setError(null);
 
-    const sourceId = dataSourceId ?? 'mock';
+    const sourceId = dataSourceId ?? getStoredSpatialSourceId();
     const spatialSource = getSpatialSource(sourceId);
 
     try {
