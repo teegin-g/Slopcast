@@ -1,4 +1,6 @@
 import React from 'react';
+import type { SpatialDataSourceId } from '../../../types';
+import { setStoredSpatialSourceId } from '../../../services/spatialService';
 
 const spinKeyframes = `@keyframes spin { to { transform: rotate(360deg) } }`;
 
@@ -16,6 +18,9 @@ interface OverlayToolbarProps {
   source?: 'databricks' | 'mock' | null;
   totalCount?: number;
   truncated?: boolean;
+  dataSourceId?: SpatialDataSourceId;
+  onSourceChange?: (sourceId: SpatialDataSourceId) => void;
+  fallbackActive?: boolean;
 }
 
 const ToolButton: React.FC<{
@@ -55,6 +60,9 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
   source,
   totalCount,
   truncated,
+  dataSourceId,
+  onSourceChange,
+  fallbackActive,
 }) => {
   const panelClass = isClassic
     ? 'sc-panel theme-transition'
@@ -182,7 +190,7 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
           </svg>
         </ToolButton>
 
-        {/* Footer: count + source */}
+        {/* Footer: count + source toggle */}
         <div className={`flex flex-col items-center gap-0.5 pt-1 ${
           isClassic ? 'text-white/40' : 'text-[var(--text-muted)]'
         } text-[8px]`}>
@@ -199,11 +207,31 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
                 {totalCount != null ? totalCount.toLocaleString() : '—'}
                 {truncated && '+'}
               </span>
-              {source && (
+              <button
+                type="button"
+                onClick={() => {
+                  const next: SpatialDataSourceId = dataSourceId === 'live' ? 'mock' : 'live';
+                  setStoredSpatialSourceId(next);
+                  onSourceChange?.(next);
+                }}
+                title={`Data: ${dataSourceId === 'live' ? 'Live (click for Mock)' : 'Mock (click for Live)'}`}
+                className={`px-1 rounded text-[7px] leading-tight cursor-pointer transition-colors ${
+                  dataSourceId === 'live'
+                    ? isClassic
+                      ? 'bg-green-500/20 text-green-300 hover:bg-green-500/30'
+                      : 'bg-[var(--cyan)]/20 text-[var(--cyan)] hover:bg-[var(--cyan)]/30'
+                    : isClassic
+                      ? 'bg-white/10 hover:bg-white/20'
+                      : 'bg-[var(--surface-2)] hover:bg-[var(--surface-2)]/80'
+                }`}
+              >
+                {dataSourceId === 'live' ? 'DB' : 'Mock'}
+              </button>
+              {fallbackActive && (
                 <span className={`px-1 rounded text-[7px] leading-tight ${
-                  isClassic ? 'bg-white/10' : 'bg-[var(--surface-2)]'
-                }`}>
-                  {source === 'mock' ? 'Mock' : 'DB'}
+                  isClassic ? 'bg-yellow-500/20 text-yellow-300' : 'bg-yellow-500/20 text-yellow-400'
+                }`} title="Live source failed — showing mock data">
+                  Fallback
                 </span>
               )}
             </>
