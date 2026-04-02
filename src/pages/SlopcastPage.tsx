@@ -1,4 +1,4 @@
-import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DEFAULT_CAPEX, DEFAULT_COMMODITY_PRICING, DEFAULT_OPEX, DEFAULT_OWNERSHIP, DEFAULT_TYPE_CURVE, GROUP_COLORS, MOCK_WELLS } from '../constants';
 import { Scenario, ScheduleParams, SpatialDataSourceId, Well, WellGroup } from '../types';
@@ -159,9 +159,28 @@ const SlopcastPage: React.FC = () => {
   const [designWorkspace, setDesignWorkspace] = useState<DesignWorkspace>(readStoredDesignWorkspace);
   const [wellsMobilePanel, setWellsMobilePanel] = useState<WellsMobilePanel>('MAP');
   const [spatialSourceId, setSpatialSourceId] = useState<SpatialDataSourceId>(getStoredSpatialSourceId());
+  const [wells, setWells] = useState<Well[]>(MOCK_WELLS);
+  const prevWellIdsRef = useRef<Set<string>>(new Set(wells.map(w => w.id)));
   const handleSourceChange = useCallback((id: SpatialDataSourceId) => {
     setSpatialSourceId(id);
     setStoredSpatialSourceId(id);
+  }, []);
+  const handleWellsLoaded = useCallback((loadedWells: Well[]) => {
+    setWells(loadedWells);
+    const newIds = new Set(loadedWells.map(w => w.id));
+    const prevIds = prevWellIdsRef.current;
+    // If the well IDs changed and there's no overlap with previous set,
+    // reset group assignments so stale IDs don't linger
+    if (prevIds.size > 0 && newIds.size > 0) {
+      let hasOverlap = false;
+      for (const id of newIds) {
+        if (prevIds.has(id)) { hasOverlap = true; break; }
+      }
+      if (!hasOverlap) {
+        setGroups(prev => prev.map(g => ({ ...g, wellIds: new Set<string>() })));
+      }
+    }
+    prevWellIdsRef.current = newIds;
   }, []);
   const [economicsMobilePanel, setEconomicsMobilePanel] = useState<EconomicsMobilePanel>('RESULTS');
   const [economicsResultsTab, setEconomicsResultsTab] = useState<EconomicsResultsTab>(readStoredEconomicsResultsTab);
@@ -175,7 +194,7 @@ const SlopcastPage: React.FC = () => {
       id: 'g-1',
       name: 'Tier 1 - Core',
       color: GROUP_COLORS[0],
-      wellIds: new Set(MOCK_WELLS.map(w => w.id)),
+      wellIds: new Set(wells.map(w => w.id)),
       typeCurve: { ...DEFAULT_TYPE_CURVE },
       capex: { ...DEFAULT_CAPEX },
       opex: { ...DEFAULT_OPEX, segments: DEFAULT_OPEX.segments.map(seg => ({ ...seg })) },
@@ -234,7 +253,7 @@ const SlopcastPage: React.FC = () => {
     visibleWellIds,
     dimmedWellIds,
     handleResetFilters,
-  } = useWellFiltering(MOCK_WELLS);
+  } = useWellFiltering(wells);
 
   const {
     selectedWellIds,
@@ -257,11 +276,11 @@ const SlopcastPage: React.FC = () => {
     const baseScenario = scenarios.find(s => s.isBaseCase) || scenarios[0];
     const basePricing = baseScenario?.pricing || DEFAULT_COMMODITY_PRICING;
     return groups.map(group => {
-      const groupWells = MOCK_WELLS.filter(w => group.wellIds.has(w.id));
+      const groupWells = wells.filter(w => group.wellIds.has(w.id));
       const { flow, metrics } = calculateEconomics(groupWells, group.typeCurve, group.capex, basePricing, group.opex, group.ownership);
       return { ...group, flow, metrics };
     });
-  }, [groups, scenarios]);
+  }, [groups, scenarios, wells]);
 
   // --- Aggregate Portfolio Economics ---
   const { flow: aggregateFlow, metrics: aggregateMetrics } = useMemo(() => {
@@ -463,7 +482,7 @@ const SlopcastPage: React.FC = () => {
     const basePricing = baseScenario?.pricing || DEFAULT_COMMODITY_PRICING;
     const evaluateNpv = (modifier: DriverModifier = {}, forceOilPrice?: number) => {
       return processedGroups.reduce((sum, group) => {
-        const groupWells = MOCK_WELLS.filter(w => group.wellIds.has(w.id));
+        const groupWells = wells.filter(w => group.wellIds.has(w.id));
         const pricing = {
           ...basePricing,
           oilPrice: forceOilPrice ?? Math.max(0, basePricing.oilPrice + (modifier.oilPriceDelta ?? 0)),
@@ -527,7 +546,7 @@ const SlopcastPage: React.FC = () => {
       biggestPositive,
       biggestNegative,
     };
-  }, [processedGroups, scenarios]);
+  }, [processedGroups, scenarios, wells]);
 
   const breakevenOilPrice = useMemo(() => {
     if (aggregateMetrics.wellCount === 0) return null;
@@ -536,7 +555,7 @@ const SlopcastPage: React.FC = () => {
 
     const evaluateAtOil = (oilPrice: number) => {
       return processedGroups.reduce((sum, group) => {
-        const groupWells = MOCK_WELLS.filter(w => group.wellIds.has(w.id));
+        const groupWells = wells.filter(w => group.wellIds.has(w.id));
         const { metrics } = calculateEconomics(groupWells, group.typeCurve, group.capex, { ...basePricing, oilPrice }, group.opex, group.ownership);
         return sum + metrics.npv10;
       }, 0);
@@ -566,7 +585,7 @@ const SlopcastPage: React.FC = () => {
     }
 
     return Number(((low + high) / 2).toFixed(1));
-  }, [aggregateMetrics.wellCount, processedGroups, scenarios]);
+  }, [aggregateMetrics.wellCount, processedGroups, scenarios, wells]);
 
   const handleSaveSnapshot = async () => {
     if (!supabasePersistenceEnabled) {
@@ -773,7 +792,7 @@ const SlopcastPage: React.FC = () => {
         {viewMode === 'ANALYSIS' ? (
              <ScenarioDashboard
                groups={processedGroups}
-               wells={MOCK_WELLS}
+               wells={wells}
                scenarios={scenarios}
                setScenarios={handleSetScenarios}
              />
@@ -808,8 +827,8 @@ const SlopcastPage: React.FC = () => {
                    onSetStatusFilter={(value) => setStatusFilter(value)}
                    onResetFilters={handleResetFilters}
                    filteredWellsCount={filteredWells.length}
-                   totalWellCount={MOCK_WELLS.length}
-                   wells={MOCK_WELLS}
+                   totalWellCount={wells.length}
+                   wells={wells}
                    selectedWellIds={selectedWellIds}
                    visibleWellIds={visibleWellIds}
                    dimmedWellIds={dimmedWellIds}
@@ -817,6 +836,7 @@ const SlopcastPage: React.FC = () => {
                    onSelectWells={handleSelectWells}
                    dataSourceId={spatialSourceId}
                    onSourceChange={handleSourceChange}
+                   onWellsLoaded={handleWellsLoaded}
                  />
                ) : (
                  <DesignEconomicsView
@@ -827,7 +847,7 @@ const SlopcastPage: React.FC = () => {
                    onSetMobilePanel={setEconomicsMobilePanel}
                    resultsTab={economicsResultsTab}
                    onSetResultsTab={setEconomicsResultsTab}
-                   wells={MOCK_WELLS}
+                   wells={wells}
                    groups={processedGroups}
                    activeGroupId={activeGroupId}
                    onActivateGroup={setActiveGroupId}

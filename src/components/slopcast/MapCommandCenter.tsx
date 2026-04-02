@@ -49,6 +49,7 @@ interface MapCommandCenterProps {
   onSelectWells: (ids: string[]) => void;
   dataSourceId?: SpatialDataSourceId;
   onSourceChange?: (id: SpatialDataSourceId) => void;
+  onWellsLoaded?: (wells: Well[]) => void;
 }
 
 export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
@@ -81,6 +82,8 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   dimmedWellIds,
   onToggleWell,
   dataSourceId,
+  onSourceChange,
+  onWellsLoaded,
 }) => {
   const { theme } = useTheme();
   const mp = theme.mapPalette;
@@ -134,6 +137,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     source: spatialSource,
     totalCount: spatialTotalCount,
     truncated: spatialTruncated,
+    fallbackActive: spatialFallback,
   } = useViewportData({
     map,
     isLoaded,
@@ -147,6 +151,11 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     }
     return wells;
   }, [viewportWells, spatialSource, wells]);
+
+  // Notify parent when effective wells change
+  useEffect(() => {
+    onWellsLoaded?.(effectiveWells);
+  }, [effectiveWells, onWellsLoaded]);
 
   // Track lasso/rectangle selection state
   const [isSelecting, setIsSelecting] = useState(false);
@@ -353,6 +362,9 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
           source={spatialSource}
           totalCount={spatialTotalCount}
           truncated={spatialTruncated}
+          dataSourceId={dataSourceId}
+          onSourceChange={onSourceChange}
+          fallbackActive={spatialFallback}
         />
 
         <OverlaySelectionBar
