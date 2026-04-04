@@ -15,6 +15,7 @@ const meta = {
     onToggleDataLayer: fn(),
     isLoading: false,
     source: 'mock' as const,
+    dataSourceId: 'mock' as const,
     totalCount: 247,
     truncated: false,
   },
@@ -29,6 +30,9 @@ export const Default: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByText('Data')).toBeVisible();
     await expect(canvas.getByText('247')).toBeVisible();
+    await expect(
+      canvas.getByRole('button', { name: /data source: mock\. click to switch to databricks\./i }),
+    ).toBeVisible();
     await expect(canvas.getByText('Mock')).toBeVisible();
   },
 };
@@ -42,12 +46,31 @@ export const Loading: Story = {
 export const DatabricksSource: Story = {
   args: {
     source: 'databricks' as const,
+    dataSourceId: 'live' as const,
     totalCount: 12453,
     truncated: true,
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    await expect(
+      canvas.getByRole('button', { name: /data source: databricks\. click to switch to mock\./i }),
+    ).toBeVisible();
     await expect(canvas.getByText('DB')).toBeVisible();
+  },
+};
+
+export const LiveSelectionWithFallback: Story = {
+  args: {
+    source: 'mock' as const,
+    dataSourceId: 'live' as const,
+    fallbackActive: true,
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByRole('button', { name: /using mock fallback while live is selected\. click to switch to mock\./i }),
+    ).toBeVisible();
+    await expect(canvas.getByText('Fallback')).toBeVisible();
   },
 };
 
