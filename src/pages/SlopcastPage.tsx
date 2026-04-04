@@ -4,12 +4,13 @@ import { DEFAULT_CAPEX, DEFAULT_COMMODITY_PRICING, DEFAULT_OPEX, DEFAULT_OWNERSH
 import { Scenario, ScheduleParams, SpatialDataSourceId, Well, WellGroup } from '../types';
 import ScenarioDashboard from '../components/ScenarioDashboard';
 import DesignEconomicsView, { EconomicsMobilePanel } from '../components/slopcast/DesignEconomicsView';
+import DesignWellsView from '../components/slopcast/DesignWellsView';
 import { MapCommandCenter, WellsMobilePanel } from '../components/slopcast/MapCommandCenter';
 import { DesignWorkspace } from '../components/slopcast/DesignWorkspaceTabs';
 import { EconomicsResultsTab } from '../components/slopcast/EconomicsResultsTabs';
 import PageHeader from '../components/slopcast/PageHeader';
 import { DesignStep, StepStatus, WorkflowStep } from '../components/slopcast/WorkflowStepper';
-import { useViewportLayout } from '../components/slopcast/hooks/useViewportLayout';
+import { getViewportLayout, useViewportLayout } from '../components/slopcast/hooks/useViewportLayout';
 import { useProjectPersistence } from '../components/slopcast/hooks/useProjectPersistence';
 import { useAuth } from '../auth/AuthProvider';
 import { hasSupabaseEnv } from '../services/supabaseClient';
@@ -157,7 +158,10 @@ const SlopcastPage: React.FC = () => {
   // --- State ---
   const [viewMode, setViewMode] = useState<ViewMode>('DASHBOARD');
   const [designWorkspace, setDesignWorkspace] = useState<DesignWorkspace>(readStoredDesignWorkspace);
-  const [wellsMobilePanel, setWellsMobilePanel] = useState<WellsMobilePanel>('MAP');
+  const [wellsMobilePanel, setWellsMobilePanel] = useState<WellsMobilePanel>(() => {
+    if (typeof window === 'undefined') return 'MAP';
+    return getViewportLayout(window.innerWidth) === 'mobile' ? 'GROUPS' : 'MAP';
+  });
   const [spatialSourceId, setSpatialSourceId] = useState<SpatialDataSourceId>(getStoredSpatialSourceId());
   const [wells, setWells] = useState<Well[]>(MOCK_WELLS);
   const prevWellIdsRef = useRef<Set<string>>(new Set(wells.map(w => w.id)));
@@ -799,45 +803,86 @@ const SlopcastPage: React.FC = () => {
         ) : (
              <>
                {designWorkspace === 'WELLS' ? (
-                 <MapCommandCenter
-                   isClassic={isClassic}
-                   theme={theme}
-                   themeId={themeId}
-                   viewportLayout={viewportLayout}
-                   mobilePanel={wellsMobilePanel}
-                   onSetMobilePanel={setWellsMobilePanel}
-                   groups={processedGroups}
-                   activeGroupId={activeGroupId}
-                   selectedWellCount={selectedVisibleCount}
-                   onActivateGroup={setActiveGroupId}
-                   onAddGroup={handleAddGroup}
-                   onCloneGroup={handleCloneGroup}
-                   onAssignWells={handleAssignWellsToActive}
-                   onCreateGroupFromSelection={handleCreateGroupFromSelection}
-                   onSelectAll={handleSelectAll}
-                   onClearSelection={handleClearSelection}
-                   operatorFilter={operatorFilter}
-                   formationFilter={formationFilter}
-                   statusFilter={statusFilter}
-                   operatorOptions={operatorOptions}
-                   formationOptions={formationOptions}
-                   statusOptions={statusOptions}
-                   onSetOperatorFilter={setOperatorFilter}
-                   onSetFormationFilter={setFormationFilter}
-                   onSetStatusFilter={(value) => setStatusFilter(value)}
-                   onResetFilters={handleResetFilters}
-                   filteredWellsCount={filteredWells.length}
-                   totalWellCount={wells.length}
-                   wells={wells}
-                   selectedWellIds={selectedWellIds}
-                   visibleWellIds={visibleWellIds}
-                   dimmedWellIds={dimmedWellIds}
-                   onToggleWell={handleToggleWell}
-                   onSelectWells={handleSelectWells}
-                   dataSourceId={spatialSourceId}
-                   onSourceChange={handleSourceChange}
-                   onWellsLoaded={handleWellsLoaded}
-                 />
+                 viewportLayout === 'mobile' ? (
+                   <div className="mx-auto w-full max-w-[1920px] px-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-3 sm:px-4">
+                     <DesignWellsView
+                       isClassic={isClassic}
+                       theme={theme}
+                       themeId={themeId}
+                       viewportLayout={viewportLayout}
+                       mobilePanel={wellsMobilePanel}
+                       onSetMobilePanel={setWellsMobilePanel}
+                       groups={processedGroups}
+                       activeGroupId={activeGroupId}
+                       selectedWellCount={selectedVisibleCount}
+                       onActivateGroup={setActiveGroupId}
+                       onAddGroup={handleAddGroup}
+                       onCloneGroup={handleCloneGroup}
+                       onAssignWells={handleAssignWellsToActive}
+                       onCreateGroupFromSelection={handleCreateGroupFromSelection}
+                       onSelectAll={handleSelectAll}
+                       onClearSelection={handleClearSelection}
+                       operatorFilter={operatorFilter}
+                       formationFilter={formationFilter}
+                       statusFilter={statusFilter}
+                       operatorOptions={operatorOptions}
+                       formationOptions={formationOptions}
+                       statusOptions={statusOptions}
+                       onSetOperatorFilter={setOperatorFilter}
+                       onSetFormationFilter={setFormationFilter}
+                       onSetStatusFilter={(value) => setStatusFilter(value)}
+                       onResetFilters={handleResetFilters}
+                       filteredWellsCount={filteredWells.length}
+                       totalWellCount={wells.length}
+                       wells={wells}
+                       selectedWellIds={selectedWellIds}
+                       visibleWellIds={visibleWellIds}
+                       dimmedWellIds={dimmedWellIds}
+                       onToggleWell={handleToggleWell}
+                       onSelectWells={handleSelectWells}
+                     />
+                   </div>
+                 ) : (
+                   <MapCommandCenter
+                     isClassic={isClassic}
+                     theme={theme}
+                     themeId={themeId}
+                     viewportLayout={viewportLayout}
+                     mobilePanel={wellsMobilePanel}
+                     onSetMobilePanel={setWellsMobilePanel}
+                     groups={processedGroups}
+                     activeGroupId={activeGroupId}
+                     selectedWellCount={selectedVisibleCount}
+                     onActivateGroup={setActiveGroupId}
+                     onAddGroup={handleAddGroup}
+                     onCloneGroup={handleCloneGroup}
+                     onAssignWells={handleAssignWellsToActive}
+                     onCreateGroupFromSelection={handleCreateGroupFromSelection}
+                     onSelectAll={handleSelectAll}
+                     onClearSelection={handleClearSelection}
+                     operatorFilter={operatorFilter}
+                     formationFilter={formationFilter}
+                     statusFilter={statusFilter}
+                     operatorOptions={operatorOptions}
+                     formationOptions={formationOptions}
+                     statusOptions={statusOptions}
+                     onSetOperatorFilter={setOperatorFilter}
+                     onSetFormationFilter={setFormationFilter}
+                     onSetStatusFilter={(value) => setStatusFilter(value)}
+                     onResetFilters={handleResetFilters}
+                     filteredWellsCount={filteredWells.length}
+                     totalWellCount={wells.length}
+                     wells={wells}
+                     selectedWellIds={selectedWellIds}
+                     visibleWellIds={visibleWellIds}
+                     dimmedWellIds={dimmedWellIds}
+                     onToggleWell={handleToggleWell}
+                     onSelectWells={handleSelectWells}
+                     dataSourceId={spatialSourceId}
+                     onSourceChange={handleSourceChange}
+                     onWellsLoaded={handleWellsLoaded}
+                   />
+                 )
                ) : (
                  <DesignEconomicsView
                    isClassic={isClassic}

@@ -1,0 +1,63 @@
+{
+  "taskStatusById": {
+    "1": "in_progress",
+    "2": "in_progress",
+    "3": "in_progress"
+  },
+  "workerAliveByName": {
+    "worker-1": true,
+    "worker-2": true,
+    "worker-3": true
+  },
+  "workerStateByName": {
+    "worker-1": "unknown",
+    "worker-2": "unknown",
+    "worker-3": "unknown"
+  },
+  "workerTurnCountByName": {
+    "worker-1": 0,
+    "worker-2": 0,
+    "worker-3": 0
+  },
+  "workerTaskIdByName": {
+    "worker-1": "",
+    "worker-2": "",
+    "worker-3": ""
+  },
+  "mailboxNotifiedByMessageId": {},
+  "completedEventTaskIds": {},
+  "integrationByWorker": {
+    "worker-1": {
+      "last_leader_head": "56e7e152415a9051c283ac1c62c6a48d05095f3b",
+      "last_seen_head": "ab63c04190e01bc27e6287e6b65eb7caa98cb1db",
+      "last_integrated_head": "746c2a5a17a10a8e08f0c62b1f6e758e627c5893",
+      "status": "cherry_pick_conflict",
+      "updated_at": "2026-04-04T19:10:10.369Z",
+      "conflict_commit": "ab63c04190e01bc27e6287e6b65eb7caa98cb1db",
+      "conflict_files": []
+    },
+    "worker-2": {
+      "last_leader_head": "56e7e152415a9051c283ac1c62c6a48d05095f3b",
+      "last_seen_head": "83c70a7bca0f40fb9db052ad44146d95e59bbd27",
+      "last_integrated_head": "d521e4b696027cb60c5c95c3dd19176dc8bd93f9",
+      "status": "cherry_pick_conflict",
+      "updated_at": "2026-04-04T19:10:10.910Z",
+      "conflict_commit": "83c70a7bca0f40fb9db052ad44146d95e59bbd27",
+      "conflict_files": []
+    },
+    "worker-3": {
+      "last_leader_head": "56e7e152415a9051c283ac1c62c6a48d05095f3b",
+      "last_seen_head": "746c2a5a17a10a8e08f0c62b1f6e758e627c5893",
+      "last_integrated_head": "746c2a5a17a10a8e08f0c62b1f6e758e627c5893",
+      "status": "idle",
+      "updated_at": "2026-04-04T19:10:10.990Z"
+    }
+  },
+  "monitorTimings": {
+    "list_tasks_ms": 0.41,
+    "worker_scan_ms": 15.67,
+    "mailbox_delivery_ms": 0.96,
+    "total_ms": 1204.9,
+    "updated_at": "2026-04-04T19:10:11.018Z"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "worker": "worker-3",
+  "messages": [
+    {
+      "message_id": "258c1a5e-57ff-4684-b347-62951c11f02b",
+      "from_worker": "leader-fixed",
+      "to_worker": "worker-3",
+      "body": "Claim task 3 now and treat it as verification-only despite the generic task title. Do not edit product code unless a test lock is strictly required after proving a behavior gap. Run ui:components, ui:verify, ui:audit, and collect exact failures and artifact paths against 127.0.0.1:3100 and Storybook iframe. Report results to leader.",
+      "created_at": "2026-04-04T19:06:59.151Z",
+      "notified_at": "2026-04-04T19:07:02.395Z",
+      "delivered_at": "2026-04-04T19:07:45.455Z"
+    }
+  ]
+}

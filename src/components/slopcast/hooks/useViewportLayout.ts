@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 export type ViewportLayout = 'mobile' | 'mid' | 'desktop' | 'wide';
 
-function getViewportLayout(width: number): ViewportLayout {
+export function getViewportLayout(width: number): ViewportLayout {
   if (width < 1024) return 'mobile';
   if (width < 1320) return 'mid';
   if (width < 1920) return 'desktop';

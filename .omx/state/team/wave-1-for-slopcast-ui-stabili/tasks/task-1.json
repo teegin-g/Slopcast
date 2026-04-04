@@ -1,0 +1,16 @@
+{
+  "subject": "Implement: Wave 1 for Slopcast UI stabilization. Use 3 workers with explicit own",
+  "description": "Implement the core functionality for: Wave 1 for Slopcast UI stabilization. Use 3 workers with explicit ownership. Worker 1 owns mobile Wells layout in src/components/slopcast/DesignWellsView.tsx, src/components/slopcast/hooks/useViewportLayout.ts, and only narrow caller updates in src/pages/SlopcastPage.tsx if needed. Goal: 390x844 Wells on 127.0.0.1:3100 must use the intended mobile flow with no clipped header, no desktop split rail dominating the viewport, and no white gutter. Worker 2 owns OverlayToolbar contract cleanup and touch target hardening in src/components/slopcast/map/OverlayToolbar.tsx and src/components/slopcast/map/OverlayToolbar.stories.tsx. Goal: Databricks source story is truthful and mobile hit areas are at least 44px without bloating desktop density. Worker 3 owns baseline verification only: run npm run ui:components, npm run ui:verify, npm run ui:audit, and collect Playwright screenshots and exact failures against 127.0.0.1:3100 and Storybook iframe. All workers: you are not alone in the codebase, do not revert others work, stay inside your write scope, and report blockers clearly.",
+  "status": "in_progress",
+  "owner": "worker-1",
+  "role": "executor",
+  "id": "1",
+  "depends_on": [],
+  "version": 2,
+  "created_at": "2026-04-04T19:02:37.683Z",
+  "claim": {
+    "owner": "worker-1",
+    "token": "12ff306c-2a4e-454d-b77f-5e595cf3f0ca",
+    "leased_until": "2026-04-04T19:18:13.423Z"
+  }
+}
