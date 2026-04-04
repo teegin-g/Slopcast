@@ -176,19 +176,11 @@ const engines: Record<EngineId, EconomicsEngine> = {
   python: pyEngine,
 };
 
-const ENGINE_STORAGE_KEY = 'slopcast_engine_id';
-
-export function getStoredEngineId(): EngineId {
-  const stored = localStorage.getItem(ENGINE_STORAGE_KEY);
-  return stored === 'python' ? 'python' : 'typescript';
-}
-
-export function setStoredEngineId(id: EngineId): void {
-  localStorage.setItem(ENGINE_STORAGE_KEY, id);
-}
+export { getEngineId as getStoredEngineId, setEngineId as setStoredEngineId } from './storage/workspacePreferences';
+import { getEngineId } from './storage/workspacePreferences';
 
 export function getEngine(id?: EngineId): EconomicsEngine {
-  return engines[id ?? getStoredEngineId()];
+  return engines[id ?? getEngineId()];
 }
 
 export function getAllEngines(): EconomicsEngine[] {

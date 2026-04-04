@@ -5,11 +5,10 @@ import { Vignette } from '../ui/Vignette';
 import PageHeader from '../slopcast/PageHeader';
 import { ViewTransition } from './ViewTransition';
 import { useSidebarNav } from '../../hooks/useSidebarNav';
+import { getSidebarCollapsed, setSidebarCollapsed } from '../../services/storage/workspacePreferences';
 import { useViewportLayout } from '../slopcast/hooks/useViewportLayout';
 import type { WellGroup } from '../../types';
 import type { ThemeMeta } from '../../theme/themes';
-
-const SIDEBAR_COLLAPSE_KEY = 'slopcast-sidebar-collapsed';
 
 interface AppShellProps {
   /** The workspace object from useSlopcastWorkspace */
@@ -51,11 +50,7 @@ export function AppShell({ workspace, children }: AppShellProps) {
   // Sidebar collapse: auto-collapse on mid viewport, manual toggle on desktop
   const [collapsed, setCollapsed] = useState(() => {
     if (viewport === 'mid') return true;
-    try {
-      return localStorage.getItem(SIDEBAR_COLLAPSE_KEY) === '1';
-    } catch {
-      return false;
-    }
+    return getSidebarCollapsed() ?? false;
   });
 
   // Auto-collapse on mid viewport
@@ -63,24 +58,15 @@ export function AppShell({ workspace, children }: AppShellProps) {
     if (viewport === 'mid') {
       setCollapsed(true);
     } else if (viewport === 'desktop' || viewport === 'wide') {
-      try {
-        const stored = localStorage.getItem(SIDEBAR_COLLAPSE_KEY);
-        if (stored === '1') setCollapsed(true);
-        else if (stored === '0') setCollapsed(false);
-      } catch {
-        // no-op
-      }
+      const stored = getSidebarCollapsed();
+      if (stored !== null) setCollapsed(stored);
     }
   }, [viewport]);
 
   const handleToggleCollapse = useCallback(() => {
     setCollapsed(prev => {
       const next = !prev;
-      try {
-        localStorage.setItem(SIDEBAR_COLLAPSE_KEY, next ? '1' : '0');
-      } catch {
-        // no-op
-      }
+      setSidebarCollapsed(next);
       return next;
     });
   }, []);
