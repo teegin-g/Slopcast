@@ -1,5 +1,7 @@
 import React from 'react';
 import type { Well } from '../../../types';
+import { useTheme } from '../../../theme/ThemeProvider';
+import { overlayPanelClass } from '../../../theme/themes';
 
 interface OverlayFiltersBarProps {
   isClassic: boolean;
@@ -41,10 +43,11 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
   onClearSelection,
 }) => {
   const hasActiveFilters = operatorFilter !== 'ALL' || formationFilter !== 'ALL' || statusFilter !== 'ALL';
+  const { theme } = useTheme();
 
   const panelClass = isClassic
     ? 'sc-panel theme-transition'
-    : 'rounded-panel backdrop-blur-sm bg-[var(--surface-1)]/80 border border-[var(--border)] theme-transition';
+    : `rounded-panel ${overlayPanelClass(theme.features.panelStyle)} theme-transition`;
 
   const selectClass = isClassic
     ? 'rounded-inner px-2 py-1 text-[10px] font-black sc-inputNavy focus-ring'

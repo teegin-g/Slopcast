@@ -1,4 +1,6 @@
 import React from 'react';
+import { useTheme } from '../../../theme/ThemeProvider';
+import { overlayPanelClass } from '../../../theme/themes';
 
 interface OverlaySelectionBarProps {
   isClassic: boolean;
@@ -18,10 +20,11 @@ export const OverlaySelectionBar: React.FC<OverlaySelectionBarProps> = ({
   onClearSelection,
 }) => {
   const visible = selectedCount > 0;
+  const { theme } = useTheme();
 
   const panelClass = isClassic
     ? 'sc-panel theme-transition'
-    : 'rounded-panel backdrop-blur-sm bg-[var(--surface-1)]/90 border border-[var(--border)] theme-transition';
+    : `rounded-panel ${overlayPanelClass(theme.features.panelStyle)} theme-transition`;
 
   const btnClass = isClassic
     ? 'sc-btnPrimary text-[10px] px-3 py-1.5 rounded-md font-black uppercase tracking-widest'

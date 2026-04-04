@@ -1,6 +1,8 @@
 import React from 'react';
 import type { SpatialDataSourceId } from '../../../types';
 import { setStoredSpatialSourceId } from '../../../services/spatialService';
+import { useTheme } from '../../../theme/ThemeProvider';
+import { overlayPanelClass } from '../../../theme/themes';
 
 const spinKeyframes = `@keyframes spin { to { transform: rotate(360deg) } }`;
 
@@ -184,9 +186,10 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
   onSourceChange,
   fallbackActive,
 }) => {
+  const { theme } = useTheme();
   const panelClass = isClassic
     ? 'sc-panel theme-transition'
-    : 'rounded-panel backdrop-blur-sm bg-[var(--surface-1)]/80 border border-[var(--border)] theme-transition';
+    : `rounded-panel ${overlayPanelClass(theme.features.panelStyle)} theme-transition`;
   const selectedSourceId = resolveSelectedSourceId(dataSourceId, source);
   const renderedSource = resolveRenderedSource(source, selectedSourceId);
   const nextSourceId: SpatialDataSourceId = selectedSourceId === 'live' ? 'mock' : 'live';

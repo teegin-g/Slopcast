@@ -168,7 +168,7 @@ const synthwave: ThemeMeta = {
     retroGrid: true,
     brandFont: true,
     glowEffects: true,
-    panelStyle: 'glass',
+    panelStyle: 'outline',
     headingFont: false,
     denseSpacing: false,
     isClassicTheme: false,
@@ -256,7 +256,7 @@ const league: ThemeMeta = {
     retroGrid: false,
     brandFont: false,
     glowEffects: true,
-    panelStyle: 'glass',
+    panelStyle: 'outline',
     headingFont: true,
     denseSpacing: false,
     isClassicTheme: false,
@@ -409,4 +409,15 @@ export const DEFAULT_THEME: ThemeId = 'slate';
 
 export function getTheme(id: ThemeId): ThemeMeta {
   return THEMES.find(t => t.id === id) ?? THEMES[0];
+}
+
+export function overlayPanelClass(style: ThemeFeatures['panelStyle']): string {
+  switch (style) {
+    case 'glass':
+      return 'backdrop-blur-sm bg-[var(--surface-1)]/80 border border-[var(--border)]';
+    case 'solid':
+      return 'bg-[var(--surface-1)] border border-[var(--border)]';
+    case 'outline':
+      return 'bg-[var(--surface-1)]/20 border border-[var(--border)]/60';
+  }
 }

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import type { Well, WellGroup } from '../../../types';
 import GroupList from '../../GroupList';
 import GroupWellsTable from '../GroupWellsTable';
+import { useTheme } from '../../../theme/ThemeProvider';
+import { overlayPanelClass } from '../../../theme/themes';
 
 interface OverlayGroupsPanelProps {
   isClassic: boolean;
@@ -28,10 +30,11 @@ export const OverlayGroupsPanel: React.FC<OverlayGroupsPanelProps> = ({
 }) => {
   const [collapsed, setCollapsed] = useState(false);
   const activeGroup = groups.find(g => g.id === activeGroupId) || groups[0];
+  const { theme } = useTheme();
 
   const panelClass = isClassic
     ? 'sc-panel theme-transition'
-    : 'rounded-panel backdrop-blur-sm bg-[var(--surface-1)]/80 border border-[var(--border)] theme-transition';
+    : `rounded-panel ${overlayPanelClass(theme.features.panelStyle)} theme-transition`;
 
   return (
     <div
