@@ -5,6 +5,7 @@ import { setStoredSpatialSourceId } from '../../../services/spatialService';
 const spinKeyframes = `@keyframes spin { to { transform: rotate(360deg) } }`;
 
 type SelectionTool = 'lasso' | 'rectangle';
+type SpatialSource = 'databricks' | 'mock';
 
 interface OverlayToolbarProps {
   isClassic: boolean;
@@ -15,12 +16,31 @@ interface OverlayToolbarProps {
   dataLayers: Record<string, boolean>;
   onToggleDataLayer: (layer: string) => void;
   isLoading?: boolean;
-  source?: 'databricks' | 'mock' | null;
+  source?: SpatialSource | null;
   totalCount?: number;
   truncated?: boolean;
   dataSourceId?: SpatialDataSourceId;
   onSourceChange?: (sourceId: SpatialDataSourceId) => void;
   fallbackActive?: boolean;
+}
+
+const iconButtonClass =
+  'w-11 h-11 md:w-9 md:h-9 rounded-lg flex shrink-0 items-center justify-center touch-manipulation transition-colors';
+
+function resolveSelectedSourceId(
+  dataSourceId?: SpatialDataSourceId,
+  source?: SpatialSource | null,
+): SpatialDataSourceId {
+  if (dataSourceId) return dataSourceId;
+  return source === 'databricks' ? 'live' : 'mock';
+}
+
+function resolveRenderedSource(
+  source: SpatialSource | null | undefined,
+  selectedSourceId: SpatialDataSourceId,
+): SpatialSource {
+  if (source) return source;
+  return selectedSourceId === 'live' ? 'databricks' : 'mock';
 }
 
 const ToolButton: React.FC<{
@@ -34,7 +54,9 @@ const ToolButton: React.FC<{
     type="button"
     onClick={onClick}
     title={title}
-    className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+    aria-label={title}
+    aria-pressed={active}
+    className={`${iconButtonClass} ${
       active
         ? isClassic
           ? 'sc-btnPrimary'
@@ -67,12 +89,17 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
   const panelClass = isClassic
     ? 'sc-panel theme-transition'
     : 'rounded-panel backdrop-blur-sm bg-[var(--surface-1)]/80 border border-[var(--border)] theme-transition';
+  const selectedSourceId = resolveSelectedSourceId(dataSourceId, source);
+  const renderedSource = resolveRenderedSource(source, selectedSourceId);
+  const nextSourceId: SpatialDataSourceId = selectedSourceId === 'live' ? 'mock' : 'live';
+  const sourceButtonTitle = fallbackActive && selectedSourceId === 'live' && renderedSource === 'mock'
+    ? 'Using mock fallback while Live is selected. Click to switch to Mock.'
+    : `Data source: ${renderedSource === 'databricks' ? 'Databricks' : 'Mock'}. Click to switch to ${nextSourceId === 'live' ? 'Databricks' : 'Mock'}.`;
 
   return (
     <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-auto">
       <style>{spinKeyframes}</style>
       <div className={`${panelClass} p-1.5 flex flex-col gap-1`}>
-        {/* Selection tools */}
         <ToolButton
           isClassic={isClassic}
           active={activeTool === 'lasso'}
@@ -95,10 +122,8 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
           </svg>
         </ToolButton>
 
-        {/* Divider */}
         <div className={`h-px my-0.5 ${isClassic ? 'bg-white/20' : 'bg-[var(--border)]'}`} />
 
-        {/* Layer toggles */}
         <ToolButton
           isClassic={isClassic}
           active={!!layers.grid}
@@ -134,17 +159,14 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
           </svg>
         </ToolButton>
 
-        {/* Divider */}
         <div className={`h-px my-0.5 ${isClassic ? 'bg-white/20' : 'bg-[var(--border)]'}`} />
 
-        {/* Data layers header */}
-        <div className={`text-[9px] font-bold uppercase tracking-widest px-1 py-0.5 ${
+        <div className={`text-[10px] md:text-[9px] font-bold uppercase tracking-widest px-1 py-0.5 ${
           isClassic ? 'text-white/40' : 'text-[var(--text-muted)]'
         }`}>
           Data
         </div>
 
-        {/* Data layer toggles */}
         <ToolButton
           isClassic={isClassic}
           active={!!dataLayers.producing}
@@ -190,13 +212,12 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
           </svg>
         </ToolButton>
 
-        {/* Footer: count + source toggle */}
-        <div className={`flex flex-col items-center gap-0.5 pt-1 ${
+        <div className={`flex flex-col items-center gap-1 pt-1 ${
           isClassic ? 'text-white/40' : 'text-[var(--text-muted)]'
-        } text-[8px]`}>
+        } text-[9px] md:text-[8px]`}>
           {isLoading ? (
             <div
-              className={`w-3 h-3 border-[1.5px] border-t-transparent rounded-full ${
+              className={`w-4 h-4 md:w-3 md:h-3 border-[1.5px] border-t-transparent rounded-full ${
                 isClassic ? 'border-white/40' : 'border-[var(--text-muted)]'
               }`}
               style={{ animation: 'spin 0.8s linear infinite' }}
@@ -210,13 +231,13 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  const next: SpatialDataSourceId = dataSourceId === 'live' ? 'mock' : 'live';
-                  setStoredSpatialSourceId(next);
-                  onSourceChange?.(next);
+                  setStoredSpatialSourceId(nextSourceId);
+                  onSourceChange?.(nextSourceId);
                 }}
-                title={`Data: ${dataSourceId === 'live' ? 'Live (click for Mock)' : 'Mock (click for Live)'}`}
-                className={`px-1 rounded text-[7px] leading-tight cursor-pointer transition-colors ${
-                  dataSourceId === 'live'
+                title={sourceButtonTitle}
+                aria-label={sourceButtonTitle}
+                className={`min-h-11 md:min-h-8 px-1.5 md:px-1.5 rounded-md text-[8px] md:text-[7px] leading-tight touch-manipulation cursor-pointer transition-colors ${
+                  renderedSource === 'databricks'
                     ? isClassic
                       ? 'bg-green-500/20 text-green-300 hover:bg-green-500/30'
                       : 'bg-[var(--cyan)]/20 text-[var(--cyan)] hover:bg-[var(--cyan)]/30'
@@ -225,10 +246,10 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
                       : 'bg-[var(--surface-2)] hover:bg-[var(--surface-2)]/80'
                 }`}
               >
-                {dataSourceId === 'live' ? 'DB' : 'Mock'}
+                {renderedSource === 'databricks' ? 'DB' : 'Mock'}
               </button>
               {fallbackActive && (
-                <span className={`px-1 rounded text-[7px] leading-tight ${
+                <span className={`px-1.5 rounded text-[8px] md:text-[7px] leading-tight ${
                   isClassic ? 'bg-yellow-500/20 text-yellow-300' : 'bg-yellow-500/20 text-yellow-400'
                 }`} title="Live source failed — showing mock data">
                   Fallback
