@@ -5,7 +5,6 @@ const meta = {
   title: 'Slopcast/SectionCard',
   component: SectionCard,
   args: {
-    isClassic: false,
     title: 'Economics drivers',
     panelStyle: 'glass',
     children: (
@@ -38,7 +37,6 @@ export const Modern: Story = {};
 
 export const Classic: Story = {
   args: {
-    isClassic: true,
     panelStyle: 'solid',
   },
   globals: {

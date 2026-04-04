@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Controls from '../Controls';
 import Charts from '../Charts';
 import { ThemeId } from '../../theme/themes';
+import { useTheme } from '../../theme/ThemeProvider';
 import { DealMetrics, MonthlyCashFlow, Well, WellGroup } from '../../types';
 import KpiGrid from './KpiGrid';
 import OperationsConsole, { OperationsConsoleProps } from './OperationsConsole';
@@ -44,7 +45,9 @@ interface DesignEconomicsViewProps {
 }
 
 /** SVG progress ring for Setup Insights */
-const SetupProgressRing: React.FC<{ completed: number; total: number; isClassic: boolean }> = ({ completed, total, isClassic }) => {
+const SetupProgressRing: React.FC<{ completed: number; total: number }> = ({ completed, total }) => {
+  const { theme } = useTheme();
+  const isClassic = theme.features.isClassicTheme;
   const r = 10;
   const circumference = 2 * Math.PI * r;
   const progress = total > 0 ? completed / total : 0;
@@ -226,7 +229,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
             <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <SetupProgressRing completed={completedCount} total={checklist.length} isClassic={isClassic} />
+                  <SetupProgressRing completed={completedCount} total={checklist.length} />
                   <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white heading-font' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan heading-font'}>
                     Setup Insights
                   </h2>
