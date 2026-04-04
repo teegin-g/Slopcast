@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMapboxMap } from '../../hooks/useMapboxMap';
 import { useTheme } from '../../theme/ThemeProvider';
+import type { MapboxOverrides } from '../../theme/themes';
 import type { Well, WellGroup, SpatialLayerFilter, SpatialDataSourceId } from '../../types';
 import { useViewportData } from '../../hooks/useViewportData';
 import { OverlayGroupsPanel } from './map/OverlayGroupsPanel';
@@ -50,6 +51,34 @@ interface MapCommandCenterProps {
   dataSourceId?: SpatialDataSourceId;
   onSourceChange?: (id: SpatialDataSourceId) => void;
   onWellsLoaded?: (wells: Well[]) => void;
+}
+
+function applyMapThemeOverrides(map: any, overrides: MapboxOverrides | undefined) {
+  if (!map || !overrides) return;
+  try {
+    if (map.getLayer('background')) {
+      map.setPaintProperty('background', 'background-color', overrides.bgColor);
+    }
+    ['water', 'water-shadow'].forEach(id => {
+      if (map.getLayer(id)) map.setPaintProperty(id, 'fill-color', overrides.waterColor);
+    });
+    const style = map.getStyle();
+    if (style?.layers) {
+      for (const layer of style.layers) {
+        if ((layer.id === 'land' || layer.id.startsWith('landuse') || layer.id.startsWith('landcover')) && layer.type === 'fill') {
+          map.setPaintProperty(layer.id, 'fill-color', overrides.landColor);
+        }
+        if (layer.type === 'symbol' && layer.id.includes('label')) {
+          map.setPaintProperty(layer.id, 'text-color', overrides.labelColor);
+        }
+        if ((layer.id.includes('road') || layer.id.includes('bridge') || layer.id.includes('tunnel')) && layer.type === 'line') {
+          map.setPaintProperty(layer.id, 'line-opacity', overrides.roadOpacity);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[MapCommandCenter] Failed to apply theme overrides:', e);
+  }
 }
 
 export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
@@ -249,6 +278,12 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     map.on('mouseleave', layerId, () => { map.getCanvas().style.cursor = ''; });
   }, [map, isLoaded, wellsGeoJson, colorMatchExpr, mp.selectedStroke, onToggleWell]);
 
+  // Apply theme map overrides when theme changes or map loads
+  useEffect(() => {
+    if (!map || !isLoaded || layers.satellite) return;
+    applyMapThemeOverrides(map, mp.mapboxOverrides);
+  }, [map, isLoaded, mp.mapboxOverrides, layers.satellite]);
+
   // Toggle satellite style
   useEffect(() => {
     if (!map || !isLoaded) return;
@@ -273,6 +308,9 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
             'circle-opacity': ['case', ['get', 'dimmed'], 0.3, ['get', 'visible'], 1, 0.3],
           },
         });
+      }
+      if (!layers.satellite) {
+        applyMapThemeOverrides(map, mp.mapboxOverrides);
       }
     });
   }, [layers.satellite]); // eslint-disable-line react-hooks/exhaustive-deps
