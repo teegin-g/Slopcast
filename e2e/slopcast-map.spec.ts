@@ -9,6 +9,7 @@ test.describe('Map Command Center', () => {
         await slopcast.openDesignView();
         await slopcast.openWellsWorkspace();
 
+        await slopcast.navigateToMapTab();
         await slopcast.expectMapLoaded();
         await slopcast.expectMapWellsPopulated();
         await slopcast.screenshotMap(`${theme.id}__wells-loaded`);
@@ -19,6 +20,7 @@ test.describe('Map Command Center', () => {
   test('map overlay controls are functional', async ({ slopcast }) => {
     await slopcast.openDesignView();
     await slopcast.openWellsWorkspace();
+    await slopcast.navigateToMapTab();
     await slopcast.expectMapLoaded();
 
     const overlayContainer = slopcast.page.locator(
@@ -29,10 +31,12 @@ test.describe('Map Command Center', () => {
 });
 
 test.describe('Data Source Badge', () => {
-  test('shows Mock badge when spatial source is mock', async ({ slopcast }) => {
+  test('shows Mock badge when spatial source is mock', async ({ isMobileViewport, slopcast }) => {
+    test.skip(isMobileViewport, 'Data source badge is only rendered in the desktop MapCommandCenter overlay.');
     // Default bootstrap sets no spatial source, so getStoredSpatialSourceId() returns 'mock'
     await slopcast.openDesignView();
     await slopcast.openWellsWorkspace();
+    await slopcast.navigateToMapTab();
     await slopcast.expectMapLoaded();
 
     const mapContainer = slopcast.page.getByTestId('map-command-center');
@@ -40,7 +44,8 @@ test.describe('Data Source Badge', () => {
     await expect(mockBadge).toBeVisible({ timeout: 10_000 });
   });
 
-  test('shows Mock badge with live source when backend is unavailable', async ({ page, slopcast }) => {
+  test('shows Mock badge with live source when backend is unavailable', async ({ isMobileViewport, page, slopcast }) => {
+    test.skip(isMobileViewport, 'Data source badge is only rendered in the desktop MapCommandCenter overlay.');
     // Set localStorage to 'live' before loading
     await page.addInitScript(() => {
       localStorage.setItem('slopcast_spatial_source', 'live');
@@ -49,6 +54,7 @@ test.describe('Data Source Badge', () => {
     await slopcast.goto();
     await slopcast.openDesignView();
     await slopcast.openWellsWorkspace();
+    await slopcast.navigateToMapTab();
     await slopcast.expectMapLoaded();
 
     // Without a running backend, the live source fails and falls back to mock.

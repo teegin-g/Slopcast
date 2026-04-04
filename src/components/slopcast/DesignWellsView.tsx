@@ -224,6 +224,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
       >
         <div className="grid grid-cols-2 gap-2">
           <button
+            data-testid="wells-mobile-tab-groups"
             onClick={() => onSetMobilePanel('GROUPS')}
             className={
               isClassic
@@ -240,6 +241,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
             Groups
           </button>
           <button
+            data-testid="wells-mobile-tab-map"
             onClick={() => onSetMobilePanel('MAP')}
             className={
               isClassic
@@ -300,7 +302,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
           )}
         </aside>
 
-        <section className={`xl:col-span-8 lg:col-span-7 lg:min-h-0 flex flex-col space-y-6 ${mobilePanel !== 'MAP' ? 'hidden lg:flex' : ''}`}>
+        <section data-testid="map-command-center" className={`xl:col-span-8 lg:col-span-7 lg:min-h-0 flex flex-col space-y-6 ${mobilePanel !== 'MAP' ? 'hidden lg:flex' : ''}`}>
           {isClassic ? (
             <div className={`w-full shrink-0 min-h-[360px] ${mapHeightClass} ${isMobileMap ? 'mb-24' : ''} sc-panel theme-transition`}>
               <div className="sc-panelTitlebar sc-titlebar--neutral px-4 py-3 flex justify-between items-center">

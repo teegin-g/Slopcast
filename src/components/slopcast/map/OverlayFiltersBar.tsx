@@ -17,6 +17,8 @@ interface OverlayFiltersBarProps {
   onSetFormationFilter: (v: string) => void;
   onSetStatusFilter: (v: Well['status'] | 'ALL') => void;
   onResetFilters: () => void;
+  onSelectAll: () => void;
+  onClearSelection: () => void;
 }
 
 export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
@@ -35,6 +37,8 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
   onSetFormationFilter,
   onSetStatusFilter,
   onResetFilters,
+  onSelectAll,
+  onClearSelection,
 }) => {
   const hasActiveFilters = operatorFilter !== 'ALL' || formationFilter !== 'ALL' || statusFilter !== 'ALL';
 
@@ -110,6 +114,29 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
               } transition-colors`}
             >
               Reset
+            </button>
+          )}
+
+          <div className={`w-px h-4 ${isClassic ? 'bg-white/20' : 'bg-[var(--border)]'}`} />
+
+          <button
+            onClick={onSelectAll}
+            data-testid="wells-selection-actions-select-filtered"
+            className={`text-[10px] font-black uppercase tracking-widest shrink-0 ${
+              isClassic ? 'text-white/70 hover:text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+            } transition-colors`}
+          >
+            Select Filtered
+          </button>
+          {selectedCount > 0 && (
+            <button
+              onClick={onClearSelection}
+              data-testid="wells-selection-actions-clear"
+              className={`text-[10px] font-black uppercase tracking-widest shrink-0 ${
+                isClassic ? 'text-white/50 hover:text-white' : 'text-[var(--text-muted)]/70 hover:text-[var(--text-primary)]'
+              } transition-colors`}
+            >
+              Clear
             </button>
           )}
         </div>

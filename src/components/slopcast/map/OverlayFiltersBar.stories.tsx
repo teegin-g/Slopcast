@@ -21,6 +21,8 @@ const meta = {
     onSetFormationFilter: fn(),
     onSetStatusFilter: fn(),
     onResetFilters: fn(),
+    onSelectAll: fn(),
+    onClearSelection: fn(),
   },
 } satisfies Meta<typeof OverlayFiltersBar>;
 

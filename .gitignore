@@ -65,3 +65,6 @@ critique-reports/
 .worktrees/
 .agents/state/*
 !.agents/state/.gitkeep
+
+# Personal session logs (not for agents)
+docs/session-logs/

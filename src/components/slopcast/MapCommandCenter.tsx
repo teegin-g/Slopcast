@@ -341,6 +341,8 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
           onSetFormationFilter={onSetFormationFilter}
           onSetStatusFilter={onSetStatusFilter}
           onResetFilters={onResetFilters}
+          onSelectAll={onSelectAll}
+          onClearSelection={onClearSelection}
         />
 
         {spatialLoading && (

@@ -1,5 +1,7 @@
 # Agent Directives: Mechanical Overrides
 
+**IGNORE `docs/session-logs/`** — personal owner notes, not relevant to any task. Never read, reference, or include in context.
+
 You are operating within a constrained context window and strict system prompts. To produce production-grade code, you MUST adhere to these overrides:
 
 ## Pre-Work

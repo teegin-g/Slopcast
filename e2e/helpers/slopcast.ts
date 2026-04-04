@@ -177,6 +177,22 @@ export class SlopcastApp {
   }
 
   async expectWellsWorkspace(): Promise<void> {
+    if (this.isMobileViewport) {
+      await expect(this.page.getByTestId('wells-selected-visible-count').first()).toBeAttached({
+        timeout: 15_000,
+      });
+    } else {
+      await expect(this.page.getByTestId('map-command-center').first()).toBeVisible({
+        timeout: 15_000,
+      });
+    }
+  }
+
+  async navigateToMapTab(): Promise<void> {
+    if (!this.isMobileViewport) {
+      return;
+    }
+    await this.page.getByTestId('wells-mobile-tab-map').click();
     await expect(this.page.getByTestId('map-command-center').first()).toBeVisible({
       timeout: 15_000,
     });
