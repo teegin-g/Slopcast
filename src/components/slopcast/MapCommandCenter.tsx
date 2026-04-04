@@ -284,7 +284,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   return (
     <div className="relative w-full h-[calc(100vh-64px)]" data-testid="map-command-center">
       {/* Mapbox canvas */}
-      <div ref={mapContainerRef} className="absolute inset-0" />
+      <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" />
 
       {/* Fallback when no Mapbox token */}
       {!mapReady && (
