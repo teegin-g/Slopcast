@@ -1,7 +1,7 @@
 import React from 'react';
+import { useTheme } from '../../theme/ThemeProvider';
 
 interface SectionCardProps {
-  isClassic: boolean;
   title?: string;
   action?: React.ReactNode;
   className?: string;
@@ -17,7 +17,6 @@ const sectionStyleMap: Record<'glass' | 'solid' | 'outline', string> = {
 };
 
 const SectionCard: React.FC<SectionCardProps> = ({
-  isClassic,
   title,
   action,
   className = '',
@@ -25,6 +24,8 @@ const SectionCard: React.FC<SectionCardProps> = ({
   children,
   panelStyle = 'glass',
 }) => {
+  const { theme } = useTheme();
+  const isClassic = theme.features.isClassicTheme;
 
   return (
     <div
@@ -54,7 +55,7 @@ const SectionCard: React.FC<SectionCardProps> = ({
           {action}
         </div>
       )}
-      <div className={isClassic ? `p-4 ${bodyClassName}` : `p-4 ${bodyClassName}`}>{children}</div>
+      <div className={`p-4 ${bodyClassName}`}>{children}</div>
     </div>
   );
 };

@@ -39,6 +39,8 @@ export interface ThemeFeatures {
   panelStyle: 'glass' | 'solid' | 'outline';
   headingFont: boolean;     // use --font-heading per theme
   denseSpacing: boolean;    // tighter gaps for utilitarian themes
+  /** Mario/Classic theme: use sc-panel/sc-* CSS classes instead of theme tokens */
+  isClassicTheme: boolean;
 }
 
 export type ColorMode = 'dark' | 'light' | 'system';
@@ -119,6 +121,7 @@ const slate: ThemeMeta = {
     panelStyle: 'solid',
     headingFont: false,
     denseSpacing: false,
+    isClassicTheme: false,
   },
 };
 
@@ -156,6 +159,7 @@ const synthwave: ThemeMeta = {
     panelStyle: 'glass',
     headingFont: false,
     denseSpacing: false,
+    isClassicTheme: false,
   },
   BackgroundComponent: SynthwaveBackground,
   atmosphereClass: 'theme-atmo',
@@ -198,6 +202,7 @@ const tropical: ThemeMeta = {
     panelStyle: 'glass',
     headingFont: true,
     denseSpacing: false,
+    isClassicTheme: false,
   },
   BackgroundComponent: TropicalBackground,
   atmosphereClass: 'theme-atmo',
@@ -240,6 +245,7 @@ const league: ThemeMeta = {
     panelStyle: 'glass',
     headingFont: true,
     denseSpacing: false,
+    isClassicTheme: false,
   },
   BackgroundComponent: MoonlightBackground,
   atmosphereClass: 'theme-atmo',
@@ -281,6 +287,7 @@ const stormwatch: ThemeMeta = {
     panelStyle: 'solid',
     headingFont: true,
     denseSpacing: true,
+    isClassicTheme: false,
   },
   BackgroundComponent: StormDuskBackground,
   atmosphereClass: 'theme-atmo',
@@ -323,6 +330,7 @@ const mario: ThemeMeta = {
     panelStyle: 'glass',
     headingFont: false,
     denseSpacing: false,
+    isClassicTheme: true,
   },
   BackgroundComponent: MarioOverworldBackground,
   atmosphereClass: 'theme-atmo',
@@ -365,6 +373,7 @@ const hyperborea: ThemeMeta = {
     panelStyle: 'glass',
     headingFont: true,
     denseSpacing: false,
+    isClassicTheme: false,
   },
   BackgroundComponent: HyperboreaBackground,
   atmosphereClass: 'theme-atmo',
