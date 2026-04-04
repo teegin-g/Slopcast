@@ -283,6 +283,11 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
 
   return (
     <div className="relative w-full h-[calc(100vh-64px)]" data-testid="map-command-center">
+      <div className="sr-only">
+        <span data-testid="wells-selected-visible-count">{selectedWellCount}</span>
+        <span data-testid="wells-filtered-count">{filteredWellsCount}</span>
+      </div>
+
       {/* Mapbox canvas */}
       <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" />
 

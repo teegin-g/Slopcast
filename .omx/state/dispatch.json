@@ -247,10 +247,10 @@
     {
       "request_id": "4eafcca6-063f-4483-b74d-b24d21e9d26c",
       "target": "worker-2",
-      "status": "notified",
+      "status": "delivered",
       "created_at": "2026-04-04T19:11:19.523Z",
       "notified_at": "2026-04-04T19:11:22.699Z",
-      "delivered_at": null,
+      "delivered_at": "2026-04-04T19:14:46.663Z",
       "failed_at": null,
       "reason": "fallback_confirmed:tmux_send_keys_sent",
       "metadata": {
@@ -260,6 +260,229 @@
         "pane_id": "%7",
         "trigger_message": "1 new msg(s): read $OMX_TEAM_STATE_ROOT/team/wave-1-for-slopcast-ui-stabili/mailbox/worker-2.json, act, report progress, continue assigned work or next feasible task.",
         "message_id": "7dee086b-8719-4946-892f-2d3788c50cbf",
+        "transport_preference": "hook_preferred_with_fallback",
+        "fallback_allowed": true,
+        "attempt_count": 2
+      }
+    },
+    {
+      "request_id": "16f21608-5fe0-4950-a118-19d52ca85ab1",
+      "target": "leader-fixed",
+      "status": "notified",
+      "created_at": "2026-04-04T19:13:36.585Z",
+      "notified_at": "2026-04-04T19:13:39.281Z",
+      "delivered_at": null,
+      "failed_at": null,
+      "reason": "fallback_confirmed:leader_mailbox_notified",
+      "metadata": {
+        "kind": "mailbox",
+        "team_name": "wave-1-for-slopcast-ui-stabili",
+        "pane_id": "%5",
+        "trigger_message": "Read .omx/state/team/wave-1-for-slopcast-ui-stabili/mailbox/leader-fixed.json; worker-3 sent a new message. Review it and decide the next concrete step.",
+        "message_id": "8a75ac2c-f04c-4a2e-93db-cb21703c006f",
+        "transport_preference": "hook_preferred_with_fallback",
+        "fallback_allowed": true,
+        "attempt_count": 1
+      }
+    },
+    {
+      "request_id": "77e6990f-76ef-4a5e-ac3e-50ec96966c39",
+      "target": "leader-fixed",
+      "status": "notified",
+      "created_at": "2026-04-04T19:14:04.985Z",
+      "notified_at": "2026-04-04T19:14:07.591Z",
+      "delivered_at": null,
+      "failed_at": null,
+      "reason": "fallback_confirmed:leader_mailbox_notified",
+      "metadata": {
+        "kind": "mailbox",
+        "team_name": "wave-1-for-slopcast-ui-stabili",
+        "pane_id": "%5",
+        "trigger_message": "Read .omx/state/team/wave-1-for-slopcast-ui-stabili/mailbox/leader-fixed.json; worker-2 sent a new message. Review it and decide the next concrete step.",
+        "message_id": "2e8e999d-2583-4585-8826-b4dc6a0ad51c",
+        "transport_preference": "hook_preferred_with_fallback",
+        "fallback_allowed": true,
+        "attempt_count": 1
+      }
+    },
+    {
+      "request_id": "10431bbe-d47f-4dfd-8ba6-a49421dd8375",
+      "target": "leader-fixed",
+      "status": "notified",
+      "created_at": "2026-04-04T19:14:15.528Z",
+      "notified_at": "2026-04-04T19:14:17.983Z",
+      "delivered_at": null,
+      "failed_at": null,
+      "reason": "fallback_confirmed:leader_mailbox_notified",
+      "metadata": {
+        "kind": "mailbox",
+        "team_name": "wave-1-for-slopcast-ui-stabili",
+        "pane_id": "%5",
+        "trigger_message": "Read .omx/state/team/wave-1-for-slopcast-ui-stabili/mailbox/leader-fixed.json; worker-1 sent a new message. Review it and decide the next concrete step.",
+        "message_id": "c29ade8f-5358-43b9-89ba-40fbce496eeb",
+        "transport_preference": "hook_preferred_with_fallback",
+        "fallback_allowed": true,
+        "attempt_count": 1
+      }
+    },
+    {
+      "request_id": "0bd330cf-fef5-4de1-a2b6-ce2616e3fc41",
+      "target": "leader-fixed",
+      "status": "notified",
+      "created_at": "2026-04-04T19:15:07.319Z",
+      "notified_at": "2026-04-04T19:15:09.874Z",
+      "delivered_at": null,
+      "failed_at": null,
+      "reason": "fallback_confirmed:leader_mailbox_notified",
+      "metadata": {
+        "kind": "mailbox",
+        "team_name": "wave-1-for-slopcast-ui-stabili",
+        "pane_id": "%5",
+        "trigger_message": "Read .omx/state/team/wave-1-for-slopcast-ui-stabili/mailbox/leader-fixed.json; worker-1 sent a new message. Review it and decide the next concrete step.",
+        "message_id": "fa45cc57-3899-44c8-8084-2adac51215ae",
+        "transport_preference": "hook_preferred_with_fallback",
+        "fallback_allowed": true,
+        "attempt_count": 1
+      }
+    },
+    {
+      "request_id": "bd1978f9-fdd7-46c2-87b5-ae6014826e24",
+      "target": "leader-fixed",
+      "status": "notified",
+      "created_at": "2026-04-04T19:15:28.896Z",
+      "notified_at": "2026-04-04T19:15:31.432Z",
+      "delivered_at": null,
+      "failed_at": null,
+      "reason": "fallback_confirmed:leader_mailbox_notified",
+      "metadata": {
+        "kind": "mailbox",
+        "team_name": "wave-1-for-slopcast-ui-stabili",
+        "pane_id": "%5",
+        "trigger_message": "Read .omx/state/team/wave-1-for-slopcast-ui-stabili/mailbox/leader-fixed.json; worker-2 sent a new message. Review it and decide the next concrete step.",
+        "message_id": "102b3d9c-de21-4410-9032-ef5a9b38340b",
+        "transport_preference": "hook_preferred_with_fallback",
+        "fallback_allowed": true,
+        "attempt_count": 1
+      }
+    },
+    {
+      "request_id": "219b2d74-a73a-456d-a440-f2fa4016c376",
+      "target": "leader-fixed",
+      "status": "notified",
+      "created_at": "2026-04-04T19:18:06.329Z",
+      "notified_at": "2026-04-04T19:18:06.765Z",
+      "delivered_at": null,
+      "failed_at": null,
+      "reason": "fallback_confirmed_after_failed_receipt:leader_mailbox_notified",
+      "metadata": {
+        "kind": "mailbox",
+        "team_name": "wave-1-for-slopcast-ui-stabili",
+        "pane_id": "%5",
+        "trigger_message": "Read .omx/state/team/wave-1-for-slopcast-ui-stabili/mailbox/leader-fixed.json; worker-2 sent a new message. Review it and decide the next concrete step.",
+        "message_id": "c1167db7-40cf-4482-a752-2f548303a5e2",
+        "transport_preference": "hook_preferred_with_fallback",
+        "fallback_allowed": true,
+        "attempt_count": 2
+      }
+    },
+    {
+      "request_id": "b13cd89b-1041-4967-b389-0dfc5f5f2e4b",
+      "target": "leader-fixed",
+      "status": "notified",
+      "created_at": "2026-04-04T19:18:50.858Z",
+      "notified_at": "2026-04-04T19:18:53.276Z",
+      "delivered_at": null,
+      "failed_at": null,
+      "reason": "fallback_confirmed:leader_mailbox_notified",
+      "metadata": {
+        "kind": "mailbox",
+        "team_name": "wave-1-for-slopcast-ui-stabili",
+        "pane_id": "%5",
+        "trigger_message": "Read .omx/state/team/wave-1-for-slopcast-ui-stabili/mailbox/leader-fixed.json; worker-1 sent a new message. Review it and decide the next concrete step.",
+        "message_id": "834986c3-b1c1-43ff-b0f3-6e8ab1af7530",
+        "transport_preference": "hook_preferred_with_fallback",
+        "fallback_allowed": true,
+        "attempt_count": 1
+      }
+    },
+    {
+      "request_id": "707ccc08-d29f-4321-ae5f-5b69dcc0b2d5",
+      "target": "leader-fixed",
+      "status": "notified",
+      "created_at": "2026-04-04T19:18:53.635Z",
+      "notified_at": "2026-04-04T19:18:55.987Z",
+      "delivered_at": null,
+      "failed_at": null,
+      "reason": "fallback_confirmed:leader_mailbox_notified",
+      "metadata": {
+        "kind": "mailbox",
+        "team_name": "wave-1-for-slopcast-ui-stabili",
+        "pane_id": "%5",
+        "trigger_message": "Read .omx/state/team/wave-1-for-slopcast-ui-stabili/mailbox/leader-fixed.json; worker-2 sent a new message. Review it and decide the next concrete step.",
+        "message_id": "ca7539e6-2769-4ead-b3d1-a8b01bdf23c7",
+        "transport_preference": "hook_preferred_with_fallback",
+        "fallback_allowed": true,
+        "attempt_count": 1
+      }
+    },
+    {
+      "request_id": "cf85c57a-2aea-4373-b8e6-fdaaa63c09b0",
+      "target": "worker-1",
+      "status": "notified",
+      "created_at": "2026-04-04T19:19:03.461Z",
+      "notified_at": "2026-04-04T19:19:06.445Z",
+      "delivered_at": null,
+      "failed_at": null,
+      "reason": "fallback_confirmed:tmux_send_keys_sent",
+      "metadata": {
+        "kind": "inbox",
+        "team_name": "wave-1-for-slopcast-ui-stabili",
+        "worker_index": 1,
+        "pane_id": "%6",
+        "trigger_message": "Read $OMX_TEAM_STATE_ROOT/team/wave-1-for-slopcast-ui-stabili/workers/worker-1/inbox.md, work now, report progress, continue assigned work or next feasible task.",
+        "inbox_correlation_key": "shutdown:worker-1",
+        "transport_preference": "hook_preferred_with_fallback",
+        "fallback_allowed": true,
+        "attempt_count": 1
+      }
+    },
+    {
+      "request_id": "91c6b82f-7f16-4241-b7f4-7165aef967ac",
+      "target": "worker-2",
+      "status": "notified",
+      "created_at": "2026-04-04T19:19:06.447Z",
+      "notified_at": "2026-04-04T19:19:09.389Z",
+      "delivered_at": null,
+      "failed_at": null,
+      "reason": "fallback_confirmed:tmux_send_keys_sent",
+      "metadata": {
+        "kind": "inbox",
+        "team_name": "wave-1-for-slopcast-ui-stabili",
+        "worker_index": 2,
+        "pane_id": "%7",
+        "trigger_message": "Read $OMX_TEAM_STATE_ROOT/team/wave-1-for-slopcast-ui-stabili/workers/worker-2/inbox.md, work now, report progress, continue assigned work or next feasible task.",
+        "inbox_correlation_key": "shutdown:worker-2",
+        "transport_preference": "hook_preferred_with_fallback",
+        "fallback_allowed": true,
+        "attempt_count": 1
+      }
+    },
+    {
+      "request_id": "4bb4fcbd-aa2c-400b-a212-60c518621aa4",
+      "target": "worker-3",
+      "status": "notified",
+      "created_at": "2026-04-04T19:19:09.393Z",
+      "notified_at": "2026-04-04T19:19:12.366Z",
+      "delivered_at": null,
+      "failed_at": null,
+      "reason": "fallback_confirmed:tmux_send_keys_sent",
+      "metadata": {
+        "kind": "inbox",
+        "team_name": "wave-1-for-slopcast-ui-stabili",
+        "worker_index": 3,
+        "pane_id": "%8",
+        "trigger_message": "Read $OMX_TEAM_STATE_ROOT/team/wave-1-for-slopcast-ui-stabili/workers/worker-3/inbox.md, work now, report progress, continue assigned work or next feasible task.",
+        "inbox_correlation_key": "shutdown:worker-3",
         "transport_preference": "hook_preferred_with_fallback",
         "fallback_allowed": true,
         "attempt_count": 1

@@ -27,7 +27,7 @@ interface OverlayToolbarProps {
 }
 
 const iconButtonClass =
-  'w-11 h-11 md:w-9 md:h-9 rounded-lg flex shrink-0 items-center justify-center touch-manipulation transition-colors';
+  'w-11 h-11 rounded-lg flex shrink-0 items-center justify-center touch-manipulation transition-colors';
 
 const layerButtons: ReadonlyArray<{ key: ToolbarLayerKey; title: string; icon: React.ReactNode }> = [
   {
@@ -273,7 +273,7 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
                 }}
                 title={sourceButtonTitle}
                 aria-label={sourceButtonTitle}
-                className={`min-w-11 md:min-w-9 min-h-11 md:min-h-8 px-1.5 md:px-1.5 rounded-md text-[8px] md:text-[7px] leading-tight touch-manipulation cursor-pointer transition-colors ${getSourceButtonClass(
+                className={`min-w-11 min-h-11 px-1.5 rounded-md text-[8px] leading-tight touch-manipulation cursor-pointer transition-colors ${getSourceButtonClass(
                   isClassic,
                   renderedSource,
                 )}`}

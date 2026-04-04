@@ -72,15 +72,30 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
 
           {/* Compact filter selects */}
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <select value={operatorFilter} onChange={e => onSetOperatorFilter(e.target.value)} className={selectClass}>
+            <select
+              value={operatorFilter}
+              onChange={e => onSetOperatorFilter(e.target.value)}
+              data-testid="wells-filter-operator"
+              className={selectClass}
+            >
               <option value="ALL">All Operators</option>
               {operatorOptions.map(op => <option key={op} value={op}>{op}</option>)}
             </select>
-            <select value={formationFilter} onChange={e => onSetFormationFilter(e.target.value)} className={selectClass}>
+            <select
+              value={formationFilter}
+              onChange={e => onSetFormationFilter(e.target.value)}
+              data-testid="wells-filter-formation"
+              className={selectClass}
+            >
               <option value="ALL">All Formations</option>
               {formationOptions.map(f => <option key={f} value={f}>{f}</option>)}
             </select>
-            <select value={statusFilter} onChange={e => onSetStatusFilter(e.target.value as Well['status'] | 'ALL')} className={selectClass}>
+            <select
+              value={statusFilter}
+              onChange={e => onSetStatusFilter(e.target.value as Well['status'] | 'ALL')}
+              data-testid="wells-filter-status"
+              className={selectClass}
+            >
               <option value="ALL">All Statuses</option>
               {statusOptions.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
