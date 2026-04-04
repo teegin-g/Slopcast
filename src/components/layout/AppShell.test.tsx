@@ -122,7 +122,7 @@ describe('STYLE-06: Animated canvas backgrounds visible through glass UI shell',
     renderAppShell(
       {},
       'desktop',
-      <SectionCard title="Surface Contract">
+      <SectionCard isClassic={false} title="Surface Contract">
         <div data-testid="content-area">Content Here</div>
       </SectionCard>,
     );

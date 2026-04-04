@@ -6,6 +6,7 @@ const meta = {
   component: SectionCard,
   args: {
     title: 'Economics drivers',
+    isClassic: false,
     panelStyle: 'glass',
     children: (
       <div className="space-y-3">

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
-import OnboardingTour, { ONBOARDING_STORAGE_KEY } from './OnboardingTour';
+import OnboardingTour from './OnboardingTour';
+import { ONBOARDING_KEY } from '../../services/storage/workspacePreferences';
 
 interface OnboardingTourHarnessProps {
   isClassic: boolean;
@@ -8,7 +9,7 @@ interface OnboardingTourHarnessProps {
 
 function OnboardingTourHarness({ isClassic }: OnboardingTourHarnessProps) {
   if (typeof window !== 'undefined') {
-    window.localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+    window.localStorage.removeItem(ONBOARDING_KEY);
   }
 
   return (
