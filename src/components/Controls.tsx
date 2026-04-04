@@ -24,7 +24,7 @@ const Controls: React.FC<ControlsProps> = ({
   const [showTemplateMenu, setShowTemplateMenu] = useState(false);
   const [pendingTemplate, setPendingTemplate] = useState<AssumptionTemplate | null>(null);
   const { theme } = useTheme();
-  const isClassic = theme.id === 'mario';
+  const isClassic = theme.features.isClassicTheme;
 
   const applyTemplate = (template: AssumptionTemplate) => {
     const newCapexItems = template.capexItems.map(item => ({

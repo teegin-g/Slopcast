@@ -15,7 +15,7 @@ const clampInt = (value: number, min: number, max: number) => {
 
 const OpexControls: React.FC<OpexControlsProps> = ({ opex, onChange }) => {
   const { theme } = useTheme();
-  const isClassic = theme.id === 'mario';
+  const isClassic = theme.features.isClassicTheme;
 
   const [chainSegments, setChainSegments] = useState(true);
 

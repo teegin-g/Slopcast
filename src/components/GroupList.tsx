@@ -14,7 +14,7 @@ const GroupList: React.FC<GroupListProps> = ({
   groups, activeGroupId, onActivateGroup, onAddGroup, onCloneGroup
 }) => {
   const { theme } = useTheme();
-  const isClassic = theme.id === 'mario';
+  const isClassic = theme.features.isClassicTheme;
 
   return (
     <div className="space-y-4">
