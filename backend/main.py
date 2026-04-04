@@ -1,10 +1,8 @@
-from pathlib import Path
+from contextlib import asynccontextmanager
+from typing import AsyncIterator
 
-from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-
-load_dotenv(Path(__file__).parent / ".env")
 
 from .economics import aggregate_economics, calculate_economics
 from .models import (
@@ -16,10 +14,17 @@ from .models import (
     SensitivityMatrixResult,
 )
 from .sensitivity import generate_sensitivity_matrix
+from .spatial_service import SpatialDBManager
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="Slopcast Backend", version="0.1.0")
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        app.state.spatial_db = SpatialDBManager()
+        yield
+        app.state.spatial_db.disconnect()
+
+    app = FastAPI(title="Slopcast Backend", version="0.1.0", lifespan=lifespan)
 
     # Local-dev CORS: Vite defaults to :3000, and users may use localhost or 127.0.0.1.
     app.add_middleware(
@@ -33,13 +38,9 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    from .spatial_routes import create_spatial_router
-
-    app.include_router(create_spatial_router())
-
     @app.get("/api/health")
-    def health() -> dict:
-        return {"ok": True}
+    def health(request: Request) -> dict:
+        return {"ok": True, "spatial_db": request.app.state.spatial_db.health()}
 
     @app.post("/api/economics/calculate", response_model=EconomicsResponse)
     def economics_calculate(req: CalculateEconomicsRequest) -> EconomicsResponse:
