@@ -12,8 +12,8 @@ const distDir = path.join(__dirname, 'dist');
 
 app.use(express.static(distDir));
 
-// Proxy /api/engine/* to Python FastAPI backend
-app.use('/api/engine', (req, res) => {
+// Proxy all /api/* requests to Python FastAPI backend
+app.use('/api', (req, res) => {
   const targetUrl = `http://127.0.0.1:${PYTHON_API_PORT}/api${req.url}`;
   import('http').then(http => {
     const proxyReq = http.request(targetUrl, {
