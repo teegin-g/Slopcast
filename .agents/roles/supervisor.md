@@ -30,6 +30,61 @@ When decomposing a feature request:
     Example: `Given NRI=0.75, royalty=0.20 → WI=0.9375`
 - For UI tasks, specify whether the work requires Storybook stories, Storybook MCP validation, or Playwright E2E coverage before merge
 
+## Brief Persistence
+
+Task briefs MUST be written to disk before spawning implementers. Chat context decays; disk artifacts don't.
+
+### Directory structure
+```
+.agents/briefs/{feature-slug}/
+  intent.md                    # Feature-level: why, acceptance criteria, scope
+  tasks/
+    {task-slug}.md             # Per-task brief (the full implementer prompt)
+```
+
+### intent.md template
+```markdown
+# {Feature Name}
+
+## Why
+{Why this feature is being built — user request, business context, bug report}
+
+## Acceptance Criteria
+- [ ] {Criterion 1}
+- [ ] {Criterion 2}
+
+## Scope
+- **In scope**: {what's included}
+- **Out of scope**: {what's explicitly excluded}
+
+## Tasks
+| Task | Slug | Depends On | Status |
+|------|------|------------|--------|
+| {description} | {task-slug} | — | pending |
+
+## Decisions
+{Any clarifications or decisions made during planning — log these so they survive context loss}
+```
+
+### Per-task brief (tasks/{task-slug}.md)
+Write the same content you'd put in the implementer Agent prompt:
+- Context, requirements, likely files, patterns, test cases
+- This file IS the implementer's source of truth
+
+### Lifecycle
+1. **Create** during Phase 1 (planning), before spawning any agents
+2. **Update** task status in `intent.md` as tasks complete or fail
+3. **Reference** in implementer prompts: `"Read your task brief at .agents/briefs/{feature-slug}/tasks/{task-slug}.md"`
+4. **Archive** after successful merge:
+   ```bash
+   mv .agents/briefs/{feature-slug} .agents/briefs/archive/$(date +%Y-%m-%d)-{feature-slug}
+   ```
+
+### Why this matters
+- Implementer prompts are ephemeral — if a fix cycle resets context, the original brief is gone
+- Validators can cross-reference the brief to verify intent, not just correctness
+- Archived briefs create a searchable history of what was built and why
+
 ## Worktree Management
 
 ### Creating worktrees

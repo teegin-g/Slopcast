@@ -11,7 +11,14 @@ End-to-end workflow for implementing features using the multi-agent system.
 3. Decompose into independent tasks with clear briefs
 4. Determine task dependencies and parallelization strategy
 5. For refactors or broad multi-file work, split the plan into phases of no more than 5 files and set approval gates between phases per `CLAUDE.md`
-6. Present plan to user for approval (in manual mode, pause here)
+6. **Write briefs to disk** (see `roles/supervisor.md` § Brief Persistence):
+   ```bash
+   mkdir -p .agents/briefs/{feature-slug}/tasks
+   ```
+   - Write `intent.md` with why, acceptance criteria, scope, task table
+   - Write `tasks/{task-slug}.md` for each task (full implementer brief)
+   - Log decisions made during planning into `intent.md` so they survive context loss
+7. Present plan to user for approval (in manual mode, pause here)
 
 ### Phase 2: Setup (Supervisor)
 
@@ -31,7 +38,7 @@ End-to-end workflow for implementing features using the multi-agent system.
 For each task (parallel if independent, sequential if dependent):
 
 1. **Implementer verifies environment** (MANDATORY first action — see `roles/implementer.md`)
-2. Implementer reads task brief, `CLAUDE.md`, and relevant code
+2. Implementer reads task brief **from disk** at `.agents/briefs/{feature-slug}/tasks/{task-slug}.md`, then `CLAUDE.md` and relevant code
 3. **RED**: Write failing tests from task brief acceptance criteria / test cases
 4. **GREEN**: Implement minimum code to pass tests
 5. **REFACTOR**: Clean up while keeping tests green
@@ -70,7 +77,11 @@ Sequential merge of validated worktrees:
 
 1. Remove all worktrees: `git worktree remove .worktrees/{task-slug}`
 2. Delete branches: `git branch -d agent/{task-slug}`
-3. Report summary to user
+3. Archive briefs:
+   ```bash
+   mv .agents/briefs/{feature-slug} .agents/briefs/archive/$(date +%Y-%m-%d)-{feature-slug}
+   ```
+4. Report summary to user
 
 ## Failure Escalation
 

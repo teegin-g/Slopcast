@@ -13,6 +13,17 @@ You are now acting as the **Supervisor** agent. Read and follow `.agents/roles/s
 4. Spawn validator agents to check their work
 5. Merge validated results into main
 
+### Writing briefs to disk (before spawning agents)
+
+After decomposing tasks, persist briefs so they survive context compaction:
+```bash
+mkdir -p .agents/briefs/{feature-slug}/tasks
+```
+- Write `.agents/briefs/{feature-slug}/intent.md` — why, acceptance criteria, scope, task table
+- Write `.agents/briefs/{feature-slug}/tasks/{task-slug}.md` — full implementer brief per task
+
+See `roles/supervisor.md` § Brief Persistence for templates.
+
 ### Spawning implementer agents (Claude Code)
 
 Use the `Agent` tool with `isolation: "worktree"` — this creates worktrees automatically:
@@ -22,13 +33,13 @@ Agent(
   subagent_type: "general-purpose",
   model: "opus",
   isolation: "worktree",
-  prompt: "<full task brief here>
+  prompt: "Your task brief is at .agents/briefs/{feature-slug}/tasks/{task-slug}.md — read it first.
 
 FIRST STEP: Verify your environment:
   pwd && git branch --show-current && git worktree list
 If not in a worktree, STOP immediately.
 
-Read and follow .agents/roles/implementer.md, CLAUDE.md."
+Read your task brief, then .agents/roles/implementer.md and CLAUDE.md."
 )
 ```
 
