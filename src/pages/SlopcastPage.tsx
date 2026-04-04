@@ -190,6 +190,7 @@ const SlopcastPage: React.FC = () => {
   const [economicsResultsTab, setEconomicsResultsTab] = useState<EconomicsResultsTab>(readStoredEconomicsResultsTab);
   const [opsTab, setOpsTab] = useState<OpsTab>('SELECTION_ACTIONS');
   const viewportLayout = useViewportLayout();
+  const previousViewportLayoutRef = useRef(viewportLayout);
   const [controlsOpenSection, setControlsOpenSection] = useState<ControlsSection | null>(null);
   // Economics are now auto-computed (live via useMemo). No run gate needed.
 
@@ -732,6 +733,14 @@ const SlopcastPage: React.FC = () => {
     setControlsOpenSection('CAPEX');
     if (viewportLayout === 'mobile') setEconomicsMobilePanel('SETUP');
   }, [designWorkspace, hasCapexItems, viewMode, viewportLayout]);
+
+  useEffect(() => {
+    const previousLayout = previousViewportLayoutRef.current;
+    if (viewportLayout === 'mobile' && previousLayout !== 'mobile') {
+      setWellsMobilePanel('GROUPS');
+    }
+    previousViewportLayoutRef.current = viewportLayout;
+  }, [viewportLayout]);
 
   const operationsProps = {
     isClassic,
