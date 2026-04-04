@@ -58,6 +58,9 @@ critique-reports/
 /*.jpg
 /*.jpeg
 
+# Stale planning artifacts
+.planning/
+
 # Multi-agent system
 .worktrees/
 .agents/state/*
