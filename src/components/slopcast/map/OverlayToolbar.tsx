@@ -6,6 +6,8 @@ const spinKeyframes = `@keyframes spin { to { transform: rotate(360deg) } }`;
 
 type SelectionTool = 'lasso' | 'rectangle';
 type SpatialSource = 'databricks' | 'mock';
+type ToolbarLayerKey = 'grid' | 'heatmap' | 'satellite';
+type ToolbarDataLayerKey = 'producing' | 'duc' | 'permit' | 'laterals';
 
 interface OverlayToolbarProps {
   isClassic: boolean;
@@ -27,6 +29,78 @@ interface OverlayToolbarProps {
 const iconButtonClass =
   'w-11 h-11 md:w-9 md:h-9 rounded-lg flex shrink-0 items-center justify-center touch-manipulation transition-colors';
 
+const layerButtons: ReadonlyArray<{ key: ToolbarLayerKey; title: string; icon: React.ReactNode }> = [
+  {
+    key: 'grid',
+    title: 'Section Grid',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M1 4H15M1 8H15M1 12H15M4 1V15M8 1V15M12 1V15" stroke="currentColor" strokeWidth="1" strokeOpacity="0.8" />
+      </svg>
+    ),
+  },
+  {
+    key: 'heatmap',
+    title: 'Heatmap',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" fill="none" />
+        <circle cx="8" cy="8" r="3" fill="currentColor" fillOpacity="0.4" />
+      </svg>
+    ),
+  },
+  {
+    key: 'satellite',
+    title: 'Satellite',
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" fill="none" />
+        <path d="M2 8H14M8 2C6 4 5.5 6 5.5 8S6 12 8 14M8 2C10 4 10.5 6 10.5 8S10 12 8 14" stroke="currentColor" strokeWidth="1" />
+      </svg>
+    ),
+  },
+];
+
+const dataLayerButtons: ReadonlyArray<{ key: ToolbarDataLayerKey; title: string; icon: React.ReactNode }> = [
+  {
+    key: 'producing',
+    title: 'Producing Wells',
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <circle cx="7" cy="7" r="4" fill="currentColor" />
+      </svg>
+    ),
+  },
+  {
+    key: 'duc',
+    title: 'DUCs',
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M7 2L12 11H2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" fill="none" />
+      </svg>
+    ),
+  },
+  {
+    key: 'permit',
+    title: 'Permits',
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <rect x="2" y="1.5" width="10" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" fill="none" />
+        <path d="M5 5H9M5 7.5H8" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    key: 'laterals',
+    title: 'Laterals',
+    icon: (
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M2 7H12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+];
+
 function resolveSelectedSourceId(
   dataSourceId?: SpatialDataSourceId,
   source?: SpatialSource | null,
@@ -41,6 +115,30 @@ function resolveRenderedSource(
 ): SpatialSource {
   if (source) return source;
   return selectedSourceId === 'live' ? 'databricks' : 'mock';
+}
+
+function getSourceButtonTitle(
+  selectedSourceId: SpatialDataSourceId,
+  renderedSource: SpatialSource,
+  fallbackActive?: boolean,
+): string {
+  if (fallbackActive && selectedSourceId === 'live' && renderedSource === 'mock') {
+    return 'Using mock fallback while Live is selected. Click to switch to Mock.';
+  }
+
+  return `Data source: ${renderedSource === 'databricks' ? 'Databricks' : 'Mock'}. Click to switch to ${selectedSourceId === 'live' ? 'Mock' : 'Databricks'}.`;
+}
+
+function getSourceButtonClass(isClassic: boolean, renderedSource: SpatialSource): string {
+  if (renderedSource === 'databricks') {
+    return isClassic
+      ? 'bg-green-500/20 text-green-300 hover:bg-green-500/30'
+      : 'bg-[var(--cyan)]/20 text-[var(--cyan)] hover:bg-[var(--cyan)]/30';
+  }
+
+  return isClassic
+    ? 'bg-white/10 hover:bg-white/20'
+    : 'bg-[var(--surface-2)] hover:bg-[var(--surface-2)]/80';
 }
 
 const ToolButton: React.FC<{
@@ -92,9 +190,8 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
   const selectedSourceId = resolveSelectedSourceId(dataSourceId, source);
   const renderedSource = resolveRenderedSource(source, selectedSourceId);
   const nextSourceId: SpatialDataSourceId = selectedSourceId === 'live' ? 'mock' : 'live';
-  const sourceButtonTitle = fallbackActive && selectedSourceId === 'live' && renderedSource === 'mock'
-    ? 'Using mock fallback while Live is selected. Click to switch to Mock.'
-    : `Data source: ${renderedSource === 'databricks' ? 'Databricks' : 'Mock'}. Click to switch to ${nextSourceId === 'live' ? 'Databricks' : 'Mock'}.`;
+  const sourceButtonTitle = getSourceButtonTitle(selectedSourceId, renderedSource, fallbackActive);
+  const footerTextClass = isClassic ? 'text-white/40' : 'text-[var(--text-muted)]';
 
   return (
     <div className="absolute right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-auto">
@@ -124,97 +221,37 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
 
         <div className={`h-px my-0.5 ${isClassic ? 'bg-white/20' : 'bg-[var(--border)]'}`} />
 
-        <ToolButton
-          isClassic={isClassic}
-          active={!!layers.grid}
-          onClick={() => onToggleLayer('grid')}
-          title="Section Grid"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M1 4H15M1 8H15M1 12H15M4 1V15M8 1V15M12 1V15" stroke="currentColor" strokeWidth="1" strokeOpacity="0.8" />
-          </svg>
-        </ToolButton>
-
-        <ToolButton
-          isClassic={isClassic}
-          active={!!layers.heatmap}
-          onClick={() => onToggleLayer('heatmap')}
-          title="Heatmap"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" fill="none" />
-            <circle cx="8" cy="8" r="3" fill="currentColor" fillOpacity="0.4" />
-          </svg>
-        </ToolButton>
-
-        <ToolButton
-          isClassic={isClassic}
-          active={!!layers.satellite}
-          onClick={() => onToggleLayer('satellite')}
-          title="Satellite"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" fill="none" />
-            <path d="M2 8H14M8 2C6 4 5.5 6 5.5 8S6 12 8 14M8 2C10 4 10.5 6 10.5 8S10 12 8 14" stroke="currentColor" strokeWidth="1" />
-          </svg>
-        </ToolButton>
+        {layerButtons.map(({ key, title, icon }) => (
+          <ToolButton
+            key={key}
+            isClassic={isClassic}
+            active={!!layers[key]}
+            onClick={() => onToggleLayer(key)}
+            title={title}
+          >
+            {icon}
+          </ToolButton>
+        ))}
 
         <div className={`h-px my-0.5 ${isClassic ? 'bg-white/20' : 'bg-[var(--border)]'}`} />
 
-        <div className={`text-[10px] md:text-[9px] font-bold uppercase tracking-widest px-1 py-0.5 ${
-          isClassic ? 'text-white/40' : 'text-[var(--text-muted)]'
-        }`}>
+        <div className={`text-[10px] md:text-[9px] font-bold uppercase tracking-widest px-1 py-0.5 ${footerTextClass}`}>
           Data
         </div>
 
-        <ToolButton
-          isClassic={isClassic}
-          active={!!dataLayers.producing}
-          onClick={() => onToggleDataLayer('producing')}
-          title="Producing Wells"
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <circle cx="7" cy="7" r="4" fill="currentColor" />
-          </svg>
-        </ToolButton>
+        {dataLayerButtons.map(({ key, title, icon }) => (
+          <ToolButton
+            key={key}
+            isClassic={isClassic}
+            active={!!dataLayers[key]}
+            onClick={() => onToggleDataLayer(key)}
+            title={title}
+          >
+            {icon}
+          </ToolButton>
+        ))}
 
-        <ToolButton
-          isClassic={isClassic}
-          active={!!dataLayers.duc}
-          onClick={() => onToggleDataLayer('duc')}
-          title="DUCs"
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M7 2L12 11H2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" fill="none" />
-          </svg>
-        </ToolButton>
-
-        <ToolButton
-          isClassic={isClassic}
-          active={!!dataLayers.permit}
-          onClick={() => onToggleDataLayer('permit')}
-          title="Permits"
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <rect x="2" y="1.5" width="10" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" fill="none" />
-            <path d="M5 5H9M5 7.5H8" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
-          </svg>
-        </ToolButton>
-
-        <ToolButton
-          isClassic={isClassic}
-          active={!!dataLayers.laterals}
-          onClick={() => onToggleDataLayer('laterals')}
-          title="Laterals"
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M2 7H12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-        </ToolButton>
-
-        <div className={`flex flex-col items-center gap-1 pt-1 ${
-          isClassic ? 'text-white/40' : 'text-[var(--text-muted)]'
-        } text-[9px] md:text-[8px]`}>
+        <div className={`flex flex-col items-center gap-1 pt-1 ${footerTextClass} text-[9px] md:text-[8px]`}>
           {isLoading ? (
             <div
               className={`w-4 h-4 md:w-3 md:h-3 border-[1.5px] border-t-transparent rounded-full ${
@@ -236,22 +273,20 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
                 }}
                 title={sourceButtonTitle}
                 aria-label={sourceButtonTitle}
-                className={`min-w-11 md:min-w-9 min-h-11 md:min-h-8 px-1.5 md:px-1.5 rounded-md text-[8px] md:text-[7px] leading-tight touch-manipulation cursor-pointer transition-colors ${
-                  renderedSource === 'databricks'
-                    ? isClassic
-                      ? 'bg-green-500/20 text-green-300 hover:bg-green-500/30'
-                      : 'bg-[var(--cyan)]/20 text-[var(--cyan)] hover:bg-[var(--cyan)]/30'
-                    : isClassic
-                      ? 'bg-white/10 hover:bg-white/20'
-                      : 'bg-[var(--surface-2)] hover:bg-[var(--surface-2)]/80'
-                }`}
+                className={`min-w-11 md:min-w-9 min-h-11 md:min-h-8 px-1.5 md:px-1.5 rounded-md text-[8px] md:text-[7px] leading-tight touch-manipulation cursor-pointer transition-colors ${getSourceButtonClass(
+                  isClassic,
+                  renderedSource,
+                )}`}
               >
                 {renderedSource === 'databricks' ? 'DB' : 'Mock'}
               </button>
               {fallbackActive && (
-                <span className={`px-1.5 rounded text-[8px] md:text-[7px] leading-tight ${
-                  isClassic ? 'bg-yellow-500/20 text-yellow-300' : 'bg-yellow-500/20 text-yellow-400'
-                }`} title="Live source failed — showing mock data">
+                <span
+                  className={`px-1.5 rounded text-[8px] md:text-[7px] leading-tight ${
+                    isClassic ? 'bg-yellow-500/20 text-yellow-300' : 'bg-yellow-500/20 text-yellow-400'
+                  }`}
+                  title="Live source failed — showing mock data"
+                >
                   Fallback
                 </span>
               )}
