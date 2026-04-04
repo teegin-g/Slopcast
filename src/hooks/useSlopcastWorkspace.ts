@@ -16,7 +16,18 @@ import { useTheme } from '../theme/ThemeProvider';
 import { aggregateEconomics, cachedCalculateEconomics, applyTaxLayer, applyDebtLayer, applyReservesRisk } from '../utils/economics';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 import { useDerivedMetrics } from './useDerivedMetrics';
-import { ONBOARDING_STORAGE_KEY } from '../components/slopcast/OnboardingTour';
+import {
+  getDesignWorkspace,
+  setDesignWorkspace as storeDesignWorkspace,
+  getEconomicsResultsTab,
+  setEconomicsResultsTab as storeEconomicsResultsTab,
+  getEconomicsFocusMode,
+  setEconomicsFocusMode as storeEconomicsFocusMode,
+  getFxMode,
+  setFxMode,
+  clearFxMode,
+  setAnalysisOpenSection as storeAnalysisOpenSection,
+} from '../services/storage/workspacePreferences';
 import type { ParsedFilters } from '../components/slopcast/LandingPage';
 import type { DealRecord } from '../types';
 
@@ -40,12 +51,7 @@ const DEFAULT_SCHEDULE: ScheduleParams = {
   rigStartDate: new Date().toISOString().split('T')[0],
 };
 
-const DESIGN_WORKSPACE_STORAGE_KEY = 'slopcast-design-workspace';
-const ECONOMICS_RESULTS_TAB_STORAGE_KEY = 'slopcast-econ-results-tab';
-const ECONOMICS_FOCUS_MODE_STORAGE_KEY = 'slopcast-econ-focus-mode';
-const FX_QUERY_KEY = 'fx';
-const FX_STORAGE_KEY_PREFIX = 'slopcast-fx-';
-const ANALYSIS_OPEN_SECTION_STORAGE_KEY = 'slopcast-analysis-open-section';
+export const FX_QUERY_KEY = 'fx';
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
@@ -55,37 +61,6 @@ const csvCell = (value: string | number) => {
     return `"${raw.replace(/"/g, '""')}"`;
   }
   return raw;
-};
-
-const readStoredDesignWorkspace = (): DesignWorkspace => {
-  try {
-    const raw = localStorage.getItem(DESIGN_WORKSPACE_STORAGE_KEY);
-    if (raw === 'WELLS' || raw === 'ECONOMICS') return raw;
-  } catch {
-    // no-op
-  }
-  return 'WELLS';
-};
-
-const readStoredEconomicsResultsTab = (): EconomicsResultsTab => {
-  try {
-    const raw = localStorage.getItem(ECONOMICS_RESULTS_TAB_STORAGE_KEY);
-    if (raw === 'OVERVIEW' || raw === 'CASH_FLOW' || raw === 'RESERVES') return raw; if (raw === 'SUMMARY' || raw === 'CHARTS' || raw === 'DRIVERS') return 'OVERVIEW';
-  } catch {
-    // no-op
-  }
-  return 'OVERVIEW';
-};
-
-const readStoredEconomicsFocusMode = (): boolean => {
-  try {
-    const raw = localStorage.getItem(ECONOMICS_FOCUS_MODE_STORAGE_KEY);
-    if (raw === '1') return true;
-    if (raw === '0') return false;
-  } catch {
-    // no-op
-  }
-  return false;
 };
 
 // ─── Hook ───────────────────────────────────────────────────────────
@@ -105,32 +80,18 @@ export function useSlopcastWorkspace() {
     const fromQuery = new URLSearchParams(location.search).get(FX_QUERY_KEY);
     if (fromQuery === 'cinematic' || fromQuery === 'max') return fromQuery;
     if (fromQuery === 'clear') return 'cinematic';
-    try {
-      const stored = localStorage.getItem(`${FX_STORAGE_KEY_PREFIX}${themeId}`);
-      if (stored === 'cinematic' || stored === 'max') return stored;
-    } catch {
-      // no-op
-    }
-    return 'cinematic';
+    return getFxMode(themeId) ?? 'cinematic';
   }, [isFxTheme, location.search, themeId]);
 
   useEffect(() => {
     if (!isFxTheme) return;
     const fromQuery = new URLSearchParams(location.search).get(FX_QUERY_KEY);
     if (fromQuery === 'clear') {
-      try {
-        localStorage.removeItem(`${FX_STORAGE_KEY_PREFIX}${themeId}`);
-      } catch {
-        // no-op
-      }
+      clearFxMode(themeId);
       return;
     }
     if (fromQuery !== 'cinematic' && fromQuery !== 'max') return;
-    try {
-      localStorage.setItem(`${FX_STORAGE_KEY_PREFIX}${themeId}`, fromQuery);
-    } catch {
-      // no-op
-    }
+    setFxMode(themeId, fromQuery);
   }, [isFxTheme, location.search, themeId]);
 
   const fxClass = isFxTheme ? `fx-${fxMode}` : '';
@@ -157,11 +118,11 @@ export function useSlopcastWorkspace() {
 
   // --- State ---
   const [viewMode, setViewMode] = useState<ViewMode>('DASHBOARD');
-  const [designWorkspace, setDesignWorkspace] = useState<DesignWorkspace>(readStoredDesignWorkspace);
+  const [designWorkspace, setDesignWorkspace] = useState<DesignWorkspace>(getDesignWorkspace);
   const [wellsMobilePanel, setWellsMobilePanel] = useState<WellsMobilePanel>('MAP');
   const [economicsMobilePanel, setEconomicsMobilePanel] = useState<EconomicsMobilePanel>('RESULTS');
-  const [economicsResultsTab, setEconomicsResultsTab] = useState<EconomicsResultsTab>(readStoredEconomicsResultsTab);
-  const [economicsFocusMode, setEconomicsFocusMode] = useState<boolean>(readStoredEconomicsFocusMode);
+  const [economicsResultsTab, setEconomicsResultsTab] = useState<EconomicsResultsTab>(getEconomicsResultsTab);
+  const [economicsFocusMode, setEconomicsFocusMode] = useState<boolean>(getEconomicsFocusMode);
   const [opsTab, setOpsTab] = useState<OpsTab>('SELECTION_ACTIONS');
   const viewportLayout = useViewportLayout();
   const [controlsOpenSection, setControlsOpenSection] = useState<ControlsSection | null>(null);
@@ -673,32 +634,16 @@ export function useSlopcastWorkspace() {
 
   useEffect(() => {
     if (supabasePersistenceEnabled) return;
-    try {
-      localStorage.setItem(DESIGN_WORKSPACE_STORAGE_KEY, designWorkspace);
-    } catch {
-      // no-op
-    }
+    storeDesignWorkspace(designWorkspace);
   }, [designWorkspace, supabasePersistenceEnabled]);
 
   useEffect(() => {
     if (supabasePersistenceEnabled) return;
-    try {
-      localStorage.setItem(ECONOMICS_RESULTS_TAB_STORAGE_KEY, economicsResultsTab);
-    } catch {
-      // no-op
-    }
+    storeEconomicsResultsTab(economicsResultsTab);
   }, [economicsResultsTab, supabasePersistenceEnabled]);
 
   useEffect(() => {
-    try {
-      if (economicsFocusMode) {
-        localStorage.setItem(ECONOMICS_FOCUS_MODE_STORAGE_KEY, '1');
-      } else {
-        localStorage.removeItem(ECONOMICS_FOCUS_MODE_STORAGE_KEY);
-      }
-    } catch {
-      // no-op
-    }
+    storeEconomicsFocusMode(economicsFocusMode);
   }, [economicsFocusMode]);
 
   // --- Workflow ---
@@ -741,11 +686,7 @@ export function useSlopcastWorkspace() {
   };
 
   const handleRequestOpenAnalysisSection = (section: AnalysisOpenSection) => {
-    try {
-      localStorage.setItem(ANALYSIS_OPEN_SECTION_STORAGE_KEY, section);
-    } catch {
-      // no-op
-    }
+    storeAnalysisOpenSection(section);
     setViewMode('ANALYSIS');
   };
 

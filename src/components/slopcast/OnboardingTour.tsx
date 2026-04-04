@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-
-const STORAGE_KEY = 'slopcast-onboarding-done';
+import { getOnboardingDone, setOnboardingDone } from '../../services/storage/workspacePreferences';
 
 interface TourStep {
   target: string; // data-tour-step attribute value
@@ -27,9 +26,7 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ isClassic }) => {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
 
   useEffect(() => {
-    try {
-      if (localStorage.getItem(STORAGE_KEY) === '1') return;
-    } catch { /* ignore */ }
+    if (getOnboardingDone()) return;
     const timer = setTimeout(() => setVisible(true), 800);
     return () => clearTimeout(timer);
   }, []);
@@ -63,7 +60,7 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ isClassic }) => {
 
   const handleDone = () => {
     setVisible(false);
-    try { localStorage.setItem(STORAGE_KEY, '1'); } catch { /* ignore */ }
+    setOnboardingDone();
   };
 
   if (!visible) return null;
@@ -124,4 +121,3 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ isClassic }) => {
 };
 
 export default OnboardingTour;
-export { STORAGE_KEY as ONBOARDING_STORAGE_KEY };
