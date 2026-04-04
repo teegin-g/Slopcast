@@ -40,8 +40,8 @@
   --danger: 239 68 68;
   /* #ef4444 */
 
-  --shadow-glow-cyan: 0 0 10px rgba(59, 130, 246, 0.3);
-  --shadow-glow-magenta: 0 0 10px rgba(236, 72, 153, 0.3);
+  --shadow-glow-cyan: 0 0 0 transparent;
+  --shadow-glow-magenta: 0 0 0 transparent;
   --shadow-card: 0 10px 30px rgba(0, 0, 0, .45);
 
   --grad-space:
@@ -155,7 +155,7 @@
   --btn-secondary-text: var(--text);
 
   /* Radii */
-  --radius-panel: 12px;
+  --radius-panel: 6px;
 
   /* Light inset surfaces (used by Scenario page Classic mode) */
   --inset-bg-1: 255 255 255;
@@ -216,7 +216,8 @@
   --synth-sun: 255 184 107;
   --synth-grid-cyan: 158 211 240;
   --synth-ridge-dark: 8 3 18;
-  --radius-panel: 14px;
+  --radius-panel: 22px;
+  --font-heading: 'Orbitron', sans-serif;
 }
 
 /* ---------- Tropical / Tommy Bahama ---------- */
@@ -272,6 +273,10 @@
   --tropical-lagoon: 45 212 191;
   --tropical-ridge-dark: 9 23 31;
   --tropical-palm-shadow: 16 42 44;
+  --radius-panel: 20px;
+  --font-heading: 'Quicksand', sans-serif;
+  --shadow-glow-cyan: 0 0 0 transparent;
+  --shadow-glow-magenta: 0 0 0 transparent;
 }
 
 /* ---------- Nocturne (Moonlit Alpine) ---------- */
@@ -358,6 +363,10 @@
   --btn-primary-bg-2: 71 148 194;
   --btn-primary-border: 31 76 119;
   --btn-primary-text: 8 17 33;
+  --radius-panel: 10px;
+  --font-heading: 'Cormorant Garamond', serif;
+  --shadow-glow-cyan: 0 0 0 transparent;
+  --shadow-glow-magenta: 0 0 0 transparent;
 }
 
 /* ---------- Stormwatch (Dusk Front) ---------- */
@@ -444,6 +453,9 @@
   --btn-primary-bg-2: 108 147 205;
   --btn-primary-border: 33 74 124;
   --btn-primary-text: 11 18 33;
+  --radius-panel: 2px;
+  --font-heading: 'Space Grotesk', sans-serif;
+  --font-brand: 'JetBrains Mono';
 }
 
 /* ---------- Mario (Slopcast Classic) ---------- */
@@ -638,6 +650,72 @@
   /* slate ink */
   --inset-muted: 71 85 105;
   /* muted slate */
+}
+
+/* ---------- Hyperborea (Arctic Deep) ---------- */
+[data-theme='hyperborea'] {
+  --bg-deep: 10 21 37;
+  --bg-space: 15 28 48;
+  --surface-1: 25 38 58;
+  --surface-2: 42 58 82;
+  --border: 90 108 135;
+  --cyan: 56 189 248;
+  --magenta: 125 211 252;
+  --violet: 99 179 237;
+  --purple: 8 18 33;
+  --lav: 203 213 225;
+  --text: 226 232 240;
+  --text-primary: 226 232 240;
+  --text-secondary: 148 163 184;
+  --text-muted: 100 116 139;
+  --muted: 148 163 184;
+  --success: 52 211 153;
+  --warning: 251 191 36;
+  --danger: 248 113 113;
+
+  --shadow-glow-cyan: 0 0 20px rgba(56, 189, 248, 0.3);
+  --shadow-glow-magenta: 0 0 20px rgba(125, 211, 252, 0.2);
+  --shadow-card: 0 14px 32px rgba(0, 0, 0, 0.52);
+
+  --grad-space: linear-gradient(180deg, rgb(10 21 37) 0%, rgb(15 28 48) 100%);
+  --ambient-glow: radial-gradient(ellipse at 50% 0%, rgba(56, 189, 248, 0.06) 0%, transparent 70%);
+  --ambient-pulse: radial-gradient(ellipse at 50% 100%, rgba(125, 211, 252, 0.04) 0%, transparent 60%);
+  --font-brand: 'Inter';
+  --ambient-left: 56 189 248;
+  --ambient-right: 125 211 252;
+  --ambient-left-alpha: 0.28;
+  --ambient-right-alpha: 0.20;
+  --ambient-orb-left-alpha: 0.12;
+  --ambient-orb-right-alpha: 0.10;
+
+  --radius-panel: 18px;
+  --font-heading: 'Space Grotesk', sans-serif;
+
+  /* Semantic chrome tokens */
+  --header-bg-1: 42 58 82;
+  --header-bg-2: 25 38 58;
+  --header-border: 8 18 33;
+  --header-text: 226 232 240;
+
+  --bar-neutral-bg-1: 42 58 82;
+  --bar-neutral-bg-2: 25 38 58;
+  --bar-neutral-text: 226 232 240;
+  --bar-neutral-border: 8 18 33;
+
+  --bar-blue-bg-1: 56 189 248;
+  --bar-blue-bg-2: 38 144 200;
+  --bar-blue-text: 8 18 33;
+  --bar-blue-border: 20 70 110;
+
+  --bar-yellow-bg-1: 251 191 36;
+  --bar-yellow-bg-2: 195 138 20;
+  --bar-yellow-text: 30 20 8;
+  --bar-yellow-border: 96 68 14;
+
+  --btn-primary-bg-1: var(--cyan);
+  --btn-primary-bg-2: 38 144 200;
+  --btn-primary-border: 20 70 110;
+  --btn-primary-text: 8 18 33;
 }
 
 /* ==========================================================================

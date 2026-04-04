@@ -36,11 +36,11 @@
   --shadow-card: var(--shadow-card);
 
   --radius-panel: var(--radius-panel);
-  --radius-inner: calc(var(--radius-panel) - 6px);
+  --radius-inner: max(0px, calc(var(--radius-panel) - 6px));
 
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-brand: var(--font-brand), sans-serif;
-  --font-heading: var(--font-heading), sans-serif;
+  --font-heading: 'Inter', sans-serif;
   --font-script: "Permanent Marker", cursive;
 }
 
