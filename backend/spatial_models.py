@@ -43,3 +43,10 @@ class SpatialLayer(BaseModel):
 
 class SpatialLayersResponse(BaseModel):
     layers: list[SpatialLayer]
+
+
+class SpatialStatusResponse(BaseModel):
+    connected: bool
+    source: str  # 'databricks' | 'mock' | 'unavailable'
+    error: str | None = None
+    table: str | None = None

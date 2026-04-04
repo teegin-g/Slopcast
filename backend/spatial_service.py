@@ -23,12 +23,29 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 _db_connection = None
+_last_db_attempt: float = 0
+_last_db_error: str | None = None
+_DB_RETRY_INTERVAL = 60.0
 
 
 def _get_db_connection():
-    global _db_connection
+    global _db_connection, _last_db_attempt, _last_db_error
+
+    # If we have a cached connection, test it with a lightweight query
     if _db_connection is not None:
-        return _db_connection
+        try:
+            cursor = _db_connection.cursor()
+            cursor.execute("SELECT 1")
+            cursor.close()
+            return _db_connection
+        except Exception as exc:
+            logger.warning("Existing Databricks connection stale: %s", exc)
+            _db_connection = None
+
+    # Retry throttle: don't hammer a failing connection
+    now = time.time()
+    if _last_db_error is not None and (now - _last_db_attempt) < _DB_RETRY_INTERVAL:
+        return None
 
     hostname = os.environ.get("DATABRICKS_SERVER_HOSTNAME")
     http_path = os.environ.get("DATABRICKS_HTTP_PATH")
@@ -37,6 +54,7 @@ def _get_db_connection():
     if not all([hostname, http_path, token]):
         return None
 
+    _last_db_attempt = now
     try:
         from databricks.sql import connect
 
@@ -45,10 +63,47 @@ def _get_db_connection():
             http_path=http_path,
             access_token=token,
         )
+        _last_db_error = None
         return _db_connection
     except Exception as exc:
         logger.warning("Failed to connect to Databricks: %s", exc)
+        _last_db_error = str(exc)
         return None
+
+
+def check_connection_status() -> dict:
+    """Return connection health info for the status endpoint."""
+    catalog = os.environ.get("DATABRICKS_CATALOG", "eds")
+    schema = os.environ.get("DATABRICKS_SCHEMA", "well")
+    table = os.environ.get("DATABRICKS_WELLS_TABLE", "tbl_well_summary_all")
+    full_table = f"{catalog}.{schema}.{table}"
+
+    conn = _get_db_connection()
+    if conn is not None:
+        return {
+            "connected": True,
+            "source": "databricks",
+            "error": None,
+            "table": full_table,
+        }
+
+    # No live connection — report why
+    hostname = os.environ.get("DATABRICKS_SERVER_HOSTNAME")
+    token = os.environ.get("DATABRICKS_TOKEN")
+    if not hostname or not token:
+        return {
+            "connected": False,
+            "source": "mock",
+            "error": "Databricks credentials not configured",
+            "table": None,
+        }
+
+    return {
+        "connected": False,
+        "source": "mock",
+        "error": _last_db_error or "Connection unavailable",
+        "table": full_table,
+    }
 
 
 # ---------------------------------------------------------------------------
