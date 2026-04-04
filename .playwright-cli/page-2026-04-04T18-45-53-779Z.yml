@@ -1,0 +1,45 @@
+- generic [ref=e4]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - paragraph [ref=e8]: Access Control
+        - heading "Sign In To Slopcast Hub" [level=1] [ref=e9]
+      - generic [ref=e10]:
+        - button "🏢" [ref=e11]:
+          - generic [ref=e12]: 🏢
+        - button "🕹️" [ref=e13]:
+          - generic [ref=e14]: 🕹️
+        - button "🌴" [ref=e15]:
+          - generic [ref=e16]: 🌴
+        - button "🌙" [ref=e17]:
+          - generic [ref=e18]: 🌙
+        - button "⛈️" [ref=e19]:
+          - generic [ref=e20]: ⛈️
+        - button "🧱" [ref=e21]:
+          - generic [ref=e22]: 🧱
+        - button "❄️" [ref=e23]:
+          - generic [ref=e24]: ❄️
+  - main [ref=e25]:
+    - generic [ref=e26]:
+      - paragraph [ref=e27]: Local Verification Mode
+      - heading "Use a bypass session now, swap in Supabase later." [level=2] [ref=e28]:
+        - text: Use a bypass session now,
+        - text: swap in Supabase later.
+      - paragraph [ref=e29]: This flow intentionally validates guarded routes and user-state transitions without external provider setup. The auth adapter is structured so Supabase can replace this with minimal UI churn.
+      - generic [ref=e30]:
+        - generic [ref=e31]:
+          - generic [ref=e32]:
+            - generic [ref=e33]: Demo Email
+            - textbox "Demo Email" [ref=e34]: demo@slopcast.local
+          - generic [ref=e35]:
+            - generic [ref=e36]: Display Name
+            - textbox "Display Name" [ref=e37]: Demo Operator
+        - generic [ref=e38]:
+          - button "Sign In As Demo User" [ref=e39]
+          - button "Supabase Login (Setup Pending)" [disabled] [ref=e40]
+    - complementary [ref=e41]:
+      - heading "Route Guard Preview" [level=3] [ref=e42]
+      - generic [ref=e43]:
+        - generic [ref=e44]: "Protected destination: /slopcast"
+        - generic [ref=e45]: "Provider mode: dev-bypass"
+        - generic [ref=e46]: Supabase-ready adapter exists and can be wired by setting VITE_AUTH_PROVIDER=supabase.

@@ -1,0 +1,119 @@
+- generic [ref=e47]:
+  - banner [ref=e48]:
+    - generic [ref=e49]:
+      - generic [ref=e50]:
+        - generic [ref=e51]:
+          - generic [ref=e53]: SL
+          - generic [ref=e54]:
+            - heading "SLOPCAST" [level=1] [ref=e55]
+            - generic [ref=e56]: Deal Intelligence
+        - generic [ref=e57]:
+          - generic [ref=e58]:
+            - button "HUB" [ref=e59]
+            - button "DESIGN" [pressed] [ref=e60]
+            - button "SCENARIOS" [ref=e61]
+          - generic [ref=e64]:
+            - button "WellsReady" [ref=e65]:
+              - generic [ref=e68]: WellsReady
+            - button "EconomicsCurrent" [ref=e69]:
+              - generic [ref=e71]: EconomicsCurrent
+      - generic [ref=e73]:
+        - button "Switch theme to Slate" [pressed] [ref=e74]:
+          - generic [ref=e75]: 🏢
+        - button "Switch theme to Synthwave" [ref=e76]:
+          - generic [ref=e77]: 🕹️
+        - button "Switch theme to Tropical" [ref=e78]:
+          - generic [ref=e79]: 🌴
+        - button "Switch theme to Nocturne" [ref=e80]:
+          - generic [ref=e81]: 🌙
+        - button "Switch theme to Stormwatch" [ref=e82]:
+          - generic [ref=e83]: ⛈️
+        - button "Switch theme to Classic" [ref=e84]:
+          - generic [ref=e85]: 🧱
+        - button "Switch theme to Hyperborea" [ref=e86]:
+          - generic [ref=e87]: ❄️
+  - main [ref=e88]:
+    - generic [ref=e89]:
+      - generic [ref=e90]:
+        - region "Map" [ref=e91]
+        - link "Mapbox homepage" [ref=e93] [cursor=pointer]:
+          - /url: https://www.mapbox.com/
+      - generic:
+        - generic [ref=e94]:
+          - button [ref=e95]:
+            - img [ref=e96]
+          - generic [ref=e99]:
+            - generic [ref=e100]:
+              - generic [ref=e101]:
+                - heading "Scenarios / Groups" [level=3] [ref=e102]
+                - button "+ New Group" [ref=e103]
+              - generic [ref=e105] [cursor=pointer]:
+                - generic [ref=e106]:
+                  - generic [ref=e109]: Tier 1 - Core
+                  - generic [ref=e110]:
+                    - button "Clone Group" [ref=e111]:
+                      - img [ref=e112]
+                    - generic [ref=e115]: 40 Wells
+                - generic [ref=e116]:
+                  - generic [ref=e117]:
+                    - generic [ref=e118]: NPV10
+                    - generic [ref=e119]: $775.7M
+                  - generic [ref=e120]:
+                    - generic [ref=e121]: EUR
+                    - generic [ref=e122]: 32685 MBoe
+            - generic [ref=e125]:
+              - generic [ref=e127]:
+                - text: Wells in group
+                - generic [ref=e128]: (40)
+              - button "Show" [ref=e129]
+        - generic [ref=e132]:
+          - generic [ref=e133]:
+            - generic [ref=e134]: 40 Visible
+            - generic [ref=e135]: / 0 Selected
+            - generic [ref=e136]: / 40 Total
+          - generic [ref=e138]:
+            - combobox [ref=e139]:
+              - option "All Operators" [selected]
+              - option "Atlas Peak Resources"
+              - option "Blue Mesa Energy"
+              - option "Strata Ops LLC"
+            - combobox [ref=e140]:
+              - option "All Formations" [selected]
+              - option "Bone Spring"
+              - option "Wolfcamp A"
+              - option "Wolfcamp B"
+            - combobox [ref=e141]:
+              - option "All Statuses" [selected]
+              - option "PRODUCING"
+              - option "DUC"
+              - option "PERMIT"
+        - generic [ref=e143]:
+          - button "Lasso Select" [ref=e144]:
+            - img [ref=e145]
+          - button "Rectangle Select" [ref=e147]:
+            - img [ref=e148]
+          - button "Section Grid" [ref=e151]:
+            - img [ref=e152]
+          - button "Heatmap" [ref=e154]:
+            - img [ref=e155]
+          - button "Satellite" [ref=e158]:
+            - img [ref=e159]
+          - generic [ref=e163]: Data
+          - button "Producing Wells" [ref=e164]:
+            - img [ref=e165]
+          - button "DUCs" [ref=e167]:
+            - img [ref=e168]
+          - button "Permits" [ref=e170]:
+            - img [ref=e171]
+          - button "Laterals" [ref=e174]:
+            - img [ref=e175]
+          - generic [ref=e176]:
+            - generic [ref=e177]: "40"
+            - button "Mock" [ref=e178] [cursor=pointer]
+        - generic:
+          - generic:
+            - generic: 0 selected
+            - button "Assign to Group"
+            - button "New Group"
+            - button "Select All"
+            - button "Clear"

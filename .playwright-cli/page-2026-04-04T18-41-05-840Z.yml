@@ -1,0 +1,80 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - banner "Storybook" [ref=e6]:
+      - heading "Storybook" [level=1] [ref=e7]
+      - img
+      - generic [ref=e11]:
+        - generic [ref=e13]:
+          - link "Skip to content" [ref=e14] [cursor=pointer]:
+            - /url: "#storybook-preview-wrapper"
+          - link "Storybook" [ref=e16] [cursor=pointer]:
+            - /url: ./
+            - img "Storybook" [ref=e17]
+          - switch "Settings" [ref=e22] [cursor=pointer]:
+            - img [ref=e23]
+        - generic [ref=e26]: Search for components
+        - search [ref=e27]:
+          - combobox "Search for components" [ref=e28]:
+            - generic:
+              - img
+            - searchbox "Search for components" [ref=e29]
+            - code:
+              - generic: ⌘
+              - text: K
+          - button "Create a new story" [ref=e30] [cursor=pointer]:
+            - img [ref=e31]
+        - navigation "Stories" [ref=e34]:
+          - heading "Stories" [level=2] [ref=e35]
+    - separator "Sidebar resize handle" [ref=e55]
+  - generic [ref=e57]:
+    - region "Toolbar" [ref=e58]:
+      - heading "Toolbar" [level=2] [ref=e59]
+      - toolbar [ref=e60]:
+        - generic [ref=e61]:
+          - button "Reload story" [ref=e62] [cursor=pointer]:
+            - img [ref=e63]
+          - switch "Measure tool" [ref=e65] [cursor=pointer]:
+            - img [ref=e66]
+          - switch "Outline tool" [ref=e69] [cursor=pointer]:
+            - img [ref=e70]
+          - button "Viewport size" [ref=e72] [cursor=pointer]:
+            - img [ref=e73]
+          - button "Vision filter" [ref=e77] [cursor=pointer]:
+            - img [ref=e78]
+        - generic [ref=e82]:
+          - switch "Change zoom level" [ref=e83] [cursor=pointer]: 100%
+          - button "Enter full screen" [ref=e84] [cursor=pointer]:
+            - img [ref=e85]
+          - button "Share" [ref=e87] [cursor=pointer]:
+            - img [ref=e88]
+    - main "Main preview area" [ref=e91]:
+      - heading "Main preview area" [level=2] [ref=e92]
+      - generic [ref=e93]:
+        - progressbar "Content is loading..." [ref=e95]
+        - generic [ref=e96]:
+          - link "Skip to sidebar" [ref=e97] [cursor=pointer]:
+            - /url: "#slopcast-reviewshell--integrated-surface"
+          - iframe [ref=e101]:
+            
+  - generic [ref=e102]:
+    - separator "Addon panel resize handle" [ref=e103]
+    - region "Addon panel" [ref=e105]:
+      - heading "Addon panel" [level=2] [ref=e106]
+      - generic [ref=e107]:
+        - generic [ref=e108]:
+          - generic [ref=e109]:
+            - button "Move addon panel to right" [ref=e110] [cursor=pointer]:
+              - img [ref=e111]
+            - button "Hide addon panel" [ref=e114] [cursor=pointer]:
+              - img [ref=e115]
+          - tablist "Available addons" [ref=e120]:
+            - tab "Controls" [selected] [ref=e121] [cursor=pointer]:
+              - generic [ref=e123]: Controls
+            - tab "Actions" [ref=e124] [cursor=pointer]:
+              - generic [ref=e126]: Actions
+            - tab "Interactions" [ref=e127] [cursor=pointer]:
+              - generic [ref=e129]: Interactions
+            - tab "Code" [ref=e130] [cursor=pointer]
+            - tab "Accessibility" [ref=e131] [cursor=pointer]:
+              - generic [ref=e133]: Accessibility
+        - tabpanel "Controls" [ref=e134]

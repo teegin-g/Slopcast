@@ -1,0 +1,13 @@
+- generic [ref=e3]:
+  - generic [ref=e4]: "[plugin:vite:css-analysis] ENOENT: no such file or directory, open '/Users/teegingroves/Programming/Slopcast/problem hue/Synthwave Background for Forecasting App (1).svg'"
+  - generic [ref=e5]: /Users/teegingroves/Programming/Slopcast/src/app.css
+  - generic [ref=e6]: at async open (node:internal/fs/promises:642:25) at async Object.readFile (node:internal/fs/promises:1279:14) at async fileToDevUrl (file:///Users/teegingroves/Programming/Slopcast/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:10500:21) at async TransformPluginContext.handler (file:///Users/teegingroves/Programming/Slopcast/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:43496:29) at async EnvironmentPluginContainer.transform (file:///Users/teegingroves/Programming/Slopcast/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18) at async loadAndTransform (file:///Users/teegingroves/Programming/Slopcast/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27) at async viteTransformMiddleware (file:///Users/teegingroves/Programming/Slopcast/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24
+  - generic [ref=e7]:
+    - text: Click outside, press Esc key, or fix the code to dismiss.
+    - text: You can also disable this overlay by setting
+    - code [ref=e8]: server.hmr.overlay
+    - text: to
+    - code [ref=e9]: "false"
+    - text: in
+    - code [ref=e10]: vite.config.ts
+    - text: .
