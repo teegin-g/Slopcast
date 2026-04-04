@@ -74,6 +74,24 @@ export const LiveSelectionWithFallback: Story = {
   },
 };
 
+
+
+export const MobileTouchTargets: Story = {
+  play: async ({ canvasElement }) => {
+    canvasElement.ownerDocument.defaultView?.resizeTo?.(390, 844);
+    await new Promise((resolve) => window.setTimeout(resolve, 50));
+
+    const canvas = within(canvasElement);
+    const buttons = canvas.getAllByRole('button');
+
+    for (const button of buttons) {
+      const { width, height } = button.getBoundingClientRect();
+      await expect(width).toBeGreaterThanOrEqual(44);
+      await expect(height).toBeGreaterThanOrEqual(44);
+    }
+  },
+};
+
 export const AllDataOff: Story = {
   args: {
     dataLayers: { producing: false, duc: false, permit: false, laterals: false },

@@ -236,7 +236,7 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
                 }}
                 title={sourceButtonTitle}
                 aria-label={sourceButtonTitle}
-                className={`min-h-11 md:min-h-8 px-1.5 md:px-1.5 rounded-md text-[8px] md:text-[7px] leading-tight touch-manipulation cursor-pointer transition-colors ${
+                className={`min-w-11 md:min-w-9 min-h-11 md:min-h-8 px-1.5 md:px-1.5 rounded-md text-[8px] md:text-[7px] leading-tight touch-manipulation cursor-pointer transition-colors ${
                   renderedSource === 'databricks'
                     ? isClassic
                       ? 'bg-green-500/20 text-green-300 hover:bg-green-500/30'
