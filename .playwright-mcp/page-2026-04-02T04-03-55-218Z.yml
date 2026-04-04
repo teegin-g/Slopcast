@@ -1,0 +1,485 @@
+- generic [ref=e5]:
+  - banner [ref=e6]:
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e9]:
+          - generic [ref=e11]: SL
+          - generic [ref=e12]:
+            - heading "SLOPCAST" [level=1] [ref=e13]
+            - generic [ref=e14]: Deal Intelligence
+        - generic [ref=e15]:
+          - generic [ref=e16]:
+            - button "HUB" [ref=e17]
+            - button "DESIGN" [pressed] [ref=e18]
+            - button "SCENARIOS" [ref=e19]
+          - generic [ref=e22]:
+            - button "WellsNeeds setup" [ref=e135]:
+              - generic [ref=e26]: WellsNeeds setup
+            - button "EconomicsRerun" [ref=e136]:
+              - generic [ref=e29]: EconomicsRerun
+      - generic [ref=e31]:
+        - button "Switch theme to Slate" [pressed] [ref=e32]:
+          - generic [ref=e33]: 🏢
+        - button "Switch theme to Synthwave" [ref=e34]:
+          - generic [ref=e35]: 🕹️
+        - button "Switch theme to Tropical" [ref=e36]:
+          - generic [ref=e37]: 🌴
+        - button "Switch theme to Nocturne" [ref=e38]:
+          - generic [ref=e39]: 🌙
+        - button "Switch theme to Stormwatch" [ref=e40]:
+          - generic [ref=e41]: ⛈️
+        - button "Switch theme to Classic" [ref=e42]:
+          - generic [ref=e43]: 🧱
+        - button "Switch theme to Hyperborea" [ref=e44]:
+          - generic [ref=e45]: ❄️
+  - main [ref=e46]:
+    - generic [ref=e47]:
+      - generic:
+        - region "Map" [ref=e48]
+        - link "Mapbox homepage" [ref=e50] [cursor=pointer]:
+          - /url: https://www.mapbox.com/
+      - generic:
+        - generic [ref=e51]:
+          - button [ref=e52]:
+            - img [ref=e53]
+          - generic [ref=e56]:
+            - generic [ref=e57]:
+              - generic [ref=e58]:
+                - heading "Scenarios / Groups" [level=3] [ref=e59]
+                - button "+ New Group" [ref=e60]
+              - generic [ref=e62] [cursor=pointer]:
+                - generic [ref=e63]:
+                  - generic [ref=e66]: Tier 1 - Core
+                  - generic [ref=e67]:
+                    - button "Clone Group" [ref=e68]:
+                      - img [ref=e69]
+                    - generic [ref=e72]: 0 Wells
+                - generic [ref=e73]:
+                  - generic [ref=e74]:
+                    - generic [ref=e75]: NPV10
+                    - generic [ref=e76]: $0.0M
+                  - generic [ref=e77]:
+                    - generic [ref=e78]: EUR
+                    - generic [ref=e79]: 0 MBoe
+            - generic [ref=e82]:
+              - generic [ref=e84]:
+                - text: Wells in group
+                - generic [ref=e85]: (0)
+              - button "Show" [ref=e86]
+        - generic [ref=e89]:
+          - generic [ref=e90]:
+            - generic [ref=e91]: 2000 Visible
+            - generic [ref=e92]: / 0 Selected
+            - generic [ref=e93]: / 2000 Total
+          - generic [ref=e95]:
+            - combobox [ref=e96]:
+              - option "All Operators" [selected]
+              - option "3R OPERATING LLC"
+              - option "ACOMA OPERATING LLC"
+              - option "ADMIRAL DRILLING"
+              - option "AGHORN OPERATING INC"
+              - option "ANADARKO E & P ONSHORE LLC"
+              - option "ANTELOPE ENERGY PARTNERS LLC"
+              - option "APACHE CORPORATION"
+              - option "ATLANTIC OPERATING II LLC"
+              - option "ATLAS OPERATING LLC"
+              - option "AUTUMN ENERGY OPERATING"
+              - option "AVANT OPERATING II LLC"
+              - option "AVANT OPERATING LLC"
+              - option "B W P INC"
+              - option "BAKER OPERATING INC"
+              - option "BAM PERMIAN OPERATING LLC"
+              - option "BARNETT ENERGY INC"
+              - option "BASA RESOURCES INC"
+              - option "BASIN OIL & GAS OPERATING LLC"
+              - option "BAYSWATER EXPLORATION & PRODUCTION LLC"
+              - option "BAYSWATER OPERATING CO LLC"
+              - option "BCE-MACH III LLC"
+              - option "BCP RESOURCES LLC"
+              - option "BIRCH OPERATIONS INC"
+              - option "BLACK ARROW OPERATING LLC"
+              - option "BLACK SWAN OPCO LLC"
+              - option "BLACKBEARD OPERATING LLC"
+              - 'option "BLOCK `T` PETROLEUM INC"'
+              - option "BLUE DANUBE OIL CO"
+              - option "BOYD D K OIL & GAS CO INC"
+              - option "BPX OPERATING CO"
+              - option "BREITBURN OPERATING LP"
+              - option "BTA OIL PRODUCERS LLC"
+              - option "BURGUNDY OIL & GAS INC"
+              - option "BURGUNDY OIL & GAS OF NEW MEXICO INC"
+              - option "BURK ROYALTY CO"
+              - option "BURLESON PETROLEUM INC"
+              - option "BUSTAMANTE RESOURCES LLC"
+              - option "BXP OPERATING LLC"
+              - option "CABOT CORP"
+              - option "CAMERON OIL & GAS"
+              - option "CAPITAN ENERGY INC"
+              - option "CART HILL ENERGY LLC"
+              - option "CENTENNIAL RESOURCES PROD LLC"
+              - option "CHEVRON USA INCORPORATED"
+              - option "CHI OPERATING INC"
+              - option "CIMAREX ENERGY CO"
+              - option "CIRCLE S ENERGY LLC"
+              - option "CITATION OIL & GAS CORP"
+              - option "CIVITAS PERMIAN OPERATING LLC"
+              - option "CLAUDE-MAGGIE CO"
+              - option "CLEAR FORK INC"
+              - option "COG OPERATING LLC"
+              - option "COG PRODUCTION LLC"
+              - option "CONOCOPHILLIPS CO"
+              - option "CONTANGO RESOURCES LLC"
+              - option "CONTINENTAL OIL CO"
+              - option "CONTINENTAL RESOURCES"
+              - option "COOPER OIL & GAS LLC"
+              - option "COPPER RIDGE RESOURCES LLC"
+              - option "COSDEN PETROLEUM CORP"
+              - option "COTERRA ENERGY INC"
+              - option "COTERRA ENERGY OPERATING CO"
+              - option "CRESCENT ENERGY OPERATING LLC"
+              - option "CROSS TIMBERS ENERGY LLC"
+              - option "CROSSTEX SERVICES LLC"
+              - option "DARDEN WELL SERVICE"
+              - option "DE IV OPERATING LLC"
+              - option "DE V OPERATING LLC"
+              - option "DEVON ENERGY PRODUCTION CO LP"
+              - option "DIAMOND S ENERGY CO"
+              - option "DIAMONDBACK EXPLORATION & PROD LLC"
+              - option "DISCOVERY NATURAL RESOURCES LLC"
+              - option "DISCOVERY OPERATING INC"
+              - option "DRIFTWOOD OIL LLC"
+              - option "DUFFY B A"
+              - option "EAGLE NATURAL RESOURCES LLC"
+              - option "EARTHSTONE OPERATING LLC"
+              - option "EL CAPITAN OIL CO"
+              - option "ELEVATION RESOURCES LLC"
+              - option "EMPIRE NEW MEXICO LLC"
+              - option "EOG RESOURCES INCORPORATED"
+              - option "ERNMAR INVESTMENTS INC"
+              - option "ESCONDIDO BAY CORP"
+              - option "EXTEX OPERATING CO"
+              - option "FAE II OPERATING LLC"
+              - option "FASKEN OIL & RANCH LTD"
+              - option "FED OPERATING LLC"
+              - option "FORMENTERA OPERATIONS LLC"
+              - option "FORREST ROBERT H JR OIL LLC"
+              - option "FORTY ACRES ENERGY LLC"
+              - option "FULFER OIL & CATTLE CO LLC"
+              - option "G & F OIL INC"
+              - option "GRAYROCK ENERGY II LLC"
+              - option "GREAT WESTERN DRILLING CO"
+              - option "GREENLAKE ENERGY OPERATING LLC"
+              - option "GREENSTONE ENERGY LLC"
+              - option "GULF OIL CORP"
+              - option "HANNATHON PETROLEUM II LLC"
+              - option "HARRISON L C OIL CO"
+              - option "HARVARD PETROLEUM CO LLC"
+              - option "HEDRICK OIL CO"
+              - option "HEIFER PRODUCTION CO LLC"
+              - option "HIBERNIA RESOURCES IV LLC"
+              - option "HIBERNIA RESOURCES LLC"
+              - option "HIGH DESERT RESOURCES LLC"
+              - option "HIGHMARK ENERGY OPERATING LLC"
+              - option "HIGHPEAK ENERGY HOLDINGS LLC"
+              - option "HILCORP ENERGY COMPANY"
+              - option "HUMBLE OIL & REFINING CO"
+              - option "HUMPHREY T D JR"
+              - option "ICA ENERGY OPERATING LLC"
+              - option "IKE OPERATING LLC"
+              - option "ISKANDIA ENERGY OPERATING INC"
+              - option "J R OIL LTD CO"
+              - option "JATAM INC"
+              - option "JO MILL OIL CO LLC"
+              - option "JOHNSON OPERATING CO LLC"
+              - option "JONAH ENERGY LLC"
+              - option "JONES & STASNY-NEELY HG"
+              - option "JONES L E OPERATING INC"
+              - option "KAISER-FRANCIS OIL CO"
+              - option "KAUFFMAN K P CO INC"
+              - option "KEELEY OIL LLC"
+              - option "KENSON CORP THE"
+              - option "KING CARL B DRILLING"
+              - option "KVL OPERATING LLC"
+              - option "L C S PRODUCTION CO"
+              - option "LAGUNA PETROLEUM CORP"
+              - option "LAKE CRYSTAL OPERATING LLC"
+              - option "LAKESHORE OPERATING LLC"
+              - option "LANGFORD & BRIGHAM OPERATING LLC"
+              - option "LARIO OIL & GAS CO"
+              - option "LAST MILE PRODUCTION LLC"
+              - option "LH OPERATING LLC"
+              - option "LIBERTAD OPERATING LLC"
+              - option "LOVELADY I W"
+              - option "LRR PECOS VALLEY LLC"
+              - option "M2 SQUARED OPERATING LLC"
+              - option "MARATHON OIL PERMIAN LLC"
+              - option "MARTIN FOREE OPERATING II LLC"
+              - option "MATADOR PRODUCTION CO"
+              - option "MAVERICK PERMIAN LLC"
+              - option "MCCLURE OIL CO INC"
+              - option "MERCURY OPERATING LLC"
+              - option "MEWBOURNE OIL CO"
+              - option "MGM OIL & GAS CO"
+              - option "MIDLAND OPERATING CO"
+              - option "MONTARE OPERATING LTD"
+              - option "MONTROSE OPERATING LLC"
+              - option "MOONTOWER RESOURCES OP LLC"
+              - option "MORNINGSTAR OPERATING LLC"
+              - option "NEW HEIGHT ENERGY LLC"
+              - option "NICKI T OIL & GAS LLC"
+              - option "NORTH FORK OPERATING LP"
+              - option "NORTHERN PACIFIC OIL & GAS"
+              - option "NOVO OIL GAS NORTHERN DELAWARE LLC"
+              - option "OCCIDENTAL PERMIAN LTD"
+              - option "OCTANE ENERGY OPERATING LLC"
+              - option "OHIO OIL CO"
+              - option "OLDER THAN DIRT LLC"
+              - option "OLSEN ENERGY INC"
+              - option "OLSEN R OIL CO"
+              - option "ORYAN OIL & GAS"
+              - option "OTB OPERATING LLC"
+              - option "OVINTIV USA INC"
+              - option "OWL OPS LLC"
+              - option "OXY USA INC"
+              - option "OXY USA WTP LP"
+              - option "OXYROCK OPERATING LLC"
+              - option "P & A OPERATING INC"
+              - option "PAN AMERICAN"
+              - option "PAR DEVELOPMENT"
+              - option "PARALLEL PETROLEUM LLC"
+              - option "PARTEE DRILLING INC"
+              - option "PDEH LLC"
+              - option "PEN-TEX PRODUCTION CO INC"
+              - option "PENNANT DEVELOPMENT & PRODUCTION LLC"
+              - option "PENWELL SOUTH OPERATING LLC"
+              - option "PERKINS-PROTHRO CO"
+              - option "PERMIAN RESOURCES"
+              - option "PERMIAN RESOURCES OPERATING LLC"
+              - option "PETEX"
+              - option "PETRO-HUNT PERMIAN LLC"
+              - option "PETROLEUM EXPLORATION CO LTD"
+              - option "PETROLEUM PRODUCERS INC"
+              - option "PETROPLEX ENERGY INCORPORATED"
+              - option "PHILLIPS PETROLEUM CO"
+              - option "PIERCE RAY A"
+              - option "PIONEER NATURAL RESOURCES USA INC"
+              - option "PITTS ENERGY CO"
+              - option "POCO RESOURCES LLC"
+              - option "PREMIER OIL & GAS INC"
+              - option "PRIDE ENERGY CO"
+              - option "PROVIDENCE ENERGY SERVICES INC-KELTON"
+              - option "Q NATURAL RESOURCES LLC"
+              - option "QP INC"
+              - option "R3 OPERATING CORP"
+              - option "RAPTOR RESOURCES INC"
+              - option "RAYBAW OPERATING LLC"
+              - option "REVERENCE OPERATING LLC"
+              - option "RING ENERGY INC"
+              - option "RMB OPERATING LLC"
+              - option "RMR OPERATING LLC"
+              - option "ROARK & HOOKER"
+              - option "ROBERTSON RESOURCES INC"
+              - option "RODAN"
+              - option "ROUGHHOUSE OPERATING LLC"
+              - option "RUMBLE ENERGY LLC"
+              - option "RUST OIL CORP"
+              - option "SABALO II OPERATING LLC"
+              - option "SABINAL ENERGY OPERATING LLC"
+              - option "SAHARA OPERATING CO"
+              - option "SAXET OIL CORP"
+              - option "SCOUT ENERGY MANAGEMENT LLC"
+              - option "SHACKELFORD OIL CO"
+              - option "SHARP IMAGE ENERGY INC"
+              - option "SHELL OIL CO"
+              - option "SILVER CROSS ENERGY PARTNERS LLC"
+              - option "SINCLAIR OIL & GAS CO"
+              - option "SKEETER OIL LLC"
+              - option "SLANT OPERATING LLC"
+              - option "SM ENERGY COMPANY"
+              - option "SMC OIL & GAS INC"
+              - option "SOGC LLC"
+              - option "SOJOURNER DRILLING CORP"
+              - option "SOUTHWEST ROYALTIES INC"
+              - option "SPECIAL ENERGY CORP"
+              - option "SPINDLETOP OIL & GAS CO"
+              - option "SPIRIT OIL & GAS OPERATING LLC"
+              - option "SPUR ENERGY PARTNERS LLC"
+              - option "STANOLIND OIL"
+              - option "STEPHENS & JOHNSON OPERATING CO"
+              - option "STEVENS & PORTZ"
+              - option "STRATA PROD CO"
+              - option "SUN OIL CO"
+              - option "SURGE OPERATING LLC"
+              - option "SWEET CRUDE OPERATING LLC"
+              - option "TASCOSA ENERGY PARTNERS LLC"
+              - option "TEAM OPERATING LLC"
+              - option "TEXACO INC"
+              - option "TEXIAN OPERATING CO LLC"
+              - option "TEXLAND PETROLEUM LP"
+              - option "TOM OPERATING & MINERALS LLC"
+              - option "TRILOGY OPERATING INC"
+              - option "TRP OPERATING LLC"
+              - option "UNGREN & FRAZIER"
+              - option "UNITEX OIL & GAS LLC"
+              - option "VIKING OIL CO"
+              - option "VIN FISHER OPERATING INC"
+              - option "VITAL ENERGY INC"
+              - option "W D J MANAJEMENT CO"
+              - option "W T G EXPLORATION"
+              - option "WALSH & WATTS INC"
+              - option "WALTON PRODUCING INC"
+              - option "WASH ROBERT C INC"
+              - option "WATUSI ENERGY LLC"
+              - option "WHEELER ENERGY LLC"
+              - option "WHITE ROCK OIL & GAS LLC"
+              - option "WILLIAMS OIL CO"
+              - option "WINN OPERATING LLC"
+              - option "WOODLEY PETROLEUM CO"
+              - option "WPX ENERGY PERMIAN LLC"
+              - option "WPX ENERGY PRODUCTION LLC"
+              - option "XTO ENERGY INC"
+              - option "XTO PERMIAN OPERATING LLC"
+              - option "YUKON EXPLORATION OPERATING LLC"
+              - option "ZARVONA ENERGY LLC"
+            - combobox [ref=e97]:
+              - option "All Formations" [selected]
+              - option
+              - option "1ST BONE SPRING"
+              - option "2ND BONE SPRING"
+              - option "3RD BONE SPRING"
+              - option "3RD BONE SPRING CARB"
+              - option "5600"
+              - option "ABO"
+              - option "ABO SD"
+              - option "ATOKA"
+              - option "AVALON"
+              - option "BARNETT"
+              - option "BELL CANYON"
+              - option "BLINEBRY"
+              - option "BONE SPRING"
+              - option "BRUSHY CANYON"
+              - option "CAMBRIAN"
+              - option "CANYON"
+              - option "CANYON REEF"
+              - option "CANYON SD"
+              - option "CANYON UPPER"
+              - option "CHERRY CANYON"
+              - option "CISCO"
+              - option "CLEAR FORK"
+              - option "CLEAR FORK /LM/"
+              - option "CLEAR FORK 5600"
+              - option "CLEAR FORK A"
+              - option "CLEAR FORK MIDDLE"
+              - option "CLINE"
+              - option "COLEMAN JUNCTION /LM/"
+              - option "DEAN"
+              - option "DELAWARE"
+              - option "DELAWARE LM"
+              - option "DEVONIAN"
+              - option "DEVONIAN CARBONATE"
+              - option "DRINKARD"
+              - option "ELLENBURGER"
+              - option "FLIPPEN SD"
+              - option "FOSTER /SD/"
+              - option "FUHRMAN /SD/"
+              - option "FUSSELMAN"
+              - option "GLORIETA"
+              - option "GRANITE"
+              - option "GRAYBURG"
+              - option "GRAYBURG / SAN ANDRES"
+              - option "GRAYBURG UPPER"
+              - option "GUADALUPE"
+              - option "GUNSIGHT"
+              - option "HOLT"
+              - option "JOMILL"
+              - option "JUDKINS"
+              - option "LEONARD"
+              - option "LOWER SPRABERRY"
+              - option "MCELROY / BL LM"
+              - option "MCKEE"
+              - option "MCKNIGHT"
+              - option "MIDDLE SPRABERRY"
+              - option "MONTOYA"
+              - option "MORROW"
+              - option "MORROW CLASTIC"
+              - option "MORROW MIDDLE"
+              - option "NOODLE CREEK"
+              - option "NOODLE CREEK/LM/"
+              - option "OLDS"
+              - option "PADDOCK"
+              - option "PENNSYLVANIAN"
+              - option "PENNSYLVANIAN AND MISSISSIPPIAN"
+              - option "PENNSYLVANIAN SD"
+              - option "PENNSYLVANIAN VIRGILIAN SAND"
+              - option "PENROSE/SD/"
+              - option "PERMIAN"
+              - option "QUEEN"
+              - option "QUEEN B SD"
+              - option "RAMSEY"
+              - option "REEF"
+              - option "SAN ANDRES"
+              - option "SAN ANDRES / GLORIETA"
+              - option "SAN ANDRES 3"
+              - option "SAN ANDRES UPPER"
+              - option "SAN ANGELO"
+              - option "SAN ANGELO UPPER"
+              - option "SEVEN RIVERS"
+              - option "SEVEN RIVERS / QUEEN"
+              - option "SILURIAN"
+              - option "SILURIAN-DEVONIAN"
+              - option "SPRABERRY"
+              - option "STRAWN"
+              - option "STRAWN A"
+              - option "STRAWN SD"
+              - option "STRAWN/BARNETT/MISSISSIPPIAN"
+              - option "TANSILL / YATES"
+              - option "TANSILL / YATES / SEVEN RIVERS"
+              - option "TUBB"
+              - option "TUBB /SD/"
+              - option "UNKNOWN"
+              - option "WICHITA"
+              - option "WICHITA-ALBANY"
+              - option "WOLFCAMP"
+              - option "WOLFCAMP A"
+              - option "WOLFCAMP B"
+              - option "WOLFCAMP C"
+              - option "WOLFCAMP D"
+              - option "WOLFCAMP XY"
+              - option "WOODFORD"
+              - option "WOODFORD AND BELOW"
+              - option "YATES"
+              - option "YATES / SEVEN RIVERS"
+              - option "YATES / SEVEN RIVERS / QUEEN"
+            - combobox [ref=e98]:
+              - option "All Statuses" [selected]
+              - option "PRODUCING"
+        - generic [ref=e100]:
+          - button "Lasso Select" [ref=e101]:
+            - img [ref=e102]
+          - button "Rectangle Select" [ref=e104]:
+            - img [ref=e105]
+          - button "Section Grid" [ref=e108]:
+            - img [ref=e109]
+          - button "Heatmap" [ref=e111]:
+            - img [ref=e112]
+          - button "Satellite" [ref=e115]:
+            - img [ref=e116]
+          - generic [ref=e120]: Data
+          - button "Producing Wells" [ref=e121]:
+            - img [ref=e122]
+          - button "DUCs" [ref=e124]:
+            - img [ref=e125]
+          - button "Permits" [ref=e127]:
+            - img [ref=e128]
+          - button "Laterals" [ref=e131]:
+            - img [ref=e132]
+          - generic [ref=e133]:
+            - generic [ref=e137]: 2,000+
+            - button "DB" [ref=e138] [cursor=pointer]
+        - generic:
+          - generic:
+            - generic: 0 selected
+            - button "Assign to Group"
+            - button "New Group"
+            - button "Select All"
+            - button "Clear"
