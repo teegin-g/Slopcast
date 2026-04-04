@@ -1,6 +1,6 @@
 # /implement — Slopcast Implementer
 
-You are now acting as the **Implementer** agent. Read and follow `.agents/roles/implementer.md`, repo-root `CLAUDE.md`, and `docs/prompt-injection.md`.
+You are now acting as the **Implementer** agent. Read and follow `.agents/roles/implementer.md`, repo-root `CLAUDE.md`.
 
 ## CRITICAL FIRST STEP
 
@@ -29,7 +29,7 @@ pwd
 
 # Read project conventions
 cat CLAUDE.md
-cat docs/prompt-injection.md
+cat CLAUDE.md
 
 # Read relevant source files before modifying them
 ```
@@ -63,7 +63,7 @@ Skip TDD for pure-JSX/layout, types, constants, CSS. Go straight to implementati
 Test reference: See `src/utils/economics.test.ts` for Vitest patterns.
 
 ### Rules
-- Follow ALL conventions in `CLAUDE.md` and `docs/prompt-injection.md`
+- Follow ALL conventions in `CLAUDE.md`
 - Read files before modifying them
 - Stay within scope, but fix structural issues in the touched area that a strict senior review would reject
 - Re-read files before and after editing

@@ -148,40 +148,13 @@ Syncs groups/scenarios/UI state to Supabase when authenticated; falls back to lo
 
 ## Multi-Agent Development System
 
-This project includes a multi-agent system in `.agents/` for structured feature development with isolated worktrees, validation gates, and coordinated merges.
+For structured feature work (worktree isolation, validation gates, coordinated merges), see `.agents/system.md`. Key entry points:
 
-### Quick Start
+- `.agents/roles/` — Supervisor, Implementer, Validator, Fixer role docs
+- `.agents/workflows/feature-pipeline.md` — End-to-end pipeline
+- `.agents/validation/gate.sh` — Automated validation gate
 
-| Mode | How to invoke |
-|------|--------------|
-| **Claude Code (auto)** | Tell Claude: "Act as the supervisor from `.agents/roles/supervisor.md` and implement {feature}" |
-| **Claude Code (manual)** | Use `/supervisor` to plan, `/implement` per worktree, `/validate` to check |
-| **Cursor** | Open Composer, say "Act as supervisor" or "Act as implementer" — see `.cursorrules` |
-| **Codex** | `codex --agent supervisor "Add dark mode toggle"` |
-
-**IMPORTANT (Claude Code):** The supervisor must run as the main interactive session (not as a sub-agent). It spawns implementers using the `Agent` tool with `isolation: "worktree"`. Sub-agents cannot prompt for permission — all commands they need must be pre-allowed in `.claude/settings.local.json`.
-
-**IMPORTANT (Databricks Proxy):** When spawning any agent (implementer, validator, team member), **always include `model: "opus"`** (or `"sonnet"`) in the `Agent` tool call. Without this, agents get the raw model ID which fails silently on the Databricks-proxied endpoint. The alias resolves through `ANTHROPIC_DEFAULT_OPUS_MODEL` to the correct model name.
-
-### Key files
-- `.agents/system.md` — Architecture overview
-- `.agents/roles/supervisor.md` — Supervisor: decomposes, coordinates, merges
-- `.agents/roles/implementer.md` — Implementer: builds in worktrees, follows TDD
-- `.agents/roles/validator.md` — Validator: runs gate, reports pass/fail
-- `.agents/workflows/feature-pipeline.md` — Full end-to-end pipeline
-- `.agents/validation/gate.sh` — Automated validation gate (typecheck → build → test → storybook → audit → screenshots → E2E)
-
-### Rules
-- Implementers MUST verify they're in a worktree before writing code
-- Task briefs MUST include testable acceptance criteria
-- Implementers follow TDD: write failing tests first, then implement
-- All activity is logged to `.agents/state/activity.jsonl`
-
-### Local Context First
-- Keep `CLAUDE.md`, `.cursorrules`, `AGENTS.md`, and `.agents/` as the canonical global harness.
-- Before broad repo search, check the nearest local `FEATURE.md` or `README.md` in the folder you are working in.
-- Use local manifests as routing docs: they should point you to the right entrypoints, neighboring files, tests, stories, and specs for that area.
-- Do not create full per-folder copies of the root harness unless a tool absolutely requires a tiny shim.
+Before broad repo search, check the nearest local `FEATURE.md` or `README.md` in the folder you are working in.
 
 ## Design Context
 

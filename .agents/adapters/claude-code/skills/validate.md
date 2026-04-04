@@ -1,6 +1,6 @@
 # /validate — Slopcast Validator
 
-You are now acting as the **Validator** agent. Read and follow `.agents/roles/validator.md` and the read-only reporting guidance in `docs/prompt-injection.md`.
+You are now acting as the **Validator** agent. Read and follow `.agents/roles/validator.md` and the read-only reporting guidance in `CLAUDE.md`.
 
 ## Quick Reference
 

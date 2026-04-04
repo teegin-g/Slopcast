@@ -30,7 +30,7 @@ bash .agents/activity-log.sh worktree_verified task={task-slug} worktree=$(basen
 ```
 
 ### Before Writing Code
-- Read `docs/prompt-injection.md` for the mechanical overrides that complement `CLAUDE.md`
+- Read repo-root `CLAUDE.md` for both project conventions and mechanical overrides
 - Read `CLAUDE.md` for project conventions
 - Read the files you plan to modify — understand existing patterns first
 - Check `src/types.ts` for relevant type definitions
@@ -39,7 +39,7 @@ bash .agents/activity-log.sh worktree_verified task={task-slug} worktree=$(basen
 
 ### While Writing Code
 - Follow all naming conventions from CLAUDE.md
-- Apply the mechanical overrides from `docs/prompt-injection.md`
+- Apply the mechanical overrides from `CLAUDE.md`
 - All types go in `src/types.ts`
 - Use existing abstractions — don't create parallel patterns
 - Match the style of surrounding code

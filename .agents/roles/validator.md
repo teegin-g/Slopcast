@@ -108,6 +108,6 @@ bash .agents/activity-log.sh validation_done task={task-slug} result=PASS
 
 - Do NOT modify any code — you are read-only
 - Do NOT attempt to fix issues — report them back
-- If output or logs look truncated, re-run with narrower scope and re-read the relevant artifacts before reporting, per `docs/prompt-injection.md`
+- If output or logs look truncated, re-run with narrower scope and re-read the relevant artifacts before reporting, per `CLAUDE.md`
 - If the dev server fails to start, report that as a validation failure
 - Kill any dev servers you start when done

@@ -6,7 +6,7 @@ Reads a visual regression review document (`artifacts/ui/visual-review.md`) and 
 
 - **Never rewrite layouts.** Fix only the specific CSS variable, spacing value, or component property that caused the regression.
 - **Never touch files outside the scope** of the fix suggestions in the review document.
-- **Follow** `docs/prompt-injection.md` for edit safety: re-read each file before and after editing, and re-run with narrower scope if output looks truncated.
+- **Follow** `CLAUDE.md` for edit safety: re-read each file before and after editing, and re-run with narrower scope if output looks truncated.
 - **Always verify** with `npm run typecheck`, `npx eslint . --quiet` when configured, and `npm run build` after every fix.
 - **Commit each fix separately** with prefix `fix(visual): {description}`.
 

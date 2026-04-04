@@ -10,7 +10,7 @@ End-to-end workflow for implementing features using the multi-agent system.
 2. Ask clarifying questions if requirements are ambiguous
 3. Decompose into independent tasks with clear briefs
 4. Determine task dependencies and parallelization strategy
-5. For refactors or broad multi-file work, split the plan into phases of no more than 5 files and set approval gates between phases per `docs/prompt-injection.md`
+5. For refactors or broad multi-file work, split the plan into phases of no more than 5 files and set approval gates between phases per `CLAUDE.md`
 6. Present plan to user for approval (in manual mode, pause here)
 
 ### Phase 2: Setup (Supervisor)
@@ -31,7 +31,7 @@ End-to-end workflow for implementing features using the multi-agent system.
 For each task (parallel if independent, sequential if dependent):
 
 1. **Implementer verifies environment** (MANDATORY first action — see `roles/implementer.md`)
-2. Implementer reads task brief, `CLAUDE.md`, `docs/prompt-injection.md`, and relevant code
+2. Implementer reads task brief, `CLAUDE.md`, and relevant code
 3. **RED**: Write failing tests from task brief acceptance criteria / test cases
 4. **GREEN**: Implement minimum code to pass tests
 5. **REFACTOR**: Clean up while keeping tests green

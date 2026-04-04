@@ -127,7 +127,7 @@ This applies to all agent spawning: `Agent` tool, `team_name` teammates, worktre
 
 ## Project Conventions
 
-All agents MUST follow `CLAUDE.md` in the repo root and the mirrored mechanical overrides in `docs/prompt-injection.md`. Key rules:
+All agents MUST follow `CLAUDE.md` in the repo root. Key rules:
 - Break refactors and broad multi-file work into phases of no more than 5 files, and wait for explicit approval before the next phase
 - For work touching more than 5 independent files, split the work across parallel agents or worktrees
 - Re-read files before and after edits, and narrow/re-run commands when output looks truncated

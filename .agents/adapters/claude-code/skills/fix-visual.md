@@ -24,5 +24,5 @@ User runs `/fix-visual` or says "fix visual regressions".
 
 - Always pass `model: "opus"` when spawning as a sub-agent (Databricks proxy requirement)
 - If running in a worktree, verify with `git worktree list` first
-- Follow the edit-safety and truncation rules in `docs/prompt-injection.md`
+- Follow the edit-safety and truncation rules in `CLAUDE.md`
 - Only fix what the review document explicitly flags — do not refactor surrounding code

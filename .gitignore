@@ -43,7 +43,20 @@ ENV/
 artifacts/
 playwright-report/
 test-results/
-output/playwright/**/*.png
+output/
+
+# Playwright MCP session artifacts
+.playwright-mcp/
+
+# Ad-hoc screenshot/comparison directories
+screenshots/
+branch-comparison/
+critique-reports/
+
+# Root-level investigation images
+/*.png
+/*.jpg
+/*.jpeg
 
 # Multi-agent system
 .worktrees/
