@@ -34,7 +34,7 @@ interface AccordionItemProps {
 
 const AccordionItem: React.FC<AccordionItemProps> = ({ title, isOpen, onClick, children, useBrandFont }) => {
   const { theme } = useTheme();
-  const isClassic = theme.id === 'mario';
+  const isClassic = theme.features.isClassicTheme;
   const sectionId = `scenario-dashboard-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
   if (isClassic) {
@@ -81,7 +81,7 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ title, isOpen, onClick, c
 const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, scenarios, setScenarios }) => {
   const { theme } = useTheme();
   const { chartPalette } = theme;
-  const isClassic = theme.id === 'mario';
+  const isClassic = theme.features.isClassicTheme;
 
   const [activeScenarioId, setActiveScenarioId] = useState<string>('s-base');
   const [editingScenario, setEditingScenario] = useState<boolean>(false);

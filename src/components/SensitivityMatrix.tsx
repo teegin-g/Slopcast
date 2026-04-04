@@ -26,7 +26,7 @@ const formatValue = (v: SensitivityVariable, val: number) => {
 
 const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar }) => {
   const { theme } = useTheme();
-  const isClassic = theme.id === 'mario';
+  const isClassic = theme.features.isClassicTheme;
 
   const isEmpty = !data || data.length === 0 || (data.length > 0 && data[0].length === 0);
 

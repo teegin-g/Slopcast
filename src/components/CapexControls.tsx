@@ -28,7 +28,7 @@ const STANDARD_LATERAL = 10000;
 
 const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
   const { theme } = useTheme();
-  const isClassic = theme.id === 'mario';
+  const isClassic = theme.features.isClassicTheme;
   const [isEditing, setIsEditing] = useState(false);
   const capexChart = useStableChartContainer([theme.id, capex.items.length]);
 

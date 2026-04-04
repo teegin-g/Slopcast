@@ -10,7 +10,7 @@ interface ScenarioComparisonProps {
 const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({ groups }) => {
   const { theme } = useTheme();
   const { chartPalette } = theme;
-  const isClassic = theme.id === 'mario';
+  const isClassic = theme.features.isClassicTheme;
 
   // Prepare data for table
   const tableData = groups.map(g => {

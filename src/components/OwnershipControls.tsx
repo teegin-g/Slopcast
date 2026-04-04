@@ -14,7 +14,7 @@ const decToPct = (dec: number) => (clamp01(dec) * 100);
 
 const OwnershipControls: React.FC<OwnershipControlsProps> = ({ ownership, onChange }) => {
   const { theme } = useTheme();
-  const isClassic = theme.id === 'mario';
+  const isClassic = theme.features.isClassicTheme;
 
   const headerClass = isClassic
     ? 'bg-black/10 border-black/30'

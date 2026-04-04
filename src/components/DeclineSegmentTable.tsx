@@ -18,7 +18,7 @@ const CUTOFF_OPTIONS: { label: string; value: CutoffKind }[] = [
 
 const DeclineSegmentTable: React.FC<DeclineSegmentTableProps> = ({ segments, gorMcfPerBbl, onChange }) => {
   const { theme } = useTheme();
-  const isClassic = theme.id === 'mario';
+  const isClassic = theme.features.isClassicTheme;
 
   const handleUpdateSegment = (id: string, field: keyof ForecastSegment, value: any) => {
     const updated = segments.map(s => s.id === id ? { ...s, [field]: value } : s);
