@@ -57,7 +57,11 @@ const AnimatedNpvValue: React.FC<{ value: number; runToken: number }> = ({ value
     return () => controls.stop();
   }, [value, runToken, prefersReduced]);
 
-  return <span ref={displayRef}>${(value / 1e6).toFixed(1)}</span>;
+  return (
+    <span role="status" aria-live="polite" aria-atomic="true">
+      <span ref={displayRef} aria-label="Portfolio NPV value">${(value / 1e6).toFixed(1)}</span>
+    </span>
+  );
 };
 
 /** Tiny SVG sparkline from cumulative cash flow data */
