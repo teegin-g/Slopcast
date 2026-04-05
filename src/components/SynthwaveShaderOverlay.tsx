@@ -13,6 +13,7 @@
  * Falls back to a static CSS overlay if WebGL2 is unavailable.
  */
 import { useEffect, useRef } from 'react';
+import { createProgram } from '../utils/webglUtils';
 
 // ── Vertex shader (fullscreen quad) ──────────────────────────────────────────
 const VERT_SOURCE = `#version 300 es
@@ -135,56 +136,6 @@ void main() {
   fragColor = vec4(color, alpha * 0.4);
 }`;
 
-function compileShader(
-  gl: WebGL2RenderingContext,
-  type: number,
-  source: string,
-): WebGLShader | null {
-  const shader = gl.createShader(type);
-  if (!shader) return null;
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error(
-      `Shader compile error (${type === gl.VERTEX_SHADER ? 'vertex' : 'fragment'}):`,
-      gl.getShaderInfoLog(shader),
-    );
-    gl.deleteShader(shader);
-    return null;
-  }
-  return shader;
-}
-
-function createProgram(
-  gl: WebGL2RenderingContext,
-  vertSrc: string,
-  fragSrc: string,
-): WebGLProgram | null {
-  const vert = compileShader(gl, gl.VERTEX_SHADER, vertSrc);
-  const frag = compileShader(gl, gl.FRAGMENT_SHADER, fragSrc);
-  if (!vert || !frag) return null;
-
-  const program = gl.createProgram();
-  if (!program) return null;
-  gl.attachShader(program, vert);
-  gl.attachShader(program, frag);
-  gl.linkProgram(program);
-
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.error('Program link error:', gl.getProgramInfoLog(program));
-    gl.deleteProgram(program);
-    return null;
-  }
-
-  // Shaders can be detached after linking
-  gl.detachShader(program, vert);
-  gl.detachShader(program, frag);
-  gl.deleteShader(vert);
-  gl.deleteShader(frag);
-
-  return program;
-}
-
 export default function SynthwaveShaderOverlay() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -202,7 +153,7 @@ export default function SynthwaveShaderOverlay() {
       return;
     }
 
-    const program = createProgram(gl, VERT_SOURCE, FRAG_SOURCE);
+    const program = createProgram(gl, VERT_SOURCE, FRAG_SOURCE, 'SynthwaveCRT');
     if (!program) return;
 
     gl.useProgram(program);
