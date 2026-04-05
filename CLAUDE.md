@@ -4,6 +4,10 @@
 
 You are operating within a constrained context window and strict system prompts. To produce production-grade code, you MUST adhere to these overrides:
 
+## Agent Spawning
+
+0. DATABRICKS PROXY MODEL ALIAS: This project uses a Databricks-proxied API endpoint. When spawning ANY agent (Agent tool, TeamCreate teammates), you MUST pass `model: "opus"` or `model: "sonnet"` explicitly. NEVER omit the `model` parameter — without the alias, agents receive the raw model ID (`claude-opus-4-6`) which fails against the Databricks endpoint. The alias resolves through `ANTHROPIC_DEFAULT_OPUS_MODEL` / `ANTHROPIC_DEFAULT_SONNET_MODEL` env vars to the correct `databricks-claude-*` model names.
+
 ## Pre-Work
 
 1. THE "STEP 0" RULE: Dead code accelerates context compaction. Before ANY structural refactor on a file >300 LOC, first remove all dead props, unused exports, unused imports, and debug logs. Commit this cleanup separately before starting the real work.
