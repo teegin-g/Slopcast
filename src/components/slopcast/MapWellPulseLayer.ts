@@ -8,26 +8,8 @@
  * program, buffers, and instanced draw calls.
  */
 
-// ── Mercator helpers ────────────────────────────────────────────────────
-const DEG2RAD = Math.PI / 180;
-
-function lngToMercatorX(lng: number): number {
-  return (lng + 180) / 360;
-}
-
-function latToMercatorY(lat: number): number {
-  const latRad = lat * DEG2RAD;
-  return (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2;
-}
-
-// ── Hex color → [r, g, b] 0-1 ──────────────────────────────────────────
-function hexToRgb(hex: string): [number, number, number] {
-  const clean = hex.replace('#', '');
-  const r = parseInt(clean.substring(0, 2), 16) / 255;
-  const g = parseInt(clean.substring(2, 4), 16) / 255;
-  const b = parseInt(clean.substring(4, 6), 16) / 255;
-  return [r, g, b];
-}
+import { lngToMercatorX, latToMercatorY, hexToRgb } from '../../utils/mapUtils';
+import { compileShader, linkProgram } from '../../utils/webglUtils';
 
 // ── Shader sources ──────────────────────────────────────────────────────
 const VERTEX_SOURCE = `
@@ -111,34 +93,6 @@ const FRAGMENT_SOURCE = `
   }
 `;
 
-// ── Shader compilation helpers ──────────────────────────────────────────
-function compileShader(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null {
-  const shader = gl.createShader(type);
-  if (!shader) return null;
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    console.error('[MapWellPulseLayer] Shader compile error:', gl.getShaderInfoLog(shader));
-    gl.deleteShader(shader);
-    return null;
-  }
-  return shader;
-}
-
-function createProgram(gl: WebGLRenderingContext, vs: WebGLShader, fs: WebGLShader): WebGLProgram | null {
-  const program = gl.createProgram();
-  if (!program) return null;
-  gl.attachShader(program, vs);
-  gl.attachShader(program, fs);
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.error('[MapWellPulseLayer] Program link error:', gl.getProgramInfoLog(program));
-    gl.deleteProgram(program);
-    return null;
-  }
-  return program;
-}
-
 // ── Well data fed to the layer ──────────────────────────────────────────
 export interface PulseWellData {
   lng: number;
@@ -164,6 +118,8 @@ export class MapWellPulseLayer {
   private ext: ANGLE_instanced_arrays | null = null;
   private mapRef: mapboxgl.Map | null = null;
   private reducedMotion = false;
+  private _motionQuery: MediaQueryList | null = null;
+  private _handleMotionChange: (() => void) | null = null;
 
   // Attribute locations
   private aQuadPos = -1;
@@ -204,14 +160,14 @@ export class MapWellPulseLayer {
     this.startTime = performance.now();
 
     // Compile shaders
-    const vs = compileShader(gl, gl.VERTEX_SHADER, VERTEX_SOURCE);
-    const fs = compileShader(gl, gl.FRAGMENT_SHADER, FRAGMENT_SOURCE);
+    const vs = compileShader(gl, gl.VERTEX_SHADER, VERTEX_SOURCE, 'MapWellPulseLayer');
+    const fs = compileShader(gl, gl.FRAGMENT_SHADER, FRAGMENT_SOURCE, 'MapWellPulseLayer');
     if (!vs || !fs) {
       console.warn('[MapWellPulseLayer] Shader compilation failed — layer disabled');
       return;
     }
 
-    this.program = createProgram(gl, vs, fs);
+    this.program = linkProgram(gl, vs, fs, 'MapWellPulseLayer');
     gl.deleteShader(vs);
     gl.deleteShader(fs);
     if (!this.program) return;
@@ -243,6 +199,16 @@ export class MapWellPulseLayer {
 
     // Instance buffer (will be populated in render when dirty)
     this.instanceBuffer = gl.createBuffer();
+
+    // Listen for runtime reduced-motion changes
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handleMotionChange = () => {
+      this.reducedMotion = motionQuery.matches;
+      if (this.mapRef) this.mapRef.triggerRepaint();
+    };
+    motionQuery.addEventListener('change', handleMotionChange);
+    this._motionQuery = motionQuery;
+    this._handleMotionChange = handleMotionChange;
   }
 
   render(gl: WebGLRenderingContext, matrix: number[]): void {
@@ -377,6 +343,9 @@ export class MapWellPulseLayer {
   }
 
   onRemove(_map: mapboxgl.Map, gl: WebGLRenderingContext): void {
+    if (this._motionQuery && this._handleMotionChange) {
+      this._motionQuery.removeEventListener('change', this._handleMotionChange);
+    }
     if (this.program) gl.deleteProgram(this.program);
     if (this.quadBuffer) gl.deleteBuffer(this.quadBuffer);
     if (this.instanceBuffer) gl.deleteBuffer(this.instanceBuffer);
