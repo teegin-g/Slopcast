@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useReducedMotion } from 'motion/react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ComposedChart, Bar, Area } from 'recharts';
 import { MonthlyCashFlow } from '../types';
 import { ThemeId, getTheme } from '../theme/themes';
@@ -25,9 +26,7 @@ const ProductionDrawOn: React.FC<{
   const [pathLength, setPathLength] = useState(0);
   const [progress, setProgress] = useState(0);
   const animationRef = useRef<number>(0);
-  const prefersReduced = typeof window !== 'undefined'
-    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    : false;
+  const prefersReduced = useReducedMotion();
 
   // Compute SVG path from data
   const pathD = useMemo(() => {
