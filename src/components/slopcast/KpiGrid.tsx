@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'motion/react';
+import React, { useEffect, useRef, useState } from 'react';
+import { animate, motion, useReducedMotion } from 'motion/react';
 import { SPRING } from '../../theme/motion';
 import { DealMetrics, MonthlyCashFlow } from '../../types';
 
@@ -8,6 +8,8 @@ interface KpiGridProps {
   metrics: DealMetrics;
   aggregateFlow?: MonthlyCashFlow[];
   breakevenOilPrice?: number | null;
+  isDerivedComputing?: boolean;
+  runCompleteToken?: number;
 }
 
 type AccentColor = 'cyan' | 'magenta' | 'lavender' | 'muted';
@@ -17,6 +19,45 @@ const accentBorder: Record<AccentColor, string> = {
   magenta: 'border-l-2 border-l-theme-magenta',
   lavender: 'border-l-2 border-l-theme-lavender',
   muted: 'border-l-2 border-l-theme-muted/40',
+};
+
+/** Animated counter that rolls from previous value to new value */
+const AnimatedNpvValue: React.FC<{ value: number; runToken: number }> = ({ value, runToken }) => {
+  const prefersReduced = useReducedMotion();
+  const displayRef = useRef<HTMLSpanElement>(null);
+  const prevValueRef = useRef(value);
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    if (!displayRef.current) return;
+
+    const formatted = (v: number) => `$${(v / 1e6).toFixed(1)}`;
+
+    // On first render or reduced motion, just set the value
+    if (isFirstRender.current || prefersReduced) {
+      displayRef.current.textContent = formatted(value);
+      prevValueRef.current = value;
+      isFirstRender.current = false;
+      return;
+    }
+
+    const from = prevValueRef.current;
+    const controls = animate(from, value, {
+      duration: 1.2,
+      ease: [0.22, 1, 0.36, 1],
+      onUpdate: (latest) => {
+        if (displayRef.current) {
+          displayRef.current.textContent = formatted(latest);
+        }
+      },
+    });
+
+    prevValueRef.current = value;
+
+    return () => controls.stop();
+  }, [value, runToken, prefersReduced]);
+
+  return <span ref={displayRef}>${(value / 1e6).toFixed(1)}</span>;
 };
 
 /** Tiny SVG sparkline from cumulative cash flow data */
@@ -122,11 +163,32 @@ const WellsBadge: React.FC<{ count: number }> = ({ count }) => (
   </div>
 );
 
-const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, breakevenOilPrice }) => {
+const KpiGrid: React.FC<KpiGridProps> = ({
+  isClassic,
+  metrics,
+  aggregateFlow,
+  breakevenOilPrice,
+  isDerivedComputing,
+  runCompleteToken = 0,
+}) => {
+  const prefersReduced = useReducedMotion();
+  // Track previous token to detect fresh completions for stagger re-trigger
+  const [staggerKey, setStaggerKey] = useState(0);
+  const prevTokenRef = useRef(runCompleteToken);
+
+  useEffect(() => {
+    if (runCompleteToken > 0 && runCompleteToken !== prevTokenRef.current) {
+      setStaggerKey(prev => prev + 1);
+      prevTokenRef.current = runCompleteToken;
+    }
+  }, [runCompleteToken]);
+
+  const shimmerClass = isDerivedComputing ? 'economics-shimmer' : '';
+
   if (isClassic) {
     return (
       <div className="space-y-4">
-        <div className="sc-kpi sc-kpi--main theme-transition relative overflow-hidden">
+        <div className={`sc-kpi sc-kpi--main theme-transition relative overflow-hidden ${shimmerClass}`}>
           {aggregateFlow && aggregateFlow.length > 1 && (
             <div className="absolute inset-0 text-white/30 pointer-events-none">
               <CashFlowSparkline flow={aggregateFlow} />
@@ -137,13 +199,13 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
           </div>
           <div className="px-6 py-6 flex items-baseline relative z-10">
             <span className="sc-kpiValue text-5xl sm:text-6xl xl:text-7xl font-black tracking-tighter leading-none">
-              ${(metrics.npv10 / 1e6).toFixed(1)}
+              <AnimatedNpvValue value={metrics.npv10} runToken={runCompleteToken} />
             </span>
             <span className="sc-kpiValue text-2xl font-black ml-3">MM</span>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <div className="sc-kpi sc-kpi--tile theme-transition">
+          <div className={`sc-kpi sc-kpi--tile theme-transition ${shimmerClass}`}>
             <div className="sc-kpiTitlebar px-3 py-1.5">
               <p className="text-[10px] font-black uppercase tracking-[0.2em]">Total CAPEX</p>
             </div>
@@ -154,7 +216,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
               </p>
             </div>
           </div>
-          <div className="sc-kpi sc-kpi--tile theme-transition">
+          <div className={`sc-kpi sc-kpi--tile theme-transition ${shimmerClass}`}>
             <div className="sc-kpiTitlebar px-3 py-1.5">
               <p className="text-[10px] font-black uppercase tracking-[0.2em]">Portfolio EUR</p>
             </div>
@@ -167,7 +229,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <div className="sc-kpi sc-kpi--tile theme-transition">
+          <div className={`sc-kpi sc-kpi--tile theme-transition ${shimmerClass}`}>
             <div className="sc-kpiTitlebar px-3 py-1.5">
               <p className="text-[10px] font-black uppercase tracking-[0.2em]">Payout</p>
             </div>
@@ -178,7 +240,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
               </p>
             </div>
           </div>
-          <div className="sc-kpi sc-kpi--tile sc-kpi--dangerBody theme-transition">
+          <div className={`sc-kpi sc-kpi--tile sc-kpi--dangerBody theme-transition ${shimmerClass}`}>
             <div className="sc-kpiTitlebar px-3 py-1.5">
               <p className="text-[10px] font-black uppercase tracking-[0.2em]">Wells</p>
             </div>
@@ -194,9 +256,40 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
     );
   }
 
+  const tiles = [
+    <KpiStripTile
+      key="capex"
+      title="Total CAPEX"
+      value={`$${(metrics.totalCapex / 1e6).toFixed(1)}`}
+      unit="MM"
+      accent="magenta"
+      valueSize="text-2xl"
+      valueColor="text-theme-text"
+    />,
+    <KpiStripTile
+      key="eur"
+      title="Portfolio EUR"
+      value={(metrics.eur / 1e3).toFixed(0)}
+      unit="MBOE"
+      accent="cyan"
+      valueSize="text-2xl"
+      valueColor="text-theme-text"
+    />,
+    <KpiStripTile
+      key="payout"
+      title="Payout"
+      value={metrics.payoutMonths > 0 ? String(metrics.payoutMonths) : '-'}
+      unit="MO"
+      accent="lavender"
+      valueColor="text-theme-lavender"
+      extra={<PayoutRing months={metrics.payoutMonths} />}
+    />,
+    <WellsBadge key="wells" count={metrics.wellCount} />,
+  ];
+
   return (
     <div className="space-y-4">
-      <div className="rounded-panel border p-8 shadow-card relative overflow-hidden group theme-transition bg-theme-surface1 border-theme-border hover:border-theme-magenta">
+      <div className={`rounded-panel border p-8 shadow-card relative overflow-hidden group theme-transition bg-theme-surface1 border-theme-border hover:border-theme-magenta ${shimmerClass}`}>
         <div className="absolute top-0 right-0 w-80 h-80 rounded-full blur-[100px] -mr-24 -mt-24 pointer-events-none transition-opacity duration-700 bg-theme-cyan/15 opacity-60 group-hover:opacity-100"></div>
         {aggregateFlow && aggregateFlow.length > 1 && (
           <div className="absolute inset-0 text-theme-cyan pointer-events-none">
@@ -206,48 +299,20 @@ const KpiGrid: React.FC<KpiGridProps> = ({ isClassic, metrics, aggregateFlow, br
         <p className="typo-section heading-font relative z-10 mb-3 text-theme-muted">Portfolio NPV (10%)</p>
         <div className="flex items-baseline relative z-10">
           <span className="typo-hero-value text-theme-cyan">
-            ${(metrics.npv10 / 1e6).toFixed(1)}
+            <AnimatedNpvValue value={metrics.npv10} runToken={runCompleteToken} />
           </span>
           <span className="typo-kpi-value ml-3 italic text-theme-lavender">MM</span>
         </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-        {[
-          <KpiStripTile
-            key="capex"
-            title="Total CAPEX"
-            value={`$${(metrics.totalCapex / 1e6).toFixed(1)}`}
-            unit="MM"
-            accent="magenta"
-            valueSize="text-2xl"
-            valueColor="text-theme-text"
-          />,
-          <KpiStripTile
-            key="eur"
-            title="Portfolio EUR"
-            value={(metrics.eur / 1e3).toFixed(0)}
-            unit="MBOE"
-            accent="cyan"
-            valueSize="text-2xl"
-            valueColor="text-theme-text"
-          />,
-          <KpiStripTile
-            key="payout"
-            title="Payout"
-            value={metrics.payoutMonths > 0 ? String(metrics.payoutMonths) : '-'}
-            unit="MO"
-            accent="lavender"
-            valueColor="text-theme-lavender"
-            extra={<PayoutRing months={metrics.payoutMonths} />}
-          />,
-          <WellsBadge key="wells" count={metrics.wellCount} />,
-        ].map((tile, index) => (
+        {tiles.map((tile, index) => (
           <motion.div
-            key={tile.key}
-            initial={{ opacity: 0, y: 8 }}
+            key={`${tile.key}-${staggerKey}`}
+            initial={prefersReduced ? false : { opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ ...SPRING.snappy, delay: index * 0.06 }}
+            transition={{ ...SPRING.snappy, delay: index * 0.08 }}
+            className={shimmerClass}
           >
             {tile}
           </motion.div>

@@ -2297,6 +2297,50 @@ body {
   }
 }
 
+/* ---------- Economics Shimmer ---------- */
+@property --shimmer-x {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: -100%;
+}
+
+@keyframes economicsShimmer {
+  0% { --shimmer-x: -100%; }
+  100% { --shimmer-x: 200%; }
+}
+
+.economics-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.economics-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(var(--cyan), 0.08) 40%,
+    rgba(var(--cyan), 0.15) 50%,
+    rgba(var(--cyan), 0.08) 60%,
+    transparent 100%
+  );
+  background-size: 100% 100%;
+  background-position: var(--shimmer-x) 0;
+  animation: economicsShimmer 1.5s ease-in-out infinite;
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .economics-shimmer::after {
+    animation: none;
+    opacity: 0;
+  }
+}
+
 /* ---------- Scrollbar ---------- */
 ::-webkit-scrollbar {
   width: 8px;

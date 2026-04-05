@@ -464,7 +464,7 @@ export function useSlopcastWorkspace() {
   ]);
 
   // Debounced derived metrics
-  const { keyDriverInsights, breakevenOilPrice } = useDerivedMetrics(
+  const { keyDriverInsights, breakevenOilPrice, isComputing: isDerivedComputing, runCompleteToken } = useDerivedMetrics(
     processedGroups,
     scenarios,
     aggregateMetrics.wellCount,
@@ -722,6 +722,7 @@ export function useSlopcastWorkspace() {
     aggregateFlow, aggregateMetrics,
     scenarioRankings, portfolioRoi,
     breakevenOilPrice, keyDriverInsights,
+    isDerivedComputing, runCompleteToken,
     snapshotHistory,
     showAfterTax, showLevered,
     setShowAfterTax: () => setShowAfterTax(prev => !prev),

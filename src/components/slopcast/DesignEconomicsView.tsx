@@ -42,6 +42,8 @@ interface DesignEconomicsViewProps {
   aggregateFlow: MonthlyCashFlow[];
   operationsProps: OperationsConsoleProps;
   breakevenOilPrice?: number | null;
+  isDerivedComputing?: boolean;
+  runCompleteToken?: number;
 }
 
 /** SVG progress ring for Setup Insights */
@@ -101,6 +103,8 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   aggregateFlow,
   operationsProps,
   breakevenOilPrice,
+  isDerivedComputing,
+  runCompleteToken,
 }) => {
   const hasReadinessBlocker = !hasGroup || !hasGroupWells || !hasCapexItems;
   const [showSetupInsights, setShowSetupInsights] = useState(hasReadinessBlocker);
@@ -290,6 +294,8 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
                 metrics={aggregateMetrics}
                 aggregateFlow={aggregateFlow}
                 breakevenOilPrice={breakevenOilPrice}
+                isDerivedComputing={isDerivedComputing}
+                runCompleteToken={runCompleteToken}
               />
               <GroupComparisonStrip
                 isClassic={isClassic}

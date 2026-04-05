@@ -155,6 +155,8 @@ const SlopcastPage: React.FC = () => {
                 aggregateFlow={ws.aggregateFlow}
                 operationsProps={ws.operationsProps}
                 breakevenOilPrice={ws.breakevenOilPrice}
+                isDerivedComputing={ws.isDerivedComputing}
+                runCompleteToken={ws.runCompleteToken}
               />
             )}
           </>

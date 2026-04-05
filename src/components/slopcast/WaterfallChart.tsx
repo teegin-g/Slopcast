@@ -165,8 +165,15 @@ const WaterfallChart: React.FC<WaterfallChartProps> = ({ isClassic, baseNpv, dri
                 ))}
               </Bar>
 
-              {/* Visible value series */}
-              <Bar dataKey="value" stackId="waterfall" radius={[3, 3, 0, 0]}>
+              {/* Visible value series — spring-like rise from axis */}
+              <Bar
+                dataKey="value"
+                stackId="waterfall"
+                radius={[3, 3, 0, 0]}
+                animationDuration={800}
+                animationEasing="ease-out"
+                animationBegin={100}
+              >
                 {data.map((entry, index) => (
                   <Cell key={`val-${index}`} fill={fillForType(entry.type)} />
                 ))}

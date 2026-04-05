@@ -81,6 +81,9 @@ export const useDerivedMetrics = (
   const [keyDriverInsights, setKeyDriverInsights] = useState<KeyDriverInsights>(EMPTY_INSIGHTS);
   const [breakevenOilPrice, setBreakevenOilPrice] = useState<number | null>(null);
   const [isComputing, setIsComputing] = useState(false);
+  // Monotonically increasing token — increments after each successful compute.
+  // Animation components key off this to re-trigger reveal animations on every run.
+  const [runCompleteToken, setRunCompleteToken] = useState(0);
 
   // Use refs to track latest inputs for debounce
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -209,6 +212,7 @@ export const useDerivedMetrics = (
       }
 
       setIsComputing(false);
+      setRunCompleteToken(prev => prev + 1);
     }, DEBOUNCE_MS);
 
     return () => {
@@ -216,5 +220,5 @@ export const useDerivedMetrics = (
     };
   }, [processedGroups, scenarios, aggregateWellCount]);
 
-  return { keyDriverInsights, breakevenOilPrice, isComputing };
+  return { keyDriverInsights, breakevenOilPrice, isComputing, runCompleteToken };
 };
