@@ -226,7 +226,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
       setPopupPos({ x: pt.x, y: pt.y });
     };
     map.on('move', updatePopupPosition);
-    return () => { map.off('move', updatePopupPosition); };
+    return () => { try { map.off('move', updatePopupPosition); } catch { /* map already torn down */ } };
   }, [map, popupWell]);
 
   const getWellColor = useCallback((wellId: string): string => {
@@ -366,6 +366,15 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   // Derive theme colors for cluster/label layers
   const clusterColor = mp.glowColor;
   const wellLabelColor = mp.mapboxOverrides?.labelColor ?? 'rgba(255,255,255,0.7)';
+  const clusterTextColor = '#ffffff';
+  const wellLabelHalo = mp.mapboxOverrides?.bgColor ?? 'rgba(0,0,0,0.6)';
+
+  // Themed map container frame
+  const mapFrameClass = isClassic
+    ? 'sc-screen theme-transition'
+    : `rounded-panel ring-1 ring-inset ring-[rgb(var(--border)/0.4)] ${
+        theme.features.glowEffects ? 'glow-cyan' : 'shadow-card'
+      } theme-transition`;
 
   // Add/update wells layers on the map (with clustering + labels)
   useEffect(() => {
@@ -439,7 +448,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
         'text-size': 12,
         'text-allow-overlap': true,
       },
-      paint: { 'text-color': '#ffffff' },
+      paint: { 'text-color': clusterTextColor },
     });
 
     // Status-differentiated well layers + event handlers
@@ -463,7 +472,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
       },
       paint: {
         'text-color': wellLabelColor,
-        'text-halo-color': 'rgba(0,0,0,0.6)',
+        'text-halo-color': wellLabelHalo,
         'text-halo-width': 1,
       },
     });
@@ -549,7 +558,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
           id: 'wells-cluster-count', type: 'symbol', source: sourceId,
           filter: ['has', 'point_count'],
           layout: { 'text-field': ['get', 'point_count_abbreviated'], 'text-size': 12, 'text-allow-overlap': true },
-          paint: { 'text-color': '#ffffff' },
+          paint: { 'text-color': clusterTextColor },
         });
         // Status-differentiated well layers
         addWellLayers(map, sourceId);
@@ -561,7 +570,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
             'text-field': ['get', 'name'], 'text-size': 10, 'text-offset': [0, 1.4],
             'text-anchor': 'top', 'text-allow-overlap': false, 'text-optional': true, 'text-max-width': 12,
           },
-          paint: { 'text-color': wellLabelColor, 'text-halo-color': 'rgba(0,0,0,0.6)', 'text-halo-width': 1 },
+          paint: { 'text-color': wellLabelColor, 'text-halo-color': wellLabelHalo, 'text-halo-width': 1 },
         });
       }
       if (!layers.satellite) {
@@ -575,7 +584,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   }, []);
 
   return (
-    <div className="relative w-full h-[calc(100vh-64px)]" data-testid="map-command-center">
+    <div className={`relative w-full h-[calc(100vh-64px)] overflow-hidden ${mapFrameClass}`} data-testid="map-command-center">
       <div className="sr-only">
         <span data-testid="wells-selected-visible-count">{selectedWellCount}</span>
         <span data-testid="wells-filtered-count">{filteredWellsCount}</span>
@@ -583,6 +592,15 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
 
       {/* Mapbox canvas */}
       <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" />
+
+      {/* Vignette — themed edge treatment */}
+      <div className="map-vignette absolute inset-0 z-[1] pointer-events-none" />
+
+      {/* Atmospheric bleed — top edge gradient from header */}
+      <div
+        className="absolute inset-x-0 top-0 h-16 z-[1] pointer-events-none"
+        style={{ background: 'linear-gradient(to bottom, rgb(var(--bg-deep)), transparent)' }}
+      />
 
       {/* Lasso / Rectangle selection overlay */}
       {selectionOverlay}

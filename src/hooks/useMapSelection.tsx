@@ -67,8 +67,10 @@ export function useMapSelection({
       map.getCanvas().style.cursor = '';
     }
     return () => {
-      map.dragPan.enable();
-      map.getCanvas().style.cursor = '';
+      try {
+        map.dragPan.enable();
+        map.getCanvas().style.cursor = '';
+      } catch { /* map already torn down */ }
     };
   }, [map, activeTool]);
 

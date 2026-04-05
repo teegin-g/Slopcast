@@ -120,14 +120,13 @@ export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapRes
       cancelled = true;
       // Remove the locally-tracked instance (handles StrictMode where
       // mapRef.current may not yet be set when cleanup runs).
-      if (mapInstance) {
-        mapInstance.remove();
-        mapInstance = null;
-      }
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
+      // Wrap in try/catch: React may remove the container DOM before
+      // passive cleanup effects run, causing Mapbox's .remove() to
+      // throw when it tries to access the detached node.
+      try { mapInstance?.remove(); } catch { /* container already detached */ }
+      mapInstance = null;
+      try { mapRef.current?.remove(); } catch { /* container already detached */ }
+      mapRef.current = null;
       setIsLoaded(false);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
