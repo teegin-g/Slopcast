@@ -17,6 +17,7 @@
  * Positioned as a fixed full-viewport layer behind all content (z-index: -1).
  */
 import { useEffect, useRef } from 'react';
+import TropicalCausticsOverlay from './TropicalCausticsOverlay';
 
 // ── Color palette (muted tropical teal #2c8f7b + warm orange) ────────────
 const COLORS = {
@@ -973,6 +974,7 @@ export default function TropicalBackground() {
         ref={canvasRef}
         style={{ display: 'block', width: '100%', height: '100%' }}
       />
+      <TropicalCausticsOverlay />
     </div>
   );
 }

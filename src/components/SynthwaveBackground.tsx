@@ -4,7 +4,12 @@
  * Renders a full 1920x1080 scene (sky, stars, sun, wireframe mountains,
  * perspective grid) as a fixed layer behind page content.  CSS class-names
  * on every visual group let theme.css drive all animations.
+ *
+ * A WebGL2 CRT shader overlay is composited on top for scanlines,
+ * chromatic aberration, barrel distortion, and phosphor glow.
  */
+import SynthwaveShaderOverlay from './SynthwaveShaderOverlay';
+
 export default function SynthwaveBackground() {
   return (
     <div
@@ -433,6 +438,7 @@ export default function SynthwaveBackground() {
         <rect width="1920" height="1080" filter="url(#sw-grain)" opacity="0.25" />
         <rect width="1920" height="1080" fill="url(#sw-vignette)" />
       </svg>
+      <SynthwaveShaderOverlay />
     </div>
   );
 }
