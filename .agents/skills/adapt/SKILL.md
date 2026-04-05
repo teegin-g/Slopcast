@@ -1,11 +1,17 @@
 ---
 name: adapt
-description: Adapt designs to work across different screen sizes, devices, contexts, or platforms. Ensures consistent experience across varied environments.
-user-invokable: true
-argument-hint: "[TARGET=<value>] [CONTEXT=<value>]"
+description: Adapt designs to work across different screen sizes, devices, contexts, or platforms. Implements breakpoints, fluid layouts, and touch targets. Use when the user mentions responsive design, mobile layouts, breakpoints, viewport adaptation, or cross-device compatibility.
+user-invocable: true
+argument-hint: "[target] [context (mobile, tablet, print...)]"
 ---
 
 Adapt existing designs to work effectively across different contexts - different screen sizes, devices, platforms, or use cases.
+
+## MANDATORY PREPARATION
+
+Invoke /frontend-design — it contains design principles, anti-patterns, and the **Context Gathering Protocol**. Follow the protocol before proceeding — if no design context exists yet, you MUST run /teach-impeccable first. Additionally gather: target platforms/devices and usage contexts.
+
+---
 
 ## Assess Adaptation Challenge
 
