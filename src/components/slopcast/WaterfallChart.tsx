@@ -9,6 +9,7 @@ import {
   Cell,
   ResponsiveContainer,
 } from 'recharts';
+import { motion, useReducedMotion } from 'motion/react';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useStableChartContainer } from './hooks/useStableChartContainer';
 
@@ -31,6 +32,42 @@ interface WaterfallDatum {
   value: number;
   type: BarType;
 }
+
+/** Custom bar shape that animates height with spring physics instead of Recharts' ease-out. */
+const SpringBar: React.FC<Record<string, unknown>> = (props) => {
+  const { x, y, width, height, fill, index } = props as {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    fill: string;
+    index: number;
+  };
+  const prefersReduced = useReducedMotion();
+
+  if (!height || height === 0) return null;
+
+  const absHeight = Math.abs(height);
+
+  return (
+    <motion.rect
+      x={x}
+      y={y}
+      width={width}
+      height={absHeight}
+      fill={fill}
+      rx={3}
+      initial={prefersReduced ? false : { height: 0, y: y + absHeight }}
+      animate={{ height: absHeight, y }}
+      transition={{
+        type: 'spring',
+        stiffness: 120,
+        damping: 18,
+        delay: (index ?? 0) * 0.06,
+      }}
+    />
+  );
+};
 
 const WaterfallChart: React.FC<WaterfallChartProps> = ({ isClassic, baseNpv, drivers }) => {
   const { theme } = useTheme();
@@ -165,14 +202,12 @@ const WaterfallChart: React.FC<WaterfallChartProps> = ({ isClassic, baseNpv, dri
                 ))}
               </Bar>
 
-              {/* Visible value series — spring-like rise from axis */}
+              {/* Visible value series — spring physics rise from axis */}
               <Bar
                 dataKey="value"
                 stackId="waterfall"
-                radius={[3, 3, 0, 0]}
-                animationDuration={800}
-                animationEasing="ease-out"
-                animationBegin={100}
+                isAnimationActive={false}
+                shape={<SpringBar />}
               >
                 {data.map((entry, index) => (
                   <Cell key={`val-${index}`} fill={fillForType(entry.type)} />
