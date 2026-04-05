@@ -548,6 +548,13 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
           onClearSelection={onClearSelection}
         />
 
+        <OverlayLegend
+          isClassic={isClassic}
+          groups={groups}
+          wells={effectiveWells}
+          viewportLayout={viewportLayout}
+        />
+
         {/* Well hover tooltip — hidden when popup is open */}
         {!popupWellId && (
           <MapWellTooltip
