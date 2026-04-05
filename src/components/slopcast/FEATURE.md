@@ -4,7 +4,8 @@ This folder owns the main product-specific UI for the Slopcast workspace: wells,
 
 ## Read This First
 
-- [`../../pages/SlopcastPage.tsx`](../../pages/SlopcastPage.tsx): live page entrypoint and top-level workspace state
+- [`../../pages/SlopcastPage.tsx`](../../pages/SlopcastPage.tsx): live page entrypoint (renders workspace UI; state lives in `useSlopcastWorkspace`)
+- [`../../hooks/useSlopcastWorkspace.ts`](../../hooks/useSlopcastWorkspace.ts): canonical workspace state — groups, scenarios, selections, persistence
 - [`MapCommandCenter.tsx`](MapCommandCenter.tsx): map shell, overlay panels, and viewport-driven well rendering
 - [`hooks/useProjectPersistence.ts`](hooks/useProjectPersistence.ts): save/load bridge between workspace state and `projectRepository`
 - [`../../services/FEATURE.md`](../../services/FEATURE.md): adapter routing for persistence, economics, and spatial fetches
@@ -31,5 +32,5 @@ This folder owns the main product-specific UI for the Slopcast workspace: wells,
 ## Avoid These False Starts
 
 - Do not start with isolated `*.stories.tsx` files when debugging workspace behavior; start at `SlopcastPage.tsx`, then drop into the component or hook that owns the surface.
-- Do not assume `hooks/useSlopcastWorkspace.ts` is the live source of truth for the page route; treat it as parallel or legacy context unless the task explicitly targets that abstraction.
+- `useSlopcastWorkspace` (in `src/hooks/`) is the canonical state source for the workspace — do not duplicate its state or look for top-level state in `SlopcastPage.tsx`.
 - Do not search all of `src/components/` first for map work; start with `MapCommandCenter.tsx` and `map/`.
