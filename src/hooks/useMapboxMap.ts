@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { MapViewState } from '../types';
+import { MapWellPulseLayer } from '../components/slopcast/MapWellPulseLayer';
+import { MapSelectionTrail } from '../components/slopcast/MapSelectionTrail';
 
 const MAPBOX_TOKEN = (typeof import.meta !== 'undefined'
   ? (import.meta as any).env?.VITE_MAPBOX_TOKEN
@@ -20,6 +22,10 @@ interface UseMapboxMapResult {
   mapContainerRef: React.RefObject<HTMLDivElement | null>;
   viewState: MapViewState;
   setStyle: (styleUrl: string) => void;
+  /** Custom WebGL layer: animated well pulse rings. Call .setWells() to update. */
+  pulseLayer: MapWellPulseLayer;
+  /** Custom WebGL layer: lasso selection particle trail. */
+  selectionTrail: MapSelectionTrail;
 }
 
 export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapResult {
@@ -34,6 +40,12 @@ export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapRes
   const mapRef = useRef<any>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [viewState, setViewState] = useState<MapViewState>({ center, zoom, pitch, bearing });
+
+  // Stable singleton refs for custom WebGL layers
+  const pulseLayerRef = useRef<MapWellPulseLayer | null>(null);
+  const selectionTrailRef = useRef<MapSelectionTrail | null>(null);
+  if (!pulseLayerRef.current) pulseLayerRef.current = new MapWellPulseLayer();
+  if (!selectionTrailRef.current) selectionTrailRef.current = new MapSelectionTrail();
 
   const setStyle = useCallback((styleUrl: string) => {
     if (mapRef.current) {
@@ -84,6 +96,22 @@ export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapRes
             }
           } catch {
             // Terrain is optional
+          }
+
+          // Register custom WebGL layers (best-effort — graceful no-op on failure)
+          try {
+            if (pulseLayerRef.current && !map.getLayer(pulseLayerRef.current.id)) {
+              map.addLayer(pulseLayerRef.current);
+            }
+          } catch (e) {
+            console.warn('[useMapboxMap] Failed to add pulse layer:', e);
+          }
+          try {
+            if (selectionTrailRef.current && !map.getLayer(selectionTrailRef.current.id)) {
+              map.addLayer(selectionTrailRef.current);
+            }
+          } catch (e) {
+            console.warn('[useMapboxMap] Failed to add selection trail layer:', e);
           }
 
           mapRef.current = map;
@@ -148,5 +176,7 @@ export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapRes
     mapContainerRef,
     viewState,
     setStyle,
+    pulseLayer: pulseLayerRef.current!,
+    selectionTrail: selectionTrailRef.current!,
   };
 }
