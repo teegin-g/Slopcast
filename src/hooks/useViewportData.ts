@@ -14,6 +14,7 @@ interface UseViewportDataOptions {
   dataSourceId?: SpatialDataSourceId;
   debounceMs?: number;
   enabled?: boolean;
+  includeLaterals?: boolean;
 }
 
 interface UseViewportDataResult {
@@ -65,6 +66,7 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
     dataSourceId,
     debounceMs = 400,
     enabled = true,
+    includeLaterals = false,
   } = options;
 
   const [wells, setWells] = useState<Well[]>(MOCK_WELLS);
@@ -112,7 +114,7 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
     const spatialSource = getSpatialSource(sourceId);
 
     try {
-      const result = await spatialSource.fetchViewportWells(bounds, filters);
+      const result = await spatialSource.fetchViewportWells(bounds, filters, { includeLaterals });
 
       // Store in cache, evict oldest if full
       if (cacheRef.current.size >= MAX_CACHE_SIZE) {
@@ -153,7 +155,7 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
     } finally {
       setIsLoading(false);
     }
-  }, [map, isLoaded, enabled, dataSourceId, filters]);
+  }, [map, isLoaded, enabled, dataSourceId, filters, includeLaterals]);
 
   // Listen to map moveend with debounce
   useEffect(() => {

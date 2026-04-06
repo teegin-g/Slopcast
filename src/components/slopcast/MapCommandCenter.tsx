@@ -3,6 +3,7 @@ import { useMapboxMap } from '../../hooks/useMapboxMap';
 import { useTheme } from '../../theme/ThemeProvider';
 import { overlayPanelClass, type MapboxOverrides } from '../../theme/themes';
 import type { Well, WellGroup, SpatialLayerFilter, SpatialDataSourceId } from '../../types';
+import type { WellboreData } from './MapWellboreLayer';
 import { useViewportData } from '../../hooks/useViewportData';
 import { OverlayGroupsPanel } from './map/OverlayGroupsPanel';
 import { OverlayFiltersBar } from './map/OverlayFiltersBar';
@@ -122,7 +123,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
 }) => {
   const { theme } = useTheme();
   const mp = theme.mapPalette;
-  const { map, isLoaded, mapContainerRef, selectionTrail } = useMapboxMap();
+  const { map, isLoaded, mapContainerRef, selectionTrail, wellboreLayer } = useMapboxMap();
 
   // Detect map canvas presence as a fallback for isLoaded (handles StrictMode race)
   const [canvasDetected, setCanvasDetected] = useState(false);
@@ -189,6 +190,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     isLoaded,
     filters: spatialFilters,
     dataSourceId,
+    includeLaterals: dataLayers.laterals,
   });
 
   // Reset error dismissal when a new error arrives
@@ -240,6 +242,29 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   useEffect(() => {
     selectionTrail?.setColor(mp.lassoStroke);
   }, [selectionTrail, mp.lassoStroke]);
+
+  // Feed wellbore data when laterals toggle is on and wells have trajectory
+  useEffect(() => {
+    if (!wellboreLayer) return;
+
+    if (!dataLayers.laterals) {
+      wellboreLayer.setWellbores([]);
+      return;
+    }
+
+    const wellboreData: WellboreData[] = effectiveWells
+      .filter(w => w.trajectory)
+      .map(w => ({
+        id: w.id,
+        surface: w.trajectory!.surface,
+        heel: w.trajectory!.heel,
+        toe: w.trajectory!.toe,
+        color: getWellColor(w.id),
+        selected: selectedWellIds.has(w.id),
+      }));
+
+    wellboreLayer.setWellbores(wellboreData);
+  }, [wellboreLayer, effectiveWells, dataLayers.laterals, getWellColor, selectedWellIds]);
 
   // Status-differentiated well layer IDs (glow halo is rendered under these)
   const wellLayerIds = useMemo(() => ['wells-producing', 'wells-duc', 'wells-permit'] as const, []);
@@ -607,6 +632,14 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
           },
           paint: { 'text-color': wellLabelColor, 'text-halo-color': wellLabelHalo, 'text-halo-width': 1 },
         });
+      }
+      // Re-register wellbore layer after style change
+      try {
+        if (wellboreLayer && !map.getLayer(wellboreLayer.id)) {
+          map.addLayer(wellboreLayer);
+        }
+      } catch (e) {
+        console.warn('[MapCommandCenter] Failed to re-add wellbore layer:', e);
       }
       if (!layers.satellite) {
         applyMapThemeOverrides(map, mp.mapboxOverrides);

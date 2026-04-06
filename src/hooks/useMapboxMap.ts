@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { MapViewState } from '../types';
 import { MapSelectionTrail } from '../components/slopcast/MapSelectionTrail';
+import { MapWellboreLayer } from '../components/slopcast/MapWellboreLayer';
 
 const MAPBOX_TOKEN = (typeof import.meta !== 'undefined'
   ? (import.meta as any).env?.VITE_MAPBOX_TOKEN
@@ -23,6 +24,8 @@ interface UseMapboxMapResult {
   setStyle: (styleUrl: string) => void;
   /** Custom WebGL layer: lasso selection particle trail. */
   selectionTrail: MapSelectionTrail;
+  /** Custom WebGL layer: 3D wellbore curves. Call .setWellbores() to update. */
+  wellboreLayer: MapWellboreLayer;
 }
 
 export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapResult {
@@ -38,9 +41,12 @@ export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapRes
   const [isLoaded, setIsLoaded] = useState(false);
   const [viewState, setViewState] = useState<MapViewState>({ center, zoom, pitch, bearing });
 
-  // Stable singleton ref for custom WebGL layer
+  // Stable singleton refs for custom WebGL layers
   const selectionTrailRef = useRef<MapSelectionTrail | null>(null);
   if (!selectionTrailRef.current) selectionTrailRef.current = new MapSelectionTrail();
+
+  const wellboreLayerRef = useRef<MapWellboreLayer | null>(null);
+  if (!wellboreLayerRef.current) wellboreLayerRef.current = new MapWellboreLayer();
 
   const setStyle = useCallback((styleUrl: string) => {
     if (mapRef.current) {
@@ -100,6 +106,14 @@ export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapRes
             }
           } catch (e) {
             console.warn('[useMapboxMap] Failed to add selection trail layer:', e);
+          }
+
+          try {
+            if (wellboreLayerRef.current && !map.getLayer(wellboreLayerRef.current.id)) {
+              map.addLayer(wellboreLayerRef.current);
+            }
+          } catch (e) {
+            console.warn('[useMapboxMap] Failed to add wellbore layer:', e);
           }
 
           mapRef.current = map;
@@ -165,5 +179,6 @@ export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapRes
     viewState,
     setStyle,
     selectionTrail: selectionTrailRef.current!,
+    wellboreLayer: wellboreLayerRef.current!,
   };
 }

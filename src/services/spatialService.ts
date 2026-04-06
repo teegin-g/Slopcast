@@ -12,12 +12,17 @@ import { MOCK_WELLS } from '../constants';
 // Public types
 // ---------------------------------------------------------------------------
 
+export interface SpatialFetchOptions {
+  includeLaterals?: boolean;
+}
+
 export interface SpatialDataSource {
   id: SpatialDataSourceId;
   label: string;
   fetchViewportWells(
     bounds: ViewportBounds,
     filters?: SpatialLayerFilter,
+    options?: SpatialFetchOptions,
   ): Promise<SpatialWellsResponse>;
   getAvailableLayers(): Promise<SpatialLayer[]>;
 }
@@ -68,7 +73,7 @@ const mockSource: SpatialDataSource = {
   id: 'mock',
   label: 'Mock (Client)',
 
-  async fetchViewportWells(bounds, filters) {
+  async fetchViewportWells(bounds, filters, _options) {
     const inBounds = MOCK_WELLS.filter((w) => wellInBounds(w, bounds));
     const filtered = applyFilters(inBounds, filters);
     return {
@@ -106,10 +111,15 @@ const liveSource: SpatialDataSource = {
   id: 'live',
   label: 'Live (Databricks)',
 
-  async fetchViewportWells(bounds, filters) {
+  async fetchViewportWells(bounds, filters, options) {
     return spatialFetch<SpatialWellsResponse>('/spatial/wells', {
       method: 'POST',
-      body: JSON.stringify({ bounds, filters }),
+      body: JSON.stringify({
+        bounds,
+        filters,
+        limit: 2000,
+        include_trajectory: options?.includeLaterals ?? false,
+      }),
     });
   },
 
