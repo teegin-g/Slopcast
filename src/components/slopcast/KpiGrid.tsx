@@ -292,8 +292,8 @@ const KpiGrid: React.FC<KpiGridProps> = ({
   ];
 
   return (
-    <div className="space-y-4">
-      <div className={`rounded-panel border p-8 shadow-card relative overflow-hidden group theme-transition bg-theme-surface1 border-theme-border hover:border-theme-magenta ${shimmerClass}`}>
+    <div className="flex flex-col" style={{ gap: 'var(--space-section-gap)' }}>
+      <div className={`rounded-panel border shadow-card relative overflow-hidden group theme-transition bg-theme-surface1 border-theme-border hover:border-theme-magenta ${shimmerClass}`} style={{ padding: 'var(--space-hero-pad)' }}>
         <div className="absolute top-0 right-0 w-80 h-80 rounded-full blur-[100px] -mr-24 -mt-24 pointer-events-none transition-opacity duration-700 bg-theme-cyan/15 opacity-60 group-hover:opacity-100"></div>
         {aggregateFlow && aggregateFlow.length > 1 && (
           <div className="absolute inset-0 text-theme-cyan pointer-events-none">
@@ -309,7 +309,7 @@ const KpiGrid: React.FC<KpiGridProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5" style={{ gap: 'var(--space-kpi-gap)' }}>
         {tiles.map((tile, index) => (
           <motion.div
             key={`${tile.key}-${staggerKey}`}

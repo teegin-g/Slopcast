@@ -44,8 +44,9 @@ const SectionCard: React.FC<SectionCardProps> = ({
           className={
             isClassic
               ? `sc-panelTitlebar sc-titlebar--neutral px-4 py-3 flex items-center justify-between gap-3 ${headerClassName}`
-              : `px-5 py-4 border-b border-theme-border/60 flex items-center justify-between gap-3 ${headerClassName}`
+              : `border-b border-theme-border/60 flex items-center justify-between gap-3 ${headerClassName}`
           }
+          style={isClassic ? undefined : { padding: 'var(--space-panel-y) var(--space-panel-x)' }}
         >
           <h3
             className={
@@ -63,8 +64,9 @@ const SectionCard: React.FC<SectionCardProps> = ({
         className={
           isClassic
             ? `${noBodyPadding ? '' : 'p-4'} ${bodyClassName}`
-            : `${noBodyPadding ? '' : 'p-5'} ${bodyClassName}`
+            : `${bodyClassName}`
         }
+        style={isClassic || noBodyPadding ? undefined : { padding: 'var(--space-panel-y) var(--space-panel-x)' }}
       >
         {children}
       </div>

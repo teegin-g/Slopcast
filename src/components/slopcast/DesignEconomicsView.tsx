@@ -199,11 +199,12 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 lg:min-h-[calc(100vh-13.5rem)]">
+      <div className="grid grid-cols-1 lg:grid-cols-12 lg:min-h-[calc(100vh-13.5rem)]" style={{ gap: 'var(--space-section-gap)' }}>
         <aside
-          className={`lg:col-span-5 xl:col-span-4 space-y-4 lg:max-h-[calc(100vh-13.5rem)] lg:overflow-y-auto lg:pr-1 ${
+          className={`lg:col-span-5 xl:col-span-4 flex flex-col lg:max-h-[calc(100vh-13.5rem)] lg:overflow-y-auto lg:pr-1 ${
             mobilePanel !== 'SETUP' ? 'hidden lg:block' : ''
           }`}
+          style={{ gap: 'var(--space-section-gap)' }}
         >
           <Controls
             group={activeGroup}
@@ -281,14 +282,15 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
         </aside>
 
         <section
-          className={`lg:col-span-7 xl:col-span-8 space-y-4 lg:max-h-[calc(100vh-13.5rem)] lg:overflow-y-auto lg:pr-1 ${
+          className={`lg:col-span-7 xl:col-span-8 flex flex-col lg:max-h-[calc(100vh-13.5rem)] lg:overflow-y-auto lg:pr-1 ${
             mobilePanel !== 'RESULTS' ? 'hidden lg:block' : ''
           }`}
+          style={{ gap: 'var(--space-section-gap)' }}
         >
           <EconomicsResultsTabs isClassic={isClassic} tab={resultsTab} onChange={onSetResultsTab} />
 
           {resultsTab === 'OVERVIEW' && (
-            <div className="space-y-4">
+            <div className="flex flex-col" style={{ gap: 'var(--space-section-gap)' }}>
               <KpiGrid
                 isClassic={isClassic}
                 metrics={aggregateMetrics}

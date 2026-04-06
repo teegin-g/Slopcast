@@ -163,6 +163,13 @@
   --inset-border: var(--border);
   --inset-text: var(--text);
   --inset-muted: var(--muted);
+
+  /* Spacing tokens (default = current hardcoded Tailwind values) */
+  --space-panel-x: 1.5rem;
+  --space-panel-y: 1.5rem;
+  --space-section-gap: 1rem;
+  --space-kpi-gap: 0.75rem;
+  --space-hero-pad: 2rem;
 }
 
 /* ---------- Synthwave ---------- */
@@ -502,6 +509,13 @@
   --radius-panel: 2px;
   --font-heading: 'Space Grotesk', sans-serif;
   --font-brand: 'JetBrains Mono';
+
+  /* Dense spacing overrides */
+  --space-panel-x: 1rem;
+  --space-panel-y: 0.875rem;
+  --space-section-gap: 0.625rem;
+  --space-kpi-gap: 0.5rem;
+  --space-hero-pad: 1.25rem;
 }
 
 /* Stormwatch: monospace metrics for ops-center identity */
