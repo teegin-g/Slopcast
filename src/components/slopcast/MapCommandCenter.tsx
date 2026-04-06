@@ -12,7 +12,6 @@ import { OverlayLegend } from './map/OverlayLegend';
 import { MapWellTooltip } from './map/MapWellTooltip';
 import { WellPopupCard } from './map/WellPopupCard';
 import { useMapSelection } from '../../hooks/useMapSelection';
-import type { PulseWellData } from './MapWellPulseLayer';
 
 export type WellsMobilePanel = 'GROUPS' | 'MAP';
 
@@ -123,7 +122,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
 }) => {
   const { theme } = useTheme();
   const mp = theme.mapPalette;
-  const { map, isLoaded, mapContainerRef, pulseLayer, selectionTrail } = useMapboxMap();
+  const { map, isLoaded, mapContainerRef, selectionTrail } = useMapboxMap();
 
   // Detect map canvas presence as a fallback for isLoaded (handles StrictMode race)
   const [canvasDetected, setCanvasDetected] = useState(false);
@@ -237,25 +236,12 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     return mp.unassignedFill;
   }, [groups, mp.unassignedFill]);
 
-  // Feed well positions/colors to the WebGL pulse layer
-  useEffect(() => {
-    if (!pulseLayer) return;
-    const pulseData: PulseWellData[] = effectiveWells.map((w, i) => ({
-      lng: w.lng,
-      lat: w.lat,
-      color: getWellColor(w.id),
-      phase: (i * 1.618) % (Math.PI * 2), // golden-ratio stagger
-      scale: w.status === 'PRODUCING' ? 1.2 : w.status === 'DUC' ? 0.9 : 0.6,
-    }));
-    pulseLayer.setWells(pulseData);
-  }, [pulseLayer, effectiveWells, getWellColor]);
-
   // Set selection trail color from theme lasso stroke
   useEffect(() => {
     selectionTrail?.setColor(mp.lassoStroke);
   }, [selectionTrail, mp.lassoStroke]);
 
-  // Status-differentiated well layer IDs
+  // Status-differentiated well layer IDs (glow halo is rendered under these)
   const wellLayerIds = useMemo(() => ['wells-producing', 'wells-duc', 'wells-permit'] as const, []);
 
   // Map selection tools (lasso / rectangle)
@@ -300,11 +286,37 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     return ['match', ['get', 'id'], ...pairs, mp.unassignedFill] as any;
   }, [wells, getWellColor, mp.unassignedFill]);
 
-  // Helper: add the 3 status layers + event handlers to the map
+  // Helper: add the 3 status layers + glow halo + event handlers to the map
   const addWellLayers = useCallback((m: any, src: string) => {
     const defaultRadius = ['interpolate', ['linear'], ['zoom'], 6, 3, 10, 6, 14, 10];
     const permitRadius = ['interpolate', ['linear'], ['zoom'], 6, 2, 10, 4, 14, 7];
     const baseOpacity = ['case', ['get', 'dimmed'], 0.3, ['get', 'visible'], 1, 0.3];
+
+    // GLOW HALO — soft, blurred circle rendered UNDER the well dots.
+    // Size and opacity scale by status (PRODUCING brightest, PERMIT dimmest).
+    // At zoom-out, overlapping halos merge into an ambient heat aura.
+    const glowRadius = ['interpolate', ['linear'], ['zoom'], 6, 6, 10, 14, 14, 22];
+    const glowOpacity: any = [
+      'case',
+      ['get', 'dimmed'], 0.05,
+      ['!', ['get', 'visible']], 0.05,
+      ['==', ['get', 'status'], 'PRODUCING'], 0.35,
+      ['==', ['get', 'status'], 'DUC'], 0.18,
+      0.10, // PERMIT
+    ];
+
+    m.addLayer({
+      id: 'wells-glow', type: 'circle', source: src,
+      filter: ['!', ['has', 'point_count']],
+      paint: {
+        'circle-radius': glowRadius,
+        'circle-color': colorMatchExpr,
+        'circle-blur': 0.7,
+        'circle-opacity': glowOpacity,
+        'circle-opacity-transition': { duration: 300 },
+        'circle-radius-transition': { duration: 300 },
+      },
+    });
 
     // PRODUCING — solid filled circle
     m.addLayer({
@@ -407,6 +419,10 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     const source = map.getSource(sourceId);
     if (source) {
       source.setData(wellsGeoJson);
+      // Update paint on glow halo layer
+      if (map.getLayer('wells-glow')) {
+        map.setPaintProperty('wells-glow', 'circle-color', colorMatchExpr);
+      }
       // Update paint on status-differentiated layers
       for (const layerId of wellLayerIds) {
         if (map.getLayer(layerId)) {

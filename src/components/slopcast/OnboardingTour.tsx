@@ -24,6 +24,8 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ isClassic }) => {
   const [visible, setVisible] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number }>({ top: 100, left: 100 });
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const titleId = `onboarding-tour-title-${stepIndex}`;
+  const descriptionId = `onboarding-tour-description-${stepIndex}`;
 
   useEffect(() => {
     if (getOnboardingDone()) return;
@@ -88,6 +90,10 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ isClassic }) => {
             ? 'sc-panel overflow-hidden'
             : 'rounded-panel border shadow-card bg-theme-surface1 border-theme-cyan'
         }`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
         style={{ top: position.top, left: Math.min(position.left, window.innerWidth - 300) }}
       >
         <div className="p-4">
@@ -102,8 +108,8 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ isClassic }) => {
               Skip
             </button>
           </div>
-          <h3 className={`text-sm font-black mb-1 ${isClassic ? 'text-white' : 'text-theme-text'}`}>{step.title}</h3>
-          <p className={`text-[11px] leading-relaxed mb-3 ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>{step.description}</p>
+          <h3 id={titleId} className={`text-sm font-black mb-1 ${isClassic ? 'text-white' : 'text-theme-text'}`}>{step.title}</h3>
+          <p id={descriptionId} className={`text-[11px] leading-relaxed mb-3 ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>{step.description}</p>
           <button
             onClick={handleNext}
             className={`w-full py-2 rounded-inner text-xs font-black uppercase tracking-[0.14em] transition-colors focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
