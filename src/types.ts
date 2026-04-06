@@ -1,4 +1,22 @@
 
+export interface WellTrajectoryPoint {
+  lat: number;
+  lng: number;
+  depthFt: number; // TVD in feet (0 = surface, positive = deeper)
+}
+
+export interface WellTrajectory {
+  /** Full survey path from surface to TD — ordered by measured depth.
+   *  Primary source: directional survey stations (100-200 points).
+   *  Fallback: 3-point path from well header SH/BH coordinates. */
+  path: WellTrajectoryPoint[];
+  /** Summary control points (always populated) */
+  surface: WellTrajectoryPoint;
+  heel: WellTrajectoryPoint;
+  toe: WellTrajectoryPoint;
+  mdFt?: number;
+}
+
 export interface Well {
   id: string;
   name: string;
@@ -8,6 +26,7 @@ export interface Well {
   status: 'PRODUCING' | 'DUC' | 'PERMIT';
   operator: string;
   formation: string;
+  trajectory?: WellTrajectory;  // Optional: populated when laterals layer active
 }
 
 export type CutoffKind = 'rate' | 'cum' | 'time_days' | 'decline' | 'default';

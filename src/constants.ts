@@ -1,5 +1,5 @@
 
-import { Well, TypeCurveParams, CapexAssumptions, CapexItem, CommodityPricingAssumptions, OpexAssumptions, OwnershipAssumptions, ForecastSegment } from './types';
+import { Well, WellTrajectory, TypeCurveParams, CapexAssumptions, CapexItem, CommodityPricingAssumptions, OpexAssumptions, OwnershipAssumptions, ForecastSegment } from './types';
 
 // Generate some mock wells in a basin-like cluster
 const generateWells = (count: number): Well[] => {
@@ -9,17 +9,95 @@ const generateWells = (count: number): Well[] => {
   const operators = ['Strata Ops LLC', 'Blue Mesa Energy', 'Atlas Peak Resources'];
   const formations = ['Wolfcamp A', 'Wolfcamp B', 'Bone Spring'];
   const statuses: Array<Well['status']> = ['PRODUCING', 'DUC', 'PERMIT'];
-  
+
+  // Degrees per foot at ~32°N latitude: 1° lat ≈ 364,000 ft
+  const FT_TO_DEG = 1 / 364000;
+
   for (let i = 0; i < count; i++) {
+    const lat = centerLat + (Math.random() - 0.5) * 0.15;
+    const lng = centerLng + (Math.random() - 0.5) * 0.2;
+    const lateralLength = Math.random() > 0.5 ? 10000 : 7500;
+    const status = statuses[i % statuses.length];
+
+    let trajectory: WellTrajectory | undefined;
+    if (status === 'PRODUCING' || status === 'DUC') {
+      // Realistic horizontal well trajectory with full survey path.
+      // Vary azimuth per well for visual diversity (golden angle stagger).
+      const azimuthRad = ((i * 137.5) % 360) * (Math.PI / 180);
+      const cosAz = Math.cos(azimuthRad);
+      const sinAz = Math.sin(azimuthRad);
+      const lngScale = FT_TO_DEG / Math.cos(lat * Math.PI / 180); // adjust for latitude
+
+      // Key points
+      const kopDepth = 7500;   // kickoff point TVD
+      const lateralTVD = 8000; // horizontal section TVD
+      const surfacePt = { lat, lng, depthFt: 0 };
+
+      // Generate mock survey path: vertical section + build curve + horizontal lateral
+      const surveyPath: typeof surfacePt[] = [surfacePt];
+
+      // Vertical section: 0 to KOP (every 500ft, slight drift)
+      for (let d = 500; d < kopDepth; d += 500) {
+        const drift = (d / kopDepth) * 0.0005; // slight lateral drift during vertical
+        surveyPath.push({
+          lat: lat + cosAz * drift,
+          lng: lng + sinAz * drift * lngScale * 364000 * FT_TO_DEG,
+          depthFt: d,
+        });
+      }
+
+      // Build curve: KOP to ~1500ft past KOP (inclination ramps 0→90°)
+      const buildLength = 1500;
+      for (let j = 0; j <= 5; j++) {
+        const t = j / 5;
+        const md = kopDepth + t * buildLength;
+        const incl = t * (Math.PI / 2); // 0 to 90 degrees
+        const horizOffset = buildLength * (1 - Math.cos(incl)) * FT_TO_DEG;
+        surveyPath.push({
+          lat: lat + cosAz * horizOffset + cosAz * 0.0005,
+          lng: lng + sinAz * horizOffset * lngScale * 364000 * FT_TO_DEG,
+          depthFt: kopDepth + buildLength * Math.sin(incl) * 0.07, // TVD increases slightly
+        });
+      }
+
+      // Heel point (start of horizontal)
+      const heelLat = surveyPath[surveyPath.length - 1].lat;
+      const heelLng = surveyPath[surveyPath.length - 1].lng;
+      const heelPt = { lat: heelLat, lng: heelLng, depthFt: lateralTVD };
+
+      // Horizontal lateral: every 1000ft along azimuth at constant TVD
+      const lateralSteps = Math.floor(lateralLength / 1000);
+      for (let j = 1; j <= lateralSteps; j++) {
+        const dist = j * 1000;
+        surveyPath.push({
+          lat: heelLat + cosAz * dist * FT_TO_DEG,
+          lng: heelLng + sinAz * dist * lngScale * 364000 * FT_TO_DEG,
+          depthFt: lateralTVD + (Math.random() - 0.5) * 50, // slight TVD variation
+        });
+      }
+
+      // Toe point (end of lateral)
+      const toePt = surveyPath[surveyPath.length - 1];
+
+      trajectory = {
+        path: surveyPath,
+        surface: surfacePt,
+        heel: heelPt,
+        toe: toePt,
+        mdFt: kopDepth + buildLength + lateralLength,
+      };
+    }
+
     wells.push({
       id: `w-${i}`,
       name: `Maverick ${i + 1}H`,
-      lat: centerLat + (Math.random() - 0.5) * 0.15,
-      lng: centerLng + (Math.random() - 0.5) * 0.2,
-      lateralLength: Math.random() > 0.5 ? 10000 : 7500,
-      status: statuses[i % statuses.length],
+      lat,
+      lng,
+      lateralLength,
+      status,
       operator: operators[i % operators.length],
       formation: formations[i % formations.length],
+      trajectory,
     });
   }
   return wells;

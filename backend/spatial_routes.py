@@ -16,7 +16,12 @@ def create_spatial_router() -> APIRouter:
 
     @router.post("/wells", response_model=SpatialWellsResponse)
     def spatial_wells(req: SpatialWellsRequest) -> SpatialWellsResponse:
-        return get_wells_in_bounds(bounds=req.bounds, filters=req.filters, limit=req.limit)
+        return get_wells_in_bounds(
+            bounds=req.bounds,
+            filters=req.filters,
+            limit=req.limit,
+            include_trajectory=req.include_trajectory,
+        )
 
     @router.get("/layers", response_model=SpatialLayersResponse)
     def spatial_layers() -> SpatialLayersResponse:

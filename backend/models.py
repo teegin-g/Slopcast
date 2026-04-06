@@ -10,6 +10,23 @@ CapexCategory = Literal["DRILLING", "COMPLETION", "FACILITIES", "EQUIPMENT", "OT
 CostBasis = Literal["PER_WELL", "PER_FOOT"]
 
 
+class WellTrajectoryPoint(BaseModel):
+    lat: float
+    lng: float
+    depthFt: float = Field(default=0.0, description="TVD in feet, 0=surface, positive=deeper")
+
+
+class WellTrajectory(BaseModel):
+    path: list[WellTrajectoryPoint] = Field(
+        default_factory=list,
+        description="Full survey path from surface to TD, ordered by measured depth",
+    )
+    surface: WellTrajectoryPoint
+    heel: WellTrajectoryPoint
+    toe: WellTrajectoryPoint
+    mdFt: float | None = None
+
+
 class Well(BaseModel):
     id: str
     name: str
@@ -19,6 +36,7 @@ class Well(BaseModel):
     status: WellStatus
     operator: str
     formation: str = ""
+    trajectory: WellTrajectory | None = None
 
 
 class TypeCurveParams(BaseModel):

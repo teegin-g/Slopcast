@@ -25,6 +25,7 @@ class SpatialWellsRequest(BaseModel):
     bounds: ViewportBounds
     filters: SpatialLayerFilter | None = None
     limit: int = Field(2000, ge=1, le=10000)
+    include_trajectory: bool = False
 
 
 class SpatialWellsResponse(BaseModel):

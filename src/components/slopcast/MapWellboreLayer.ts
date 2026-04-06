@@ -1,7 +1,7 @@
 /**
  * MapWellboreLayer — Custom WebGL layer for Mapbox GL that renders 3D
- * wellbore curves descending below the map surface. Each wellbore is
- * drawn as a smooth curve from surface hole through heel to toe, with
+ * wellbore paths descending below the map surface. Each wellbore is
+ * drawn as a polyline following the full directional survey path, with
  * depth-based color fading and glow at the surface.
  *
  * Implements Mapbox's CustomLayerInterface with renderingMode='3d' to
@@ -58,44 +58,16 @@ const FRAGMENT_SOURCE = `
 
 // ── Depth exaggeration factor ───────────────────────────────────────────
 // Real depths (7000-8000ft) are tiny vs. horizontal extent (several km).
-// This multiplier makes wellbores visible. Tune in WP-7 (polish).
-const DEPTH_EXAGGERATION = 100;
-
-// ── Points per wellbore curve segment ───────────────────────────────────
-const CURVE_POINTS = 10;
+// This multiplier makes wellbores visible. Tunable.
+const DEPTH_EXAGGERATION = 15;
 
 // ── Wellbore data fed to the layer ──────────────────────────────────────
 export interface WellboreData {
   id: string;
-  surface: { lng: number; lat: number; depthFt: number };
-  heel: { lng: number; lat: number; depthFt: number };
-  toe: { lng: number; lat: number; depthFt: number };
+  /** Full survey path — array of points from surface to TD */
+  path: Array<{ lng: number; lat: number; depthFt: number }>;
   color: string; // hex group color
   selected: boolean;
-}
-
-// ── Curve interpolation ─────────────────────────────────────────────────
-/**
- * Generate smooth curve points between three control points using
- * quadratic Bezier interpolation. Returns an array of [x, y, z] tuples.
- */
-function generateCurvePoints(
-  p0: [number, number, number],
-  p1: [number, number, number],
-  p2: [number, number, number],
-  numPoints: number,
-): [number, number, number][] {
-  const points: [number, number, number][] = [];
-  for (let i = 0; i <= numPoints; i++) {
-    const t = i / numPoints;
-    const omt = 1 - t;
-    // Quadratic Bezier: B(t) = (1-t)^2*P0 + 2*(1-t)*t*P1 + t^2*P2
-    const x = omt * omt * p0[0] + 2 * omt * t * p1[0] + t * t * p2[0];
-    const y = omt * omt * p0[1] + 2 * omt * t * p1[1] + t * t * p2[1];
-    const z = omt * omt * p0[2] + 2 * omt * t * p1[2] + t * t * p2[2];
-    points.push([x, y, z]);
-  }
-  return points;
 }
 
 // ── Custom layer class ──────────────────────────────────────────────────
@@ -296,7 +268,7 @@ export class MapWellboreLayer {
     this.mapRef = null;
   }
 
-  // ── Internal: build vertex data from wellbore curves ──────────────
+  // ── Internal: build vertex data from survey paths ──────────────────
   private uploadVertexData(gl: WebGLRenderingContext): void {
     const wellbores = this.wellbores;
     if (wellbores.length === 0) {
@@ -304,102 +276,52 @@ export class MapWellboreLayer {
       return;
     }
 
-    // Each wellbore produces CURVE_POINTS*2 curve points (surface→heel + heel→toe).
-    // For gl.LINES, each segment needs 2 vertices. N points = (N-1) segments = (N-1)*2 vertices.
-    // Total curve points per wellbore = (CURVE_POINTS + 1) * 2, but shared heel point.
-    // Actually: surface→heel has CURVE_POINTS+1 points, heel→toe has CURVE_POINTS+1 points.
-    // Combined with shared heel: 2*CURVE_POINTS+1 unique points.
-    // Segments = 2*CURVE_POINTS, line vertices = 2*CURVE_POINTS*2.
-    const pointsPerWellbore = 2 * CURVE_POINTS + 1;
-    const segmentsPerWellbore = pointsPerWellbore - 1;
-    const lineVertsPerWellbore = segmentsPerWellbore * 2;
-
-    // 8 floats per vertex
+    // Count total line vertices: each path with N points produces (N-1) segments,
+    // each segment needs 2 vertices for gl.LINES.
     const floatsPerVertex = 8;
-    const totalFloats = wellbores.length * lineVertsPerWellbore * floatsPerVertex;
-    const data = new Float32Array(totalFloats);
+    let totalLineVerts = 0;
+    for (const wb of wellbores) {
+      if (wb.path.length >= 2) {
+        totalLineVerts += (wb.path.length - 1) * 2;
+      }
+    }
 
+    const data = new Float32Array(totalLineVerts * floatsPerVertex);
     let writeOffset = 0;
 
     for (const wb of wellbores) {
+      if (wb.path.length < 2) continue;
+
       const [r, g, b] = hexToRgb(wb.color);
       const alpha = wb.selected ? 1.0 : 0.6;
 
-      // Find max depth across all three points for normalization
-      const maxDepth = Math.max(
-        wb.surface.depthFt,
-        wb.heel.depthFt,
-        wb.toe.depthFt,
-        1, // avoid division by zero
-      );
+      // Find max depth for normalization
+      const maxDepth = Math.max(...wb.path.map(p => p.depthFt), 1);
 
-      // Convert control points to mercator coordinates
-      const avgLat =
-        (wb.surface.lat + wb.heel.lat + wb.toe.lat) / 3;
+      // Generate LINE pairs from consecutive path points
+      for (let i = 0; i < wb.path.length - 1; i++) {
+        const p0 = wb.path[i];
+        const p1 = wb.path[i + 1];
 
-      const surfaceMerc: [number, number, number] = [
-        lngToMercatorX(wb.surface.lng),
-        latToMercatorY(wb.surface.lat),
-        depthFtToMercatorZ(wb.surface.depthFt, avgLat) * DEPTH_EXAGGERATION,
-      ];
-      const heelMerc: [number, number, number] = [
-        lngToMercatorX(wb.heel.lng),
-        latToMercatorY(wb.heel.lat),
-        depthFtToMercatorZ(wb.heel.depthFt, avgLat) * DEPTH_EXAGGERATION,
-      ];
-      const toeMerc: [number, number, number] = [
-        lngToMercatorX(wb.toe.lng),
-        latToMercatorY(wb.toe.lat),
-        depthFtToMercatorZ(wb.toe.depthFt, avgLat) * DEPTH_EXAGGERATION,
-      ];
-
-      // Generate curve: surface → heel (vertical kick section)
-      const upperCurve = generateCurvePoints(
-        surfaceMerc,
-        heelMerc,
-        heelMerc,
-        CURVE_POINTS,
-      );
-
-      // Generate curve: heel → toe (horizontal lateral section)
-      const lowerCurve = generateCurvePoints(
-        heelMerc,
-        toeMerc,
-        toeMerc,
-        CURVE_POINTS,
-      );
-
-      // Combine into one polyline (skip duplicate heel point from lowerCurve)
-      const allPoints = [...upperCurve, ...lowerCurve.slice(1)];
-
-      // Write line segment pairs
-      for (let i = 0; i < allPoints.length - 1; i++) {
-        const pA = allPoints[i];
-        const pB = allPoints[i + 1];
-
-        // Normalized depth (0=surface, 1=deepest) based on position in curve
-        const depthNormA = i / (allPoints.length - 1);
-        const depthNormB = (i + 1) / (allPoints.length - 1);
-
-        // Vertex A
-        data[writeOffset++] = pA[0]; // mercX
-        data[writeOffset++] = pA[1]; // mercY
-        data[writeOffset++] = pA[2]; // mercZ
+        // Vertex for p0
+        data[writeOffset++] = lngToMercatorX(p0.lng);
+        data[writeOffset++] = latToMercatorY(p0.lat);
+        data[writeOffset++] = depthFtToMercatorZ(p0.depthFt, p0.lat) * DEPTH_EXAGGERATION;
         data[writeOffset++] = r;
         data[writeOffset++] = g;
         data[writeOffset++] = b;
         data[writeOffset++] = alpha;
-        data[writeOffset++] = depthNormA;
+        data[writeOffset++] = p0.depthFt / maxDepth;
 
-        // Vertex B
-        data[writeOffset++] = pB[0];
-        data[writeOffset++] = pB[1];
-        data[writeOffset++] = pB[2];
+        // Vertex for p1
+        data[writeOffset++] = lngToMercatorX(p1.lng);
+        data[writeOffset++] = latToMercatorY(p1.lat);
+        data[writeOffset++] = depthFtToMercatorZ(p1.depthFt, p1.lat) * DEPTH_EXAGGERATION;
         data[writeOffset++] = r;
         data[writeOffset++] = g;
         data[writeOffset++] = b;
         data[writeOffset++] = alpha;
-        data[writeOffset++] = depthNormB;
+        data[writeOffset++] = p1.depthFt / maxDepth;
       }
     }
 

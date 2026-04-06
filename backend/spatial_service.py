@@ -13,6 +13,7 @@ Legacy class (kept for backward compat with main.py lifespan):
 from __future__ import annotations
 
 import logging
+import math
 import os
 import time
 from decimal import Decimal
@@ -20,7 +21,7 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-from .models import Well, WellStatus
+from .models import Well, WellStatus, WellTrajectory, WellTrajectoryPoint
 from .spatial_models import (
     SpatialLayer,
     SpatialLayerFilter,
@@ -170,7 +171,12 @@ def _map_status(raw: str | None) -> WellStatus:
 # ---------------------------------------------------------------------------
 
 
-def _cache_key(bounds: ViewportBounds, filters: SpatialLayerFilter | None, limit: int) -> str:
+def _cache_key(
+    bounds: ViewportBounds,
+    filters: SpatialLayerFilter | None,
+    limit: int,
+    include_trajectory: bool,
+) -> str:
     f_str = ""
     if filters:
         f_str = (
@@ -179,7 +185,10 @@ def _cache_key(bounds: ViewportBounds, filters: SpatialLayerFilter | None, limit
             f"{sorted(filters.formations or [])}|"
             f"{sorted(filters.layers or [])}"
         )
-    return f"{bounds.sw_lat},{bounds.sw_lng},{bounds.ne_lat},{bounds.ne_lng}|{f_str}|{limit}"
+    return (
+        f"{bounds.sw_lat},{bounds.sw_lng},{bounds.ne_lat},{bounds.ne_lng}"
+        f"|{f_str}|{limit}|traj={include_trajectory}"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -191,22 +200,27 @@ def get_wells_in_bounds(
     bounds: ViewportBounds,
     filters: SpatialLayerFilter | None = None,
     limit: int = 2000,
+    include_trajectory: bool = False,
 ) -> SpatialWellsResponse:
     """
     Return wells within the given viewport bounds.
 
     Uses Databricks SQL Warehouse when credentials are available; falls back
     to deterministic mock data otherwise.
+
+    When include_trajectory=True, each well is augmented with a WellTrajectory
+    built from 3 key survey stations (surface, heel, toe) from
+    eds.well.tbl_directional_survey.
     """
-    key = _cache_key(bounds, filters, limit)
+    key = _cache_key(bounds, filters, limit, include_trajectory)
     if key in _cache:
         return _cache[key]
 
     conn = _get_db_connection()
     if conn is not None:
-        result = _query_databricks(conn, bounds, filters, limit)
+        result = _query_databricks(conn, bounds, filters, limit, include_trajectory)
     else:
-        result = _query_mock(bounds, filters, limit)
+        result = _query_mock(bounds, filters, limit, include_trajectory)
 
     _cache[key] = result
     return result
@@ -277,6 +291,7 @@ def _query_databricks(
     bounds: ViewportBounds,
     filters: SpatialLayerFilter | None,
     limit: int,
+    include_trajectory: bool = False,
 ) -> SpatialWellsResponse:
     catalog = os.getenv("DATABRICKS_CATALOG", "eds")
     schema = os.getenv("DATABRICKS_SCHEMA", "well")
@@ -286,6 +301,7 @@ def _query_databricks(
     sql = f"""
         SELECT api_14, well_name,
                sh_latitude_nad27, sh_longitude_nad27,
+               bh_latitude_nad27, bh_longitude_nad27,
                lateral_length, well_status, operator, formation
         FROM {full_table}
         WHERE sh_latitude_nad27 BETWEEN %(sw_lat)s AND %(ne_lat)s
@@ -308,16 +324,26 @@ def _query_databricks(
             cols = [d[0] for d in cursor.description]
     except Exception as exc:  # noqa: BLE001
         logger.warning("Databricks query failed, falling back to mock: %s", exc)
-        return _query_mock(bounds, filters, limit)
+        return _query_mock(bounds, filters, limit, include_trajectory)
 
-    wells: list[Well] = []
+    # Build intermediate well data including raw BH coords for trajectory
+    well_data: list[tuple[Well, float, float, float, float]] = []  # (well, sh_lat_nad27, sh_lng_nad27, bh_lat, bh_lng)
     for row in rows:
         row_dict = dict(zip(cols, row))
         raw_lat = row_dict.get("sh_latitude_nad27")
         raw_lng = row_dict.get("sh_longitude_nad27")
         if raw_lat is None or raw_lng is None:
             continue
-        lat, lng = _transform_coords(float(raw_lat), float(raw_lng))
+        sh_lat_nad27 = float(raw_lat)
+        sh_lng_nad27 = float(raw_lng)
+        lat, lng = _transform_coords(sh_lat_nad27, sh_lng_nad27)
+
+        raw_bh_lat = row_dict.get("bh_latitude_nad27")
+        raw_bh_lng = row_dict.get("bh_longitude_nad27")
+        bh_lat_wgs84, bh_lng_wgs84 = _transform_coords(
+            float(raw_bh_lat) if raw_bh_lat is not None else sh_lat_nad27,
+            float(raw_bh_lng) if raw_bh_lng is not None else sh_lng_nad27,
+        )
 
         raw_ll = row_dict.get("lateral_length")
         lateral_length = float(raw_ll) if raw_ll is not None else 0.0
@@ -335,10 +361,17 @@ def _query_databricks(
             formation=str(row_dict.get("formation", "")),
         )
 
-        # Apply client-side filters (status / operator / formation)
         if filters and not _passes_filter(well, filters):
             continue
-        wells.append(well)
+        well_data.append((well, lat, lng, bh_lat_wgs84, bh_lng_wgs84))
+
+    wells = [wd[0] for wd in well_data]
+
+    if include_trajectory and wells:
+        api_ids = [w.id for w in wells]
+        trajectories = _fetch_trajectories(conn, api_ids, well_data)
+        for well in wells:
+            well.trajectory = trajectories.get(well.id)
 
     total = len(wells)
     truncated = total >= limit
@@ -350,10 +383,158 @@ def _query_databricks(
     )
 
 
+_MAX_STATIONS_PER_WELL = 50
+
+
+def _subsample(items: list[Any], max_count: int) -> list[Any]:
+    """Subsample a list to at most *max_count* evenly-spaced items, always keeping first and last."""
+    n = len(items)
+    if n <= max_count:
+        return items
+    # Always include first and last; pick evenly-spaced indices in between
+    step = (n - 1) / (max_count - 1)
+    indices = [round(i * step) for i in range(max_count)]
+    return [items[i] for i in indices]
+
+
+def _fetch_trajectories(
+    conn: Any,
+    api_ids: list[str],
+    well_data: list[tuple[Well, float, float, float, float]],
+) -> dict[str, WellTrajectory]:
+    """
+    Fetch the FULL directional survey for each well in *api_ids* and return
+    a mapping of api_14 -> WellTrajectory with a dense ``path`` list.
+
+    Falls back to a 3-point path synthesized from well_summary_all header
+    coords for any well that has no directional survey rows.
+    """
+    if not api_ids:
+        return {}
+
+    # Lookup: api_14 → (sh_lat_wgs84, sh_lng_wgs84, bh_lat_wgs84, bh_lng_wgs84)
+    well_coords: dict[str, tuple[float, float, float, float]] = {
+        w.id: (sh_lat, sh_lng, bh_lat, bh_lng)
+        for w, sh_lat, sh_lng, bh_lat, bh_lng in well_data
+    }
+    # Lookup: api_14 → Well (for lateral_length check)
+    well_by_id: dict[str, Well] = {w.id: w for w, *_ in well_data}
+
+    # Only query surveys for wells with lateral_length > 0
+    survey_api_ids = [a for a in api_ids if well_by_id.get(a) and well_by_id[a].lateralLength > 0]
+
+    survey_table = "eds.well.tbl_directional_survey"
+
+    # ---- Fetch all survey stations ordered by MD ----
+    raw_stations: dict[str, list[dict[str, Any]]] = {}  # api_14 → [row_dicts]
+
+    if survey_api_ids:
+        api_list = ", ".join(f"'{a}'" for a in survey_api_ids)
+        sql = f"""
+            SELECT api_14, measured_depth, true_vertical_depth,
+                   north_south_distance, east_west_distance, kickoff_point
+            FROM {survey_table}
+            WHERE api_14 IN ({api_list})
+            ORDER BY api_14, measured_depth
+        """
+
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(sql)
+                rows = cursor.fetchall()
+                cols = [d[0] for d in cursor.description]
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Trajectory query failed, skipping trajectories: %s", exc)
+            return {}
+
+        for row in rows:
+            rd = dict(zip(cols, row))
+            api = str(rd.get("api_14", ""))
+            raw_stations.setdefault(api, []).append(rd)
+
+    # ---- Build WellTrajectory for each well ----
+    trajectories: dict[str, WellTrajectory] = {}
+    for api in api_ids:
+        coords = well_coords.get(api)
+        if coords is None:
+            continue
+        sh_lat, sh_lng, bh_lat, bh_lng = coords
+        stations = raw_stations.get(api, [])
+
+        if stations:
+            # Subsample if too many stations
+            stations = _subsample(stations, _MAX_STATIONS_PER_WELL)
+
+            # Convert each station to a WellTrajectoryPoint
+            path: list[WellTrajectoryPoint] = []
+            for st in stations:
+                ns = st.get("north_south_distance")
+                ew = st.get("east_west_distance")
+                tvd_raw = st.get("true_vertical_depth")
+                ns_ft = float(ns) if ns is not None else 0.0
+                ew_ft = float(ew) if ew is not None else 0.0
+                tvd = float(tvd_raw) if tvd_raw is not None else 0.0
+
+                pt_lat = sh_lat + (ns_ft / 364000.0)
+                pt_lng = sh_lng + (ew_ft / (364000.0 * math.cos(math.radians(sh_lat))))
+                path.append(WellTrajectoryPoint(lat=pt_lat, lng=pt_lng, depthFt=tvd))
+
+            surface_pt = path[0]
+            toe_pt = path[-1]
+
+            # Heel: station closest to KOP depth
+            kop_raw = stations[0].get("kickoff_point")
+            if kop_raw is not None:
+                kop_depth = float(kop_raw)
+                heel_idx = min(
+                    range(len(stations)),
+                    key=lambda i: abs(
+                        (float(stations[i]["measured_depth"]) if stations[i].get("measured_depth") is not None else 0.0)
+                        - kop_depth
+                    ),
+                )
+                heel_pt = path[heel_idx]
+            else:
+                # No KOP — use midpoint of path
+                heel_pt = path[len(path) // 2]
+
+            toe_md_raw = stations[-1].get("measured_depth")
+            toe_md = float(toe_md_raw) if toe_md_raw is not None else 0.0
+
+            trajectories[api] = WellTrajectory(
+                path=path,
+                surface=surface_pt,
+                heel=heel_pt,
+                toe=toe_pt,
+                mdFt=toe_md if toe_md > 0 else None,
+            )
+        else:
+            # Fallback: synthesize 3-point path from well header coords
+            tvd_estimate = well_by_id[api].lateralLength * 0.8 if well_by_id.get(api) else 8000.0
+            surface_pt = WellTrajectoryPoint(lat=sh_lat, lng=sh_lng, depthFt=0.0)
+            mid_pt = WellTrajectoryPoint(
+                lat=(sh_lat + bh_lat) / 2.0,
+                lng=(sh_lng + bh_lng) / 2.0,
+                depthFt=tvd_estimate / 2.0,
+            )
+            toe_pt = WellTrajectoryPoint(lat=bh_lat, lng=bh_lng, depthFt=tvd_estimate)
+
+            trajectories[api] = WellTrajectory(
+                path=[surface_pt, mid_pt, toe_pt],
+                surface=surface_pt,
+                heel=mid_pt,
+                toe=toe_pt,
+                mdFt=None,
+            )
+
+    return trajectories
+
+
 def _query_mock(
     bounds: ViewportBounds,
     filters: SpatialLayerFilter | None,
     limit: int,
+    include_trajectory: bool = False,
 ) -> SpatialWellsResponse:
     candidates = [
         w
@@ -366,11 +547,50 @@ def _query_mock(
 
     truncated = len(candidates) > limit
     wells = candidates[:limit]
+
+    if include_trajectory:
+        wells = [_attach_mock_trajectory(w) for w in wells]
+
     return SpatialWellsResponse(
         wells=wells,
         total_count=len(wells),
         truncated=truncated,
         source="mock",
+    )
+
+
+def _attach_mock_trajectory(well: Well) -> Well:
+    """
+    Generate a plausible mock trajectory for a well.
+    Horizontal wells get a 90° turn at ~8,000 ft TVD heading east.
+    The path field is populated with [surface, heel, toe].
+    """
+    lateral_ft = well.lateralLength if well.lateralLength > 0 else 7500.0
+    kop_tvd = 8000.0
+    # Toe is ~lateral_ft east of the heel; convert feet to degrees lng
+    lng_offset = lateral_ft / (364000.0 * math.cos(math.radians(well.lat)))
+
+    surface_pt = WellTrajectoryPoint(lat=well.lat, lng=well.lng, depthFt=0.0)
+    heel_pt = WellTrajectoryPoint(lat=well.lat, lng=well.lng, depthFt=kop_tvd)
+    toe_pt = WellTrajectoryPoint(lat=well.lat, lng=well.lng + lng_offset, depthFt=kop_tvd)
+    total_md = kop_tvd + lateral_ft
+
+    return Well(
+        id=well.id,
+        name=well.name,
+        lat=well.lat,
+        lng=well.lng,
+        lateralLength=well.lateralLength,
+        status=well.status,
+        operator=well.operator,
+        formation=well.formation,
+        trajectory=WellTrajectory(
+            path=[surface_pt, heel_pt, toe_pt],
+            surface=surface_pt,
+            heel=heel_pt,
+            toe=toe_pt,
+            mdFt=total_md,
+        ),
     )
 
 

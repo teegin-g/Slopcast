@@ -253,12 +253,10 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     }
 
     const wellboreData: WellboreData[] = effectiveWells
-      .filter(w => w.trajectory)
+      .filter(w => w.trajectory && w.trajectory.path.length >= 2)
       .map(w => ({
         id: w.id,
-        surface: w.trajectory!.surface,
-        heel: w.trajectory!.heel,
-        toe: w.trajectory!.toe,
+        path: w.trajectory!.path,
         color: getWellColor(w.id),
         selected: selectedWellIds.has(w.id),
       }));

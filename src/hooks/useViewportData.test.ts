@@ -28,13 +28,13 @@ function makeMockSource(id: 'mock' | 'live') {
 }
 
 function makeMapStub() {
-  const handlers: Record<string, Function> = {};
+  const handlers: Record<string, (...args: unknown[]) => void> = {};
   return {
     getBounds: () => ({
       getSouthWest: () => ({ lat: 31, lng: -103 }),
       getNorthEast: () => ({ lat: 32, lng: -101 }),
     }),
-    on: (event: string, fn: Function) => { handlers[event] = fn; },
+    on: (event: string, fn: (...args: unknown[]) => void) => { handlers[event] = fn; },
     off: vi.fn(),
     _handlers: handlers,
   };

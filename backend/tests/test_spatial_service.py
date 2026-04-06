@@ -78,3 +78,46 @@ def test_cache_returns_same():
     resp2 = get_wells_in_bounds(bounds=bounds)
     # Should be the exact same object from cache
     assert resp1 is resp2
+
+
+def test_mock_trajectory_not_attached_by_default():
+    resp = get_wells_in_bounds(bounds=_wide_bounds())
+    assert resp.source == "mock"
+    for w in resp.wells:
+        assert w.trajectory is None
+
+
+def test_mock_trajectory_attached_when_requested():
+    resp = get_wells_in_bounds(bounds=_wide_bounds(), include_trajectory=True)
+    assert resp.source == "mock"
+    assert len(resp.wells) > 0
+    for w in resp.wells:
+        assert w.trajectory is not None
+        t = w.trajectory
+        # Surface must be at depth 0 at the well's own coordinates
+        assert t.surface.depthFt == 0.0
+        assert t.surface.lat == w.lat
+        assert t.surface.lng == w.lng
+        # Heel and toe must be deeper than surface
+        assert t.heel.depthFt > 0.0
+        assert t.toe.depthFt > 0.0
+        # Toe should be eastward of heel (mock always goes east)
+        assert t.toe.lng > t.heel.lng
+        # mdFt should reflect the full wellbore length
+        assert t.mdFt is not None
+        assert t.mdFt > 0.0
+        # path must be populated and include at least the 3 key points
+        assert len(t.path) >= 3
+        assert t.path[0].depthFt == 0.0  # first point is surface
+
+
+def test_trajectory_cache_is_separate_from_non_trajectory():
+    """include_trajectory=True and False must not share a cache entry."""
+    bounds = _wide_bounds()
+    resp_no_traj = get_wells_in_bounds(bounds=bounds, include_trajectory=False)
+    resp_traj = get_wells_in_bounds(bounds=bounds, include_trajectory=True)
+    assert resp_no_traj is not resp_traj
+    for w in resp_no_traj.wells:
+        assert w.trajectory is None
+    for w in resp_traj.wells:
+        assert w.trajectory is not None
