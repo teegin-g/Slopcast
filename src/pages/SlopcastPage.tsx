@@ -18,6 +18,7 @@ const SlopcastPage: React.FC = () => {
           </Suspense>
         </div>
       )}
+      {ws.themeId === 'hyperborea' && <div className="theme-aurora" />}
 
       <PageHeader
         isClassic={ws.isClassic}
