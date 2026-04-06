@@ -14,6 +14,7 @@ from .models import (
     SensitivityMatrixResult,
 )
 from .sensitivity import generate_sensitivity_matrix
+from .spatial_routes import create_spatial_router
 from .spatial_service import SpatialDBManager
 
 
@@ -71,6 +72,8 @@ def create_app() -> FastAPI:
             y_var=req.yVar,
             y_steps=req.ySteps,
         )
+
+    app.include_router(create_spatial_router())
 
     return app
 
