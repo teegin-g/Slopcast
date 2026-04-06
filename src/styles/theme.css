@@ -258,21 +258,24 @@
   /* off-white sea-foam */
   --muted: 148 180 170;
   /* faded palm green */
-  --success: 52 211 153;
-  /* emerald-400 */
+  --success: 185 255 59;
+  /* neon lime */
   --warning: 185 255 59;
   /* neon lime – used for tropical highlights */
   --danger: 248 113 113;
   /* red-400 */
+
+  --header-bg-1: 60 45 30;
+  --header-bg-2: 26 35 50;
 
   --shadow-glow-cyan: 0 0 14px rgba(45, 212, 191, 0.35), 0 0 40px rgba(45, 212, 191, 0.15);
   --shadow-glow-magenta: 0 0 14px rgba(185, 255, 59, 0.42), 0 0 46px rgba(185, 255, 59, 0.20);
   --shadow-card: 0 10px 30px rgba(0, 0, 0, .45);
 
   --grad-space:
-    radial-gradient(1040px circle at 12% -18%, rgba(45, 212, 191, 0.34) 0%, rgba(45, 212, 191, 0) 58%),
-    radial-gradient(980px circle at 92% -10%, rgba(185, 255, 59, 0.24) 0%, rgba(185, 255, 59, 0) 56%),
-    linear-gradient(162deg, #1b3140 0%, #142636 52%, #0f1c2b 100%);
+    radial-gradient(1200px circle at 10% -20%, rgba(255,127,107,0.18) 0%, transparent 58%),
+    radial-gradient(980px circle at 92% -8%, rgba(185,255,59,0.10) 0%, transparent 54%),
+    linear-gradient(160deg, #1a2e28 0%, #1a2332 58%, #0a1520 100%);
   --font-brand: 'Inter';
   --ambient-left: 45 212 191;
   --ambient-right: 185 255 59;
@@ -289,6 +292,10 @@
   --font-heading: 'Quicksand', sans-serif;
   --shadow-glow-cyan: 0 0 0 transparent;
   --shadow-glow-magenta: 0 0 0 transparent;
+}
+
+[data-theme='tropical'] .typo-section {
+  color: rgb(45 212 191);
 }
 
 /* ---------- Nocturne (Moonlit Alpine) ---------- */
@@ -696,21 +703,21 @@
 
 /* ---------- Hyperborea (Arctic Deep) ---------- */
 [data-theme='hyperborea'] {
-  --bg-deep: 10 21 37;
-  --bg-space: 15 28 48;
-  --surface-1: 25 38 58;
-  --surface-2: 42 58 82;
+  --bg-deep: 8 16 28;
+  --bg-space: 12 22 38;
+  --surface-1: 22 34 52;
+  --surface-2: 36 52 74;
   --border: 90 108 135;
   --cyan: 56 189 248;
   --magenta: 125 211 252;
   --violet: 99 179 237;
   --purple: 8 18 33;
   --lav: 203 213 225;
-  --text: 226 232 240;
-  --text-primary: 226 232 240;
-  --text-secondary: 148 163 184;
+  --text: 220 232 248;
+  --text-primary: 220 232 248;
+  --text-secondary: 140 165 200;
   --text-muted: 100 116 139;
-  --muted: 148 163 184;
+  --muted: 140 165 200;
   --success: 52 211 153;
   --warning: 251 191 36;
   --danger: 248 113 113;
@@ -719,7 +726,9 @@
   --shadow-glow-magenta: 0 0 20px rgba(125, 211, 252, 0.2);
   --shadow-card: 0 14px 32px rgba(0, 0, 0, 0.52);
 
-  --grad-space: linear-gradient(180deg, rgb(10 21 37) 0%, rgb(15 28 48) 100%);
+  --grad-space: linear-gradient(180deg, rgb(8 16 28) 0%, rgb(12 22 38) 100%);
+  --frost-overlay: rgba(56, 189, 248, 0.03);
+  --frost-border: rgba(56, 189, 248, 0.15);
   --ambient-glow: radial-gradient(ellipse at 50% 0%, rgba(56, 189, 248, 0.06) 0%, transparent 70%);
   --ambient-pulse: radial-gradient(ellipse at 50% 100%, rgba(125, 211, 252, 0.04) 0%, transparent 60%);
   --font-brand: 'Inter';

@@ -109,21 +109,21 @@ const slate: ThemeMeta = {
     oil: '#3b82f6',
     cash: '#10b981',
     lav: '#8b5cf6',
-    grid: '#1e293b',
-    text: '#475569',
-    surface: '#0f172a',
-    border: '#334155',
+    grid: '#373b44',
+    text: '#9ca0aa',
+    surface: '#12141b',
+    border: '#52565f',
   },
   mapPalette: {
-    gridColor: '#1e293b',
+    gridColor: '#23262f',
     gridOpacity: 0.3,
     selectedStroke: '#ffffff',
     glowColor: '#3b82f6',
-    unassignedFill: '#475569',
+    unassignedFill: '#52565f',
     lassoFill: 'rgba(59, 130, 246, 0.1)',
     lassoStroke: '#3b82f6',
     lassoDash: '4',
-    mapboxOverrides: { bgColor: '#0f172a', waterColor: '#1e293b', landColor: '#1a2744', labelColor: '#64748b', roadOpacity: 0.15 },
+    mapboxOverrides: { bgColor: '#12141b', waterColor: '#1c1f26', landColor: '#23262f', labelColor: '#9ca0aa', roadOpacity: 0.15 },
   },
   features: {
     retroGrid: false,
@@ -190,7 +190,7 @@ const tropical: ThemeMeta = {
   appSubtitle: 'Island Economics',
   chartPalette: {
     oil: '#2dd4bf',      // teal-400
-    cash: '#FF7F6B',     // coral
+    cash: '#B9FF3B',     // neon lime
     lav: '#c084fc',      // purple-400
     grid: 'rgba(45, 212, 191, 0.15)',
     text: '#94a3b8',
@@ -245,7 +245,7 @@ const league: ThemeMeta = {
     gridColor: '#2f476d',
     gridOpacity: 0.36,
     selectedStroke: '#f4d2a4',
-    glowColor: '#67c3ee',
+    glowColor: '#e9b067',
     unassignedFill: '#44638f',
     lassoFill: 'rgba(233, 176, 103, 0.15)',
     lassoStroke: '#e9b067',
