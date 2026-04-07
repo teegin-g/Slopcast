@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Well, ViewportBounds, SpatialLayerFilter, SpatialDataSourceId } from '../types';
 import { MOCK_WELLS } from '../constants';
-import { getSpatialSource, getStoredSpatialSourceId } from '../services/spatialService';
+import { getSpatialSource, getStoredSpatialSourceId, type DetailLevel } from '../services/spatialService';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -52,6 +52,12 @@ function boundsToKey(bounds: ViewportBounds): string {
   ].join(',');
 }
 
+function getDetailLevel(zoom: number, lateralsOn: boolean): DetailLevel {
+  if (zoom < 10) return 'points';
+  if (zoom >= 12 && lateralsOn) return 'full';
+  return 'summary';
+}
+
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
@@ -88,7 +94,9 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
     if (!mapBounds) return;
 
     const bounds = mapboxBoundsToViewport(mapBounds);
-    const key = boundsToKey(bounds);
+    const zoom = map.getZoom();
+    const detailLevel = getDetailLevel(zoom, includeLaterals);
+    const key = `${boundsToKey(bounds)}:${detailLevel}`;
 
     // Check cache
     const cached = cacheRef.current.get(key);
@@ -114,7 +122,7 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
     const spatialSource = getSpatialSource(sourceId);
 
     try {
-      const result = await spatialSource.fetchViewportWells(bounds, filters, { includeLaterals });
+      const result = await spatialSource.fetchViewportWells(bounds, filters, { includeLaterals, detailLevel });
 
       // Store in cache, evict oldest if full
       if (cacheRef.current.size >= MAX_CACHE_SIZE) {

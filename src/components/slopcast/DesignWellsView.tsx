@@ -25,15 +25,15 @@ interface DesignWellsViewProps {
   onCreateGroupFromSelection: () => void;
   onSelectAll: () => void;
   onClearSelection: () => void;
-  operatorFilter: string;
-  formationFilter: string;
-  statusFilter: Well['status'] | 'ALL';
+  operatorFilter: Set<string>;
+  formationFilter: Set<string>;
+  statusFilter: Set<string>;
   operatorOptions: string[];
   formationOptions: string[];
   statusOptions: Well['status'][];
-  onSetOperatorFilter: (value: string) => void;
-  onSetFormationFilter: (value: string) => void;
-  onSetStatusFilter: (value: Well['status'] | 'ALL') => void;
+  onToggleOperator: (value: string) => void;
+  onToggleFormation: (value: string) => void;
+  onToggleStatus: (value: string) => void;
   onResetFilters: () => void;
   filteredWellsCount: number;
   totalWellCount: number;
@@ -48,15 +48,15 @@ interface DesignWellsViewProps {
 const FiltersPanel: React.FC<{
   isClassic: boolean;
   theme: ThemeMeta;
-  operatorFilter: string;
-  formationFilter: string;
-  statusFilter: Well['status'] | 'ALL';
+  operatorFilter: Set<string>;
+  formationFilter: Set<string>;
+  statusFilter: Set<string>;
   operatorOptions: string[];
   formationOptions: string[];
   statusOptions: Well['status'][];
-  onSetOperatorFilter: (value: string) => void;
-  onSetFormationFilter: (value: string) => void;
-  onSetStatusFilter: (value: Well['status'] | 'ALL') => void;
+  onToggleOperator: (value: string) => void;
+  onToggleFormation: (value: string) => void;
+  onToggleStatus: (value: string) => void;
   onResetFilters: () => void;
   filteredWellsCount: number;
   totalWellCount: number;
@@ -69,32 +69,33 @@ const FiltersPanel: React.FC<{
   operatorOptions,
   formationOptions,
   statusOptions,
-  onSetOperatorFilter,
-  onSetFormationFilter,
-  onSetStatusFilter,
+  onToggleOperator,
+  onToggleFormation,
+  onToggleStatus,
   onResetFilters,
   filteredWellsCount,
   totalWellCount,
 }) => {
   const [expanded, setExpanded] = useState(false);
-  const hasActiveFilters = operatorFilter !== 'ALL' || formationFilter !== 'ALL' || statusFilter !== 'ALL';
+  const hasActiveFilters = operatorFilter.size > 0 || formationFilter.size > 0 || statusFilter.size > 0;
   const showSelects = expanded || hasActiveFilters;
 
   const activeChips: FilterChip[] = [
-    ...(operatorFilter !== 'ALL' ? [{ id: 'operator', value: operatorFilter, label: `Operator: ${operatorFilter}` }] : []),
-    ...(formationFilter !== 'ALL' ? [{ id: 'formation', value: formationFilter, label: `Formation: ${formationFilter}` }] : []),
-    ...(statusFilter !== 'ALL' ? [{ id: 'status', value: statusFilter, label: `Status: ${statusFilter}` }] : []),
+    ...[...operatorFilter].map(op => ({ id: `operator:${op}`, value: op, label: `Operator: ${op}` })),
+    ...[...formationFilter].map(f => ({ id: `formation:${f}`, value: f, label: `Formation: ${f}` })),
+    ...[...statusFilter].map(s => ({ id: `status:${s}`, value: s, label: `Status: ${s}` })),
   ];
 
   const handleRemoveChip = (id: string) => {
-    if (id === 'operator') onSetOperatorFilter('ALL');
-    if (id === 'formation') onSetFormationFilter('ALL');
-    if (id === 'status') onSetStatusFilter('ALL');
+    const [category, value] = id.split(':');
+    if (category === 'operator') onToggleOperator(value);
+    if (category === 'formation') onToggleFormation(value);
+    if (category === 'status') onToggleStatus(value);
   };
 
-  const selectClass = isClassic
-    ? 'w-full rounded-inner px-2 py-1.5 text-xs font-black sc-inputNavy focus-ring'
-    : 'w-full rounded-inner border border-theme-border bg-theme-bg px-2 py-1.5 text-xs text-theme-text theme-transition focus-ring focus:border-theme-cyan';
+  const checkboxClass = isClassic
+    ? 'text-[11px] font-bold text-white/80 hover:bg-white/10'
+    : 'text-[11px] font-bold text-theme-text hover:bg-theme-surface2';
 
   return (
     <div className={isClassic ? 'sc-panel theme-transition' : 'rounded-panel border bg-theme-surface1/80 border-theme-border theme-transition'}>
@@ -125,36 +126,42 @@ const FiltersPanel: React.FC<{
         <FilterChips filters={activeChips} onRemove={handleRemoveChip} />
       )}
 
-      {/* Compact inline selects */}
+      {/* Compact inline checkbox lists */}
       {showSelects && (
         <div className="px-3 py-2 grid grid-cols-3 gap-2">
-          <select
-            value={operatorFilter}
-            onChange={(e) => onSetOperatorFilter(e.target.value)}
-            data-testid="wells-filter-operator"
-            className={selectClass}
-          >
-            <option value="ALL">All Operators</option>
-            {operatorOptions.map(op => <option key={op} value={op}>{op}</option>)}
-          </select>
-          <select
-            value={formationFilter}
-            onChange={(e) => onSetFormationFilter(e.target.value)}
-            data-testid="wells-filter-formation"
-            className={selectClass}
-          >
-            <option value="ALL">All Formations</option>
-            {formationOptions.map(f => <option key={f} value={f}>{f}</option>)}
-          </select>
-          <select
-            value={statusFilter}
-            onChange={(e) => onSetStatusFilter(e.target.value as any)}
-            data-testid="wells-filter-status"
-            className={selectClass}
-          >
-            <option value="ALL">All Statuses</option>
-            {statusOptions.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <div>
+            <div className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isClassic ? 'text-white/50' : 'text-theme-muted'}`}>Operators</div>
+            <div className="max-h-32 overflow-y-auto space-y-0.5">
+              {operatorOptions.map(op => (
+                <label key={op} className={`flex items-center gap-1.5 px-1 py-0.5 rounded cursor-pointer ${checkboxClass}`}>
+                  <input type="checkbox" checked={operatorFilter.has(op)} onChange={() => onToggleOperator(op)} className="accent-[var(--cyan)]" />
+                  {op}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isClassic ? 'text-white/50' : 'text-theme-muted'}`}>Formations</div>
+            <div className="max-h-32 overflow-y-auto space-y-0.5">
+              {formationOptions.map(f => (
+                <label key={f} className={`flex items-center gap-1.5 px-1 py-0.5 rounded cursor-pointer ${checkboxClass}`}>
+                  <input type="checkbox" checked={formationFilter.has(f)} onChange={() => onToggleFormation(f)} className="accent-[var(--cyan)]" />
+                  {f}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isClassic ? 'text-white/50' : 'text-theme-muted'}`}>Statuses</div>
+            <div className="max-h-32 overflow-y-auto space-y-0.5">
+              {statusOptions.map(s => (
+                <label key={s} className={`flex items-center gap-1.5 px-1 py-0.5 rounded cursor-pointer ${checkboxClass}`}>
+                  <input type="checkbox" checked={statusFilter.has(s)} onChange={() => onToggleStatus(s)} className="accent-[var(--cyan)]" />
+                  {s}
+                </label>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -184,9 +191,9 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
   operatorOptions,
   formationOptions,
   statusOptions,
-  onSetOperatorFilter,
-  onSetFormationFilter,
-  onSetStatusFilter,
+  onToggleOperator,
+  onToggleFormation,
+  onToggleStatus,
   onResetFilters,
   filteredWellsCount,
   totalWellCount,
@@ -205,9 +212,9 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
   const mapHeightClass = isMobileMap ? 'h-[min(56vh,560px)]' : 'h-[min(64vh,620px)]';
 
   const activeFilters = [
-    ...(operatorFilter !== 'ALL' ? [{ label: 'Operator', value: operatorFilter }] : []),
-    ...(formationFilter !== 'ALL' ? [{ label: 'Formation', value: formationFilter }] : []),
-    ...(statusFilter !== 'ALL' ? [{ label: 'Status', value: statusFilter }] : []),
+    ...[...operatorFilter].map(op => ({ label: 'Operator', value: op })),
+    ...[...formationFilter].map(f => ({ label: 'Formation', value: f })),
+    ...[...statusFilter].map(s => ({ label: 'Status', value: s })),
   ];
 
   return (
@@ -275,9 +282,9 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
             operatorOptions={operatorOptions}
             formationOptions={formationOptions}
             statusOptions={statusOptions}
-            onSetOperatorFilter={onSetOperatorFilter}
-            onSetFormationFilter={onSetFormationFilter}
-            onSetStatusFilter={onSetStatusFilter}
+            onToggleOperator={onToggleOperator}
+            onToggleFormation={onToggleFormation}
+            onToggleStatus={onToggleStatus}
             onResetFilters={onResetFilters}
             filteredWellsCount={filteredWellsCount}
             totalWellCount={totalWellCount}

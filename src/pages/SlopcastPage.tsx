@@ -75,9 +75,9 @@ const SlopcastPage: React.FC = () => {
                     operatorOptions={ws.operatorOptions}
                     formationOptions={ws.formationOptions}
                     statusOptions={ws.statusOptions}
-                    onSetOperatorFilter={ws.setOperatorFilter}
-                    onSetFormationFilter={ws.setFormationFilter}
-                    onSetStatusFilter={(value) => ws.setStatusFilter(value)}
+                    onToggleOperator={ws.toggleOperator}
+                    onToggleFormation={ws.toggleFormation}
+                    onToggleStatus={ws.toggleStatus}
                     onResetFilters={ws.handleResetFilters}
                     filteredWellsCount={ws.filteredWells.length}
                     totalWellCount={ws.wells.length}
@@ -113,9 +113,9 @@ const SlopcastPage: React.FC = () => {
                   operatorOptions={ws.operatorOptions}
                   formationOptions={ws.formationOptions}
                   statusOptions={ws.statusOptions}
-                  onSetOperatorFilter={ws.setOperatorFilter}
-                  onSetFormationFilter={ws.setFormationFilter}
-                  onSetStatusFilter={(value) => ws.setStatusFilter(value)}
+                  onToggleOperator={ws.toggleOperator}
+                  onToggleFormation={ws.toggleFormation}
+                  onToggleStatus={ws.toggleStatus}
                   onResetFilters={ws.handleResetFilters}
                   filteredWellsCount={ws.filteredWells.length}
                   totalWellCount={ws.wells.length}

@@ -12,8 +12,11 @@ import { MOCK_WELLS } from '../constants';
 // Public types
 // ---------------------------------------------------------------------------
 
+export type DetailLevel = 'points' | 'summary' | 'full';
+
 export interface SpatialFetchOptions {
   includeLaterals?: boolean;
+  detailLevel?: DetailLevel;
 }
 
 export interface SpatialDataSource {
@@ -112,13 +115,16 @@ const liveSource: SpatialDataSource = {
   label: 'Live (Databricks)',
 
   async fetchViewportWells(bounds, filters, options) {
+    const detailLevel = options?.detailLevel ?? 'summary';
+    const limit = detailLevel === 'points' ? 5000 : detailLevel === 'full' ? 500 : 2000;
     return spatialFetch<SpatialWellsResponse>('/spatial/wells', {
       method: 'POST',
       body: JSON.stringify({
         bounds,
         filters,
-        limit: 2000,
-        include_trajectory: options?.includeLaterals ?? false,
+        limit,
+        detail_level: detailLevel,
+        include_trajectory: detailLevel === 'full',
       }),
     });
   },

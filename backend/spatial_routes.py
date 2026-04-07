@@ -16,11 +16,15 @@ def create_spatial_router() -> APIRouter:
 
     @router.post("/wells", response_model=SpatialWellsResponse)
     def spatial_wells(req: SpatialWellsRequest) -> SpatialWellsResponse:
+        # Backward compat: include_trajectory=True implies full
+        detail = req.detail_level
+        if req.include_trajectory and detail != "full":
+            detail = "full"
         return get_wells_in_bounds(
             bounds=req.bounds,
             filters=req.filters,
             limit=req.limit,
-            include_trajectory=req.include_trajectory,
+            detail_level=detail,
         )
 
     @router.get("/layers", response_model=SpatialLayersResponse)

@@ -32,9 +32,9 @@ const sameIdMap = (map: Record<string, string>) => Object.keys(map).every((key) 
 interface PersistenceUiState {
   designWorkspace: DesignWorkspace;
   economicsResultsTab: EconomicsResultsTab;
-  operatorFilter: string;
-  formationFilter: string;
-  statusFilter: Well['status'] | 'ALL';
+  operatorFilter: Set<string>;
+  formationFilter: Set<string>;
+  statusFilter: Set<string>;
 }
 
 interface UseProjectPersistenceArgs {
@@ -49,9 +49,9 @@ interface UseProjectPersistenceArgs {
   setActiveGroupId: Dispatch<SetStateAction<string>>;
   setDesignWorkspace: Dispatch<SetStateAction<DesignWorkspace>>;
   setEconomicsResultsTab: Dispatch<SetStateAction<EconomicsResultsTab>>;
-  setOperatorFilter: Dispatch<SetStateAction<string>>;
-  setFormationFilter: Dispatch<SetStateAction<string>>;
-  setStatusFilter: Dispatch<SetStateAction<Well['status'] | 'ALL'>>;
+  setOperatorFilter: Dispatch<SetStateAction<Set<string>>>;
+  setFormationFilter: Dispatch<SetStateAction<Set<string>>>;
+  setStatusFilter: Dispatch<SetStateAction<Set<string>>>;
   onStatusMessage?: (message: string) => void;
 }
 
@@ -120,9 +120,9 @@ export function useProjectPersistence({
       uiState: {
         designWorkspace: snapshot.uiState.designWorkspace,
         economicsResultsTab: snapshot.uiState.economicsResultsTab,
-        operatorFilter: snapshot.uiState.operatorFilter,
-        formationFilter: snapshot.uiState.formationFilter,
-        statusFilter: snapshot.uiState.statusFilter,
+        operatorFilter: snapshot.uiState.operatorFilter.size > 0 ? JSON.stringify([...snapshot.uiState.operatorFilter]) : 'ALL',
+        formationFilter: snapshot.uiState.formationFilter.size > 0 ? JSON.stringify([...snapshot.uiState.formationFilter]) : 'ALL',
+        statusFilter: snapshot.uiState.statusFilter.size > 0 ? JSON.stringify([...snapshot.uiState.statusFilter]) : 'ALL',
       },
       groups: snapshot.groups.map((group, index) => ({
         id: group.id,
@@ -297,16 +297,20 @@ export function useProjectPersistence({
           // Migrate old tabs to OVERVIEW
           setEconomicsResultsTab('OVERVIEW');
         }
-        if (typeof storedUi.operatorFilter === 'string') setOperatorFilter(storedUi.operatorFilter);
-        if (typeof storedUi.formationFilter === 'string') setFormationFilter(storedUi.formationFilter);
-        if (
-          storedUi.statusFilter === 'ALL' ||
-          storedUi.statusFilter === 'PRODUCING' ||
-          storedUi.statusFilter === 'DUC' ||
-          storedUi.statusFilter === 'PERMIT'
-        ) {
-          setStatusFilter(storedUi.statusFilter);
-        }
+        // Restore filter Sets from persisted data.
+        // New format: JSON array string (e.g. '["Acme","Bravo"]')
+        // Legacy format: single value string (e.g. 'Acme') or 'ALL'
+        const hydrateFilterSet = (raw: unknown): Set<string> => {
+          if (typeof raw !== 'string' || !raw || raw === 'ALL') return new Set();
+          try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return new Set(parsed.filter((v: unknown) => typeof v === 'string'));
+          } catch { /* not JSON — treat as legacy single value */ }
+          return new Set([raw]);
+        };
+        setOperatorFilter(hydrateFilterSet(storedUi.operatorFilter));
+        setFormationFilter(hydrateFilterSet(storedUi.formationFilter));
+        setStatusFilter(hydrateFilterSet(storedUi.statusFilter));
 
         queueMicrotask(() => {
           isHydratingRef.current = false;

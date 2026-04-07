@@ -1,10 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock spatialService before importing the hook
-vi.mock('../services/spatialService', () => ({
-  getSpatialSource: vi.fn(),
-  getStoredSpatialSourceId: vi.fn(),
-}));
+vi.mock('../services/spatialService', async (importOriginal) => {
+  const original = await importOriginal<typeof import('../services/spatialService')>();
+  return {
+    ...original,
+    getSpatialSource: vi.fn(),
+    getStoredSpatialSourceId: vi.fn(),
+  };
+});
 
 // Mock constants to avoid pulling in full mock dataset
 vi.mock('../constants', () => ({
@@ -27,13 +31,14 @@ function makeMockSource(id: 'mock' | 'live') {
   };
 }
 
-function makeMapStub() {
+function makeMapStub(zoom = 11) {
   const handlers: Record<string, (...args: unknown[]) => void> = {};
   return {
     getBounds: () => ({
       getSouthWest: () => ({ lat: 31, lng: -103 }),
       getNorthEast: () => ({ lat: 32, lng: -101 }),
     }),
+    getZoom: () => zoom,
     on: (event: string, fn: (...args: unknown[]) => void) => { handlers[event] = fn; },
     off: vi.fn(),
     _handlers: handlers,

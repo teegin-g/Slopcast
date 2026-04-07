@@ -46,20 +46,61 @@ const FRAGMENT_SOURCE = `
   varying float v_depth;
 
   void main() {
-    // Depth gradient: bright at surface, dimmer at depth
-    float depthFade = 1.0 - v_depth * 0.5;
+    // Gentle depth gradient: laterals stay bright, only the vertical
+    // kick section fades slightly. v_depth 0=surface, 1=deepest.
+    float depthFade = 1.0 - v_depth * 0.25;
     vec3 color = v_color.rgb * depthFade;
 
-    // Slight glow at surface (suppressed in reduced-motion)
-    float glow = (1.0 - v_depth) * 0.15 * (1.0 - u_reducedMotion);
-    gl_FragColor = vec4(color + glow, v_color.a * max(depthFade, 0.3));
+    // Surface glow: bright spot where wellbore meets the surface
+    float glow = (1.0 - v_depth) * 0.12 * (1.0 - u_reducedMotion);
+    gl_FragColor = vec4(color + glow, v_color.a * max(depthFade, 0.5));
   }
 `;
 
-// ── Depth exaggeration factor ───────────────────────────────────────────
-// Real depths (7000-8000ft) are tiny vs. horizontal extent (several km).
-// This multiplier makes wellbores visible. Tunable.
-const DEPTH_EXAGGERATION = 15;
+// ── Depth mapping ───────────────────────────────────────────────────────
+// Instead of linearly exaggerating absolute depth (which buries laterals
+// far below the surface), we compress the vertical section and expand
+// bench separation near the landing zone. This keeps laterals visible
+// as a thin subsurface layer while preserving ~200-500ft formation offsets.
+//
+// Strategy: map depth through a log-like curve that compresses the
+// vertical section (0-7000ft) into a small Z range but preserves
+// relative separation between benches (7000-9000ft range).
+
+/** Base Z offset — how far below surface the shallowest lateral appears */
+const LATERAL_Z_OFFSET = 3;
+
+/** Bench separation multiplier — controls vertical spacing between formations.
+ *  Higher = more visible separation between Wolfcamp A/B/Bone Spring.
+ *  At 80, a 500ft bench separation ≈ 40,000ft of visual Z separation
+ *  in mercator units, which is clearly visible when tilted. */
+const BENCH_EXAGGERATION = 80;
+
+/** Depth at which the landing zone begins (typical Permian KOP). Wells
+ *  shallower than this get compressed; deeper wells get bench exaggeration. */
+const LANDING_ZONE_FT = 6000;
+
+/**
+ * Map real depth to visual Z. Compresses the vertical section (surface to
+ * landing zone) into a small offset, then exaggerates bench separation
+ * for the lateral section.
+ */
+function mapDepthToVisualZ(depthFt: number, lat: number): number {
+  const baseZ = depthFtToMercatorZ(1, lat); // 1-foot in mercator Z
+
+  if (depthFt <= 0) return 0;
+
+  if (depthFt < LANDING_ZONE_FT) {
+    // Vertical section: compress into LATERAL_Z_OFFSET range using sqrt curve
+    const t = depthFt / LANDING_ZONE_FT; // 0 to 1
+    return baseZ * LATERAL_Z_OFFSET * Math.sqrt(t) * LANDING_ZONE_FT;
+  }
+
+  // Lateral section: base offset + exaggerated bench separation
+  const baseOffset = baseZ * LATERAL_Z_OFFSET * LANDING_ZONE_FT;
+  const benchDepth = depthFt - LANDING_ZONE_FT;
+  return baseOffset + baseZ * benchDepth * BENCH_EXAGGERATION;
+}
 
 // ── Wellbore data fed to the layer ──────────────────────────────────────
 export interface WellboreData {
@@ -306,7 +347,7 @@ export class MapWellboreLayer {
         // Vertex for p0
         data[writeOffset++] = lngToMercatorX(p0.lng);
         data[writeOffset++] = latToMercatorY(p0.lat);
-        data[writeOffset++] = depthFtToMercatorZ(p0.depthFt, p0.lat) * DEPTH_EXAGGERATION;
+        data[writeOffset++] = mapDepthToVisualZ(p0.depthFt, p0.lat);
         data[writeOffset++] = r;
         data[writeOffset++] = g;
         data[writeOffset++] = b;
@@ -316,7 +357,7 @@ export class MapWellboreLayer {
         // Vertex for p1
         data[writeOffset++] = lngToMercatorX(p1.lng);
         data[writeOffset++] = latToMercatorY(p1.lat);
-        data[writeOffset++] = depthFtToMercatorZ(p1.depthFt, p1.lat) * DEPTH_EXAGGERATION;
+        data[writeOffset++] = mapDepthToVisualZ(p1.depthFt, p1.lat);
         data[writeOffset++] = r;
         data[writeOffset++] = g;
         data[writeOffset++] = b;

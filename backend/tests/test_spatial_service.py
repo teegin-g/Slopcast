@@ -121,3 +121,64 @@ def test_trajectory_cache_is_separate_from_non_trajectory():
         assert w.trajectory is None
     for w in resp_traj.wells:
         assert w.trajectory is not None
+
+
+def test_detail_level_points_strips_fields():
+    """detail_level='points' should return only id/lat/lng/status — no name, operator, formation."""
+    resp = get_wells_in_bounds(bounds=_wide_bounds(), detail_level="points")
+    assert resp.source == "mock"
+    assert len(resp.wells) > 0
+    for w in resp.wells:
+        assert w.name == ""
+        assert w.operator == ""
+        assert w.formation == ""
+        assert w.lateralLength == 0
+        assert w.trajectory is None
+        # Core fields must still be populated
+        assert w.id != ""
+        assert w.lat != 0.0
+        assert w.lng != 0.0
+        assert w.status in ("PRODUCING", "DUC", "PERMIT")
+
+
+def test_detail_level_summary_has_full_fields():
+    """detail_level='summary' (default) should return all well fields without trajectory."""
+    resp = get_wells_in_bounds(bounds=_wide_bounds(), detail_level="summary")
+    assert resp.source == "mock"
+    for w in resp.wells:
+        assert w.name != ""
+        assert w.operator != ""
+        assert w.formation != ""
+        assert w.trajectory is None
+
+
+def test_detail_level_full_attaches_trajectory():
+    """detail_level='full' should attach trajectory to every well."""
+    resp = get_wells_in_bounds(bounds=_wide_bounds(), detail_level="full")
+    assert resp.source == "mock"
+    for w in resp.wells:
+        assert w.trajectory is not None
+
+
+def test_detail_level_caches_independently():
+    """points and summary must not share a cache entry."""
+    bounds = _wide_bounds()
+    resp_points = get_wells_in_bounds(bounds=bounds, detail_level="points")
+    resp_summary = get_wells_in_bounds(bounds=bounds, detail_level="summary")
+    assert resp_points is not resp_summary
+
+
+def test_include_trajectory_backward_compat_implies_full():
+    """include_trajectory=True without explicit detail_level must behave as detail_level='full'."""
+    resp = get_wells_in_bounds(bounds=_wide_bounds(), include_trajectory=True)
+    assert resp.source == "mock"
+    for w in resp.wells:
+        assert w.trajectory is not None
+
+
+def test_include_trajectory_does_not_override_explicit_full():
+    """include_trajectory=True with detail_level='full' should still work correctly."""
+    resp = get_wells_in_bounds(bounds=_wide_bounds(), include_trajectory=True, detail_level="full")
+    assert resp.source == "mock"
+    for w in resp.wells:
+        assert w.trajectory is not None

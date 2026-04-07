@@ -13,9 +13,9 @@ export type ModelPresetScope = 'user' | 'organization';
 export interface ProjectUiState {
   designWorkspace?: 'WELLS' | 'ECONOMICS';
   economicsResultsTab?: 'OVERVIEW' | 'CASH_FLOW' | 'RESERVES';
-  operatorFilter?: string;
-  formationFilter?: string;
-  statusFilter?: Well['status'] | 'ALL';
+  operatorFilter?: string | string[];
+  formationFilter?: string | string[];
+  statusFilter?: string | string[];
 }
 
 export interface ProjectRecord {

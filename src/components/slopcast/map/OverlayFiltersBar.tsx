@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { Well } from '../../../types';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { overlayPanelClass } from '../../../theme/themes';
@@ -9,19 +9,104 @@ interface OverlayFiltersBarProps {
   selectedCount: number;
   totalCount: number;
   groupsPanelOpen: boolean;
-  operatorFilter: string;
-  formationFilter: string;
-  statusFilter: Well['status'] | 'ALL';
+  operatorFilter: Set<string>;
+  formationFilter: Set<string>;
+  statusFilter: Set<string>;
   operatorOptions: string[];
   formationOptions: string[];
   statusOptions: Well['status'][];
-  onSetOperatorFilter: (v: string) => void;
-  onSetFormationFilter: (v: string) => void;
-  onSetStatusFilter: (v: Well['status'] | 'ALL') => void;
+  onToggleOperator: (v: string) => void;
+  onToggleFormation: (v: string) => void;
+  onToggleStatus: (v: string) => void;
   onResetFilters: () => void;
   onSelectAll: () => void;
   onClearSelection: () => void;
 }
+
+// ─── Multi-select dropdown ─────────────────────────────────────────
+
+interface FilterDropdownProps {
+  label: string;
+  selected: Set<string>;
+  options: string[];
+  onToggle: (value: string) => void;
+  isClassic: boolean;
+  selectClass: string;
+  testId: string;
+}
+
+const FilterDropdown: React.FC<FilterDropdownProps> = ({
+  label,
+  selected,
+  options,
+  onToggle,
+  isClassic,
+  selectClass,
+  testId,
+}) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const buttonLabel = selected.size === 0
+    ? `All ${label}`
+    : `${selected.size} ${label}`;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        data-testid={testId}
+        className={selectClass}
+        onClick={() => setOpen(prev => !prev)}
+      >
+        {buttonLabel}
+        <span className="ml-1 opacity-50">{open ? '\u25B4' : '\u25BE'}</span>
+      </button>
+      {open && (
+        <div
+          className={`absolute top-full left-0 mt-1 min-w-[140px] max-h-48 overflow-y-auto z-30 ${
+            isClassic
+              ? 'rounded-inner bg-[#1a1a2e] border border-white/20 shadow-lg'
+              : 'rounded-inner border border-[var(--border)] bg-[var(--bg-deep)] shadow-lg backdrop-blur-sm'
+          }`}
+        >
+          {options.map(opt => (
+            <label
+              key={opt}
+              className={`flex items-center gap-2 px-2 py-1 text-[10px] font-bold cursor-pointer transition-colors ${
+                isClassic
+                  ? 'text-white/80 hover:bg-white/10'
+                  : 'text-[var(--text-primary)] hover:bg-[var(--surface-2)]'
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={selected.has(opt)}
+                onChange={() => onToggle(opt)}
+                className="accent-[var(--cyan)]"
+              />
+              {opt}
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── Filters bar ───────────────────────────────────────────────────
 
 export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
   isClassic,
@@ -35,14 +120,14 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
   operatorOptions,
   formationOptions,
   statusOptions,
-  onSetOperatorFilter,
-  onSetFormationFilter,
-  onSetStatusFilter,
+  onToggleOperator,
+  onToggleFormation,
+  onToggleStatus,
   onResetFilters,
   onSelectAll,
   onClearSelection,
 }) => {
-  const hasActiveFilters = operatorFilter !== 'ALL' || formationFilter !== 'ALL' || statusFilter !== 'ALL';
+  const hasActiveFilters = operatorFilter.size > 0 || formationFilter.size > 0 || statusFilter.size > 0;
   const { theme } = useTheme();
 
   const panelClass = isClassic
@@ -77,35 +162,35 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
           {/* Divider */}
           <div className={`w-px h-4 ${isClassic ? 'bg-white/20' : 'bg-[var(--border)]'}`} />
 
-          {/* Compact filter selects */}
+          {/* Multi-select filter dropdowns */}
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <select
-              value={operatorFilter}
-              onChange={e => onSetOperatorFilter(e.target.value)}
-              data-testid="wells-filter-operator"
-              className={selectClass}
-            >
-              <option value="ALL">All Operators</option>
-              {operatorOptions.map(op => <option key={op} value={op}>{op}</option>)}
-            </select>
-            <select
-              value={formationFilter}
-              onChange={e => onSetFormationFilter(e.target.value)}
-              data-testid="wells-filter-formation"
-              className={selectClass}
-            >
-              <option value="ALL">All Formations</option>
-              {formationOptions.map(f => <option key={f} value={f}>{f}</option>)}
-            </select>
-            <select
-              value={statusFilter}
-              onChange={e => onSetStatusFilter(e.target.value as Well['status'] | 'ALL')}
-              data-testid="wells-filter-status"
-              className={selectClass}
-            >
-              <option value="ALL">All Statuses</option>
-              {statusOptions.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+            <FilterDropdown
+              label="Operators"
+              selected={operatorFilter}
+              options={operatorOptions}
+              onToggle={onToggleOperator}
+              isClassic={isClassic}
+              selectClass={selectClass}
+              testId="wells-filter-operator"
+            />
+            <FilterDropdown
+              label="Formations"
+              selected={formationFilter}
+              options={formationOptions}
+              onToggle={onToggleFormation}
+              isClassic={isClassic}
+              selectClass={selectClass}
+              testId="wells-filter-formation"
+            />
+            <FilterDropdown
+              label="Statuses"
+              selected={statusFilter}
+              options={statusOptions}
+              onToggle={onToggleStatus}
+              isClassic={isClassic}
+              selectClass={selectClass}
+              testId="wells-filter-status"
+            />
           </div>
 
           {/* Reset */}

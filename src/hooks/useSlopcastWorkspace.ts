@@ -220,9 +220,9 @@ export function useSlopcastWorkspace() {
 
   // --- Well filtering & selection (delegated to extracted hooks) ---
   const {
-    operatorFilter, setOperatorFilter,
-    formationFilter, setFormationFilter,
-    statusFilter, setStatusFilter,
+    operatorFilter, toggleOperator, replaceOperatorFilter,
+    formationFilter, toggleFormation, replaceFormationFilter,
+    statusFilter, toggleStatus, replaceStatusFilter,
     operatorOptions, formationOptions, statusOptions,
     filteredWells, visibleWellIds, dimmedWellIds,
     handleResetFilters,
@@ -294,9 +294,9 @@ export function useSlopcastWorkspace() {
     setActiveGroupId,
     setDesignWorkspace,
     setEconomicsResultsTab,
-    setOperatorFilter,
-    setFormationFilter,
-    setStatusFilter,
+    setOperatorFilter: replaceOperatorFilter,
+    setFormationFilter: replaceFormationFilter,
+    setStatusFilter: replaceStatusFilter,
     onStatusMessage: setActionMessage,
   });
 
@@ -728,10 +728,10 @@ export function useSlopcastWorkspace() {
     setShowAfterTax: () => setShowAfterTax(prev => !prev),
     setShowLevered: () => setShowLevered(prev => !prev),
 
-    // Filters
-    operatorFilter, setOperatorFilter,
-    formationFilter, setFormationFilter,
-    statusFilter, setStatusFilter,
+    // Filters (multi-select: Set<string>, empty = all)
+    operatorFilter, toggleOperator,
+    formationFilter, toggleFormation,
+    statusFilter, toggleStatus,
     operatorOptions, formationOptions, statusOptions,
     handleResetFilters,
 

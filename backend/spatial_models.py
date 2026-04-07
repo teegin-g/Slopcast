@@ -6,6 +6,8 @@ from pydantic import BaseModel, Field
 
 from .models import Well, WellStatus
 
+DetailLevel = Literal["points", "summary", "full"]
+
 
 class ViewportBounds(BaseModel):
     sw_lat: float = Field(..., ge=-90, le=90, description="Southwest latitude")
@@ -25,7 +27,8 @@ class SpatialWellsRequest(BaseModel):
     bounds: ViewportBounds
     filters: SpatialLayerFilter | None = None
     limit: int = Field(2000, ge=1, le=10000)
-    include_trajectory: bool = False
+    include_trajectory: bool = False  # kept for backward compat
+    detail_level: DetailLevel = "summary"
 
 
 class SpatialWellsResponse(BaseModel):

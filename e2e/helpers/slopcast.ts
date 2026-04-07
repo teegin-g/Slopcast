@@ -307,31 +307,39 @@ export class SlopcastApp {
   }
 
   async setNonDefaultOperator(): Promise<string | null> {
-    const operatorSelect = await this.ensureOperatorFilterVisible();
-    await expect
-      .poll(async () => {
-        return await operatorSelect.evaluate((element) => (element as HTMLSelectElement).options.length);
-      })
-      .toBeGreaterThan(1);
+    const operatorButton = await this.ensureOperatorFilterVisible();
 
-    const nextValue = await operatorSelect.evaluate((element) => {
-      const select = element as HTMLSelectElement;
-      const nextOption = Array.from(select.options).find((option) => option.value !== 'ALL');
-      return nextOption?.value ?? null;
-    });
+    // Open the dropdown
+    await operatorButton.click();
 
-    if (!nextValue) {
+    // Wait for checkbox options to appear
+    const dropdown = operatorButton.locator('..').locator('div').first();
+    await expect(dropdown).toBeVisible({ timeout: 3_000 });
+
+    // Find the first checkbox label
+    const firstCheckbox = dropdown.locator('label').first();
+    if (!(await firstCheckbox.isVisible().catch(() => false))) {
       return null;
     }
 
-    await operatorSelect.selectOption(nextValue);
-    await expect.poll(async () => this.readOperatorValue()).toBe(nextValue);
-    return nextValue;
+    const operatorName = await firstCheckbox.textContent();
+    await firstCheckbox.click();
+
+    // Close dropdown by clicking the button again
+    await operatorButton.click();
+
+    // Return a consistent identifier: "1 Operators" (the button label after selecting)
+    await expect.poll(async () => this.readOperatorValue()).not.toBe('ALL');
+    return await this.readOperatorValue();
   }
 
   async readOperatorValue(): Promise<string | null> {
-    const operatorSelect = await this.ensureOperatorFilterVisible();
-    return await operatorSelect.inputValue();
+    const operatorButton = await this.ensureOperatorFilterVisible();
+    const text = await operatorButton.textContent();
+    // Button shows "All Operators" when no filter, or "1 Operators" / operator name when filtered
+    if (!text || text.includes('All ')) return 'ALL';
+    // If filtered, return the button text (e.g., "1 Operators")
+    return text.replace(/\s*[▴▾]\s*$/, '').trim();
   }
 
   async selectAllVisibleWells(): Promise<void> {
@@ -354,7 +362,10 @@ export class SlopcastApp {
     const resetButton = this.page.getByRole('button', { name: 'Reset', exact: true }).first();
     if (await resetButton.isVisible().catch(() => false)) {
       await resetButton.click();
-      await expect.poll(async () => this.readOperatorValue()).toBe('ALL');
+      await expect.poll(async () => {
+        const val = await this.readOperatorValue();
+        return val === 'ALL' || val?.includes('All');
+      }).toBeTruthy();
     }
 
     if ((await this.readSelectedVisibleWellCount()) > 0) {

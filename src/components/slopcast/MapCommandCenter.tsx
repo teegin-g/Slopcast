@@ -35,15 +35,15 @@ interface MapCommandCenterProps {
   onCreateGroupFromSelection: () => void;
   onSelectAll: () => void;
   onClearSelection: () => void;
-  operatorFilter: string;
-  formationFilter: string;
-  statusFilter: Well['status'] | 'ALL';
+  operatorFilter: Set<string>;
+  formationFilter: Set<string>;
+  statusFilter: Set<string>;
   operatorOptions: string[];
   formationOptions: string[];
   statusOptions: Well['status'][];
-  onSetOperatorFilter: (value: string) => void;
-  onSetFormationFilter: (value: string) => void;
-  onSetStatusFilter: (value: Well['status'] | 'ALL') => void;
+  onToggleOperator: (value: string) => void;
+  onToggleFormation: (value: string) => void;
+  onToggleStatus: (value: string) => void;
   onResetFilters: () => void;
   filteredWellsCount: number;
   totalWellCount: number;
@@ -105,9 +105,9 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   operatorOptions,
   formationOptions,
   statusOptions,
-  onSetOperatorFilter,
-  onSetFormationFilter,
-  onSetStatusFilter,
+  onToggleOperator,
+  onToggleFormation,
+  onToggleStatus,
   onResetFilters,
   filteredWellsCount,
   totalWellCount,
@@ -173,8 +173,38 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     if (dataLayers.producing) statuses.push('PRODUCING');
     if (dataLayers.duc) statuses.push('DUC');
     if (dataLayers.permit) statuses.push('PERMIT');
-    return { statuses: statuses.length > 0 ? statuses : undefined };
-  }, [dataLayers]);
+
+    // Pass operator/formation filter sets to the backend query.
+    // Empty set means "no filter" (show all), matching useWellFiltering semantics.
+    const operators = operatorFilter.size > 0 ? [...operatorFilter] : undefined;
+    const formations = formationFilter.size > 0 ? [...formationFilter] : undefined;
+
+    return {
+      statuses: statuses.length > 0 ? statuses : undefined,
+      operators,
+      formations,
+    };
+  }, [dataLayers, operatorFilter, formationFilter]);
+
+  // Compute all well IDs in groups that contain at least one selected well
+  const groupLateralWellIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const group of groups) {
+      let groupHasSelectedWell = false;
+      for (const wid of selectedWellIds) {
+        if (group.wellIds.has(wid)) {
+          groupHasSelectedWell = true;
+          break;
+        }
+      }
+      if (groupHasSelectedWell) {
+        for (const wid of group.wellIds) {
+          ids.add(wid);
+        }
+      }
+    }
+    return ids;
+  }, [groups, selectedWellIds]);
 
   const {
     wells: viewportWells,
@@ -190,7 +220,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     isLoaded,
     filters: spatialFilters,
     dataSourceId,
-    includeLaterals: dataLayers.laterals,
+    includeLaterals: dataLayers.laterals || groupLateralWellIds.size > 0,
   });
 
   // Reset error dismissal when a new error arrives
@@ -243,17 +273,16 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     selectionTrail?.setColor(mp.lassoStroke);
   }, [selectionTrail, mp.lassoStroke]);
 
-  // Feed wellbore data when laterals toggle is on and wells have trajectory
+  // Feed wellbore data: toggle ON shows all, toggle OFF shows group members of any selected well
   useEffect(() => {
     if (!wellboreLayer) return;
 
-    if (!dataLayers.laterals) {
-      wellboreLayer.setWellbores([]);
-      return;
-    }
-
     const wellboreData: WellboreData[] = effectiveWells
-      .filter(w => w.trajectory && w.trajectory.path.length >= 2)
+      .filter(w => {
+        if (!w.trajectory || w.trajectory.path.length < 2) return false;
+        if (dataLayers.laterals) return true;
+        return groupLateralWellIds.has(w.id);
+      })
       .map(w => ({
         id: w.id,
         path: w.trajectory!.path,
@@ -262,7 +291,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
       }));
 
     wellboreLayer.setWellbores(wellboreData);
-  }, [wellboreLayer, effectiveWells, dataLayers.laterals, getWellColor, selectedWellIds]);
+  }, [wellboreLayer, effectiveWells, dataLayers.laterals, getWellColor, selectedWellIds, groupLateralWellIds]);
 
   // Status-differentiated well layer IDs (glow halo is rendered under these)
   const wellLayerIds = useMemo(() => ['wells-producing', 'wells-duc', 'wells-permit'] as const, []);
@@ -472,8 +501,8 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
       type: 'geojson',
       data: wellsGeoJson,
       cluster: true,
-      clusterRadius: 50,
-      clusterMaxZoom: 11,
+      clusterRadius: 100,
+      clusterMaxZoom: 12,
     });
 
     // Cluster circles
@@ -484,8 +513,10 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
       filter: ['has', 'point_count'],
       paint: {
         'circle-radius': [
-          'interpolate', ['linear'], ['get', 'point_count'],
-          10, 15, 50, 25, 100, 35,
+          'interpolate', ['linear'], ['zoom'],
+          5, ['interpolate', ['linear'], ['get', 'point_count'], 10, 20, 50, 30, 200, 40],
+          8, ['interpolate', ['linear'], ['get', 'point_count'], 10, 15, 50, 22, 200, 30],
+          11, ['interpolate', ['linear'], ['get', 'point_count'], 10, 12, 50, 18, 100, 22],
         ],
         'circle-color': clusterColor,
         'circle-opacity': 0.7,
@@ -503,7 +534,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
       filter: ['has', 'point_count'],
       layout: {
         'text-field': ['get', 'point_count_abbreviated'],
-        'text-size': 12,
+        'text-size': ['interpolate', ['linear'], ['zoom'], 5, 14, 8, 12, 11, 10],
         'text-allow-overlap': true,
       },
       paint: { 'text-color': clusterTextColor },
@@ -598,15 +629,20 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
           type: 'geojson',
           data: wellsGeoJson,
           cluster: true,
-          clusterRadius: 50,
-          clusterMaxZoom: 11,
+          clusterRadius: 100,
+          clusterMaxZoom: 12,
         });
         // Cluster circles
         map.addLayer({
           id: 'wells-clusters', type: 'circle', source: sourceId,
           filter: ['has', 'point_count'],
           paint: {
-            'circle-radius': ['interpolate', ['linear'], ['get', 'point_count'], 10, 15, 50, 25, 100, 35],
+            'circle-radius': [
+              'interpolate', ['linear'], ['zoom'],
+              5, ['interpolate', ['linear'], ['get', 'point_count'], 10, 20, 50, 30, 200, 40],
+              8, ['interpolate', ['linear'], ['get', 'point_count'], 10, 15, 50, 22, 200, 30],
+              11, ['interpolate', ['linear'], ['get', 'point_count'], 10, 12, 50, 18, 100, 22],
+            ],
             'circle-color': clusterColor, 'circle-opacity': 0.7,
             'circle-stroke-width': 2, 'circle-stroke-color': clusterColor, 'circle-stroke-opacity': 0.4,
           },
@@ -615,7 +651,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
         map.addLayer({
           id: 'wells-cluster-count', type: 'symbol', source: sourceId,
           filter: ['has', 'point_count'],
-          layout: { 'text-field': ['get', 'point_count_abbreviated'], 'text-size': 12, 'text-allow-overlap': true },
+          layout: { 'text-field': ['get', 'point_count_abbreviated'], 'text-size': ['interpolate', ['linear'], ['zoom'], 5, 14, 8, 12, 11, 10], 'text-allow-overlap': true },
           paint: { 'text-color': clusterTextColor },
         });
         // Status-differentiated well layers
@@ -717,9 +753,9 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
           operatorOptions={operatorOptions}
           formationOptions={formationOptions}
           statusOptions={statusOptions}
-          onSetOperatorFilter={onSetOperatorFilter}
-          onSetFormationFilter={onSetFormationFilter}
-          onSetStatusFilter={onSetStatusFilter}
+          onToggleOperator={onToggleOperator}
+          onToggleFormation={onToggleFormation}
+          onToggleStatus={onToggleStatus}
           onResetFilters={onResetFilters}
           onSelectAll={onSelectAll}
           onClearSelection={onClearSelection}

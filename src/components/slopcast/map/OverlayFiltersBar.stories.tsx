@@ -11,15 +11,15 @@ const meta = {
     selectedCount: 8,
     totalCount: 40,
     groupsPanelOpen: false,
-    operatorFilter: 'ALL',
-    formationFilter: 'ALL',
-    statusFilter: 'ALL',
+    operatorFilter: new Set<string>(),
+    formationFilter: new Set<string>(),
+    statusFilter: new Set<string>(),
     operatorOptions: ['Pioneer', 'Devon', 'ConocoPhillips'],
     formationOptions: ['Wolfcamp A', 'Bone Spring', 'Spraberry'],
     statusOptions: ['PRODUCING', 'DUC', 'PERMIT'],
-    onSetOperatorFilter: fn(),
-    onSetFormationFilter: fn(),
-    onSetStatusFilter: fn(),
+    onToggleOperator: fn(),
+    onToggleFormation: fn(),
+    onToggleStatus: fn(),
     onResetFilters: fn(),
     onSelectAll: fn(),
     onClearSelection: fn(),
@@ -34,8 +34,8 @@ export const Default: Story = {};
 
 export const ActiveFilters: Story = {
   args: {
-    operatorFilter: 'Pioneer',
-    formationFilter: 'Wolfcamp A',
+    operatorFilter: new Set(['Pioneer']),
+    formationFilter: new Set(['Wolfcamp A']),
     visibleCount: 12,
   },
 };

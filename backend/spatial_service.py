@@ -23,6 +23,7 @@ from dotenv import load_dotenv
 
 from .models import Well, WellStatus, WellTrajectory, WellTrajectoryPoint
 from .spatial_models import (
+    DetailLevel,
     SpatialLayer,
     SpatialLayerFilter,
     SpatialLayersResponse,
@@ -175,7 +176,7 @@ def _cache_key(
     bounds: ViewportBounds,
     filters: SpatialLayerFilter | None,
     limit: int,
-    include_trajectory: bool,
+    detail_level: DetailLevel,
 ) -> str:
     f_str = ""
     if filters:
@@ -187,7 +188,7 @@ def _cache_key(
         )
     return (
         f"{bounds.sw_lat},{bounds.sw_lng},{bounds.ne_lat},{bounds.ne_lng}"
-        f"|{f_str}|{limit}|traj={include_trajectory}"
+        f"|{f_str}|{limit}|detail={detail_level}"
     )
 
 
@@ -201,6 +202,7 @@ def get_wells_in_bounds(
     filters: SpatialLayerFilter | None = None,
     limit: int = 2000,
     include_trajectory: bool = False,
+    detail_level: DetailLevel = "summary",
 ) -> SpatialWellsResponse:
     """
     Return wells within the given viewport bounds.
@@ -208,19 +210,26 @@ def get_wells_in_bounds(
     Uses Databricks SQL Warehouse when credentials are available; falls back
     to deterministic mock data otherwise.
 
-    When include_trajectory=True, each well is augmented with a WellTrajectory
-    built from 3 key survey stations (surface, heel, toe) from
-    eds.well.tbl_directional_survey.
+    detail_level controls query verbosity:
+      - "points": id, lat, lng, status only (~90% less data, for cluster rendering)
+      - "summary": all well fields except trajectory (default)
+      - "full": summary + directional survey trajectory
+
+    include_trajectory=True is kept for backward compat and implies detail_level="full".
     """
-    key = _cache_key(bounds, filters, limit, include_trajectory)
+    # Backward compat: include_trajectory=True implies full
+    if include_trajectory and detail_level != "full":
+        detail_level = "full"
+
+    key = _cache_key(bounds, filters, limit, detail_level)
     if key in _cache:
         return _cache[key]
 
     conn = _get_db_connection()
     if conn is not None:
-        result = _query_databricks(conn, bounds, filters, limit, include_trajectory)
+        result = _query_databricks(conn, bounds, filters, limit, detail_level)
     else:
-        result = _query_mock(bounds, filters, limit, include_trajectory)
+        result = _query_mock(bounds, filters, limit, detail_level)
 
     _cache[key] = result
     return result
@@ -291,24 +300,13 @@ def _query_databricks(
     bounds: ViewportBounds,
     filters: SpatialLayerFilter | None,
     limit: int,
-    include_trajectory: bool = False,
+    detail_level: DetailLevel = "summary",
 ) -> SpatialWellsResponse:
     catalog = os.getenv("DATABRICKS_CATALOG", "eds")
     schema = os.getenv("DATABRICKS_SCHEMA", "well")
     table = os.getenv("DATABRICKS_WELLS_TABLE", "tbl_well_summary_all")
     full_table = f"{catalog}.{schema}.{table}"
 
-    sql = f"""
-        SELECT api_14, well_name,
-               sh_latitude_nad27, sh_longitude_nad27,
-               bh_latitude_nad27, bh_longitude_nad27,
-               lateral_length, well_status, operator, formation
-        FROM {full_table}
-        WHERE sh_latitude_nad27 BETWEEN %(sw_lat)s AND %(ne_lat)s
-          AND sh_longitude_nad27 BETWEEN %(sw_lng)s AND %(ne_lng)s
-          AND sh_latitude_nad27 IS NOT NULL
-        LIMIT %(limit)s
-    """
     params = {
         "sw_lat": bounds.sw_lat,
         "ne_lat": bounds.ne_lat,
@@ -317,6 +315,43 @@ def _query_databricks(
         "limit": limit,
     }
 
+    # Build optional SQL filter clauses for operators/formations.
+    # Use string interpolation for the IN list (values are operator/formation
+    # names from our own filter state, not user-supplied free text).
+    extra_where = ""
+    if filters:
+        if filters.statuses:
+            status_list = ", ".join(f"'{s}'" for s in filters.statuses)
+            extra_where += f"  AND well_status IN ({status_list})\n"
+        if filters.operators:
+            op_list = ", ".join(f"'{o.replace(chr(39), chr(39)*2)}'" for o in filters.operators)
+            extra_where += f"  AND operator IN ({op_list})\n"
+        if filters.formations:
+            fm_list = ", ".join(f"'{f.replace(chr(39), chr(39)*2)}'" for f in filters.formations)
+            extra_where += f"  AND formation IN ({fm_list})\n"
+
+    if detail_level == "points":
+        sql = f"""
+            SELECT api_14, sh_latitude_nad27, sh_longitude_nad27, well_status
+            FROM {full_table}
+            WHERE sh_latitude_nad27 BETWEEN %(sw_lat)s AND %(ne_lat)s
+              AND sh_longitude_nad27 BETWEEN %(sw_lng)s AND %(ne_lng)s
+              AND sh_latitude_nad27 IS NOT NULL
+{extra_where}            LIMIT %(limit)s
+        """
+    else:
+        sql = f"""
+            SELECT api_14, well_name,
+                   sh_latitude_nad27, sh_longitude_nad27,
+                   bh_latitude_nad27, bh_longitude_nad27,
+                   lateral_length, well_status, operator, formation
+            FROM {full_table}
+            WHERE sh_latitude_nad27 BETWEEN %(sw_lat)s AND %(ne_lat)s
+              AND sh_longitude_nad27 BETWEEN %(sw_lng)s AND %(ne_lng)s
+              AND sh_latitude_nad27 IS NOT NULL
+{extra_where}            LIMIT %(limit)s
+        """
+
     try:
         with conn.cursor() as cursor:
             cursor.execute(sql, params)
@@ -324,10 +359,41 @@ def _query_databricks(
             cols = [d[0] for d in cursor.description]
     except Exception as exc:  # noqa: BLE001
         logger.warning("Databricks query failed, falling back to mock: %s", exc)
-        return _query_mock(bounds, filters, limit, include_trajectory)
+        return _query_mock(bounds, filters, limit, detail_level)
 
-    # Build intermediate well data including raw BH coords for trajectory
-    well_data: list[tuple[Well, float, float, float, float]] = []  # (well, sh_lat_nad27, sh_lng_nad27, bh_lat, bh_lng)
+    if detail_level == "points":
+        wells: list[Well] = []
+        for row in rows:
+            row_dict = dict(zip(cols, row))
+            raw_lat = row_dict.get("sh_latitude_nad27")
+            raw_lng = row_dict.get("sh_longitude_nad27")
+            if raw_lat is None or raw_lng is None:
+                continue
+            lat, lng = _transform_coords(float(raw_lat), float(raw_lng))
+            well = Well(
+                id=str(row_dict.get("api_14", "")),
+                name="",
+                lat=lat,
+                lng=lng,
+                lateralLength=0,
+                status=_map_status(row_dict.get("well_status")),
+                operator="",
+                formation="",
+            )
+            if filters and not _passes_filter(well, filters):
+                continue
+            wells.append(well)
+
+        total = len(wells)
+        return SpatialWellsResponse(
+            wells=wells,
+            total_count=total,
+            truncated=total >= limit,
+            source="databricks",
+        )
+
+    # summary or full: build intermediate well data including raw BH coords for trajectory
+    well_data: list[tuple[Well, float, float, float, float]] = []  # (well, sh_lat_wgs84, sh_lng_wgs84, bh_lat_wgs84, bh_lng_wgs84)
     for row in rows:
         row_dict = dict(zip(cols, row))
         raw_lat = row_dict.get("sh_latitude_nad27")
@@ -365,20 +431,19 @@ def _query_databricks(
             continue
         well_data.append((well, lat, lng, bh_lat_wgs84, bh_lng_wgs84))
 
-    wells = [wd[0] for wd in well_data]
+    result_wells = [wd[0] for wd in well_data]
 
-    if include_trajectory and wells:
-        api_ids = [w.id for w in wells]
+    if detail_level == "full" and result_wells:
+        api_ids = [w.id for w in result_wells]
         trajectories = _fetch_trajectories(conn, api_ids, well_data)
-        for well in wells:
+        for well in result_wells:
             well.trajectory = trajectories.get(well.id)
 
-    total = len(wells)
-    truncated = total >= limit
+    total = len(result_wells)
     return SpatialWellsResponse(
-        wells=wells,
+        wells=result_wells,
         total_count=total,
-        truncated=truncated,
+        truncated=total >= limit,
         source="databricks",
     )
 
@@ -534,7 +599,7 @@ def _query_mock(
     bounds: ViewportBounds,
     filters: SpatialLayerFilter | None,
     limit: int,
-    include_trajectory: bool = False,
+    detail_level: DetailLevel = "summary",
 ) -> SpatialWellsResponse:
     candidates = [
         w
@@ -548,7 +613,13 @@ def _query_mock(
     truncated = len(candidates) > limit
     wells = candidates[:limit]
 
-    if include_trajectory:
+    if detail_level == "points":
+        # Strip to minimal fields for cluster rendering
+        wells = [
+            Well(id=w.id, name="", lat=w.lat, lng=w.lng, lateralLength=0, status=w.status, operator="", formation="")
+            for w in wells
+        ]
+    elif detail_level == "full":
         wells = [_attach_mock_trajectory(w) for w in wells]
 
     return SpatialWellsResponse(

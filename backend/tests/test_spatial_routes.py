@@ -63,3 +63,47 @@ def test_invalid_bounds():
         },
     )
     assert resp.status_code == 422
+
+
+def test_detail_level_points_via_endpoint():
+    resp = client.post(
+        "/api/spatial/wells",
+        json={
+            "bounds": {"sw_lat": 31.0, "sw_lng": -103.0, "ne_lat": 33.0, "ne_lng": -101.0},
+            "detail_level": "points",
+        },
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["wells"]) > 0
+    for w in data["wells"]:
+        assert w["name"] == ""
+        assert w["operator"] == ""
+        assert w["formation"] == ""
+        assert w["trajectory"] is None
+
+
+def test_detail_level_full_via_endpoint():
+    resp = client.post(
+        "/api/spatial/wells",
+        json={
+            "bounds": {"sw_lat": 31.0, "sw_lng": -103.0, "ne_lat": 33.0, "ne_lng": -101.0},
+            "detail_level": "full",
+        },
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["wells"]) > 0
+    for w in data["wells"]:
+        assert w["trajectory"] is not None
+
+
+def test_invalid_detail_level_rejected():
+    resp = client.post(
+        "/api/spatial/wells",
+        json={
+            "bounds": {"sw_lat": 31.0, "sw_lng": -103.0, "ne_lat": 33.0, "ne_lng": -101.0},
+            "detail_level": "invalid_value",
+        },
+    )
+    assert resp.status_code == 422
