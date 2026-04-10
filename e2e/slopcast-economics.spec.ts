@@ -16,10 +16,10 @@ test.describe('Slopcast economics coverage', () => {
         await slopcast.assertSaveSnapshotVisible();
         await slopcast.ensureEconomicsGroupSwitch();
 
-        await slopcast.setEconomicsResultsTab('SUMMARY');
-        await slopcast.setEconomicsResultsTab('CHARTS');
+        await slopcast.setEconomicsResultsTab('OVERVIEW');
+        await slopcast.setEconomicsResultsTab('CASH_FLOW');
         await slopcast.assertChartsHealthy({ requireVisible: !isMobileViewport });
-        await slopcast.setEconomicsResultsTab('DRIVERS');
+        await slopcast.setEconomicsResultsTab('RESERVES');
       });
     }
 

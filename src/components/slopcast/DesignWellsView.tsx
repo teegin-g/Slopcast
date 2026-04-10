@@ -25,15 +25,15 @@ interface DesignWellsViewProps {
   onCreateGroupFromSelection: () => void;
   onSelectAll: () => void;
   onClearSelection: () => void;
-  operatorFilter: string;
-  formationFilter: string;
-  statusFilter: Well['status'] | 'ALL';
+  operatorFilter: Set<string>;
+  formationFilter: Set<string>;
+  statusFilter: Set<string>;
   operatorOptions: string[];
   formationOptions: string[];
   statusOptions: Well['status'][];
-  onSetOperatorFilter: (value: string) => void;
-  onSetFormationFilter: (value: string) => void;
-  onSetStatusFilter: (value: Well['status'] | 'ALL') => void;
+  onToggleOperator: (value: string) => void;
+  onToggleFormation: (value: string) => void;
+  onToggleStatus: (value: string) => void;
   onResetFilters: () => void;
   filteredWellsCount: number;
   totalWellCount: number;
@@ -48,15 +48,15 @@ interface DesignWellsViewProps {
 const FiltersPanel: React.FC<{
   isClassic: boolean;
   theme: ThemeMeta;
-  operatorFilter: string;
-  formationFilter: string;
-  statusFilter: Well['status'] | 'ALL';
+  operatorFilter: Set<string>;
+  formationFilter: Set<string>;
+  statusFilter: Set<string>;
   operatorOptions: string[];
   formationOptions: string[];
   statusOptions: Well['status'][];
-  onSetOperatorFilter: (value: string) => void;
-  onSetFormationFilter: (value: string) => void;
-  onSetStatusFilter: (value: Well['status'] | 'ALL') => void;
+  onToggleOperator: (value: string) => void;
+  onToggleFormation: (value: string) => void;
+  onToggleStatus: (value: string) => void;
   onResetFilters: () => void;
   filteredWellsCount: number;
   totalWellCount: number;
@@ -69,40 +69,44 @@ const FiltersPanel: React.FC<{
   operatorOptions,
   formationOptions,
   statusOptions,
-  onSetOperatorFilter,
-  onSetFormationFilter,
-  onSetStatusFilter,
+  onToggleOperator,
+  onToggleFormation,
+  onToggleStatus,
   onResetFilters,
   filteredWellsCount,
   totalWellCount,
 }) => {
   const [expanded, setExpanded] = useState(false);
-  const hasActiveFilters = operatorFilter !== 'ALL' || formationFilter !== 'ALL' || statusFilter !== 'ALL';
+  const hasActiveFilters = operatorFilter.size > 0 || formationFilter.size > 0 || statusFilter.size > 0;
   const showSelects = expanded || hasActiveFilters;
 
   const activeChips: FilterChip[] = [
-    ...(operatorFilter !== 'ALL' ? [{ id: 'operator', value: operatorFilter, label: `Operator: ${operatorFilter}` }] : []),
-    ...(formationFilter !== 'ALL' ? [{ id: 'formation', value: formationFilter, label: `Formation: ${formationFilter}` }] : []),
-    ...(statusFilter !== 'ALL' ? [{ id: 'status', value: statusFilter, label: `Status: ${statusFilter}` }] : []),
+    ...[...operatorFilter].map(op => ({ id: `operator:${op}`, value: op, label: `Operator: ${op}` })),
+    ...[...formationFilter].map(f => ({ id: `formation:${f}`, value: f, label: `Formation: ${f}` })),
+    ...[...statusFilter].map(s => ({ id: `status:${s}`, value: s, label: `Status: ${s}` })),
   ];
 
   const handleRemoveChip = (id: string) => {
-    if (id === 'operator') onSetOperatorFilter('ALL');
-    if (id === 'formation') onSetFormationFilter('ALL');
-    if (id === 'status') onSetStatusFilter('ALL');
+    const [category, value] = id.split(':');
+    if (category === 'operator') onToggleOperator(value);
+    if (category === 'formation') onToggleFormation(value);
+    if (category === 'status') onToggleStatus(value);
   };
 
-  const selectClass = isClassic
-    ? 'w-full rounded-md px-2 py-1.5 text-xs font-black sc-inputNavy'
-    : 'w-full bg-theme-bg border border-theme-border rounded-inner px-2 py-1.5 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition';
+  const checkboxClass = isClassic
+    ? 'text-[11px] font-bold text-white/80 hover:bg-white/10'
+    : 'text-[11px] font-bold text-theme-text hover:bg-theme-surface2';
 
   return (
     <div className={isClassic ? 'sc-panel theme-transition' : 'rounded-panel border bg-theme-surface1/80 border-theme-border theme-transition'}>
       {/* Header */}
       <div className={`px-3 py-2 flex items-center justify-between ${isClassic ? 'sc-panelTitlebar sc-titlebar--neutral' : 'border-b border-theme-border/60'}`}>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setExpanded(!expanded)}
-            className={`text-[11px] font-black uppercase tracking-[0.2em] ${isClassic ? 'text-white' : 'text-theme-cyan'}`}>
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
+            data-testid="wells-filters-toggle"
+            className={`focus-ring rounded-inner px-1 text-[11px] font-black uppercase tracking-[0.2em] ${isClassic ? 'text-white' : 'text-theme-cyan'}`}>
             Filters
           </button>
           <span className={`text-[10px] font-black tabular-nums ${isClassic ? 'text-white/60' : 'text-theme-muted'}`}>
@@ -122,21 +126,42 @@ const FiltersPanel: React.FC<{
         <FilterChips filters={activeChips} onRemove={handleRemoveChip} />
       )}
 
-      {/* Compact inline selects */}
+      {/* Compact inline checkbox lists */}
       {showSelects && (
         <div className="px-3 py-2 grid grid-cols-3 gap-2">
-          <select value={operatorFilter} onChange={(e) => onSetOperatorFilter(e.target.value)} className={selectClass}>
-            <option value="ALL">All Operators</option>
-            {operatorOptions.map(op => <option key={op} value={op}>{op}</option>)}
-          </select>
-          <select value={formationFilter} onChange={(e) => onSetFormationFilter(e.target.value)} className={selectClass}>
-            <option value="ALL">All Formations</option>
-            {formationOptions.map(f => <option key={f} value={f}>{f}</option>)}
-          </select>
-          <select value={statusFilter} onChange={(e) => onSetStatusFilter(e.target.value as any)} className={selectClass}>
-            <option value="ALL">All Statuses</option>
-            {statusOptions.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <div>
+            <div className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isClassic ? 'text-white/50' : 'text-theme-muted'}`}>Operators</div>
+            <div className="max-h-32 overflow-y-auto space-y-0.5">
+              {operatorOptions.map(op => (
+                <label key={op} className={`flex items-center gap-1.5 px-1 py-0.5 rounded cursor-pointer ${checkboxClass}`}>
+                  <input type="checkbox" checked={operatorFilter.has(op)} onChange={() => onToggleOperator(op)} className="accent-[var(--cyan)]" />
+                  {op}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isClassic ? 'text-white/50' : 'text-theme-muted'}`}>Formations</div>
+            <div className="max-h-32 overflow-y-auto space-y-0.5">
+              {formationOptions.map(f => (
+                <label key={f} className={`flex items-center gap-1.5 px-1 py-0.5 rounded cursor-pointer ${checkboxClass}`}>
+                  <input type="checkbox" checked={formationFilter.has(f)} onChange={() => onToggleFormation(f)} className="accent-[var(--cyan)]" />
+                  {f}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className={`text-[9px] font-black uppercase tracking-widest mb-1 ${isClassic ? 'text-white/50' : 'text-theme-muted'}`}>Statuses</div>
+            <div className="max-h-32 overflow-y-auto space-y-0.5">
+              {statusOptions.map(s => (
+                <label key={s} className={`flex items-center gap-1.5 px-1 py-0.5 rounded cursor-pointer ${checkboxClass}`}>
+                  <input type="checkbox" checked={statusFilter.has(s)} onChange={() => onToggleStatus(s)} className="accent-[var(--cyan)]" />
+                  {s}
+                </label>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -166,9 +191,9 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
   operatorOptions,
   formationOptions,
   statusOptions,
-  onSetOperatorFilter,
-  onSetFormationFilter,
-  onSetStatusFilter,
+  onToggleOperator,
+  onToggleFormation,
+  onToggleStatus,
   onResetFilters,
   filteredWellsCount,
   totalWellCount,
@@ -187,13 +212,18 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
   const mapHeightClass = isMobileMap ? 'h-[min(56vh,560px)]' : 'h-[min(64vh,620px)]';
 
   const activeFilters = [
-    ...(operatorFilter !== 'ALL' ? [{ label: 'Operator', value: operatorFilter }] : []),
-    ...(formationFilter !== 'ALL' ? [{ label: 'Formation', value: formationFilter }] : []),
-    ...(statusFilter !== 'ALL' ? [{ label: 'Status', value: statusFilter }] : []),
+    ...[...operatorFilter].map(op => ({ label: 'Operator', value: op })),
+    ...[...formationFilter].map(f => ({ label: 'Formation', value: f })),
+    ...[...statusFilter].map(s => ({ label: 'Status', value: s })),
   ];
 
   return (
     <>
+      <div className="sr-only">
+        <span data-testid="wells-selected-visible-count">{selectedWellCount}</span>
+        <span data-testid="wells-filtered-count">{filteredWellsCount}</span>
+      </div>
+
       <div
         className={`lg:hidden mb-4 border p-2 theme-transition ${
           isClassic ? 'sc-panel' : 'rounded-panel bg-theme-surface1/60 border-theme-border shadow-card backdrop-blur-sm'
@@ -201,6 +231,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
       >
         <div className="grid grid-cols-2 gap-2">
           <button
+            data-testid="wells-mobile-tab-groups"
             onClick={() => onSetMobilePanel('GROUPS')}
             className={
               isClassic
@@ -217,6 +248,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
             Groups
           </button>
           <button
+            data-testid="wells-mobile-tab-map"
             onClick={() => onSetMobilePanel('MAP')}
             className={
               isClassic
@@ -250,9 +282,9 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
             operatorOptions={operatorOptions}
             formationOptions={formationOptions}
             statusOptions={statusOptions}
-            onSetOperatorFilter={onSetOperatorFilter}
-            onSetFormationFilter={onSetFormationFilter}
-            onSetStatusFilter={onSetStatusFilter}
+            onToggleOperator={onToggleOperator}
+            onToggleFormation={onToggleFormation}
+            onToggleStatus={onToggleStatus}
             onResetFilters={onResetFilters}
             filteredWellsCount={filteredWellsCount}
             totalWellCount={totalWellCount}
@@ -277,7 +309,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
           )}
         </aside>
 
-        <section className={`xl:col-span-8 lg:col-span-7 lg:min-h-0 flex flex-col space-y-6 ${mobilePanel !== 'MAP' ? 'hidden lg:flex' : ''}`}>
+        <section data-testid="map-command-center" className={`xl:col-span-8 lg:col-span-7 lg:min-h-0 flex flex-col space-y-6 ${mobilePanel !== 'MAP' ? 'hidden lg:flex' : ''}`}>
           {isClassic ? (
             <div className={`w-full shrink-0 min-h-[360px] ${mapHeightClass} ${isMobileMap ? 'mb-24' : ''} sc-panel theme-transition`}>
               <div className="sc-panelTitlebar sc-titlebar--neutral px-4 py-3 flex justify-between items-center">
@@ -288,6 +320,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                 <div className="flex items-center gap-3">
                   <button
                     onClick={onSelectAll}
+                    data-testid="wells-select-filtered"
                     className="text-[10px] font-black uppercase tracking-[0.2em] text-white/90 hover:text-white transition-colors"
                   >
                     {selectFilteredLabel.toUpperCase()}
@@ -329,7 +362,11 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                   Basin Visualizer
                 </h2>
                 <div className="flex items-center gap-2">
-                  <button onClick={onSelectAll} className="text-[10px] font-bold tracking-[0.1em] theme-transition hover:scale-105 text-theme-lavender">
+                  <button
+                    onClick={onSelectAll}
+                    data-testid="wells-select-filtered"
+                    className="text-[10px] font-bold tracking-[0.1em] theme-transition hover:scale-105 text-theme-lavender"
+                  >
                     {selectFilteredLabel.toUpperCase()}
                   </button>
                   <button
@@ -388,6 +425,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                 </button>
                 <button
                   onClick={onSelectAll}
+                  data-testid="wells-selection-actions-select-filtered"
                   className="px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all bg-theme-surface2 text-theme-text border border-theme-border hover:border-theme-cyan"
                 >
                   {selectFilteredLabel}
@@ -395,6 +433,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                 <button
                   onClick={onClearSelection}
                   disabled={selectedWellCount === 0}
+                  data-testid="wells-selection-actions-clear"
                   className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all border ${
                     selectedWellCount > 0 ? 'bg-theme-surface2 text-theme-text border-theme-border hover:border-theme-cyan' : 'bg-theme-surface2 text-theme-muted border-theme-border cursor-not-allowed'
                   }`}
@@ -459,6 +498,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                 <button
                   onClick={onClearSelection}
                   disabled={selectedWellCount === 0}
+                  data-testid="wells-mobile-clear"
                   className={
                     isClassic
                       ? `sc-btnSecondary w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-widest transition-all ${
@@ -492,6 +532,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                   </button>
                   <button
                     onClick={onSelectAll}
+                  data-testid="wells-mobile-select-filtered"
                     className={
                       isClassic
                         ? 'sc-btnSecondary w-full px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-widest transition-all'

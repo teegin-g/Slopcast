@@ -5,7 +5,7 @@ export type ThemeCase = {
   title: 'Slate' | 'Classic';
 };
 
-export type EconomicsTabCase = 'SUMMARY' | 'CHARTS' | 'DRIVERS';
+export type EconomicsTabCase = 'OVERVIEW' | 'CASH_FLOW' | 'RESERVES';
 
 type ConsoleEntry = {
   type: string;
@@ -64,35 +64,64 @@ export class SlopcastApp {
         localStorage.setItem('slopcast-onboarding-done', '1');
         localStorage.setItem('slopcast-theme', initialThemeId);
         localStorage.setItem('slopcast-design-workspace', 'WELLS');
-        localStorage.setItem('slopcast-econ-results-tab', 'SUMMARY');
+        localStorage.setItem('slopcast-econ-results-tab', 'OVERVIEW');
       },
       { session: DEV_BYPASS_SESSION, initialThemeId: themeId },
     );
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/slopcast', { waitUntil: 'domcontentloaded' });
+    const designWorkspaceTabs = this.page.getByTestId('design-workspace-tabs').first();
+    const signInButton = this.page.getByRole('button', { name: /Sign In As Demo User/i }).first();
+    const blankWorkspaceButton = this.page.getByRole('button', { name: 'Open Blank Workspace' }).first();
 
-    const blankWorkspaceButton = this.page.getByRole('button', { name: 'Open Blank Workspace' });
-    const shouldEnterWorkspace = await blankWorkspaceButton
-      .first()
-      .waitFor({ state: 'visible', timeout: 5_000 })
-      .then(() => true)
-      .catch(() => false);
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      if (attempt === 0) {
+        await this.page.goto('/slopcast', { waitUntil: 'domcontentloaded' });
+      } else {
+        await this.page.reload({ waitUntil: 'domcontentloaded' });
+      }
 
-    if (shouldEnterWorkspace) {
-      await blankWorkspaceButton.first().click();
-      await this.page.waitForTimeout(150);
+      await this.page
+        .waitForFunction(() => document.body.innerText.trim().length > 0, undefined, { timeout: 10_000 })
+        .catch(() => null);
+
+      const readyState = await this.waitForFirstVisible(
+        [
+          { label: 'tabs', locator: designWorkspaceTabs },
+          { label: 'sign-in', locator: signInButton },
+          { label: 'blank-workspace', locator: blankWorkspaceButton },
+        ],
+        6_000,
+      );
+
+      if (readyState === 'tabs') {
+        return;
+      }
+
+      if (readyState === 'sign-in') {
+        await signInButton.click();
+        const postSignInState = await this.waitForFirstVisible(
+          [
+            { label: 'tabs', locator: designWorkspaceTabs },
+            { label: 'blank-workspace', locator: blankWorkspaceButton },
+          ],
+          6_000,
+        );
+
+        if (postSignInState === 'tabs') {
+          return;
+        }
+      }
+
+      if (await blankWorkspaceButton.isVisible().catch(() => false)) {
+        await blankWorkspaceButton.click();
+        await expect(designWorkspaceTabs).toBeVisible({ timeout: 15_000 });
+        return;
+      }
     }
 
-    await this.findVisibleLocator(
-      this.header.getByRole('button', { name: 'DESIGN', exact: true }),
-      'Design navigation button',
-    );
-    await this.findVisibleLocator(
-      this.header.getByRole('button', { name: 'SCENARIOS', exact: true }),
-      'Scenarios navigation button',
-    );
+    throw new Error('Slopcast design workspace tabs were not visible after bootstrap');
   }
 
   async setTheme(theme: ThemeCase): Promise<void> {
@@ -116,11 +145,16 @@ export class SlopcastApp {
   }
 
   async openDesignView(): Promise<void> {
+    if (await this.page.getByTestId('design-workspace-tabs').first().isVisible().catch(() => false)) {
+      return;
+    }
+
     const button = await this.findVisibleLocator(
       this.header.getByRole('button', { name: 'DESIGN', exact: true }),
       'Design navigation button',
     );
     await button.click();
+    await expect(this.page.getByTestId('design-workspace-tabs').first()).toBeVisible({ timeout: 15_000 });
   }
 
   async openScenarioView(): Promise<void> {
@@ -143,7 +177,23 @@ export class SlopcastApp {
   }
 
   async expectWellsWorkspace(): Promise<void> {
-    await expect(this.page.getByText('Basin Visualizer', { exact: false }).first()).toBeVisible({
+    if (this.isMobileViewport) {
+      await expect(this.page.getByTestId('wells-selected-visible-count').first()).toBeAttached({
+        timeout: 15_000,
+      });
+    } else {
+      await expect(this.page.getByTestId('map-command-center').first()).toBeVisible({
+        timeout: 15_000,
+      });
+    }
+  }
+
+  async navigateToMapTab(): Promise<void> {
+    if (!this.isMobileViewport) {
+      return;
+    }
+    await this.page.getByTestId('wells-mobile-tab-map').click();
+    await expect(this.page.getByTestId('map-command-center').first()).toBeVisible({
       timeout: 15_000,
     });
   }
@@ -257,69 +307,101 @@ export class SlopcastApp {
   }
 
   async setNonDefaultOperator(): Promise<string | null> {
-    return await this.page.evaluate(() => {
-      const selects = Array.from(document.querySelectorAll('select'));
-      const operatorSelect = selects.find((select) => {
-        const options = Array.from(select.querySelectorAll('option')).map((option) =>
-          (option.textContent || '').trim(),
-        );
-        return options.includes('All Operators');
-      });
+    const operatorButton = await this.ensureOperatorFilterVisible();
 
-      if (!(operatorSelect instanceof HTMLSelectElement)) {
-        return null;
-      }
+    // Open the dropdown
+    await operatorButton.click();
 
-      const nextOption = Array.from(operatorSelect.options).find((option) => option.value !== 'ALL');
-      if (!nextOption) {
-        return operatorSelect.value;
-      }
+    // Wait for checkbox options to appear
+    const dropdown = operatorButton.locator('..').locator('div').first();
+    await expect(dropdown).toBeVisible({ timeout: 3_000 });
 
-      operatorSelect.value = nextOption.value;
-      operatorSelect.dispatchEvent(new Event('change', { bubbles: true }));
-      return nextOption.value;
-    });
+    // Find the first checkbox label
+    const firstCheckbox = dropdown.locator('label').first();
+    if (!(await firstCheckbox.isVisible().catch(() => false))) {
+      return null;
+    }
+
+    const operatorName = await firstCheckbox.textContent();
+    await firstCheckbox.click();
+
+    // Close dropdown by clicking the button again
+    await operatorButton.click();
+
+    // Return a consistent identifier: "1 Operators" (the button label after selecting)
+    await expect.poll(async () => this.readOperatorValue()).not.toBe('ALL');
+    return await this.readOperatorValue();
   }
 
   async readOperatorValue(): Promise<string | null> {
-    return await this.page.evaluate(() => {
-      const selects = Array.from(document.querySelectorAll('select'));
-      const operatorSelect = selects.find((select) => {
-        const options = Array.from(select.querySelectorAll('option')).map((option) =>
-          (option.textContent || '').trim(),
-        );
-        return options.includes('All Operators');
-      });
-
-      return operatorSelect instanceof HTMLSelectElement ? operatorSelect.value : null;
-    });
+    const operatorButton = await this.ensureOperatorFilterVisible();
+    const text = await operatorButton.textContent();
+    // Button shows "All Operators" when no filter, or "1 Operators" / operator name when filtered
+    if (!text || text.includes('All ')) return 'ALL';
+    // If filtered, return the button text (e.g., "1 Operators")
+    return text.replace(/\s*[▴▾]\s*$/, '').trim();
   }
 
   async selectAllVisibleWells(): Promise<void> {
-    const button = await this.findVisibleLocator(
-      this.page.getByRole('button', { name: /Select (All|Filtered)/i }),
-      'Select wells button',
-    );
+    const locator = this.isMobileViewport
+      ? this.page.getByTestId('wells-select-filtered')
+      : this.page.getByTestId('wells-selection-actions-select-filtered');
+    const button = await this.findVisibleLocator(locator, 'Select filtered wells button');
     await button.click();
   }
 
-  async readSelectedWellsBadgeCount(): Promise<number> {
-    return await this.page.evaluate(() => {
-      const matches = Array.from(document.querySelectorAll('*'))
-        .map((element) => (element.textContent || '').trim())
-        .filter(Boolean)
-        .map((text) => {
-          const hit = text.match(/^(\d+)\s+Wells$/i);
-          return hit ? Number(hit[1]) : null;
-        })
-        .filter((value): value is number => Number.isFinite(value));
+  async readSelectedVisibleWellCount(): Promise<number> {
+    return await this.readNumericTestId('wells-selected-visible-count');
+  }
 
-      if (matches.length === 0) {
-        return 0;
-      }
+  async readFilteredWellCount(): Promise<number> {
+    return await this.readNumericTestId('wells-filtered-count');
+  }
 
-      return Math.max(...matches);
+  async resetWellsWorkspaceState(): Promise<void> {
+    const resetButton = this.page.getByRole('button', { name: 'Reset', exact: true }).first();
+    if (await resetButton.isVisible().catch(() => false)) {
+      await resetButton.click();
+      await expect.poll(async () => {
+        const val = await this.readOperatorValue();
+        return val === 'ALL' || val?.includes('All');
+      }).toBeTruthy();
+    }
+
+    if ((await this.readSelectedVisibleWellCount()) > 0) {
+      const clearButton = await this.findVisibleLocator(
+        this.isMobileViewport
+          ? this.page.getByTestId('wells-mobile-clear')
+          : this.page.getByTestId('wells-selection-actions-clear'),
+        'Clear selected wells button',
+      );
+      await clearButton.click();
+      await expect.poll(async () => this.readSelectedVisibleWellCount()).toBe(0);
+    }
+  }
+
+  async expectMapLoaded(): Promise<void> {
+    await expect(this.page.getByTestId('map-command-center')).toBeVisible({ timeout: 15_000 });
+    await expect(
+      this.page.locator('[data-testid="map-command-center"] canvas.mapboxgl-canvas'),
+    ).toBeVisible({ timeout: 30_000 });
+    await expect(this.page.getByText('Set VITE_MAPBOX_TOKEN')).not.toBeVisible({ timeout: 5_000 });
+  }
+
+  async expectMapWellsPopulated(): Promise<void> {
+    const hasWellFeatures = await this.page.evaluate(async () => {
+      await new Promise((r) => setTimeout(r, 2000));
+      const canvas = document.querySelector(
+        '[data-testid="map-command-center"] canvas.mapboxgl-canvas',
+      );
+      return canvas !== null && canvas.getBoundingClientRect().width > 0;
     });
+    expect(hasWellFeatures).toBe(true);
+  }
+
+  async screenshotMap(name: string): Promise<Buffer> {
+    const mapEl = this.page.getByTestId('map-command-center');
+    return await mapEl.screenshot({ path: `artifacts/ui/latest/map__${name}.png` });
   }
 
   async assertNoDimensionWarnings(): Promise<void> {
@@ -336,11 +418,58 @@ export class SlopcastApp {
     );
   }
 
+  private async ensureOperatorFilterVisible(): Promise<Locator> {
+    const operatorSelect = this.page.getByTestId('wells-filter-operator').first();
+    const isVisible = await operatorSelect.isVisible().catch(() => false);
+    if (!isVisible) {
+      await this.page.getByTestId('wells-filters-toggle').click();
+      await expect(operatorSelect).toBeVisible({ timeout: 5_000 });
+    }
+    return operatorSelect;
+  }
+
+  private async readNumericTestId(testId: string): Promise<number> {
+    const raw = (await this.page.getByTestId(testId).first().textContent())?.trim() || '0';
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : 0;
+  }
+
   private async findVisibleLocator(
     locator: Locator,
     label: string,
     timeoutMs = 15_000,
   ): Promise<Locator> {
+    const visibleLocator = await this.tryFindVisibleLocator(locator, timeoutMs);
+    if (visibleLocator) {
+      return visibleLocator;
+    }
+
+    throw new Error(`${label} was not visible`);
+  }
+
+  private async waitForFirstVisible(
+    entries: Array<{ label: string; locator: Locator }>,
+    timeoutMs = 5_000,
+  ): Promise<string | null> {
+    const deadline = Date.now() + timeoutMs;
+
+    while (Date.now() < deadline) {
+      for (const entry of entries) {
+        if (await entry.locator.isVisible().catch(() => false)) {
+          return entry.label;
+        }
+      }
+
+      await this.page.waitForTimeout(100);
+    }
+
+    return null;
+  }
+
+  private async tryFindVisibleLocator(
+    locator: Locator,
+    timeoutMs = 15_000,
+  ): Promise<Locator | null> {
     const deadline = Date.now() + timeoutMs;
 
     while (Date.now() < deadline) {
@@ -356,6 +485,6 @@ export class SlopcastApp {
       await this.page.waitForTimeout(100);
     }
 
-    throw new Error(`${label} was not visible`);
+    return null;
   }
 }

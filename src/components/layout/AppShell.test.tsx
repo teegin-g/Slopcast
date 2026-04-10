@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { AppShell } from './AppShell';
 import SectionCard from '../slopcast/SectionCard';
 import type { WellGroup } from '../../types';
+import { ThemeProvider } from '../../theme/ThemeProvider';
 
 // Polyfill IntersectionObserver for test environment (used by motion useInView)
 beforeAll(() => {
@@ -72,11 +73,13 @@ function renderAppShell(
   mockViewport.mockReturnValue(viewport);
   const workspace = createMockWorkspace(workspaceOverrides);
   return render(
-    <MemoryRouter initialEntries={['/?section=wells']}>
-      <AppShell workspace={workspace}>
-        {children}
-      </AppShell>
-    </MemoryRouter>,
+    <ThemeProvider>
+      <MemoryRouter initialEntries={['/?section=wells']}>
+        <AppShell workspace={workspace}>
+          {children}
+        </AppShell>
+      </MemoryRouter>
+    </ThemeProvider>,
   );
 }
 

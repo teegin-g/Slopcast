@@ -21,7 +21,7 @@ test.describe('Slopcast persistence coverage', () => {
         expect(operatorValue).not.toBeNull();
 
         await slopcast.selectAllVisibleWells();
-        const selectedCountAfterSelection = await slopcast.readSelectedWellsBadgeCount();
+        const selectedCountAfterSelection = await slopcast.readSelectedVisibleWellCount();
         expect(selectedCountAfterSelection).toBeGreaterThan(0);
 
         await slopcast.openEconomicsWorkspace();
@@ -31,7 +31,7 @@ test.describe('Slopcast persistence coverage', () => {
         await slopcast.expectWellsWorkspace();
 
         await expect(await slopcast.readOperatorValue()).toBe(operatorValue);
-        await expect(await slopcast.readSelectedWellsBadgeCount()).toBe(selectedCountAfterSelection);
+        await expect(await slopcast.readSelectedVisibleWellCount()).toBe(selectedCountAfterSelection);
       });
     }
 
