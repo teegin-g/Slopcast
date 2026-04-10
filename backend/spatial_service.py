@@ -1,83 +1,713 @@
 """
-SpatialDBManager — encapsulates the optional PostGIS/spatial database connection.
+Spatial service — Databricks SQL Warehouse connection + mock fallback.
 
-The backend operates fine without a spatial DB (economics endpoints are pure math).
-This manager provides lazy connection with retry/backoff, health-check, and clean
-FastAPI dependency injection — replacing the original module-level mutable globals.
+Module-level API (consumed by spatial_routes.py):
+    get_wells_in_bounds(bounds, filters, limit) -> SpatialWellsResponse
+    get_available_layers() -> SpatialLayersResponse
+    check_connection_status() -> dict
 
-Usage in FastAPI:
-    from .spatial_service import SpatialDBManager, get_spatial_db
-
-    app.state.spatial_db = SpatialDBManager()
-
-    @app.get("/api/wells/nearby")
-    def wells_nearby(db: SpatialDBManager = Depends(get_spatial_db)):
-        conn = db.connection()
-        ...
+Legacy class (kept for backward compat with main.py lifespan):
+    SpatialDBManager — PostGIS-oriented manager, still registered on app.state
 """
 
 from __future__ import annotations
 
 import logging
+import math
 import os
 import time
+from decimal import Decimal
 from typing import Any
+
+from dotenv import load_dotenv
+
+from .models import Well, WellStatus, WellTrajectory, WellTrajectoryPoint
+from .spatial_models import (
+    DetailLevel,
+    SpatialLayer,
+    SpatialLayerFilter,
+    SpatialLayersResponse,
+    SpatialWellsResponse,
+    ViewportBounds,
+)
+
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 logger = logging.getLogger(__name__)
 
-# Retry / backoff constants
+# ---------------------------------------------------------------------------
+# Module-level connection state (tests patch _db_connection directly)
+# ---------------------------------------------------------------------------
+
+_db_connection: Any | None = None
+_cache: dict[str, SpatialWellsResponse] = {}
+
+# ---------------------------------------------------------------------------
+# Deterministic mock data — 40 Permian Basin wells
+# All coordinates fall within lat [31.825, 31.975] lng [-102.4, -102.2],
+# which is comfortably inside the test wide bounds 31.0–33.0 / -103.0–-101.0.
+# ---------------------------------------------------------------------------
+
+_OPERATORS = ["Strata Ops LLC", "Blue Mesa Energy", "Atlas Peak Resources"]
+_FORMATIONS = ["Wolfcamp A", "Wolfcamp B", "Bone Spring"]
+_STATUSES: list[WellStatus] = ["PRODUCING", "DUC", "PERMIT"]
+_CENTER_LAT = 31.9
+_CENTER_LNG = -102.3
+
+
+def _build_mock_wells() -> list[Well]:
+    """Generate deterministic mock wells using a simple LCG-based spread."""
+    wells: list[Well] = []
+    # Use a fixed sequence of offsets derived from a simple formula so results
+    # are repeatable without importing random (which has global state).
+    for i in range(40):
+        # Spread evenly across the ±0.075 lat / ±0.1 lng window
+        lat_offset = ((i * 7 + 3) % 30 - 15) * 0.005   # range ±0.075
+        lng_offset = ((i * 11 + 5) % 40 - 20) * 0.005  # range ±0.1
+        wells.append(
+            Well(
+                id=f"w-{i}",
+                name=f"Maverick {i + 1}H",
+                lat=_CENTER_LAT + lat_offset,
+                lng=_CENTER_LNG + lng_offset,
+                lateralLength=10000.0 if i % 2 == 0 else 7500.0,
+                status=_STATUSES[i % 3],
+                operator=_OPERATORS[i % 3],
+                formation=_FORMATIONS[i % 3],
+            )
+        )
+    return wells
+
+
+_MOCK_WELLS: list[Well] = _build_mock_wells()
+
+# ---------------------------------------------------------------------------
+# Databricks connection helpers
+# ---------------------------------------------------------------------------
+
+
+def _get_db_connection() -> Any | None:
+    """
+    Return a live Databricks SQL connection, or None if credentials are absent
+    or the connection attempt fails.  Caches on success in module-level state.
+    """
+    global _db_connection  # noqa: PLW0603
+
+    if _db_connection is not None:
+        return _db_connection
+
+    hostname = os.getenv("DATABRICKS_SERVER_HOSTNAME")
+    http_path = os.getenv("DATABRICKS_HTTP_PATH")
+    token = os.getenv("DATABRICKS_TOKEN")
+
+    if not (hostname and http_path and token):
+        return None
+
+    try:
+        from databricks import sql as databricks_sql  # type: ignore[import-untyped]
+
+        conn = databricks_sql.connect(
+            server_hostname=hostname,
+            http_path=http_path,
+            access_token=token,
+        )
+        _db_connection = conn
+        logger.info("Connected to Databricks SQL Warehouse.")
+        return conn
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Databricks connection failed: %s", exc)
+        return None
+
+
+# ---------------------------------------------------------------------------
+# NAD27 → WGS84 coordinate transform
+# ---------------------------------------------------------------------------
+
+_transformer: Any | None = None
+
+
+def _get_transformer() -> Any | None:
+    global _transformer  # noqa: PLW0603
+    if _transformer is not None:
+        return _transformer
+    try:
+        from pyproj import Transformer  # type: ignore[import-untyped]
+
+        _transformer = Transformer.from_crs("EPSG:4267", "EPSG:4326", always_xy=True)
+        return _transformer
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("pyproj unavailable, skipping coordinate transform: %s", exc)
+        return None
+
+
+def _transform_coords(lat_nad27: float, lng_nad27: float) -> tuple[float, float]:
+    """Convert NAD27 lat/lng to WGS84.  Returns original values if pyproj is absent."""
+    t = _get_transformer()
+    if t is None:
+        return lat_nad27, lng_nad27
+    # Transformer.transform(x=lng, y=lat) when always_xy=True
+    lng_wgs84, lat_wgs84 = t.transform(lng_nad27, lat_nad27)
+    return float(lat_wgs84), float(lng_wgs84)
+
+
+# ---------------------------------------------------------------------------
+# Status mapping
+# ---------------------------------------------------------------------------
+
+_STATUS_MAP: dict[str, WellStatus] = {
+    "PRODUCING": "PRODUCING",
+    "DUC": "DUC",
+    "PERMIT": "PERMIT",
+}
+
+
+def _map_status(raw: str | None) -> WellStatus:
+    if raw is None:
+        return "PERMIT"
+    return _STATUS_MAP.get(str(raw).upper(), "PERMIT")
+
+
+# ---------------------------------------------------------------------------
+# Cache helpers
+# ---------------------------------------------------------------------------
+
+
+def _cache_key(
+    bounds: ViewportBounds,
+    filters: SpatialLayerFilter | None,
+    limit: int,
+    detail_level: DetailLevel,
+) -> str:
+    f_str = ""
+    if filters:
+        f_str = (
+            f"{sorted(filters.statuses or [])}|"
+            f"{sorted(filters.operators or [])}|"
+            f"{sorted(filters.formations or [])}|"
+            f"{sorted(filters.layers or [])}"
+        )
+    return (
+        f"{bounds.sw_lat},{bounds.sw_lng},{bounds.ne_lat},{bounds.ne_lng}"
+        f"|{f_str}|{limit}|detail={detail_level}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+
+def get_wells_in_bounds(
+    bounds: ViewportBounds,
+    filters: SpatialLayerFilter | None = None,
+    limit: int = 2000,
+    include_trajectory: bool = False,
+    detail_level: DetailLevel = "summary",
+) -> SpatialWellsResponse:
+    """
+    Return wells within the given viewport bounds.
+
+    Uses Databricks SQL Warehouse when credentials are available; falls back
+    to deterministic mock data otherwise.
+
+    detail_level controls query verbosity:
+      - "points": id, lat, lng, status only (~90% less data, for cluster rendering)
+      - "summary": all well fields except trajectory (default)
+      - "full": summary + directional survey trajectory
+
+    include_trajectory=True is kept for backward compat and implies detail_level="full".
+    """
+    # Backward compat: include_trajectory=True implies full
+    if include_trajectory and detail_level != "full":
+        detail_level = "full"
+
+    key = _cache_key(bounds, filters, limit, detail_level)
+    if key in _cache:
+        return _cache[key]
+
+    conn = _get_db_connection()
+    if conn is not None:
+        result = _query_databricks(conn, bounds, filters, limit, detail_level)
+    else:
+        result = _query_mock(bounds, filters, limit, detail_level)
+
+    _cache[key] = result
+    return result
+
+
+def get_available_layers() -> SpatialLayersResponse:
+    """Return the hardcoded list of available spatial layers."""
+    return SpatialLayersResponse(
+        layers=[
+            SpatialLayer(
+                id="producing",
+                label="Producing Wells",
+                description="Active producing wells",
+                enabled_by_default=True,
+            ),
+            SpatialLayer(
+                id="duc",
+                label="DUC Wells",
+                description="Drilled but uncompleted wells",
+                enabled_by_default=True,
+            ),
+            SpatialLayer(
+                id="permit",
+                label="Permitted Wells",
+                description="Permitted but not yet drilled wells",
+                enabled_by_default=True,
+            ),
+            SpatialLayer(
+                id="laterals",
+                label="Lateral Traces",
+                description="Horizontal wellbore lateral paths",
+                enabled_by_default=False,
+            ),
+        ]
+    )
+
+
+def check_connection_status() -> dict[str, Any]:
+    """Return connectivity status dict."""
+    hostname = os.getenv("DATABRICKS_SERVER_HOSTNAME")
+    if not hostname:
+        return {"connected": False, "source": "mock", "error": None, "table": None}
+
+    conn = _get_db_connection()
+    if conn is not None:
+        table = (
+            f"{os.getenv('DATABRICKS_CATALOG', 'eds')}."
+            f"{os.getenv('DATABRICKS_SCHEMA', 'well')}."
+            f"{os.getenv('DATABRICKS_WELLS_TABLE', 'tbl_well_summary_all')}"
+        )
+        return {"connected": True, "source": "databricks", "error": None, "table": table}
+
+    return {
+        "connected": False,
+        "source": "mock",
+        "error": "Databricks connection unavailable",
+        "table": None,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Query implementations
+# ---------------------------------------------------------------------------
+
+
+def _query_databricks(
+    conn: Any,
+    bounds: ViewportBounds,
+    filters: SpatialLayerFilter | None,
+    limit: int,
+    detail_level: DetailLevel = "summary",
+) -> SpatialWellsResponse:
+    catalog = os.getenv("DATABRICKS_CATALOG", "eds")
+    schema = os.getenv("DATABRICKS_SCHEMA", "well")
+    table = os.getenv("DATABRICKS_WELLS_TABLE", "tbl_well_summary_all")
+    full_table = f"{catalog}.{schema}.{table}"
+
+    params = {
+        "sw_lat": bounds.sw_lat,
+        "ne_lat": bounds.ne_lat,
+        "sw_lng": bounds.sw_lng,
+        "ne_lng": bounds.ne_lng,
+        "limit": limit,
+    }
+
+    # Build optional SQL filter clauses for operators/formations.
+    # Use string interpolation for the IN list (values are operator/formation
+    # names from our own filter state, not user-supplied free text).
+    extra_where = ""
+    if filters:
+        if filters.statuses:
+            status_list = ", ".join(f"'{s}'" for s in filters.statuses)
+            extra_where += f"  AND well_status IN ({status_list})\n"
+        if filters.operators:
+            op_list = ", ".join(f"'{o.replace(chr(39), chr(39)*2)}'" for o in filters.operators)
+            extra_where += f"  AND operator IN ({op_list})\n"
+        if filters.formations:
+            fm_list = ", ".join(f"'{f.replace(chr(39), chr(39)*2)}'" for f in filters.formations)
+            extra_where += f"  AND formation IN ({fm_list})\n"
+
+    if detail_level == "points":
+        sql = f"""
+            SELECT api_14, sh_latitude_nad27, sh_longitude_nad27, well_status
+            FROM {full_table}
+            WHERE sh_latitude_nad27 BETWEEN %(sw_lat)s AND %(ne_lat)s
+              AND sh_longitude_nad27 BETWEEN %(sw_lng)s AND %(ne_lng)s
+              AND sh_latitude_nad27 IS NOT NULL
+{extra_where}            LIMIT %(limit)s
+        """
+    else:
+        sql = f"""
+            SELECT api_14, well_name,
+                   sh_latitude_nad27, sh_longitude_nad27,
+                   bh_latitude_nad27, bh_longitude_nad27,
+                   lateral_length, well_status, operator, formation
+            FROM {full_table}
+            WHERE sh_latitude_nad27 BETWEEN %(sw_lat)s AND %(ne_lat)s
+              AND sh_longitude_nad27 BETWEEN %(sw_lng)s AND %(ne_lng)s
+              AND sh_latitude_nad27 IS NOT NULL
+{extra_where}            LIMIT %(limit)s
+        """
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(sql, params)
+            rows = cursor.fetchall()
+            cols = [d[0] for d in cursor.description]
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Databricks query failed, falling back to mock: %s", exc)
+        return _query_mock(bounds, filters, limit, detail_level)
+
+    if detail_level == "points":
+        wells: list[Well] = []
+        for row in rows:
+            row_dict = dict(zip(cols, row))
+            raw_lat = row_dict.get("sh_latitude_nad27")
+            raw_lng = row_dict.get("sh_longitude_nad27")
+            if raw_lat is None or raw_lng is None:
+                continue
+            lat, lng = _transform_coords(float(raw_lat), float(raw_lng))
+            well = Well(
+                id=str(row_dict.get("api_14", "")),
+                name="",
+                lat=lat,
+                lng=lng,
+                lateralLength=0,
+                status=_map_status(row_dict.get("well_status")),
+                operator="",
+                formation="",
+            )
+            if filters and not _passes_filter(well, filters):
+                continue
+            wells.append(well)
+
+        total = len(wells)
+        return SpatialWellsResponse(
+            wells=wells,
+            total_count=total,
+            truncated=total >= limit,
+            source="databricks",
+        )
+
+    # summary or full: build intermediate well data including raw BH coords for trajectory
+    well_data: list[tuple[Well, float, float, float, float]] = []  # (well, sh_lat_wgs84, sh_lng_wgs84, bh_lat_wgs84, bh_lng_wgs84)
+    for row in rows:
+        row_dict = dict(zip(cols, row))
+        raw_lat = row_dict.get("sh_latitude_nad27")
+        raw_lng = row_dict.get("sh_longitude_nad27")
+        if raw_lat is None or raw_lng is None:
+            continue
+        sh_lat_nad27 = float(raw_lat)
+        sh_lng_nad27 = float(raw_lng)
+        lat, lng = _transform_coords(sh_lat_nad27, sh_lng_nad27)
+
+        raw_bh_lat = row_dict.get("bh_latitude_nad27")
+        raw_bh_lng = row_dict.get("bh_longitude_nad27")
+        bh_lat_wgs84, bh_lng_wgs84 = _transform_coords(
+            float(raw_bh_lat) if raw_bh_lat is not None else sh_lat_nad27,
+            float(raw_bh_lng) if raw_bh_lng is not None else sh_lng_nad27,
+        )
+
+        raw_ll = row_dict.get("lateral_length")
+        lateral_length = float(raw_ll) if raw_ll is not None else 0.0
+        if isinstance(raw_ll, Decimal):
+            lateral_length = float(raw_ll)
+
+        well = Well(
+            id=str(row_dict.get("api_14", "")),
+            name=str(row_dict.get("well_name", "")),
+            lat=lat,
+            lng=lng,
+            lateralLength=lateral_length,
+            status=_map_status(row_dict.get("well_status")),
+            operator=str(row_dict.get("operator", "")),
+            formation=str(row_dict.get("formation", "")),
+        )
+
+        if filters and not _passes_filter(well, filters):
+            continue
+        well_data.append((well, lat, lng, bh_lat_wgs84, bh_lng_wgs84))
+
+    result_wells = [wd[0] for wd in well_data]
+
+    if detail_level == "full" and result_wells:
+        api_ids = [w.id for w in result_wells]
+        trajectories = _fetch_trajectories(conn, api_ids, well_data)
+        for well in result_wells:
+            well.trajectory = trajectories.get(well.id)
+
+    total = len(result_wells)
+    return SpatialWellsResponse(
+        wells=result_wells,
+        total_count=total,
+        truncated=total >= limit,
+        source="databricks",
+    )
+
+
+_MAX_STATIONS_PER_WELL = 50
+
+
+def _subsample(items: list[Any], max_count: int) -> list[Any]:
+    """Subsample a list to at most *max_count* evenly-spaced items, always keeping first and last."""
+    n = len(items)
+    if n <= max_count:
+        return items
+    # Always include first and last; pick evenly-spaced indices in between
+    step = (n - 1) / (max_count - 1)
+    indices = [round(i * step) for i in range(max_count)]
+    return [items[i] for i in indices]
+
+
+def _fetch_trajectories(
+    conn: Any,
+    api_ids: list[str],
+    well_data: list[tuple[Well, float, float, float, float]],
+) -> dict[str, WellTrajectory]:
+    """
+    Fetch the FULL directional survey for each well in *api_ids* and return
+    a mapping of api_14 -> WellTrajectory with a dense ``path`` list.
+
+    Falls back to a 3-point path synthesized from well_summary_all header
+    coords for any well that has no directional survey rows.
+    """
+    if not api_ids:
+        return {}
+
+    # Lookup: api_14 → (sh_lat_wgs84, sh_lng_wgs84, bh_lat_wgs84, bh_lng_wgs84)
+    well_coords: dict[str, tuple[float, float, float, float]] = {
+        w.id: (sh_lat, sh_lng, bh_lat, bh_lng)
+        for w, sh_lat, sh_lng, bh_lat, bh_lng in well_data
+    }
+    # Lookup: api_14 → Well (for lateral_length check)
+    well_by_id: dict[str, Well] = {w.id: w for w, *_ in well_data}
+
+    # Only query surveys for wells with lateral_length > 0
+    survey_api_ids = [a for a in api_ids if well_by_id.get(a) and well_by_id[a].lateralLength > 0]
+
+    survey_table = "eds.well.tbl_directional_survey"
+
+    # ---- Fetch all survey stations ordered by MD ----
+    raw_stations: dict[str, list[dict[str, Any]]] = {}  # api_14 → [row_dicts]
+
+    if survey_api_ids:
+        api_list = ", ".join(f"'{a}'" for a in survey_api_ids)
+        sql = f"""
+            SELECT api_14, measured_depth, true_vertical_depth,
+                   north_south_distance, east_west_distance, kickoff_point
+            FROM {survey_table}
+            WHERE api_14 IN ({api_list})
+            ORDER BY api_14, measured_depth
+        """
+
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(sql)
+                rows = cursor.fetchall()
+                cols = [d[0] for d in cursor.description]
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Trajectory query failed, skipping trajectories: %s", exc)
+            return {}
+
+        for row in rows:
+            rd = dict(zip(cols, row))
+            api = str(rd.get("api_14", ""))
+            raw_stations.setdefault(api, []).append(rd)
+
+    # ---- Build WellTrajectory for each well ----
+    trajectories: dict[str, WellTrajectory] = {}
+    for api in api_ids:
+        coords = well_coords.get(api)
+        if coords is None:
+            continue
+        sh_lat, sh_lng, bh_lat, bh_lng = coords
+        stations = raw_stations.get(api, [])
+
+        if stations:
+            # Subsample if too many stations
+            stations = _subsample(stations, _MAX_STATIONS_PER_WELL)
+
+            # Convert each station to a WellTrajectoryPoint
+            path: list[WellTrajectoryPoint] = []
+            for st in stations:
+                ns = st.get("north_south_distance")
+                ew = st.get("east_west_distance")
+                tvd_raw = st.get("true_vertical_depth")
+                ns_ft = float(ns) if ns is not None else 0.0
+                ew_ft = float(ew) if ew is not None else 0.0
+                tvd = float(tvd_raw) if tvd_raw is not None else 0.0
+
+                pt_lat = sh_lat + (ns_ft / 364000.0)
+                pt_lng = sh_lng + (ew_ft / (364000.0 * math.cos(math.radians(sh_lat))))
+                path.append(WellTrajectoryPoint(lat=pt_lat, lng=pt_lng, depthFt=tvd))
+
+            surface_pt = path[0]
+            toe_pt = path[-1]
+
+            # Heel: station closest to KOP depth
+            kop_raw = stations[0].get("kickoff_point")
+            if kop_raw is not None:
+                kop_depth = float(kop_raw)
+                heel_idx = min(
+                    range(len(stations)),
+                    key=lambda i: abs(
+                        (float(stations[i]["measured_depth"]) if stations[i].get("measured_depth") is not None else 0.0)
+                        - kop_depth
+                    ),
+                )
+                heel_pt = path[heel_idx]
+            else:
+                # No KOP — use midpoint of path
+                heel_pt = path[len(path) // 2]
+
+            toe_md_raw = stations[-1].get("measured_depth")
+            toe_md = float(toe_md_raw) if toe_md_raw is not None else 0.0
+
+            trajectories[api] = WellTrajectory(
+                path=path,
+                surface=surface_pt,
+                heel=heel_pt,
+                toe=toe_pt,
+                mdFt=toe_md if toe_md > 0 else None,
+            )
+        else:
+            # Fallback: synthesize 3-point path from well header coords
+            tvd_estimate = well_by_id[api].lateralLength * 0.8 if well_by_id.get(api) else 8000.0
+            surface_pt = WellTrajectoryPoint(lat=sh_lat, lng=sh_lng, depthFt=0.0)
+            mid_pt = WellTrajectoryPoint(
+                lat=(sh_lat + bh_lat) / 2.0,
+                lng=(sh_lng + bh_lng) / 2.0,
+                depthFt=tvd_estimate / 2.0,
+            )
+            toe_pt = WellTrajectoryPoint(lat=bh_lat, lng=bh_lng, depthFt=tvd_estimate)
+
+            trajectories[api] = WellTrajectory(
+                path=[surface_pt, mid_pt, toe_pt],
+                surface=surface_pt,
+                heel=mid_pt,
+                toe=toe_pt,
+                mdFt=None,
+            )
+
+    return trajectories
+
+
+def _query_mock(
+    bounds: ViewportBounds,
+    filters: SpatialLayerFilter | None,
+    limit: int,
+    detail_level: DetailLevel = "summary",
+) -> SpatialWellsResponse:
+    candidates = [
+        w
+        for w in _MOCK_WELLS
+        if bounds.sw_lat <= w.lat <= bounds.ne_lat
+        and bounds.sw_lng <= w.lng <= bounds.ne_lng
+    ]
+    if filters:
+        candidates = [w for w in candidates if _passes_filter(w, filters)]
+
+    truncated = len(candidates) > limit
+    wells = candidates[:limit]
+
+    if detail_level == "points":
+        # Strip to minimal fields for cluster rendering
+        wells = [
+            Well(id=w.id, name="", lat=w.lat, lng=w.lng, lateralLength=0, status=w.status, operator="", formation="")
+            for w in wells
+        ]
+    elif detail_level == "full":
+        wells = [_attach_mock_trajectory(w) for w in wells]
+
+    return SpatialWellsResponse(
+        wells=wells,
+        total_count=len(wells),
+        truncated=truncated,
+        source="mock",
+    )
+
+
+def _attach_mock_trajectory(well: Well) -> Well:
+    """
+    Generate a plausible mock trajectory for a well.
+    Horizontal wells get a 90° turn at ~8,000 ft TVD heading east.
+    The path field is populated with [surface, heel, toe].
+    """
+    lateral_ft = well.lateralLength if well.lateralLength > 0 else 7500.0
+    kop_tvd = 8000.0
+    # Toe is ~lateral_ft east of the heel; convert feet to degrees lng
+    lng_offset = lateral_ft / (364000.0 * math.cos(math.radians(well.lat)))
+
+    surface_pt = WellTrajectoryPoint(lat=well.lat, lng=well.lng, depthFt=0.0)
+    heel_pt = WellTrajectoryPoint(lat=well.lat, lng=well.lng, depthFt=kop_tvd)
+    toe_pt = WellTrajectoryPoint(lat=well.lat, lng=well.lng + lng_offset, depthFt=kop_tvd)
+    total_md = kop_tvd + lateral_ft
+
+    return Well(
+        id=well.id,
+        name=well.name,
+        lat=well.lat,
+        lng=well.lng,
+        lateralLength=well.lateralLength,
+        status=well.status,
+        operator=well.operator,
+        formation=well.formation,
+        trajectory=WellTrajectory(
+            path=[surface_pt, heel_pt, toe_pt],
+            surface=surface_pt,
+            heel=heel_pt,
+            toe=toe_pt,
+            mdFt=total_md,
+        ),
+    )
+
+
+def _passes_filter(well: Well, filters: SpatialLayerFilter) -> bool:
+    if filters.statuses and well.status not in filters.statuses:
+        return False
+    if filters.operators and well.operator not in filters.operators:
+        return False
+    if filters.formations and well.formation not in filters.formations:
+        return False
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Legacy PostGIS manager (kept for main.py lifespan backward compat)
+# ---------------------------------------------------------------------------
+
 _CONNECT_RETRY_INTERVAL_SECS = 30.0
 _CONNECTION_TIMEOUT_SECS = 5.0
 
 
 class SpatialDBManager:
     """
-    Manages a lazily-initialized connection to the optional spatial database.
+    Manages a lazily-initialized connection to the optional PostGIS database.
 
-    State is fully instance-scoped — no module-level globals, safe for async
-    FastAPI (single shared instance created at app startup, read-only after that).
+    Still registered on app.state for backward compat with main.py lifespan.
+    The active spatial data source is now the module-level Databricks functions.
     """
 
     def __init__(self, dsn: str | None = None) -> None:
-        """
-        Args:
-            dsn: Database connection string.  Defaults to the ``SPATIAL_DB_DSN``
-                 environment variable.  Pass ``None`` explicitly to skip all
-                 connection attempts (useful in test environments).
-        """
         self._dsn: str | None = dsn if dsn is not None else os.getenv("SPATIAL_DB_DSN")
         self._conn: Any | None = None
         self._last_attempt: float = 0.0
         self._last_error: str | None = None
 
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
-
     def connection(self) -> Any | None:
-        """
-        Return a live DB connection, attempting to (re-)connect if needed.
-
-        Returns ``None`` when:
-        - No DSN is configured (spatial DB is optional)
-        - The last connection attempt was within the retry window
-        - All connection attempts fail
-        """
         if self._dsn is None:
             return None
-
         if self._conn is not None:
             return self._conn
-
         now = time.monotonic()
         if now - self._last_attempt < _CONNECT_RETRY_INTERVAL_SECS:
-            # Still within backoff window — surface last error, don't retry.
             return None
-
         return self._attempt_connect()
 
     def disconnect(self) -> None:
-        """Close the current connection, if any."""
         if self._conn is not None:
             try:
                 self._conn.close()
@@ -87,22 +717,11 @@ class SpatialDBManager:
                 self._conn = None
 
     def health(self) -> dict[str, object]:
-        """
-        Return a health-check dict suitable for embedding in ``/api/health``.
-
-        Shape::
-
-            {"connected": bool, "error": str | None, "dsn_configured": bool}
-        """
         return {
             "connected": self._conn is not None,
             "error": self._last_error,
             "dsn_configured": self._dsn is not None,
         }
-
-    # ------------------------------------------------------------------
-    # Internal
-    # ------------------------------------------------------------------
 
     def _attempt_connect(self) -> Any | None:
         self._last_attempt = time.monotonic()
@@ -118,49 +737,18 @@ class SpatialDBManager:
             return None
 
     def _open_connection(self) -> Any:
-        """
-        Open a raw DB connection.
-
-        Tries ``psycopg2`` first (PostGIS / PostgreSQL), then ``sqlite3`` as a
-        fallback for local development.  Raises on failure so ``_attempt_connect``
-        can record the error.
-        """
-        assert self._dsn is not None  # guarded by caller
-
+        assert self._dsn is not None
         try:
             import psycopg2  # type: ignore[import-untyped]
 
-            return psycopg2.connect(
-                self._dsn, connect_timeout=int(_CONNECTION_TIMEOUT_SECS)
-            )
+            return psycopg2.connect(self._dsn, connect_timeout=int(_CONNECTION_TIMEOUT_SECS))
         except ImportError:
-            pass  # psycopg2 not installed — fall through to sqlite3
-
-        # sqlite3 fallback (file path or :memory:)
+            pass
         import sqlite3
 
         return sqlite3.connect(self._dsn, timeout=_CONNECTION_TIMEOUT_SECS)
 
 
-# ---------------------------------------------------------------------------
-# FastAPI dependency
-# ---------------------------------------------------------------------------
-
 def get_spatial_db(request: Any) -> "SpatialDBManager":  # noqa: F821
-    """
-    FastAPI dependency that returns the app-lifetime ``SpatialDBManager``.
-
-    Register on the app instance at startup::
-
-        app.state.spatial_db = SpatialDBManager()
-
-    Then inject in route handlers::
-
-        from fastapi import Depends, Request
-        from .spatial_service import SpatialDBManager, get_spatial_db
-
-        @app.get("/api/wells/nearby")
-        def wells_nearby(db: SpatialDBManager = Depends(get_spatial_db)):
-            ...
-    """
+    """FastAPI dependency that returns the app-lifetime SpatialDBManager."""
     return request.app.state.spatial_db
