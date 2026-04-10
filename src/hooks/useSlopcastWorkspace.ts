@@ -1,21 +1,24 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DEFAULT_CAPEX, DEFAULT_COMMODITY_PRICING, DEFAULT_OPEX, DEFAULT_OWNERSHIP, DEFAULT_TYPE_CURVE, GROUP_COLORS, MOCK_WELLS } from '../constants';
-import { Scenario, ScheduleParams, Well, WellGroup, DEFAULT_TAX_ASSUMPTIONS, DEFAULT_DEBT_ASSUMPTIONS } from '../types';
+import { Scenario, ScheduleParams, SpatialDataSourceId, Well, WellGroup } from '../types';
 import { DesignWorkspace } from '../components/slopcast/DesignWorkspaceTabs';
 import { EconomicsResultsTab } from '../components/slopcast/EconomicsResultsTabs';
 import { DesignStep, StepStatus, WorkflowStep } from '../components/slopcast/WorkflowStepper';
 import { WellsMobilePanel } from '../components/slopcast/DesignWellsView';
 import { EconomicsMobilePanel } from '../components/slopcast/DesignEconomicsView';
 import type { OperationsConsoleProps } from '../components/slopcast/OperationsConsole';
-import { useViewportLayout } from '../components/slopcast/hooks/useViewportLayout';
+import { getViewportLayout, useViewportLayout } from '../components/slopcast/hooks/useViewportLayout';
 import { useProjectPersistence } from '../components/slopcast/hooks/useProjectPersistence';
 import { useAuth } from '../auth/AuthProvider';
 import { hasSupabaseEnv } from '../services/supabaseClient';
 import { useTheme } from '../theme/ThemeProvider';
 import { aggregateEconomics, cachedCalculateEconomics, applyTaxLayer, applyDebtLayer, applyReservesRisk } from '../utils/economics';
+import { getStoredSpatialSourceId, setStoredSpatialSourceId } from '../services/spatialService';
 import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 import { useDerivedMetrics } from './useDerivedMetrics';
+import { useWellFiltering } from './useWellFiltering';
+import { useWellSelection } from './useWellSelection';
 import {
   getDesignWorkspace,
   setDesignWorkspace as storeDesignWorkspace,
@@ -116,17 +119,50 @@ export function useSlopcastWorkspace() {
     console.log('[AcreageSearch]', query, filters);
   }, []);
 
-  // --- State ---
+  // --- Wells & spatial source ---
+  const [wells, setWells] = useState<Well[]>(MOCK_WELLS);
+  const [spatialSourceId, setSpatialSourceId] = useState<SpatialDataSourceId>(getStoredSpatialSourceId());
+  const prevWellIdsRef = useRef<Set<string>>(new Set(MOCK_WELLS.map(w => w.id)));
+
+  const handleSourceChange = useCallback((id: SpatialDataSourceId) => {
+    setSpatialSourceId(id);
+    setStoredSpatialSourceId(id);
+  }, []);
+
+  const handleWellsLoaded = useCallback((loadedWells: Well[]) => {
+    setWells(loadedWells);
+    const newIds = new Set(loadedWells.map(w => w.id));
+    const prevIds = prevWellIdsRef.current;
+    // If the well IDs changed and there's no overlap with previous set,
+    // reset group assignments so stale IDs don't linger
+    if (prevIds.size > 0 && newIds.size > 0) {
+      let hasOverlap = false;
+      for (const id of newIds) {
+        if (prevIds.has(id)) { hasOverlap = true; break; }
+      }
+      if (!hasOverlap) {
+        setGroups(prev => prev.map(g => ({ ...g, wellIds: new Set<string>() })));
+      }
+    }
+    prevWellIdsRef.current = newIds;
+  }, []);
+
+  // --- View state ---
   const [viewMode, setViewMode] = useState<ViewMode>('DASHBOARD');
   const [designWorkspace, setDesignWorkspace] = useState<DesignWorkspace>(getDesignWorkspace);
-  const [wellsMobilePanel, setWellsMobilePanel] = useState<WellsMobilePanel>('MAP');
+  const [wellsMobilePanel, setWellsMobilePanel] = useState<WellsMobilePanel>(() => {
+    if (typeof window === 'undefined') return 'MAP';
+    return getViewportLayout(window.innerWidth) === 'mobile' ? 'GROUPS' : 'MAP';
+  });
   const [economicsMobilePanel, setEconomicsMobilePanel] = useState<EconomicsMobilePanel>('RESULTS');
   const [economicsResultsTab, setEconomicsResultsTab] = useState<EconomicsResultsTab>(getEconomicsResultsTab);
   const [economicsFocusMode, setEconomicsFocusMode] = useState<boolean>(getEconomicsFocusMode);
   const [opsTab, setOpsTab] = useState<OpsTab>('SELECTION_ACTIONS');
   const viewportLayout = useViewportLayout();
+  const previousViewportLayoutRef = useRef(viewportLayout);
   const [controlsOpenSection, setControlsOpenSection] = useState<ControlsSection | null>(null);
 
+  // --- Domain state ---
   const [groups, setGroups] = useState<WellGroup[]>([
     {
       id: 'g-1',
@@ -174,7 +210,6 @@ export function useSlopcastWorkspace() {
   ]);
 
   const [activeGroupId, setActiveGroupId] = useState<string>('g-1');
-  const [selectedWellIds, setSelectedWellIds] = useState<Set<string>>(new Set());
   const [lastSnapshotAt, setLastSnapshotAt] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState('');
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
@@ -182,16 +217,35 @@ export function useSlopcastWorkspace() {
   const [snapshotHistory, setSnapshotHistory] = useState<Array<{ npv: number; capex: number; eur: number; payout: number; timestamp: number }>>([]);
   const [showAfterTax, setShowAfterTax] = useState(false);
   const [showLevered, setShowLevered] = useState(false);
-  const [operatorFilter, setOperatorFilter] = useState<string>('ALL');
-  const [formationFilter, setFormationFilter] = useState<string>('ALL');
-  const [statusFilter, setStatusFilter] = useState<Well['status'] | 'ALL'>('ALL');
+
+  // --- Well filtering & selection (delegated to extracted hooks) ---
+  const {
+    operatorFilter, toggleOperator, replaceOperatorFilter,
+    formationFilter, toggleFormation, replaceFormationFilter,
+    statusFilter, toggleStatus, replaceStatusFilter,
+    operatorOptions, formationOptions, statusOptions,
+    filteredWells, visibleWellIds, dimmedWellIds,
+    handleResetFilters,
+  } = useWellFiltering(wells);
+
+  const {
+    selectedWellIds, setSelectedWellIds,
+    selectedVisibleCount,
+    handleToggleWell, handleSelectWells, handleSelectAll, handleClearSelection,
+  } = useWellSelection({
+    visibleWellIds,
+    filteredWellsCount: filteredWells.length,
+    onEmptyVisibleSelection: () => {
+      setActionMessage('No visible wells match current filters.');
+    },
+  });
 
   // --- Computed Economics per Group ---
   const processedGroups = useMemo(() => {
     const baseScenario = scenarios.find(s => s.isBaseCase) || scenarios[0];
     const basePricing = baseScenario?.pricing || DEFAULT_COMMODITY_PRICING;
     return groups.map(group => {
-      const groupWells = MOCK_WELLS.filter(w => group.wellIds.has(w.id));
+      const groupWells = wells.filter(w => group.wellIds.has(w.id));
       let { flow, metrics } = cachedCalculateEconomics(groupWells, group.typeCurve, group.capex, basePricing, group.opex, group.ownership);
 
       if (group.taxAssumptions) {
@@ -212,53 +266,12 @@ export function useSlopcastWorkspace() {
 
       return { ...group, flow, metrics };
     });
-  }, [groups, scenarios]);
+  }, [groups, scenarios, wells]);
 
   // --- Aggregate Portfolio Economics ---
   const { flow: aggregateFlow, metrics: aggregateMetrics } = useMemo(() => {
     return aggregateEconomics(processedGroups);
   }, [processedGroups]);
-
-  const operatorOptions = useMemo(() => {
-    return Array.from(new Set(MOCK_WELLS.map(well => well.operator))).sort();
-  }, []);
-
-  const formationOptions = useMemo(() => {
-    return Array.from(new Set(MOCK_WELLS.map(well => well.formation))).sort();
-  }, []);
-
-  const statusOptions = useMemo(() => {
-    return Array.from(new Set(MOCK_WELLS.map(well => well.status)));
-  }, []);
-
-  const filteredWells = useMemo(() => {
-    return MOCK_WELLS.filter(well => {
-      if (operatorFilter !== 'ALL' && well.operator !== operatorFilter) return false;
-      if (formationFilter !== 'ALL' && well.formation !== formationFilter) return false;
-      if (statusFilter !== 'ALL' && well.status !== statusFilter) return false;
-      return true;
-    });
-  }, [formationFilter, operatorFilter, statusFilter]);
-
-  const visibleWellIds = useMemo(() => {
-    return new Set(filteredWells.map(well => well.id));
-  }, [filteredWells]);
-
-  const dimmedWellIds = useMemo(() => {
-    const ids = new Set<string>();
-    MOCK_WELLS.forEach(well => {
-      if (!visibleWellIds.has(well.id)) ids.add(well.id);
-    });
-    return ids;
-  }, [visibleWellIds]);
-
-  const selectedVisibleCount = useMemo(() => {
-    let count = 0;
-    selectedWellIds.forEach(id => {
-      if (visibleWellIds.has(id)) count += 1;
-    });
-    return count;
-  }, [selectedWellIds, visibleWellIds]);
 
   const supabasePersistenceEnabled =
     status === 'authenticated' && session?.provider === 'supabase' && hasSupabaseEnv();
@@ -281,9 +294,9 @@ export function useSlopcastWorkspace() {
     setActiveGroupId,
     setDesignWorkspace,
     setEconomicsResultsTab,
-    setOperatorFilter,
-    setFormationFilter,
-    setStatusFilter,
+    setOperatorFilter: replaceOperatorFilter,
+    setFormationFilter: replaceFormationFilter,
+    setStatusFilter: replaceStatusFilter,
     onStatusMessage: setActionMessage,
   });
 
@@ -341,119 +354,48 @@ export function useSlopcastWorkspace() {
   }, []);
 
   const handleAssignWellsToActive = useCallback(() => {
-    setSelectedWellIds(prevSelected => {
-      if (prevSelected.size === 0) return prevSelected;
-      setGroups(prevGroups => {
-        return prevGroups.map(g => {
-          const nextIds = new Set(g.wellIds);
-          if (g.id === activeGroupId) {
-            prevSelected.forEach(id => nextIds.add(id));
-          } else {
-            prevSelected.forEach(id => nextIds.delete(id));
-          }
-          return { ...g, wellIds: nextIds };
-        });
+    if (selectedWellIds.size === 0) return;
+    setGroups(prevGroups => {
+      return prevGroups.map(g => {
+        const nextIds = new Set(g.wellIds);
+        if (g.id === activeGroupId) {
+          selectedWellIds.forEach(id => nextIds.add(id));
+        } else {
+          selectedWellIds.forEach(id => nextIds.delete(id));
+        }
+        return { ...g, wellIds: nextIds };
       });
-      return new Set();
     });
-  }, [activeGroupId]);
+    setSelectedWellIds(new Set());
+  }, [activeGroupId, selectedWellIds, setSelectedWellIds]);
 
   const handleCreateGroupFromSelection = useCallback(() => {
-    setSelectedWellIds(prevSelected => {
-      if (prevSelected.size === 0) return prevSelected;
-      const newId = `g-${Date.now()}`;
+    if (selectedWellIds.size === 0) return;
+    const newId = `g-${Date.now()}`;
+    setGroups(prevGroups => {
+      const color = GROUP_COLORS[prevGroups.length % GROUP_COLORS.length];
       const newGroup: WellGroup = {
         id: newId,
-        name: `Selection Set`,
-        color: '#888',
-        wellIds: new Set(prevSelected),
+        name: `Selection Set ${prevGroups.length + 1}`,
+        color,
+        wellIds: new Set(selectedWellIds),
         typeCurve: { ...DEFAULT_TYPE_CURVE },
         capex: { ...DEFAULT_CAPEX },
         opex: { ...DEFAULT_OPEX, segments: DEFAULT_OPEX.segments.map(seg => ({ ...seg, id: `o-${Date.now()}-${Math.random()}` })) },
         ownership: { ...DEFAULT_OWNERSHIP, agreements: [] }
       };
-      setGroups(prevGroups => {
-        newGroup.color = GROUP_COLORS[prevGroups.length % GROUP_COLORS.length];
-        newGroup.name = `Selection Set ${prevGroups.length + 1}`;
-        const updatedPrevGroups = prevGroups.map(g => {
-          const nextIds = new Set(g.wellIds);
-          prevSelected.forEach(id => nextIds.delete(id));
-          return { ...g, wellIds: nextIds };
-        });
-        return [...updatedPrevGroups, newGroup];
+      const updatedPrevGroups = prevGroups.map(g => {
+        const nextIds = new Set(g.wellIds);
+        selectedWellIds.forEach(id => nextIds.delete(id));
+        return { ...g, wellIds: nextIds };
       });
-      setActiveGroupId(newId);
-      return new Set();
+      return [...updatedPrevGroups, newGroup];
     });
-  }, []);
-
-  const handleToggleWell = useCallback((id: string) => {
-    setSelectedWellIds(prev => {
-      if (!visibleWellIds.has(id)) return prev;
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, [visibleWellIds]);
-
-  const handleSelectWells = useCallback((ids: string[]) => {
-    setSelectedWellIds(prev => {
-      const next = new Set(prev);
-      ids.forEach(id => {
-        if (visibleWellIds.has(id)) next.add(id);
-      });
-      return next;
-    });
-  }, [visibleWellIds]);
-
-  const handleSelectAll = useCallback(() => {
-    if (filteredWells.length === 0) {
-      setActionMessage('No visible wells match current filters.');
-      return;
-    }
-
-    if (selectedVisibleCount === filteredWells.length) {
-      setSelectedWellIds(prev => {
-        const next = new Set(prev);
-        visibleWellIds.forEach(id => next.delete(id));
-        return next;
-      });
-    } else {
-      setSelectedWellIds(prev => {
-        const next = new Set(prev);
-        visibleWellIds.forEach(id => next.add(id));
-        return next;
-      });
-    }
-  }, [filteredWells.length, selectedVisibleCount, visibleWellIds]);
-
-  const handleClearSelection = useCallback(() => {
+    setActiveGroupId(newId);
     setSelectedWellIds(new Set());
-  }, []);
+  }, [selectedWellIds, setSelectedWellIds]);
 
-  const handleResetFilters = () => {
-    setOperatorFilter('ALL');
-    setFormationFilter('ALL');
-    setStatusFilter('ALL');
-  };
-
-  // Sync selected wells with visible wells
-  useEffect(() => {
-    setSelectedWellIds(prev => {
-      let changed = false;
-      const next = new Set<string>();
-      prev.forEach(id => {
-        if (visibleWellIds.has(id)) {
-          next.add(id);
-        } else {
-          changed = true;
-        }
-      });
-      return changed ? next : prev;
-    });
-  }, [visibleWellIds]);
-
+  // --- Derived analytics ---
   const scenarioRankings = useMemo(() => {
     return processedGroups
       .map(group => {
@@ -522,7 +464,7 @@ export function useSlopcastWorkspace() {
   ]);
 
   // Debounced derived metrics
-  const { keyDriverInsights, breakevenOilPrice } = useDerivedMetrics(
+  const { keyDriverInsights, breakevenOilPrice, isComputing: isDerivedComputing } = useDerivedMetrics(
     processedGroups,
     scenarios,
     aggregateMetrics.wellCount,
@@ -646,6 +588,15 @@ export function useSlopcastWorkspace() {
     storeEconomicsFocusMode(economicsFocusMode);
   }, [economicsFocusMode]);
 
+  // Auto-switch to GROUPS on mobile transition
+  useEffect(() => {
+    const previousLayout = previousViewportLayoutRef.current;
+    if (viewportLayout === 'mobile' && previousLayout !== 'mobile') {
+      setWellsMobilePanel('GROUPS');
+    }
+    previousViewportLayoutRef.current = viewportLayout;
+  }, [viewportLayout]);
+
   // --- Workflow ---
   const hasGroup = !!activeGroup;
   const hasGroupWells = activeGroup.wellIds.size > 0;
@@ -757,6 +708,10 @@ export function useSlopcastWorkspace() {
     viewportLayout,
     controlsOpenSection, setControlsOpenSection,
 
+    // Wells & spatial
+    wells,
+    spatialSourceId, handleSourceChange, handleWellsLoaded,
+
     // Data
     groups, processedGroups, activeGroupId, setActiveGroupId, activeGroup,
     scenarios, handleSetScenarios,
@@ -767,15 +722,16 @@ export function useSlopcastWorkspace() {
     aggregateFlow, aggregateMetrics,
     scenarioRankings, portfolioRoi,
     breakevenOilPrice, keyDriverInsights,
+    isDerivedComputing,
     snapshotHistory,
     showAfterTax, showLevered,
     setShowAfterTax: () => setShowAfterTax(prev => !prev),
     setShowLevered: () => setShowLevered(prev => !prev),
 
-    // Filters
-    operatorFilter, setOperatorFilter,
-    formationFilter, setFormationFilter,
-    statusFilter, setStatusFilter,
+    // Filters (multi-select: Set<string>, empty = all)
+    operatorFilter, toggleOperator,
+    formationFilter, toggleFormation,
+    statusFilter, toggleStatus,
     operatorOptions, formationOptions, statusOptions,
     handleResetFilters,
 

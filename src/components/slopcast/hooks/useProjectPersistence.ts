@@ -29,12 +29,24 @@ const buildHash = (value: string): string => {
 
 const sameIdMap = (map: Record<string, string>) => Object.keys(map).every((key) => key === map[key]);
 
+const toStoredFilterArray = (values: Set<string>): string[] => [...values];
+
+const toFilterSet = (value: string | string[] | undefined): Set<string> => {
+  if (typeof value === 'string') {
+    return value === 'ALL' ? new Set() : new Set([value]);
+  }
+  if (Array.isArray(value)) {
+    return new Set(value.filter((entry): entry is string => typeof entry === 'string'));
+  }
+  return new Set();
+};
+
 interface PersistenceUiState {
   designWorkspace: DesignWorkspace;
   economicsResultsTab: EconomicsResultsTab;
-  operatorFilter: string;
-  formationFilter: string;
-  statusFilter: Well['status'] | 'ALL';
+  operatorFilter: Set<string>;
+  formationFilter: Set<string>;
+  statusFilter: Set<string>;
 }
 
 interface UseProjectPersistenceArgs {
@@ -49,9 +61,9 @@ interface UseProjectPersistenceArgs {
   setActiveGroupId: Dispatch<SetStateAction<string>>;
   setDesignWorkspace: Dispatch<SetStateAction<DesignWorkspace>>;
   setEconomicsResultsTab: Dispatch<SetStateAction<EconomicsResultsTab>>;
-  setOperatorFilter: Dispatch<SetStateAction<string>>;
-  setFormationFilter: Dispatch<SetStateAction<string>>;
-  setStatusFilter: Dispatch<SetStateAction<Well['status'] | 'ALL'>>;
+  setOperatorFilter: Dispatch<SetStateAction<Set<string>>>;
+  setFormationFilter: Dispatch<SetStateAction<Set<string>>>;
+  setStatusFilter: Dispatch<SetStateAction<Set<string>>>;
   onStatusMessage?: (message: string) => void;
 }
 
@@ -120,9 +132,9 @@ export function useProjectPersistence({
       uiState: {
         designWorkspace: snapshot.uiState.designWorkspace,
         economicsResultsTab: snapshot.uiState.economicsResultsTab,
-        operatorFilter: snapshot.uiState.operatorFilter,
-        formationFilter: snapshot.uiState.formationFilter,
-        statusFilter: snapshot.uiState.statusFilter,
+        operatorFilter: toStoredFilterArray(snapshot.uiState.operatorFilter),
+        formationFilter: toStoredFilterArray(snapshot.uiState.formationFilter),
+        statusFilter: toStoredFilterArray(snapshot.uiState.statusFilter),
       },
       groups: snapshot.groups.map((group, index) => ({
         id: group.id,
@@ -297,16 +309,9 @@ export function useProjectPersistence({
           // Migrate old tabs to OVERVIEW
           setEconomicsResultsTab('OVERVIEW');
         }
-        if (typeof storedUi.operatorFilter === 'string') setOperatorFilter(storedUi.operatorFilter);
-        if (typeof storedUi.formationFilter === 'string') setFormationFilter(storedUi.formationFilter);
-        if (
-          storedUi.statusFilter === 'ALL' ||
-          storedUi.statusFilter === 'PRODUCING' ||
-          storedUi.statusFilter === 'DUC' ||
-          storedUi.statusFilter === 'PERMIT'
-        ) {
-          setStatusFilter(storedUi.statusFilter);
-        }
+        setOperatorFilter(toFilterSet(storedUi.operatorFilter));
+        setFormationFilter(toFilterSet(storedUi.formationFilter));
+        setStatusFilter(toFilterSet(storedUi.statusFilter));
 
         queueMicrotask(() => {
           isHydratingRef.current = false;

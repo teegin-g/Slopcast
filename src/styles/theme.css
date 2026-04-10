@@ -9,16 +9,16 @@
 
 /* ---------- Default: Slate ---------- */
 :root {
-  --bg-deep: 15 23 42;
-  /* #0f172a */
-  --bg-space: 27 41 62;
-  /* #1B293E */
-  --surface-1: 30 41 59;
-  /* #1e293b */
-  --surface-2: 51 65 85;
-  /* #334155 */
-  --border: 71 85 105;
-  /* #475569 */
+  --bg-deep: 18 20 27;
+  /* #12141b */
+  --bg-space: 28 31 38;
+  /* #1c1f26 */
+  --surface-1: 35 38 47;
+  /* #23262f */
+  --surface-2: 55 59 68;
+  /* #373b44 */
+  --border: 82 86 95;
+  /* #52565f */
   --cyan: 59 130 246;
   /* #3b82f6 */
   --magenta: 236 72 153;
@@ -31,8 +31,8 @@
   /* #d8b4fe */
   --text: 241 245 249;
   /* #f1f5f9 */
-  --muted: 148 163 184;
-  /* #94a3b8 */
+  --muted: 156 160 170;
+  /* #9ca0aa */
   --success: 16 185 129;
   /* #10b981 */
   --warning: 245 158 11;
@@ -40,21 +40,21 @@
   --danger: 239 68 68;
   /* #ef4444 */
 
-  --shadow-glow-cyan: 0 0 10px rgba(59, 130, 246, 0.3);
-  --shadow-glow-magenta: 0 0 10px rgba(236, 72, 153, 0.3);
+  --shadow-glow-cyan: 0 0 0 transparent;
+  --shadow-glow-magenta: 0 0 0 transparent;
   --shadow-card: 0 10px 30px rgba(0, 0, 0, .45);
 
   --grad-space:
-    radial-gradient(1200px circle at 10% -20%, rgba(59, 130, 246, 0.26) 0%, rgba(59, 130, 246, 0) 58%),
-    radial-gradient(980px circle at 92% -8%, rgba(99, 102, 241, 0.20) 0%, rgba(99, 102, 241, 0) 54%),
-    linear-gradient(160deg, #19273d 0%, #0f172a 58%, #0a1323 100%);
+    radial-gradient(1200px circle at 10% -20%, rgba(82, 86, 95, 0.22) 0%, rgba(82, 86, 95, 0) 58%),
+    radial-gradient(980px circle at 92% -8%, rgba(55, 59, 68, 0.18) 0%, rgba(55, 59, 68, 0) 54%),
+    linear-gradient(160deg, #1c1f26 0%, #12141b 58%, #0d0e13 100%);
   --font-brand: 'Inter';
-  --ambient-left: 59 130 246;
-  --ambient-right: 71 85 105;
-  --ambient-left-alpha: 0.26;
-  --ambient-right-alpha: 0.16;
-  --ambient-orb-left-alpha: 0.12;
-  --ambient-orb-right-alpha: 0.14;
+  --ambient-left: 82 86 95;
+  --ambient-right: 55 59 68;
+  --ambient-left-alpha: 0.20;
+  --ambient-right-alpha: 0.14;
+  --ambient-orb-left-alpha: 0.10;
+  --ambient-orb-right-alpha: 0.12;
 
   /* ==========================================================================
      Semantic chrome tokens (defaults map to base tokens)
@@ -155,7 +155,7 @@
   --btn-secondary-text: var(--text);
 
   /* Radii */
-  --radius-panel: 12px;
+  --radius-panel: 6px;
 
   /* Light inset surfaces (used by Scenario page Classic mode) */
   --inset-bg-1: 255 255 255;
@@ -163,6 +163,13 @@
   --inset-border: var(--border);
   --inset-text: var(--text);
   --inset-muted: var(--muted);
+
+  /* Spacing tokens (default = current hardcoded Tailwind values) */
+  --space-panel-x: 1.5rem;
+  --space-panel-y: 1.5rem;
+  --space-section-gap: 1rem;
+  --space-kpi-gap: 0.75rem;
+  --space-hero-pad: 2rem;
 }
 
 /* ---------- Synthwave ---------- */
@@ -216,7 +223,20 @@
   --synth-sun: 255 184 107;
   --synth-grid-cyan: 158 211 240;
   --synth-ridge-dark: 8 3 18;
-  --radius-panel: 14px;
+  --radius-panel: 22px;
+  --font-heading: 'Orbitron', sans-serif;
+}
+
+/* Synthwave: reactive glow on panel hover */
+@media (prefers-reduced-motion: no-preference) {
+  [data-theme='synthwave'] .sc-panel {
+    transition: box-shadow 0.3s ease;
+  }
+  [data-theme='synthwave'] .sc-panel:hover {
+    box-shadow:
+      0 0 12px rgba(229, 102, 218, 0.15),
+      0 0 36px rgba(229, 102, 218, 0.08);
+  }
 }
 
 /* ---------- Tropical / Tommy Bahama ---------- */
@@ -245,21 +265,24 @@
   /* off-white sea-foam */
   --muted: 148 180 170;
   /* faded palm green */
-  --success: 52 211 153;
-  /* emerald-400 */
+  --success: 185 255 59;
+  /* neon lime */
   --warning: 185 255 59;
   /* neon lime – used for tropical highlights */
   --danger: 248 113 113;
   /* red-400 */
+
+  --header-bg-1: 60 45 30;
+  --header-bg-2: 26 35 50;
 
   --shadow-glow-cyan: 0 0 14px rgba(45, 212, 191, 0.35), 0 0 40px rgba(45, 212, 191, 0.15);
   --shadow-glow-magenta: 0 0 14px rgba(185, 255, 59, 0.42), 0 0 46px rgba(185, 255, 59, 0.20);
   --shadow-card: 0 10px 30px rgba(0, 0, 0, .45);
 
   --grad-space:
-    radial-gradient(1040px circle at 12% -18%, rgba(45, 212, 191, 0.34) 0%, rgba(45, 212, 191, 0) 58%),
-    radial-gradient(980px circle at 92% -10%, rgba(185, 255, 59, 0.24) 0%, rgba(185, 255, 59, 0) 56%),
-    linear-gradient(162deg, #1b3140 0%, #142636 52%, #0f1c2b 100%);
+    radial-gradient(1200px circle at 10% -20%, rgba(255,127,107,0.18) 0%, transparent 58%),
+    radial-gradient(980px circle at 92% -8%, rgba(185,255,59,0.10) 0%, transparent 54%),
+    linear-gradient(160deg, #1a2e28 0%, #1a2332 58%, #0a1520 100%);
   --font-brand: 'Inter';
   --ambient-left: 45 212 191;
   --ambient-right: 185 255 59;
@@ -272,6 +295,12 @@
   --tropical-lagoon: 45 212 191;
   --tropical-ridge-dark: 9 23 31;
   --tropical-palm-shadow: 16 42 44;
+  --radius-panel: 20px;
+  --font-heading: 'Quicksand', sans-serif;
+}
+
+[data-theme='tropical'] .typo-section {
+  color: rgb(45 212 191);
 }
 
 /* ---------- Nocturne (Moonlit Alpine) ---------- */
@@ -358,6 +387,35 @@
   --btn-primary-bg-2: 71 148 194;
   --btn-primary-border: 31 76 119;
   --btn-primary-text: 8 17 33;
+  --radius-panel: 10px;
+  --font-heading: 'Cormorant Garamond', serif;
+  --nocturne-accent-warm: 233 176 103;
+}
+
+/* Nocturne amber accent overrides */
+[data-theme='league'] .panel-accent-strip {
+  background: linear-gradient(90deg,
+    rgba(233,176,103,0.7),
+    rgba(103,195,238,0.4),
+    rgba(116,176,145,0.5)
+  );
+}
+[data-theme='league'] .typo-hero-value {
+  color: rgb(233 176 103);
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-size: clamp(3rem, 6vw, 5rem);
+}
+[data-theme='league'] .typo-section {
+  color: rgb(168 191 225);
+  font-family: var(--font-heading);
+  letter-spacing: 0.08em;
+  font-size: 0.8125rem;
+}
+[data-theme='league'] .typo-kpi-label {
+  font-family: var(--font-heading);
+  letter-spacing: 0.06em;
 }
 
 /* ---------- Stormwatch (Dusk Front) ---------- */
@@ -401,7 +459,6 @@
     radial-gradient(1080px circle at 10% -20%, rgba(144, 173, 219, 0.30) 0%, rgba(144, 173, 219, 0) 58%),
     radial-gradient(980px circle at 90% -12%, rgba(247, 166, 102, 0.24) 0%, rgba(247, 166, 102, 0) 56%),
     linear-gradient(170deg, #1a2842 0%, #101a2d 54%, #070b16 100%);
-  --font-brand: 'Inter';
   --ambient-left: 126 161 216;
   --ambient-right: 247 166 102;
   --ambient-left-alpha: 0.32;
@@ -444,6 +501,31 @@
   --btn-primary-bg-2: 108 147 205;
   --btn-primary-border: 33 74 124;
   --btn-primary-text: 11 18 33;
+  --radius-panel: 2px;
+  --font-heading: 'Space Grotesk', sans-serif;
+  --font-brand: 'JetBrains Mono';
+
+  /* Dense spacing overrides */
+  --space-panel-x: 1rem;
+  --space-panel-y: 0.875rem;
+  --space-section-gap: 0.625rem;
+  --space-kpi-gap: 0.5rem;
+  --space-hero-pad: 1.25rem;
+}
+
+/* Stormwatch: monospace metrics for ops-center identity */
+[data-theme='stormwatch'] .typo-hero-value,
+[data-theme='stormwatch'] .typo-value,
+[data-theme='stormwatch'] .typo-kpi-value {
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-theme='stormwatch'] .typo-kpi-label {
+  font-family: 'Space Grotesk', sans-serif;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
 }
 
 /* ---------- Mario (Slopcast Classic) ---------- */
@@ -638,6 +720,88 @@
   /* slate ink */
   --inset-muted: 71 85 105;
   /* muted slate */
+}
+
+/* Classic: paper grain texture on light inset surfaces */
+[data-theme='mario'] .sc-insetLight {
+  position: relative;
+}
+[data-theme='mario'] .sc-insetLight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ---------- Hyperborea (Arctic Deep) ---------- */
+[data-theme='hyperborea'] {
+  --bg-deep: 8 16 28;
+  --bg-space: 12 22 38;
+  --surface-1: 22 34 52;
+  --surface-2: 36 52 74;
+  --border: 90 108 135;
+  --cyan: 56 189 248;
+  --magenta: 125 211 252;
+  --violet: 99 179 237;
+  --purple: 8 18 33;
+  --lav: 203 213 225;
+  --text: 220 232 248;
+  --text-primary: 220 232 248;
+  --text-secondary: 140 165 200;
+  --text-muted: 100 116 139;
+  --muted: 140 165 200;
+  --success: 52 211 153;
+  --warning: 251 191 36;
+  --danger: 248 113 113;
+
+  --shadow-glow-cyan: 0 0 20px rgba(56, 189, 248, 0.3);
+  --shadow-glow-magenta: 0 0 20px rgba(125, 211, 252, 0.2);
+  --shadow-card: 0 14px 32px rgba(0, 0, 0, 0.52);
+
+  --grad-space: linear-gradient(180deg, rgb(8 16 28) 0%, rgb(12 22 38) 100%);
+  --frost-overlay: rgba(56, 189, 248, 0.03);
+  --frost-border: rgba(56, 189, 248, 0.15);
+  --ambient-glow: radial-gradient(ellipse at 50% 0%, rgba(56, 189, 248, 0.06) 0%, transparent 70%);
+  --ambient-pulse: radial-gradient(ellipse at 50% 100%, rgba(125, 211, 252, 0.04) 0%, transparent 60%);
+  --font-brand: 'Inter';
+  --ambient-left: 56 189 248;
+  --ambient-right: 125 211 252;
+  --ambient-left-alpha: 0.28;
+  --ambient-right-alpha: 0.20;
+  --ambient-orb-left-alpha: 0.12;
+  --ambient-orb-right-alpha: 0.10;
+
+  --radius-panel: 18px;
+  --font-heading: 'Space Grotesk', sans-serif;
+
+  /* Semantic chrome tokens */
+  --header-bg-1: 42 58 82;
+  --header-bg-2: 25 38 58;
+  --header-border: 8 18 33;
+  --header-text: 226 232 240;
+
+  --bar-neutral-bg-1: 42 58 82;
+  --bar-neutral-bg-2: 25 38 58;
+  --bar-neutral-text: 226 232 240;
+  --bar-neutral-border: 8 18 33;
+
+  --bar-blue-bg-1: 56 189 248;
+  --bar-blue-bg-2: 38 144 200;
+  --bar-blue-text: 8 18 33;
+  --bar-blue-border: 20 70 110;
+
+  --bar-yellow-bg-1: 251 191 36;
+  --bar-yellow-bg-2: 195 138 20;
+  --bar-yellow-text: 30 20 8;
+  --bar-yellow-border: 96 68 14;
+
+  --btn-primary-bg-1: var(--cyan);
+  --btn-primary-bg-2: 38 144 200;
+  --btn-primary-border: 20 70 110;
+  --btn-primary-text: 8 18 33;
 }
 
 /* ==========================================================================
@@ -1898,6 +2062,85 @@ body {
   box-shadow: var(--shadow-glow-magenta);
 }
 
+/* ---------- Map vignette — per-theme edge treatment ---------- */
+.map-vignette {
+  box-shadow: inset 0 0 60px 20px rgb(var(--bg-deep) / 0.3);
+}
+
+[data-theme='slate'] .map-vignette {
+  box-shadow: inset 0 0 40px 10px rgb(var(--bg-deep) / 0.2);
+}
+
+[data-theme='synthwave'] .map-vignette {
+  box-shadow:
+    inset 0 0 80px 30px rgb(var(--bg-deep) / 0.5),
+    inset 0 0 120px 40px rgb(var(--magenta) / 0.06);
+}
+
+[data-theme='tropical'] .map-vignette {
+  box-shadow: inset 0 0 70px 25px rgb(var(--bg-deep) / 0.35);
+}
+
+[data-theme='league'] .map-vignette {
+  box-shadow: inset 0 0 80px 30px rgb(var(--bg-deep) / 0.45);
+}
+
+[data-theme='stormwatch'] .map-vignette {
+  box-shadow: inset 0 0 100px 40px rgb(var(--bg-deep) / 0.55);
+}
+
+[data-theme='mario'] .map-vignette {
+  box-shadow: none;
+}
+
+[data-theme='hyperborea'] .map-vignette {
+  box-shadow:
+    inset 0 0 70px 25px rgb(var(--bg-deep) / 0.4),
+    inset 0 0 100px 30px rgb(var(--cyan) / 0.03);
+}
+
+/* Hyperborea: frosted glass noise overlay on panels */
+[data-theme='hyperborea'] .sc-panel::after,
+[data-theme='hyperborea'] .sc-screen::after,
+[data-theme='hyperborea'] .sc-kpi::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"),
+    linear-gradient(135deg, rgba(56,189,248,0.04) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.6;
+}
+
+/* Hyperborea: aurora shimmer at top of page */
+.theme-aurora {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 180px;
+  background: linear-gradient(180deg,
+    rgba(56, 189, 248, 0.05) 0%,
+    rgba(125, 211, 252, 0.02) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .theme-aurora {
+    animation: aurora-drift 14s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes aurora-drift {
+  0%   { opacity: 0.3; transform: translateX(-3%) scaleX(1.0); }
+  50%  { opacity: 0.7; transform: translateX(2%) scaleX(1.05); }
+  100% { opacity: 0.4; transform: translateX(-3%) scaleX(0.98); }
+}
+
 /* Nocturne accent strip on core chrome surfaces */
 [data-theme='league'] .sc-panel::after,
 [data-theme='league'] .sc-screen::after,
@@ -2179,6 +2422,50 @@ body {
   [data-theme='synthwave'] .sw-sun-pulse-ring,
   [data-theme='synthwave'] .sw-fg-beam {
     animation: none !important;
+  }
+}
+
+/* ---------- Economics Shimmer ---------- */
+@property --shimmer-x {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: -100%;
+}
+
+@keyframes economicsShimmer {
+  0% { --shimmer-x: -100%; }
+  100% { --shimmer-x: 200%; }
+}
+
+.economics-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.economics-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(var(--cyan), 0.08) 40%,
+    rgba(var(--cyan), 0.15) 50%,
+    rgba(var(--cyan), 0.08) 60%,
+    transparent 100%
+  );
+  background-size: 100% 100%;
+  background-position: var(--shimmer-x) 0;
+  animation: economicsShimmer 1.5s ease-in-out infinite;
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .economics-shimmer::after {
+    animation: none;
+    opacity: 0;
   }
 }
 
