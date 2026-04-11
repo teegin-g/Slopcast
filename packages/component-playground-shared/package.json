@@ -1,0 +1,10 @@
+{
+  "name": "@slopcast/component-playground-shared",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles/app.css": "./src/styles/app.css"
+  }
+}
