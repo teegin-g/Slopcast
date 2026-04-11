@@ -17,7 +17,7 @@ import math
 import os
 import time
 from decimal import Decimal
-from typing import Any
+from typing import Any, Literal
 
 from dotenv import load_dotenv
 
@@ -36,10 +36,131 @@ load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Module-level connection state (tests patch _db_connection directly)
+# Connection manager — replaces bare module-level _db_connection singleton
 # ---------------------------------------------------------------------------
 
-_db_connection: Any | None = None
+ConnectionStatus = Literal["connected", "disconnected", "connecting"]
+
+
+class ConnectionManager:
+    """
+    Manages a Databricks SQL Warehouse connection with health checks,
+    auto-reconnect (max 2 attempts), and per-operation query timeouts.
+
+    Query timeout guidance (passed to cursor operations):
+      - Wells query: 30s
+      - Trajectory query: 15s
+      - Health ping: 5s
+    """
+
+    _MAX_RECONNECT_ATTEMPTS = 2
+    _CONNECT_TIMEOUT = 15  # seconds for databricks_sql.connect()
+    _PING_INTERVAL = 60  # seconds between health pings
+    _PING_TIMEOUT = 5  # seconds for the SELECT 1 health check
+
+    def __init__(self) -> None:
+        self.connection: Any | None = None
+        self.status: ConnectionStatus = "disconnected"
+        self.last_verified_at: float = 0.0
+        self.reconnect_attempts: int = 0
+        self.error: str | None = None
+
+    def get_connection(self) -> Any | None:
+        """
+        Return a live connection, reconnecting if necessary.
+
+        Performs a health ping if the last verification was >60s ago.
+        Returns None if no credentials or all reconnect attempts fail.
+        """
+        if self.connection is None or self.status == "disconnected":
+            if not self._reconnect():
+                return None
+
+        # Periodic health check
+        if time.time() - self.last_verified_at > self._PING_INTERVAL:
+            if not self._ping():
+                if not self._reconnect():
+                    return None
+
+        return self.connection
+
+    def _reconnect(self) -> bool:
+        """Attempt to establish a new connection (max 2 attempts)."""
+        hostname = os.getenv("DATABRICKS_SERVER_HOSTNAME")
+        http_path = os.getenv("DATABRICKS_HTTP_PATH")
+        token = os.getenv("DATABRICKS_TOKEN")
+
+        if not (hostname and http_path and token):
+            self.status = "disconnected"
+            self.error = "Databricks credentials not configured"
+            return False
+
+        self._close_existing()
+        self.status = "connecting"
+
+        for attempt in range(1, self._MAX_RECONNECT_ATTEMPTS + 1):
+            try:
+                from databricks import sql as databricks_sql  # type: ignore[import-untyped]
+
+                conn = databricks_sql.connect(
+                    server_hostname=hostname,
+                    http_path=http_path,
+                    access_token=token,
+                    _socket_timeout=self._CONNECT_TIMEOUT,
+                )
+                self.connection = conn
+                self.status = "connected"
+                self.last_verified_at = time.time()
+                self.reconnect_attempts = 0
+                self.error = None
+                logger.info("Connected to Databricks SQL Warehouse (attempt %d).", attempt)
+                return True
+            except Exception as exc:  # noqa: BLE001
+                self.reconnect_attempts += 1
+                self.error = str(exc)
+                logger.warning(
+                    "Databricks connection attempt %d/%d failed: %s",
+                    attempt,
+                    self._MAX_RECONNECT_ATTEMPTS,
+                    exc,
+                )
+
+        self.status = "disconnected"
+        return False
+
+    def _ping(self) -> bool:
+        """Run a lightweight SELECT 1 to verify the connection is alive."""
+        if self.connection is None:
+            return False
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute("SELECT 1", timeout=self._PING_TIMEOUT)
+                cursor.fetchone()
+            self.last_verified_at = time.time()
+            return True
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Databricks health ping failed: %s", exc)
+            self.error = str(exc)
+            self.status = "disconnected"
+            self.connection = None
+            return False
+
+    def _close_existing(self) -> None:
+        """Safely close the current connection if any."""
+        if self.connection is not None:
+            try:
+                self.connection.close()
+            except Exception:  # noqa: BLE001
+                pass
+            self.connection = None
+
+
+# Module-level singleton — tests can patch _conn_mgr or its attributes
+_conn_mgr = ConnectionManager()
+
+# Backward-compat alias: tests that patched _db_connection directly can
+# now patch _conn_mgr.connection instead.  The old _get_db_connection()
+# delegates to the manager.
 _cache: dict[str, SpatialWellsResponse] = {}
 
 # ---------------------------------------------------------------------------
@@ -88,35 +209,10 @@ _MOCK_WELLS: list[Well] = _build_mock_wells()
 
 def _get_db_connection() -> Any | None:
     """
-    Return a live Databricks SQL connection, or None if credentials are absent
-    or the connection attempt fails.  Caches on success in module-level state.
+    Return a live Databricks SQL connection, or None if unavailable.
+    Delegates to the ConnectionManager singleton.
     """
-    global _db_connection  # noqa: PLW0603
-
-    if _db_connection is not None:
-        return _db_connection
-
-    hostname = os.getenv("DATABRICKS_SERVER_HOSTNAME")
-    http_path = os.getenv("DATABRICKS_HTTP_PATH")
-    token = os.getenv("DATABRICKS_TOKEN")
-
-    if not (hostname and http_path and token):
-        return None
-
-    try:
-        from databricks import sql as databricks_sql  # type: ignore[import-untyped]
-
-        conn = databricks_sql.connect(
-            server_hostname=hostname,
-            http_path=http_path,
-            access_token=token,
-        )
-        _db_connection = conn
-        logger.info("Connected to Databricks SQL Warehouse.")
-        return conn
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("Databricks connection failed: %s", exc)
-        return None
+    return _conn_mgr.get_connection()
 
 
 # ---------------------------------------------------------------------------
@@ -203,6 +299,7 @@ def get_wells_in_bounds(
     limit: int = 2000,
     include_trajectory: bool = False,
     detail_level: DetailLevel = "summary",
+    zoom: int | None = None,
 ) -> SpatialWellsResponse:
     """
     Return wells within the given viewport bounds.
@@ -227,7 +324,7 @@ def get_wells_in_bounds(
 
     conn = _get_db_connection()
     if conn is not None:
-        result = _query_databricks(conn, bounds, filters, limit, detail_level)
+        result = _query_databricks(conn, bounds, filters, limit, detail_level, zoom=zoom)
     else:
         result = _query_mock(bounds, filters, limit, detail_level)
 
@@ -268,10 +365,17 @@ def get_available_layers() -> SpatialLayersResponse:
 
 
 def check_connection_status() -> dict[str, Any]:
-    """Return connectivity status dict."""
+    """Return connectivity status dict with health metadata."""
     hostname = os.getenv("DATABRICKS_SERVER_HOSTNAME")
     if not hostname:
-        return {"connected": False, "source": "mock", "error": None, "table": None}
+        return {
+            "connected": False,
+            "source": "mock",
+            "error": None,
+            "table": None,
+            "last_verified_at": None,
+            "reconnect_attempts": 0,
+        }
 
     conn = _get_db_connection()
     if conn is not None:
@@ -280,13 +384,22 @@ def check_connection_status() -> dict[str, Any]:
             f"{os.getenv('DATABRICKS_SCHEMA', 'well')}."
             f"{os.getenv('DATABRICKS_WELLS_TABLE', 'tbl_well_summary_all')}"
         )
-        return {"connected": True, "source": "databricks", "error": None, "table": table}
+        return {
+            "connected": True,
+            "source": "databricks",
+            "error": None,
+            "table": table,
+            "last_verified_at": _conn_mgr.last_verified_at or None,
+            "reconnect_attempts": _conn_mgr.reconnect_attempts,
+        }
 
     return {
         "connected": False,
         "source": "mock",
-        "error": "Databricks connection unavailable",
+        "error": _conn_mgr.error or "Databricks connection unavailable",
         "table": None,
+        "last_verified_at": _conn_mgr.last_verified_at or None,
+        "reconnect_attempts": _conn_mgr.reconnect_attempts,
     }
 
 
@@ -301,6 +414,7 @@ def _query_databricks(
     filters: SpatialLayerFilter | None,
     limit: int,
     detail_level: DetailLevel = "summary",
+    zoom: int | None = None,
 ) -> SpatialWellsResponse:
     catalog = os.getenv("DATABRICKS_CATALOG", "eds")
     schema = os.getenv("DATABRICKS_SCHEMA", "well")
@@ -435,7 +549,7 @@ def _query_databricks(
 
     if detail_level == "full" and result_wells:
         api_ids = [w.id for w in result_wells]
-        trajectories = _fetch_trajectories(conn, api_ids, well_data)
+        trajectories = _fetch_trajectories(conn, api_ids, well_data, zoom=zoom)
         for well in result_wells:
             well.trajectory = trajectories.get(well.id)
 
@@ -448,7 +562,18 @@ def _query_databricks(
     )
 
 
-_MAX_STATIONS_PER_WELL = 50
+_MAX_STATIONS_PER_WELL = 50  # default when zoom is not provided
+
+
+def _max_stations_for_zoom(zoom: int | None) -> int:
+    """Return max trajectory stations per well based on map zoom level."""
+    if zoom is None:
+        return _MAX_STATIONS_PER_WELL
+    if zoom <= 13:
+        return 20
+    if zoom <= 15:
+        return 35
+    return 50
 
 
 def _subsample(items: list[Any], max_count: int) -> list[Any]:
@@ -466,6 +591,7 @@ def _fetch_trajectories(
     conn: Any,
     api_ids: list[str],
     well_data: list[tuple[Well, float, float, float, float]],
+    zoom: int | None = None,
 ) -> dict[str, WellTrajectory]:
     """
     Fetch the FULL directional survey for each well in *api_ids* and return
@@ -527,8 +653,8 @@ def _fetch_trajectories(
         stations = raw_stations.get(api, [])
 
         if stations:
-            # Subsample if too many stations
-            stations = _subsample(stations, _MAX_STATIONS_PER_WELL)
+            # Subsample if too many stations (adaptive to zoom)
+            stations = _subsample(stations, _max_stations_for_zoom(zoom))
 
             # Convert each station to a WellTrajectoryPoint
             path: list[WellTrajectoryPoint] = []

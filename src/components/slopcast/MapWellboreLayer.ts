@@ -120,6 +120,7 @@ export class MapWellboreLayer {
   private program: WebGLProgram | null = null;
   private vertexBuffer: WebGLBuffer | null = null;
   private vertexCount = 0;
+  private totalAllocatedVerts = 0;
   private mapRef: mapboxgl.Map | null = null;
   private reducedMotion = false;
   private _motionQuery: MediaQueryList | null = null;
@@ -138,6 +139,12 @@ export class MapWellboreLayer {
   private wellbores: WellboreData[] = [];
   private dirty = true;
 
+  // Incremental upload state
+  private static readonly BATCH_SIZE = 100;
+  private batchRafId: number | null = null;
+  private batchQueue: WellboreData[][] | null = null;
+  private batchByteOffset = 0;
+
   constructor() {
     if (typeof window !== 'undefined') {
       this.reducedMotion = window.matchMedia(
@@ -148,11 +155,21 @@ export class MapWellboreLayer {
 
   /** Update wellbore data. Call when groups or well trajectories change. */
   setWellbores(wellbores: WellboreData[]): void {
+    // Cancel any in-progress batch sequence
+    this.cancelBatch();
     this.wellbores = wellbores;
     this.dirty = true;
     if (this.mapRef) {
       this.mapRef.triggerRepaint();
     }
+  }
+
+  private cancelBatch(): void {
+    if (this.batchRafId !== null) {
+      cancelAnimationFrame(this.batchRafId);
+      this.batchRafId = null;
+    }
+    this.batchQueue = null;
   }
 
   // ── Lifecycle ───────────────────────────────────────────────────────
@@ -299,6 +316,7 @@ export class MapWellboreLayer {
   }
 
   onRemove(_map: mapboxgl.Map, gl: WebGLRenderingContext): void {
+    this.cancelBatch();
     if (this._motionQuery && this._handleMotionChange) {
       this._motionQuery.removeEventListener('change', this._handleMotionChange);
     }
@@ -309,70 +327,118 @@ export class MapWellboreLayer {
     this.mapRef = null;
   }
 
+  // ── Internal: pack vertex data for a batch of wellbores ─────────────
+  private static readonly FLOATS_PER_VERTEX = 8;
+
+  private packBatch(batch: WellboreData[]): Float32Array {
+    const fpv = MapWellboreLayer.FLOATS_PER_VERTEX;
+    let totalVerts = 0;
+    for (const wb of batch) {
+      if (wb.path.length >= 2) totalVerts += (wb.path.length - 1) * 2;
+    }
+
+    const data = new Float32Array(totalVerts * fpv);
+    let off = 0;
+
+    for (const wb of batch) {
+      if (wb.path.length < 2) continue;
+      const [r, g, b] = hexToRgb(wb.color);
+      const alpha = wb.selected ? 1.0 : 0.6;
+      const maxDepth = Math.max(...wb.path.map(p => p.depthFt), 1);
+
+      for (let i = 0; i < wb.path.length - 1; i++) {
+        const p0 = wb.path[i];
+        const p1 = wb.path[i + 1];
+
+        data[off++] = lngToMercatorX(p0.lng);
+        data[off++] = latToMercatorY(p0.lat);
+        data[off++] = mapDepthToVisualZ(p0.depthFt, p0.lat);
+        data[off++] = r; data[off++] = g; data[off++] = b; data[off++] = alpha;
+        data[off++] = p0.depthFt / maxDepth;
+
+        data[off++] = lngToMercatorX(p1.lng);
+        data[off++] = latToMercatorY(p1.lat);
+        data[off++] = mapDepthToVisualZ(p1.depthFt, p1.lat);
+        data[off++] = r; data[off++] = g; data[off++] = b; data[off++] = alpha;
+        data[off++] = p1.depthFt / maxDepth;
+      }
+    }
+
+    return data.subarray(0, off);
+  }
+
   // ── Internal: build vertex data from survey paths ──────────────────
   private uploadVertexData(gl: WebGLRenderingContext): void {
     const wellbores = this.wellbores;
     if (wellbores.length === 0) {
       this.vertexCount = 0;
+      this.totalAllocatedVerts = 0;
       return;
     }
 
-    // Count total line vertices: each path with N points produces (N-1) segments,
-    // each segment needs 2 vertices for gl.LINES.
-    const floatsPerVertex = 8;
+    const fpv = MapWellboreLayer.FLOATS_PER_VERTEX;
+    const batchSize = MapWellboreLayer.BATCH_SIZE;
+
+    // Small dataset — upload in one pass (no rAF overhead)
+    if (wellbores.length <= batchSize) {
+      const data = this.packBatch(wellbores);
+      this.vertexCount = data.length / fpv;
+      this.totalAllocatedVerts = this.vertexCount;
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+      return;
+    }
+
+    // Large dataset — pre-allocate buffer, then batch upload via rAF
     let totalLineVerts = 0;
     for (const wb of wellbores) {
-      if (wb.path.length >= 2) {
-        totalLineVerts += (wb.path.length - 1) * 2;
-      }
+      if (wb.path.length >= 2) totalLineVerts += (wb.path.length - 1) * 2;
     }
 
-    const data = new Float32Array(totalLineVerts * floatsPerVertex);
-    let writeOffset = 0;
-
-    for (const wb of wellbores) {
-      if (wb.path.length < 2) continue;
-
-      const [r, g, b] = hexToRgb(wb.color);
-      const alpha = wb.selected ? 1.0 : 0.6;
-
-      // Find max depth for normalization
-      const maxDepth = Math.max(...wb.path.map(p => p.depthFt), 1);
-
-      // Generate LINE pairs from consecutive path points
-      for (let i = 0; i < wb.path.length - 1; i++) {
-        const p0 = wb.path[i];
-        const p1 = wb.path[i + 1];
-
-        // Vertex for p0
-        data[writeOffset++] = lngToMercatorX(p0.lng);
-        data[writeOffset++] = latToMercatorY(p0.lat);
-        data[writeOffset++] = mapDepthToVisualZ(p0.depthFt, p0.lat);
-        data[writeOffset++] = r;
-        data[writeOffset++] = g;
-        data[writeOffset++] = b;
-        data[writeOffset++] = alpha;
-        data[writeOffset++] = p0.depthFt / maxDepth;
-
-        // Vertex for p1
-        data[writeOffset++] = lngToMercatorX(p1.lng);
-        data[writeOffset++] = latToMercatorY(p1.lat);
-        data[writeOffset++] = mapDepthToVisualZ(p1.depthFt, p1.lat);
-        data[writeOffset++] = r;
-        data[writeOffset++] = g;
-        data[writeOffset++] = b;
-        data[writeOffset++] = alpha;
-        data[writeOffset++] = p1.depthFt / maxDepth;
-      }
-    }
-
-    this.vertexCount = writeOffset / floatsPerVertex;
-
+    // Pre-allocate empty GPU buffer
+    this.totalAllocatedVerts = totalLineVerts;
+    this.vertexCount = 0;
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      data.subarray(0, writeOffset),
-      gl.DYNAMIC_DRAW,
-    );
+    gl.bufferData(gl.ARRAY_BUFFER, totalLineVerts * fpv * 4, gl.DYNAMIC_DRAW);
+
+    // Split into batches
+    const batches: WellboreData[][] = [];
+    for (let i = 0; i < wellbores.length; i += batchSize) {
+      batches.push(wellbores.slice(i, i + batchSize));
+    }
+
+    this.batchQueue = batches;
+    this.batchByteOffset = 0;
+    this.scheduleBatchUpload(gl);
+  }
+
+  private scheduleBatchUpload(gl: WebGLRenderingContext): void {
+    this.batchRafId = requestAnimationFrame(() => {
+      this.batchRafId = null;
+      if (!this.batchQueue || this.batchQueue.length === 0) {
+        this.batchQueue = null;
+        return;
+      }
+
+      const batch = this.batchQueue.shift()!;
+      const data = this.packBatch(batch);
+      const fpv = MapWellboreLayer.FLOATS_PER_VERTEX;
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+      gl.bufferSubData(gl.ARRAY_BUFFER, this.batchByteOffset, data);
+
+      this.batchByteOffset += data.byteLength;
+      this.vertexCount += data.length / fpv;
+
+      // Trigger repaint to render the partial buffer
+      if (this.mapRef) this.mapRef.triggerRepaint();
+
+      // Schedule next batch if more remain
+      if (this.batchQueue.length > 0) {
+        this.scheduleBatchUpload(gl);
+      } else {
+        this.batchQueue = null;
+      }
+    });
   }
 }

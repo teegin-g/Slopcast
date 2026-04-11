@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { SpatialDataSourceId } from '../../../types';
 import { setStoredSpatialSourceId } from '../../../services/spatialService';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { overlayPanelClass } from '../../../theme/themes';
 
-const spinKeyframes = `@keyframes spin { to { transform: rotate(360deg) } }`;
+const spinKeyframes = `@keyframes spin { to { transform: rotate(360deg) } }
+@keyframes source-flash { 0%,100% { opacity: 1 } 50% { opacity: 0.3 } }`;
 
 type SelectionTool = 'lasso' | 'rectangle';
 type SpatialSource = 'databricks' | 'mock';
@@ -170,6 +171,66 @@ const ToolButton: React.FC<{
   </button>
 );
 
+// ---------------------------------------------------------------------------
+// Source badge — always visible, color-coded, flash on transition
+// ---------------------------------------------------------------------------
+
+const SourceBadge: React.FC<{
+  isClassic: boolean;
+  selectedSourceId: SpatialDataSourceId;
+  renderedSource: SpatialSource;
+  fallbackActive?: boolean;
+  onToggle: () => void;
+}> = ({ isClassic, selectedSourceId, renderedSource, fallbackActive, onToggle }) => {
+  const prevSource = useRef(renderedSource);
+  const [flash, setFlash] = useState(false);
+
+  useEffect(() => {
+    if (prevSource.current !== renderedSource) {
+      setFlash(true);
+      const t = setTimeout(() => setFlash(false), 600);
+      prevSource.current = renderedSource;
+      return () => clearTimeout(t);
+    }
+  }, [renderedSource]);
+
+  const isLive = renderedSource === 'databricks' && !fallbackActive;
+
+  let label: string;
+  let colorClass: string;
+  if (isLive) {
+    label = 'Live';
+    colorClass = isClassic
+      ? 'bg-green-500/20 text-green-300 border-green-500/40'
+      : 'bg-green-500/20 text-green-400 border-green-500/30';
+  } else if (fallbackActive) {
+    label = 'Demo (fallback)';
+    colorClass = isClassic
+      ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40'
+      : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+  } else {
+    label = 'Demo';
+    colorClass = isClassic
+      ? 'bg-white/10 text-white/60 border-white/20'
+      : 'bg-[var(--surface-2)] text-[var(--text-secondary)] border-[var(--border)]';
+  }
+
+  const title = getSourceButtonTitle(selectedSourceId, renderedSource, fallbackActive);
+
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      title={title}
+      aria-label={title}
+      className={`min-w-11 min-h-11 px-1.5 rounded-md text-[8px] leading-tight touch-manipulation cursor-pointer transition-colors border ${colorClass}`}
+      style={flash ? { animation: 'source-flash 0.3s ease-in-out 2' } : undefined}
+    >
+      {label}
+    </button>
+  );
+};
+
 export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
   isClassic,
   activeTool,
@@ -268,31 +329,16 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
                 {totalCount != null ? totalCount.toLocaleString() : '—'}
                 {truncated && '+'}
               </span>
-              <button
-                type="button"
-                onClick={() => {
+              <SourceBadge
+                isClassic={isClassic}
+                selectedSourceId={selectedSourceId}
+                renderedSource={renderedSource}
+                fallbackActive={fallbackActive}
+                onToggle={() => {
                   setStoredSpatialSourceId(nextSourceId);
                   onSourceChange?.(nextSourceId);
                 }}
-                title={sourceButtonTitle}
-                aria-label={sourceButtonTitle}
-                className={`min-w-11 min-h-11 px-1.5 rounded-md text-[8px] leading-tight touch-manipulation cursor-pointer transition-colors ${getSourceButtonClass(
-                  isClassic,
-                  renderedSource,
-                )}`}
-              >
-                {renderedSource === 'databricks' ? 'DB' : 'Mock'}
-              </button>
-              {fallbackActive && (
-                <span
-                  className={`px-1.5 rounded text-[8px] md:text-[7px] leading-tight ${
-                    isClassic ? 'bg-yellow-500/20 text-yellow-300' : 'bg-yellow-500/20 text-yellow-400'
-                  }`}
-                  title="Live source failed — showing mock data"
-                >
-                  Fallback
-                </span>
-              )}
+              />
             </>
           )}
         </div>

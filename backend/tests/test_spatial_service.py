@@ -1,7 +1,7 @@
 import os
 
 from backend.spatial_models import SpatialLayerFilter, ViewportBounds
-from backend.spatial_service import get_available_layers, get_wells_in_bounds, _cache, _get_db_connection
+from backend.spatial_service import get_available_layers, get_wells_in_bounds, _cache, ConnectionManager
 import backend.spatial_service as _svc
 
 
@@ -18,10 +18,10 @@ def _narrow_bounds() -> ViewportBounds:
 def setup_function():
     """Clear the cache and force mock mode by removing DB env vars."""
     _cache.clear()
-    # Force mock fallback by clearing credentials and resetting connection
+    # Force mock fallback by clearing credentials and resetting connection manager
     for key in ("DATABRICKS_SERVER_HOSTNAME", "DATABRICKS_HTTP_PATH", "DATABRICKS_TOKEN"):
         os.environ.pop(key, None)
-    _svc._db_connection = None
+    _svc._conn_mgr = ConnectionManager()
 
 
 def test_mock_fallback_returns_wells():
@@ -182,3 +182,229 @@ def test_include_trajectory_does_not_override_explicit_full():
     assert resp.source == "mock"
     for w in resp.wells:
         assert w.trajectory is not None
+
+
+# ---------------------------------------------------------------------------
+# ConnectionManager unit tests
+# ---------------------------------------------------------------------------
+
+import time
+from unittest.mock import MagicMock, patch
+
+from backend.spatial_service import check_connection_status
+
+
+class TestConnectionManager:
+    """Tests for the ConnectionManager reconnect / health-check logic."""
+
+    def setup_method(self):
+        self.mgr = ConnectionManager()
+
+    def test_initial_state(self):
+        assert self.mgr.status == "disconnected"
+        assert self.mgr.connection is None
+        assert self.mgr.reconnect_attempts == 0
+        assert self.mgr.error is None
+        assert self.mgr.last_verified_at == 0.0
+
+    def test_get_connection_returns_none_without_credentials(self):
+        for key in ("DATABRICKS_SERVER_HOSTNAME", "DATABRICKS_HTTP_PATH", "DATABRICKS_TOKEN"):
+            os.environ.pop(key, None)
+        result = self.mgr.get_connection()
+        assert result is None
+        assert self.mgr.status == "disconnected"
+        assert self.mgr.error == "Databricks credentials not configured"
+
+    def test_successful_connection(self):
+        os.environ["DATABRICKS_SERVER_HOSTNAME"] = "host.test"
+        os.environ["DATABRICKS_HTTP_PATH"] = "/sql/1.0/warehouses/abc"
+        os.environ["DATABRICKS_TOKEN"] = "tok123"
+
+        mock_conn = MagicMock()
+        mock_sql_mod = MagicMock()
+        mock_sql_mod.connect.return_value = mock_conn
+        mock_databricks = MagicMock()
+        mock_databricks.sql = mock_sql_mod
+
+        with patch.dict("sys.modules", {
+            "databricks": mock_databricks,
+            "databricks.sql": mock_sql_mod,
+        }):
+            result = self.mgr.get_connection()
+            assert result is mock_conn
+            assert self.mgr.status == "connected"
+            assert self.mgr.reconnect_attempts == 0
+            assert self.mgr.error is None
+            assert self.mgr.last_verified_at > 0
+
+    def test_reconnect_increments_attempts_on_failure(self):
+        os.environ["DATABRICKS_SERVER_HOSTNAME"] = "host.test"
+        os.environ["DATABRICKS_HTTP_PATH"] = "/sql/1.0/warehouses/abc"
+        os.environ["DATABRICKS_TOKEN"] = "tok123"
+
+        mock_sql_mod = MagicMock()
+        mock_sql_mod.connect.side_effect = Exception("warehouse suspended")
+        mock_databricks = MagicMock()
+        mock_databricks.sql = mock_sql_mod
+
+        with patch.dict("sys.modules", {
+            "databricks": mock_databricks,
+            "databricks.sql": mock_sql_mod,
+        }):
+            result = self.mgr.get_connection()
+            assert result is None
+            assert self.mgr.status == "disconnected"
+            assert self.mgr.reconnect_attempts == ConnectionManager._MAX_RECONNECT_ATTEMPTS
+            assert "warehouse suspended" in self.mgr.error
+
+    def test_ping_success_updates_last_verified(self):
+        mock_conn = MagicMock()
+        self.mgr.connection = mock_conn
+        self.mgr.status = "connected"
+        self.mgr.last_verified_at = 0  # force ping
+
+        assert self.mgr._ping() is True
+        assert self.mgr.last_verified_at > 0
+        mock_conn.cursor.return_value.__enter__.return_value.execute.assert_called_once_with(
+            "SELECT 1", timeout=ConnectionManager._PING_TIMEOUT
+        )
+
+    def test_ping_failure_disconnects(self):
+        mock_conn = MagicMock()
+        mock_conn.cursor.return_value.__enter__.return_value.execute.side_effect = Exception("timeout")
+        self.mgr.connection = mock_conn
+        self.mgr.status = "connected"
+
+        assert self.mgr._ping() is False
+        assert self.mgr.status == "disconnected"
+        assert self.mgr.connection is None
+        assert "timeout" in self.mgr.error
+
+    def test_get_connection_triggers_ping_after_interval(self):
+        mock_conn = MagicMock()
+        self.mgr.connection = mock_conn
+        self.mgr.status = "connected"
+        # last verified long ago — should trigger ping
+        self.mgr.last_verified_at = time.time() - 120
+
+        result = self.mgr.get_connection()
+        assert result is mock_conn
+        # Ping should have been called (cursor used)
+        mock_conn.cursor.assert_called()
+
+    def test_get_connection_skips_ping_when_recent(self):
+        mock_conn = MagicMock()
+        self.mgr.connection = mock_conn
+        self.mgr.status = "connected"
+        self.mgr.last_verified_at = time.time()  # just now
+
+        result = self.mgr.get_connection()
+        assert result is mock_conn
+        # No ping — cursor should not have been used
+        mock_conn.cursor.assert_not_called()
+
+    def test_close_existing_handles_exceptions(self):
+        mock_conn = MagicMock()
+        mock_conn.close.side_effect = Exception("already closed")
+        self.mgr.connection = mock_conn
+
+        # Should not raise
+        self.mgr._close_existing()
+        assert self.mgr.connection is None
+
+
+class TestCheckConnectionStatus:
+    """Tests for the check_connection_status() function."""
+
+    def setup_method(self):
+        _cache.clear()
+        for key in ("DATABRICKS_SERVER_HOSTNAME", "DATABRICKS_HTTP_PATH", "DATABRICKS_TOKEN"):
+            os.environ.pop(key, None)
+        _svc._conn_mgr = ConnectionManager()
+
+    def test_no_credentials_returns_mock(self):
+        status = check_connection_status()
+        assert status["connected"] is False
+        assert status["source"] == "mock"
+        assert status["last_verified_at"] is None
+        assert status["reconnect_attempts"] == 0
+
+    def test_connected_returns_databricks_with_metadata(self):
+        os.environ["DATABRICKS_SERVER_HOSTNAME"] = "host.test"
+        mock_conn = MagicMock()
+        _svc._conn_mgr.connection = mock_conn
+        _svc._conn_mgr.status = "connected"
+        _svc._conn_mgr.last_verified_at = time.time()  # recent, so ping is skipped
+        _svc._conn_mgr.reconnect_attempts = 0
+
+        status = check_connection_status()
+        assert status["connected"] is True
+        assert status["source"] == "databricks"
+        assert status["last_verified_at"] is not None
+        assert status["last_verified_at"] > 0
+        assert status["reconnect_attempts"] == 0
+
+    def test_disconnected_with_error(self):
+        os.environ["DATABRICKS_SERVER_HOSTNAME"] = "host.test"
+        _svc._conn_mgr.error = "warehouse suspended"
+        _svc._conn_mgr.reconnect_attempts = 2
+
+        # Patch _get_db_connection to return None without triggering reconnect
+        with patch.object(_svc, "_get_db_connection", return_value=None):
+            status = check_connection_status()
+        assert status["connected"] is False
+        assert status["error"] == "warehouse suspended"
+        assert status["reconnect_attempts"] == 2
+
+
+# ---------------------------------------------------------------------------
+# Adaptive trajectory station count tests (Step 2.3)
+# ---------------------------------------------------------------------------
+
+from backend.spatial_service import _max_stations_for_zoom
+
+
+class TestAdaptiveStationCount:
+    def test_none_zoom_returns_default(self):
+        assert _max_stations_for_zoom(None) == 50
+
+    def test_zoom_12_returns_20(self):
+        assert _max_stations_for_zoom(12) == 20
+
+    def test_zoom_13_returns_20(self):
+        assert _max_stations_for_zoom(13) == 20
+
+    def test_zoom_14_returns_35(self):
+        assert _max_stations_for_zoom(14) == 35
+
+    def test_zoom_15_returns_35(self):
+        assert _max_stations_for_zoom(15) == 35
+
+    def test_zoom_16_returns_50(self):
+        assert _max_stations_for_zoom(16) == 50
+
+    def test_zoom_20_returns_50(self):
+        assert _max_stations_for_zoom(20) == 50
+
+    def test_zoom_10_returns_20(self):
+        """Low zoom still gets minimum stations."""
+        assert _max_stations_for_zoom(10) == 20
+
+
+class TestZoomPassedToWells:
+    """Verify zoom parameter accepted by get_wells_in_bounds (mock mode)."""
+
+    def setup_method(self):
+        _cache.clear()
+        for key in ("DATABRICKS_SERVER_HOSTNAME", "DATABRICKS_HTTP_PATH", "DATABRICKS_TOKEN"):
+            os.environ.pop(key, None)
+        _svc._conn_mgr = ConnectionManager()
+
+    def test_zoom_accepted_without_error(self):
+        resp = get_wells_in_bounds(bounds=_wide_bounds(), zoom=14)
+        assert resp.source == "mock"
+        assert len(resp.wells) > 0
+
+    def test_zoom_none_accepted(self):
+        resp = get_wells_in_bounds(bounds=_wide_bounds(), zoom=None)
+        assert resp.source == "mock"

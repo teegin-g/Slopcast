@@ -29,6 +29,7 @@ class SpatialWellsRequest(BaseModel):
     limit: int = Field(2000, ge=1, le=10000)
     include_trajectory: bool = False  # kept for backward compat
     detail_level: DetailLevel = "summary"
+    zoom: int | None = Field(None, ge=0, le=24, description="Map zoom level — controls trajectory station density")
 
 
 class SpatialWellsResponse(BaseModel):
@@ -54,3 +55,5 @@ class SpatialStatusResponse(BaseModel):
     source: str  # 'databricks' | 'mock' | 'unavailable'
     error: str | None = None
     table: str | None = None
+    last_verified_at: float | None = None
+    reconnect_attempts: int = 0

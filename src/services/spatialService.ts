@@ -17,6 +17,8 @@ export type DetailLevel = 'points' | 'summary' | 'full';
 export interface SpatialFetchOptions {
   includeLaterals?: boolean;
   detailLevel?: DetailLevel;
+  signal?: AbortSignal;
+  zoom?: number;
 }
 
 export interface SpatialDataSource {
@@ -125,7 +127,9 @@ const liveSource: SpatialDataSource = {
         limit,
         detail_level: detailLevel,
         include_trajectory: detailLevel === 'full',
+        zoom: options?.zoom,
       }),
+      signal: options?.signal,
     });
   },
 
@@ -133,6 +137,26 @@ const liveSource: SpatialDataSource = {
     return spatialFetch<SpatialLayer[]>('/spatial/layers', { method: 'GET' });
   },
 };
+
+// ---------------------------------------------------------------------------
+// Connection status
+// ---------------------------------------------------------------------------
+
+export interface SpatialConnectionStatus {
+  connected: boolean;
+  source: string;
+  error: string | null;
+  table: string | null;
+  last_verified_at: number | null;
+  reconnect_attempts: number;
+}
+
+export async function fetchConnectionStatus(signal?: AbortSignal): Promise<SpatialConnectionStatus> {
+  return spatialFetch<SpatialConnectionStatus>('/spatial/status', {
+    method: 'GET',
+    signal,
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Source registry & persistence

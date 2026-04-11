@@ -20,6 +20,7 @@ interface UseViewportDataOptions {
 interface UseViewportDataResult {
   wells: Well[];
   isLoading: boolean;
+  isLoadingTrajectories: boolean;
   error: string | null;
   source: 'databricks' | 'mock' | null;
   totalCount: number;
@@ -52,10 +53,18 @@ function boundsToKey(bounds: ViewportBounds): string {
   ].join(',');
 }
 
-function getDetailLevel(zoom: number, lateralsOn: boolean): DetailLevel {
-  if (zoom < 10) return 'points';
-  if (zoom >= 12 && lateralsOn) return 'full';
-  return 'summary';
+/** Merge trajectory data from a full-detail response into existing wells. */
+function mergeTrajectories(existing: Well[], withTrajectories: Well[]): Well[] {
+  const trajectoryMap = new Map<string, Well['trajectory']>();
+  for (const w of withTrajectories) {
+    if (w.trajectory) {
+      trajectoryMap.set(w.id, w.trajectory);
+    }
+  }
+  return existing.map(w => {
+    const traj = trajectoryMap.get(w.id);
+    return traj ? { ...w, trajectory: traj } : w;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -77,6 +86,7 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
 
   const [wells, setWells] = useState<Well[]>(MOCK_WELLS);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingTrajectories, setIsLoadingTrajectories] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [source, setSource] = useState<'databricks' | 'mock' | null>(null);
   const [totalCount, setTotalCount] = useState(MOCK_WELLS.length);
@@ -85,6 +95,7 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
 
   const cacheRef = useRef(new Map<string, { wells: Well[]; totalCount: number; truncated: boolean; source: 'databricks' | 'mock' }>());
   const abortRef = useRef<AbortController | null>(null);
+  const trajectoryAbortRef = useRef<AbortController | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchWells = useCallback(async () => {
@@ -95,73 +106,133 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
 
     const bounds = mapboxBoundsToViewport(mapBounds);
     const zoom = map.getZoom();
-    const detailLevel = getDetailLevel(zoom, includeLaterals);
-    const key = `${boundsToKey(bounds)}:${detailLevel}`;
 
-    // Check cache
-    const cached = cacheRef.current.get(key);
-    if (cached) {
-      setWells(cached.wells);
-      setTotalCount(cached.totalCount);
-      setTruncated(cached.truncated);
-      setSource(cached.source);
-      setError(null);
-      return;
-    }
+    // Always cancel any in-flight phase 2 when starting a new fetch cycle
+    trajectoryAbortRef.current?.abort();
+    setIsLoadingTrajectories(false);
 
-    // Abort previous in-flight request
-    if (abortRef.current) {
-      abortRef.current.abort();
-    }
-    abortRef.current = new AbortController();
-
-    setIsLoading(true);
-    setError(null);
+    // Phase 1: summary (or points at low zoom), never full
+    const phase1Detail: DetailLevel = zoom < 10 ? 'points' : 'summary';
+    const phase1Key = `${boundsToKey(bounds)}:${phase1Detail}`;
 
     const sourceId = dataSourceId ?? getStoredSpatialSourceId();
     const spatialSource = getSpatialSource(sourceId);
 
-    try {
-      const result = await spatialSource.fetchViewportWells(bounds, filters, { includeLaterals, detailLevel });
+    // Check phase 1 cache
+    const cached1 = cacheRef.current.get(phase1Key);
+    if (cached1) {
+      setWells(cached1.wells);
+      setTotalCount(cached1.totalCount);
+      setTruncated(cached1.truncated);
+      setSource(cached1.source);
+      setError(null);
+    } else {
+      // Abort previous in-flight phase 1
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
 
-      // Store in cache, evict oldest if full
-      if (cacheRef.current.size >= MAX_CACHE_SIZE) {
-        const oldest = cacheRef.current.keys().next().value;
-        if (oldest !== undefined) {
-          cacheRef.current.delete(oldest);
-        }
-      }
-      cacheRef.current.set(key, {
-        wells: result.wells,
-        totalCount: result.total_count,
-        truncated: result.truncated,
-        source: result.source,
-      });
+      setIsLoading(true);
+      setError(null);
 
-      setWells(result.wells);
-      setTotalCount(result.total_count);
-      setTruncated(result.truncated);
-      setSource(result.source);
-      setFallbackActive(false);
-    } catch (err) {
-      // If live source failed, try mock fallback
-      if (sourceId === 'live') {
-        try {
-          const mockResult = await getSpatialSource('mock').fetchViewportWells(bounds, filters);
-          setWells(mockResult.wells);
-          setTotalCount(mockResult.total_count);
-          setTruncated(mockResult.truncated);
-          setSource(mockResult.source);
-          setFallbackActive(true);
-          setError(null);
-          return;
-        } catch {
-          // Fallback also failed — fall through to error
+      try {
+        const result = await spatialSource.fetchViewportWells(bounds, filters, {
+          detailLevel: phase1Detail,
+          signal: controller.signal,
+        });
+
+        if (controller.signal.aborted) return;
+
+        // Cache eviction
+        if (cacheRef.current.size >= MAX_CACHE_SIZE) {
+          const oldest = cacheRef.current.keys().next().value;
+          if (oldest !== undefined) cacheRef.current.delete(oldest);
         }
+        cacheRef.current.set(phase1Key, {
+          wells: result.wells,
+          totalCount: result.total_count,
+          truncated: result.truncated,
+          source: result.source,
+        });
+
+        setWells(result.wells);
+        setTotalCount(result.total_count);
+        setTruncated(result.truncated);
+        setSource(result.source);
+        setFallbackActive(false);
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') return;
+
+        // If live source failed, try mock fallback
+        if (sourceId === 'live') {
+          try {
+            const mockResult = await getSpatialSource('mock').fetchViewportWells(bounds, filters);
+            setWells(mockResult.wells);
+            setTotalCount(mockResult.total_count);
+            setTruncated(mockResult.truncated);
+            setSource(mockResult.source);
+            setFallbackActive(true);
+            setError(null);
+            setIsLoading(false);
+            return;
+          } catch {
+            // Fallback also failed — fall through to error
+          }
+        }
+        setError(err instanceof Error ? err.message : 'Failed to fetch viewport wells');
+      } finally {
+        setIsLoading(false);
       }
-      setError(err instanceof Error ? err.message : 'Failed to fetch viewport wells');
-    } finally {
-      setIsLoading(false);
+    }
+
+    // -----------------------------------------------------------------------
+    // Phase 2: fetch trajectories if laterals on AND zoom >= 12
+    // -----------------------------------------------------------------------
+    const needsTrajectories = includeLaterals && zoom >= 12;
+    if (!needsTrajectories) return;
+
+    const phase2Key = `${boundsToKey(bounds)}:full`;
+    const cached2 = cacheRef.current.get(phase2Key);
+
+    if (cached2) {
+      // Merge cached trajectories — synchronous, batched with phase 1 setState
+      setWells(prev => mergeTrajectories(prev, cached2.wells));
+    } else {
+      const trajController = new AbortController();
+      trajectoryAbortRef.current = trajController;
+      setIsLoadingTrajectories(true);
+
+      try {
+        const fullResult = await spatialSource.fetchViewportWells(bounds, filters, {
+          detailLevel: 'full',
+          includeLaterals: true,
+          signal: trajController.signal,
+          zoom: Math.round(zoom),
+        });
+
+        if (trajController.signal.aborted) return;
+
+        // Cache the full result
+        if (cacheRef.current.size >= MAX_CACHE_SIZE) {
+          const oldest = cacheRef.current.keys().next().value;
+          if (oldest !== undefined) cacheRef.current.delete(oldest);
+        }
+        cacheRef.current.set(phase2Key, {
+          wells: fullResult.wells,
+          totalCount: fullResult.total_count,
+          truncated: fullResult.truncated,
+          source: fullResult.source,
+        });
+
+        // Merge trajectories into existing wells (don't replace — full has lower limit)
+        setWells(prev => mergeTrajectories(prev, fullResult.wells));
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') return;
+        // Don't fail the whole thing for trajectory errors — points are already showing
+        console.warn('[useViewportData] Trajectory fetch failed:', err);
+      } finally {
+        setIsLoadingTrajectories(false);
+      }
     }
   }, [map, isLoaded, enabled, dataSourceId, filters, includeLaterals]);
 
@@ -184,6 +255,7 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
     return () => {
       map.off('moveend', handleMoveEnd);
       if (timerRef.current) clearTimeout(timerRef.current);
+      trajectoryAbortRef.current?.abort();
     };
   }, [map, isLoaded, enabled, fetchWells, debounceMs]);
 
@@ -203,6 +275,7 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
   return {
     wells,
     isLoading,
+    isLoadingTrajectories,
     error,
     source,
     totalCount,
