@@ -21,37 +21,43 @@ const DesignWorkspaceTabs: React.FC<DesignWorkspaceTabsProps> = ({
   wellsNeedsAttention,
   compact = false,
 }) => {
+  const railClass = isClassic
+    ? 'sc-panel'
+    : 'rounded-full bg-theme-surface1/25 border-theme-border/35 shadow-[inset_0_1px_0_rgb(var(--text)/0.05)]';
+
   const buttonClass = (target: DesignWorkspace) => {
     if (isClassic) {
-      return `${compact ? 'px-2 sm:px-3 py-1 text-[7px] md:text-[10px]' : 'px-4 py-2 text-xs'} rounded-inner font-bold uppercase tracking-[0.15em] border-2 transition-all whitespace-nowrap overflow-hidden ${
+      return `${compact ? 'min-h-[27px] px-2.5 sm:px-3.5 text-[7px] md:text-[9px]' : 'min-h-[38px] px-4 text-xs'} rounded-full font-bold uppercase tracking-[0.14em] transition-all whitespace-nowrap overflow-hidden ${
         workspace === target
-          ? 'text-black border-black/20'
+          ? 'text-black'
           : 'bg-black/10 text-white/70 border-black/20'
       }`;
     }
 
-    return `${compact ? 'px-2 sm:px-3 py-1 text-[7px] md:text-[10px]' : 'px-4 py-2 text-xs'} rounded-inner font-bold uppercase tracking-[0.15em] border transition-all whitespace-nowrap overflow-hidden ${
+    return `${compact ? 'min-h-[27px] px-2.5 sm:px-3.5 text-[7px] md:text-[9px]' : 'min-h-[38px] px-4 text-xs'} rounded-full font-bold uppercase tracking-[0.14em] transition-all whitespace-nowrap overflow-hidden ${
       workspace === target
-        ? 'text-theme-bg border-theme-cyan/60 shadow-sm'
-        : 'bg-theme-bg/50 text-theme-muted/70 border-theme-border/60 hover:text-theme-muted'
+        ? 'text-theme-bg'
+        : 'text-theme-muted/75 hover:text-theme-text'
     }`;
   };
 
   const badgeClass = (warning: boolean) => {
     if (isClassic) {
-      return warning ? 'bg-theme-magenta text-white' : 'bg-theme-cyan text-white';
+      return warning ? 'bg-theme-magenta/90 text-white' : 'bg-black/15 text-black/75';
     }
-    return warning ? 'bg-theme-warning text-theme-bg' : 'bg-theme-surface2 text-theme-cyan';
+    return warning
+      ? 'bg-theme-warning/90 text-theme-bg shadow-[0_0_0_1px_rgb(var(--warning)/0.18)]'
+      : 'bg-theme-surface2/70 text-theme-muted/90 shadow-[inset_0_1px_0_rgb(var(--text)/0.05)]';
   };
 
   return (
     <div
       data-testid="design-workspace-tabs"
-      className={`border ${compact ? 'p-1' : 'p-2'} theme-transition ${
-        isClassic ? 'sc-panel' : 'rounded-inner bg-theme-surface1/40 border-theme-border/50 shadow-sm'
+      className={`border ${compact ? 'p-1' : 'p-1.5'} theme-transition ${
+        railClass
       }`}
     >
-      <div className={`grid grid-cols-2 ${compact ? 'gap-1' : 'gap-2'}`}>
+      <div className={`grid grid-cols-2 items-stretch ${compact ? 'gap-1' : 'gap-1.5'}`}>
         {(['WELLS', 'ECONOMICS'] as const).map((target) => (
           <button
             key={target}
@@ -62,17 +68,21 @@ const DesignWorkspaceTabs: React.FC<DesignWorkspaceTabsProps> = ({
             {workspace === target && (
               <motion.div
                 layoutId="designWorkspaceActiveTab"
-                className={`absolute inset-0 rounded-inner ${
-                  isClassic ? 'bg-theme-warning' : 'bg-theme-cyan/80'
+                className={`absolute inset-0 rounded-full ${
+                  isClassic
+                    ? 'bg-theme-warning shadow-[0_10px_24px_rgba(0,0,0,0.18)]'
+                    : 'bg-theme-cyan shadow-[0_8px_20px_rgb(var(--cyan)/0.22),inset_0_1px_0_rgb(255_255_255/0.18)]'
                 }`}
                 style={{ zIndex: 0 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               />
             )}
-            <span className="relative z-10 flex items-center">
-              <span>
-                {target === 'WELLS' ? 'Wells' : 'Economics'}
-                <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[7px] md:text-[10px] font-black ${badgeClass(target === 'WELLS' ? wellsNeedsAttention : economicsNeedsAttention)}`}>
+            <span className={`relative z-10 flex items-center justify-between gap-2 ${compact ? 'px-0.5' : ''}`}>
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span>{target === 'WELLS' ? 'Wells' : 'Economics'}</span>
+                <span
+                  className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[6.5px] md:text-[8px] font-black uppercase tracking-[0.11em] ${badgeClass(target === 'WELLS' ? wellsNeedsAttention : economicsNeedsAttention)}`}
+                >
                   {target === 'WELLS'
                     ? (wellsNeedsAttention ? 'Needs setup' : 'Ready')
                     : (economicsNeedsAttention ? 'Rerun' : 'Current')

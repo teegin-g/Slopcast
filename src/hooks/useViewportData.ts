@@ -22,6 +22,12 @@ interface UseViewportDataResult {
   isLoading: boolean;
   isLoadingTrajectories: boolean;
   error: string | null;
+  /**
+   * Set when the phase-2 trajectory fetch fails. Phase-1 points are still
+   * valid — consumers can surface this as a non-fatal banner ("3D laterals
+   * unavailable — showing 2D pins").
+   */
+  trajectoryError: string | null;
   source: 'databricks' | 'mock' | null;
   totalCount: number;
   truncated: boolean;
@@ -72,6 +78,7 @@ function mergeTrajectories(existing: Well[], withTrajectories: Well[]): Well[] {
 // ---------------------------------------------------------------------------
 
 const MAX_CACHE_SIZE = 8;
+const MIN_LATERAL_ZOOM = 10;
 
 export function useViewportData(options: UseViewportDataOptions): UseViewportDataResult {
   const {
@@ -88,6 +95,7 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingTrajectories, setIsLoadingTrajectories] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [trajectoryError, setTrajectoryError] = useState<string | null>(null);
   const [source, setSource] = useState<'databricks' | 'mock' | null>(null);
   const [totalCount, setTotalCount] = useState(MOCK_WELLS.length);
   const [truncated, setTruncated] = useState(false);
@@ -113,10 +121,12 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
 
     // Phase 1: summary (or points at low zoom), never full
     const phase1Detail: DetailLevel = zoom < 10 ? 'points' : 'summary';
-    const phase1Key = `${boundsToKey(bounds)}:${phase1Detail}`;
-
     const sourceId = dataSourceId ?? getStoredSpatialSourceId();
     const spatialSource = getSpatialSource(sourceId);
+
+    // Cache key MUST include sourceId so toggling live <-> mock never serves
+    // stale wells from the other source for the same viewport bounds.
+    const phase1Key = `${sourceId}:${boundsToKey(bounds)}:${phase1Detail}`;
 
     // Check phase 1 cache
     const cached1 = cacheRef.current.get(phase1Key);
@@ -186,21 +196,23 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
     }
 
     // -----------------------------------------------------------------------
-    // Phase 2: fetch trajectories if laterals on AND zoom >= 12
+    // Phase 2: fetch trajectories if laterals on AND zoom >= 10
     // -----------------------------------------------------------------------
-    const needsTrajectories = includeLaterals && zoom >= 12;
+    const needsTrajectories = includeLaterals && zoom >= MIN_LATERAL_ZOOM;
     if (!needsTrajectories) return;
 
-    const phase2Key = `${boundsToKey(bounds)}:full`;
+    const phase2Key = `${sourceId}:${boundsToKey(bounds)}:full`;
     const cached2 = cacheRef.current.get(phase2Key);
 
     if (cached2) {
       // Merge cached trajectories — synchronous, batched with phase 1 setState
       setWells(prev => mergeTrajectories(prev, cached2.wells));
+      setTrajectoryError(null);
     } else {
       const trajController = new AbortController();
       trajectoryAbortRef.current = trajController;
       setIsLoadingTrajectories(true);
+      setTrajectoryError(null);
 
       try {
         const fullResult = await spatialSource.fetchViewportWells(bounds, filters, {
@@ -228,8 +240,10 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
         setWells(prev => mergeTrajectories(prev, fullResult.wells));
       } catch (err) {
         if ((err as Error).name === 'AbortError') return;
-        // Don't fail the whole thing for trajectory errors — points are already showing
-        console.warn('[useViewportData] Trajectory fetch failed:', err);
+        // Phase-1 points are already rendered. Surface the error so the UI can
+        // show a non-fatal banner instead of silently hiding 3D laterals.
+        const msg = err instanceof Error ? err.message : 'Failed to load 3D laterals';
+        setTrajectoryError(msg);
       } finally {
         setIsLoadingTrajectories(false);
       }
@@ -267,6 +281,18 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
     }
   }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Clear cache and refetch when the data source toggles (live <-> mock).
+  // Without this, the same viewport bounds could serve stale wells from the
+  // previous source because the cache key was bounds-only.
+  useEffect(() => {
+    cacheRef.current.clear();
+    setFallbackActive(false);
+    setTrajectoryError(null);
+    if (map && isLoaded && enabled) {
+      fetchWells();
+    }
+  }, [dataSourceId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const refetch = useCallback(() => {
     cacheRef.current.clear();
     fetchWells();
@@ -277,6 +303,7 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
     isLoading,
     isLoadingTrajectories,
     error,
+    trajectoryError,
     source,
     totalCount,
     truncated,

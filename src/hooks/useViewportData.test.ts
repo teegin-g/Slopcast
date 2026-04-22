@@ -216,7 +216,7 @@ describe('useViewportData', () => {
 
   // ---- Phase 2: trajectory fetch ----
 
-  it('fetches trajectories in phase 2 when includeLaterals and zoom >= 12', async () => {
+  it('fetches trajectories in phase 2 when includeLaterals and zoom >= 10', async () => {
     const summaryWells = [makeWell({ id: 'w-1' }), makeWell({ id: 'w-2' })];
     const fullWells = [
       makeWell({ id: 'w-1', trajectory: MOCK_TRAJECTORY as any }),
@@ -248,10 +248,36 @@ describe('useViewportData', () => {
     expect(result.current.isLoadingTrajectories).toBe(false);
   });
 
-  it('skips phase 2 when zoom < 12 even with includeLaterals', async () => {
+  it('fetches trajectories in phase 2 at mid-zoom when live wells are already visible', async () => {
+    const summaryWells = [makeWell({ id: 'w-1' }), makeWell({ id: 'w-2' })];
+    const fullWells = [
+      makeWell({ id: 'w-1', trajectory: MOCK_TRAJECTORY as any }),
+      makeWell({ id: 'w-2', trajectory: MOCK_TRAJECTORY as any }),
+    ];
+
+    mockFetchViewportWells.mockImplementation(async (_bounds: any, _filters: any, opts: any) => {
+      if (opts?.detailLevel === 'full') return makeResponse(fullWells);
+      return makeResponse(summaryWells);
+    });
+
+    const map = createMockMap(11);
+    const { result } = renderHook(() =>
+      useViewportData({ map, isLoaded: true, includeLaterals: true }),
+    );
+
+    await flushAll();
+
+    const fullCalls = mockFetchViewportWells.mock.calls.filter(
+      (c: any[]) => c[2]?.detailLevel === 'full',
+    );
+    expect(fullCalls.length).toBeGreaterThanOrEqual(1);
+    expect(result.current.wells[0].trajectory).toBeTruthy();
+  });
+
+  it('skips phase 2 when zoom < 10 even with includeLaterals', async () => {
     mockFetchViewportWells.mockResolvedValue(makeResponse([makeWell()]));
 
-    const map = createMockMap(10);
+    const map = createMockMap(9);
     renderHook(() =>
       useViewportData({ map, isLoaded: true, includeLaterals: true }),
     );
