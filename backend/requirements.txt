@@ -1,3 +1,6 @@
 fastapi>=0.126.0,<1.0.0
 uvicorn[standard]>=0.38.0,<1.0.0
 pytest>=9.0.2,<10.0.0
+databricks-sql-connector>=4.2.5,<5.0.0
+python-dotenv>=1.2.1,<2.0.0
+pyproj>=3.7.2,<4.0.0

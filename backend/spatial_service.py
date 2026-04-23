@@ -31,9 +31,43 @@ from .spatial_models import (
     ViewportBounds,
 )
 
-load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+_BACKEND_DIR = os.path.dirname(__file__)
+_PROJECT_ROOT = os.path.dirname(_BACKEND_DIR)
+load_dotenv(os.path.join(_BACKEND_DIR, ".env"))
+load_dotenv(os.path.join(_PROJECT_ROOT, ".env.local"), override=True)
+load_dotenv(os.path.join(_PROJECT_ROOT, ".env.backend.local"), override=True)
 
 logger = logging.getLogger(__name__)
+
+_DEFAULT_DATABRICKS_CATALOG = "epw"
+_DEFAULT_DATABRICKS_SCHEMA = "egis"
+_DEFAULT_DATABRICKS_WELLS_TABLE = "gis__well_master"
+_DEFAULT_DATABRICKS_TRAJECTORY_TABLE = "epw.egis.gis__well_master"
+
+
+def _resolve_server_hostname() -> str | None:
+    raw = (
+        os.getenv("DATABRICKS_SERVER_HOSTNAME")
+        or os.getenv("DATABRICKS_HOST")
+        or os.getenv("DATABRICKS_WORKSPACE_URL")
+    )
+    if not raw:
+        return None
+    return raw.replace("https://", "").replace("http://", "").rstrip("/")
+
+
+def _resolve_http_path() -> str | None:
+    http_path = os.getenv("DATABRICKS_HTTP_PATH")
+    if http_path:
+        return http_path
+    warehouse_id = os.getenv("DATABRICKS_WAREHOUSE_ID")
+    if warehouse_id:
+        return f"/sql/1.0/warehouses/{warehouse_id}"
+    return None
+
+
+def _resolve_access_token() -> str | None:
+    return os.getenv("DATABRICKS_TOKEN") or os.getenv("DATABRICKS_ACCESS_TOKEN")
 
 # ---------------------------------------------------------------------------
 # Connection manager — replaces bare module-level _db_connection singleton
@@ -86,9 +120,9 @@ class ConnectionManager:
 
     def _reconnect(self) -> bool:
         """Attempt to establish a new connection (max 2 attempts)."""
-        hostname = os.getenv("DATABRICKS_SERVER_HOSTNAME")
-        http_path = os.getenv("DATABRICKS_HTTP_PATH")
-        token = os.getenv("DATABRICKS_TOKEN")
+        hostname = _resolve_server_hostname()
+        http_path = _resolve_http_path()
+        token = _resolve_access_token()
 
         if not (hostname and http_path and token):
             self.status = "disconnected"
@@ -134,7 +168,10 @@ class ConnectionManager:
             return False
         try:
             with self.connection.cursor() as cursor:
-                cursor.execute("SELECT 1", timeout=self._PING_TIMEOUT)
+                # The installed databricks-sql-connector does not accept a
+                # per-query timeout kwarg on cursor.execute(). Connection-level
+                # socket timeouts still protect us from hanging forever.
+                cursor.execute("SELECT 1")
                 cursor.fetchone()
             self.last_verified_at = time.time()
             return True
@@ -250,17 +287,17 @@ def _transform_coords(lat_nad27: float, lng_nad27: float) -> tuple[float, float]
 # Status mapping
 # ---------------------------------------------------------------------------
 
-_STATUS_MAP: dict[str, WellStatus] = {
-    "PRODUCING": "PRODUCING",
-    "DUC": "DUC",
-    "PERMIT": "PERMIT",
-}
-
-
-def _map_status(raw: str | None) -> WellStatus:
+def _map_status(raw: str | None) -> WellStatus | None:
     if raw is None:
+        return None
+    value = str(raw).upper().strip()
+    if value == "PRODUCING":
+        return "PRODUCING"
+    if value == "DUC" or "WAITING ON COMPLETION" in value:
+        return "DUC"
+    if value == "PERMIT" or value.startswith("PERMIT ") or value in {"PRE-DRILL", "NOT DRILLED"}:
         return "PERMIT"
-    return _STATUS_MAP.get(str(raw).upper(), "PERMIT")
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -327,9 +364,9 @@ def get_wells_in_bounds(
         return _cache[key]
 
     has_live_credentials = bool(
-        os.getenv("DATABRICKS_SERVER_HOSTNAME")
-        and os.getenv("DATABRICKS_HTTP_PATH")
-        and os.getenv("DATABRICKS_TOKEN")
+        _resolve_server_hostname()
+        and _resolve_http_path()
+        and _resolve_access_token()
     )
     conn = _get_db_connection()
     if conn is not None:
@@ -379,7 +416,7 @@ def get_available_layers() -> SpatialLayersResponse:
 
 def check_connection_status() -> dict[str, Any]:
     """Return connectivity status dict with health metadata."""
-    hostname = os.getenv("DATABRICKS_SERVER_HOSTNAME")
+    hostname = _resolve_server_hostname()
     if not hostname:
         return {
             "connected": False,
@@ -393,9 +430,9 @@ def check_connection_status() -> dict[str, Any]:
     conn = _get_db_connection()
     if conn is not None:
         table = (
-            f"{os.getenv('DATABRICKS_CATALOG', 'eds')}."
-            f"{os.getenv('DATABRICKS_SCHEMA', 'well')}."
-            f"{os.getenv('DATABRICKS_WELLS_TABLE', 'tbl_well_summary_all')}"
+            f"{os.getenv('DATABRICKS_CATALOG', _DEFAULT_DATABRICKS_CATALOG)}."
+            f"{os.getenv('DATABRICKS_SCHEMA', _DEFAULT_DATABRICKS_SCHEMA)}."
+            f"{os.getenv('DATABRICKS_WELLS_TABLE', _DEFAULT_DATABRICKS_WELLS_TABLE)}"
         )
         return {
             "connected": True,
@@ -429,9 +466,9 @@ def _query_databricks(
     detail_level: DetailLevel = "summary",
     zoom: int | None = None,
 ) -> SpatialWellsResponse:
-    catalog = os.getenv("DATABRICKS_CATALOG", "eds")
-    schema = os.getenv("DATABRICKS_SCHEMA", "well")
-    table = os.getenv("DATABRICKS_WELLS_TABLE", "tbl_well_summary_all")
+    catalog = os.getenv("DATABRICKS_CATALOG", _DEFAULT_DATABRICKS_CATALOG)
+    schema = os.getenv("DATABRICKS_SCHEMA", _DEFAULT_DATABRICKS_SCHEMA)
+    table = os.getenv("DATABRICKS_WELLS_TABLE", _DEFAULT_DATABRICKS_WELLS_TABLE)
     full_table = f"{catalog}.{schema}.{table}"
 
     params = {
@@ -447,9 +484,6 @@ def _query_databricks(
     # names from our own filter state, not user-supplied free text).
     extra_where = ""
     if filters:
-        if filters.statuses:
-            status_list = ", ".join(f"'{s}'" for s in filters.statuses)
-            extra_where += f"  AND well_status IN ({status_list})\n"
         if filters.operators:
             op_list = ", ".join(f"'{o.replace(chr(39), chr(39)*2)}'" for o in filters.operators)
             extra_where += f"  AND operator IN ({op_list})\n"
@@ -496,6 +530,9 @@ def _query_databricks(
             raw_lng = row_dict.get("sh_longitude_nad27")
             if raw_lat is None or raw_lng is None:
                 continue
+            status = _map_status(row_dict.get("well_status"))
+            if status is None:
+                continue
             lat, lng = _transform_coords(float(raw_lat), float(raw_lng))
             well = Well(
                 id=str(row_dict.get("api_14", "")),
@@ -503,7 +540,7 @@ def _query_databricks(
                 lat=lat,
                 lng=lng,
                 lateralLength=0,
-                status=_map_status(row_dict.get("well_status")),
+                status=status,
                 operator="",
                 formation="",
             )
@@ -530,6 +567,9 @@ def _query_databricks(
         sh_lat_nad27 = float(raw_lat)
         sh_lng_nad27 = float(raw_lng)
         lat, lng = _transform_coords(sh_lat_nad27, sh_lng_nad27)
+        status = _map_status(row_dict.get("well_status"))
+        if status is None:
+            continue
 
         raw_bh_lat = row_dict.get("bh_latitude_nad27")
         raw_bh_lng = row_dict.get("bh_longitude_nad27")
@@ -549,7 +589,7 @@ def _query_databricks(
             lat=lat,
             lng=lng,
             lateralLength=lateral_length,
-            status=_map_status(row_dict.get("well_status")),
+            status=status,
             operator=str(row_dict.get("operator", "")),
             formation=str(row_dict.get("formation", "")),
         )
@@ -626,6 +666,7 @@ def _fetch_trajectories(
 
     # Only query surveys for wells with lateral_length > 0
     survey_api_ids = [a for a in api_ids if well_by_id.get(a) and well_by_id[a].lateralLength > 0]
+    shape_wkts = _fetch_shape_wkts(conn, survey_api_ids)
 
     survey_table = "eds.well.tbl_directional_survey"
 
@@ -648,8 +689,9 @@ def _fetch_trajectories(
                 rows = cursor.fetchall()
                 cols = [d[0] for d in cursor.description]
         except Exception as exc:  # noqa: BLE001
-            logger.warning("Trajectory query failed, skipping trajectories: %s", exc)
-            return {}
+            logger.warning("Directional survey query failed, falling back to shape/header trajectories: %s", exc)
+            rows = []
+            cols = []
 
         for row in rows:
             rd = dict(zip(cols, row))
@@ -664,6 +706,13 @@ def _fetch_trajectories(
             continue
         sh_lat, sh_lng, bh_lat, bh_lng = coords
         stations = raw_stations.get(api, [])
+        shape_wkt = shape_wkts.get(api)
+
+        if shape_wkt:
+            shape_trajectory = _trajectory_from_shape_wkt(well_by_id[api], shape_wkt, zoom=zoom)
+            if shape_trajectory is not None:
+                trajectories[api] = shape_trajectory
+                continue
 
         if stations:
             # Subsample if too many stations (adaptive to zoom)
@@ -732,6 +781,90 @@ def _fetch_trajectories(
             )
 
     return trajectories
+
+
+def _fetch_shape_wkts(conn: Any, api_ids: list[str]) -> dict[str, str]:
+    if not api_ids:
+        return {}
+
+    api_list = ", ".join(f"'{a.replace(chr(39), chr(39) * 2)}'" for a in api_ids)
+    trajectory_table = os.getenv("DATABRICKS_TRAJECTORY_TABLE", _DEFAULT_DATABRICKS_TRAJECTORY_TABLE)
+    sql = f"""
+        SELECT api_14, shape_wkt
+        FROM {trajectory_table}
+        WHERE api_14 IN ({api_list})
+          AND shape_wkt IS NOT NULL
+    """
+
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(sql)
+            rows = cursor.fetchall()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Shape trajectory query failed, falling back to survey/header trajectories: %s", exc)
+        return {}
+
+    return {
+        str(row[0]): str(row[1])
+        for row in rows
+        if row[0] is not None and row[1]
+    }
+
+
+def _trajectory_from_shape_wkt(
+    well: Well,
+    shape_wkt: str,
+    zoom: int | None = None,
+) -> WellTrajectory | None:
+    coords = _parse_linestring_wkt(shape_wkt)
+    if len(coords) < 2:
+        return None
+
+    transformed = [_transform_coords(lat, lng) for lat, lng in coords]
+    if len(transformed) > _max_stations_for_zoom(zoom):
+        transformed = _subsample(transformed, _max_stations_for_zoom(zoom))
+
+    tvd_estimate = 8000.0
+    if well.lateralLength > 0:
+        tvd_estimate = max(4000.0, min(12000.0, well.lateralLength * 0.8))
+
+    heel_index = 1 if len(transformed) <= 2 else max(1, round((len(transformed) - 1) * 0.15))
+    path: list[WellTrajectoryPoint] = []
+    for idx, (lat, lng) in enumerate(transformed):
+        if idx <= heel_index:
+            depth = tvd_estimate * (idx / heel_index)
+        else:
+            depth = tvd_estimate
+        path.append(WellTrajectoryPoint(lat=lat, lng=lng, depthFt=depth))
+
+    toe_md = well.lateralLength + tvd_estimate if well.lateralLength > 0 else None
+    return WellTrajectory(
+        path=path,
+        surface=path[0],
+        heel=path[heel_index],
+        toe=path[-1],
+        mdFt=toe_md,
+    )
+
+
+def _parse_linestring_wkt(shape_wkt: str) -> list[tuple[float, float]]:
+    normalized = shape_wkt.strip()
+    if not normalized.upper().startswith("LINESTRING"):
+        return []
+    start = normalized.find("(")
+    end = normalized.rfind(")")
+    if start == -1 or end == -1 or end <= start:
+        return []
+
+    coords: list[tuple[float, float]] = []
+    for pair in normalized[start + 1:end].split(","):
+        parts = pair.strip().split()
+        if len(parts) < 2:
+            continue
+        lng = float(parts[0])
+        lat = float(parts[1])
+        coords.append((lat, lng))
+    return coords
 
 
 def _query_mock(

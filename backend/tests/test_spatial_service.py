@@ -1,7 +1,13 @@
 import os
 
 from backend.spatial_models import SpatialLayerFilter, ViewportBounds
-from backend.spatial_service import get_available_layers, get_wells_in_bounds, _cache, ConnectionManager
+from backend.models import Well
+from backend.spatial_service import (
+    get_available_layers,
+    get_wells_in_bounds,
+    _cache,
+    ConnectionManager,
+)
 import backend.spatial_service as _svc
 
 
@@ -19,7 +25,14 @@ def setup_function():
     """Clear the cache and force mock mode by removing DB env vars."""
     _cache.clear()
     # Force mock fallback by clearing credentials and resetting connection manager
-    for key in ("DATABRICKS_SERVER_HOSTNAME", "DATABRICKS_HTTP_PATH", "DATABRICKS_TOKEN"):
+    for key in (
+        "DATABRICKS_SERVER_HOSTNAME",
+        "DATABRICKS_HTTP_PATH",
+        "DATABRICKS_TOKEN",
+        "DATABRICKS_HOST",
+        "DATABRICKS_WAREHOUSE_ID",
+        "DATABRICKS_ACCESS_TOKEN",
+    ):
         os.environ.pop(key, None)
     _svc._conn_mgr = ConnectionManager()
 
@@ -208,12 +221,47 @@ class TestConnectionManager:
         assert self.mgr.last_verified_at == 0.0
 
     def test_get_connection_returns_none_without_credentials(self):
-        for key in ("DATABRICKS_SERVER_HOSTNAME", "DATABRICKS_HTTP_PATH", "DATABRICKS_TOKEN"):
+        for key in (
+            "DATABRICKS_SERVER_HOSTNAME",
+            "DATABRICKS_HTTP_PATH",
+            "DATABRICKS_TOKEN",
+            "DATABRICKS_HOST",
+            "DATABRICKS_WAREHOUSE_ID",
+            "DATABRICKS_ACCESS_TOKEN",
+        ):
             os.environ.pop(key, None)
         result = self.mgr.get_connection()
         assert result is None
         assert self.mgr.status == "disconnected"
         assert self.mgr.error == "Databricks credentials not configured"
+
+    def test_successful_connection_uses_host_and_warehouse_fallbacks(self):
+        os.environ.pop("DATABRICKS_SERVER_HOSTNAME", None)
+        os.environ.pop("DATABRICKS_HTTP_PATH", None)
+        os.environ["DATABRICKS_HOST"] = "https://workspace.example.com/"
+        os.environ["DATABRICKS_WAREHOUSE_ID"] = "abc123"
+        os.environ["DATABRICKS_ACCESS_TOKEN"] = "tok456"
+        os.environ.pop("DATABRICKS_TOKEN", None)
+
+        mock_conn = MagicMock()
+        mock_sql_mod = MagicMock()
+        mock_sql_mod.connect.return_value = mock_conn
+        mock_databricks = MagicMock()
+        mock_databricks.sql = mock_sql_mod
+
+        with patch.dict("sys.modules", {
+            "databricks": mock_databricks,
+            "databricks.sql": mock_sql_mod,
+        }):
+            result = self.mgr.get_connection()
+            assert result is mock_conn
+
+        mock_sql_mod.connect.assert_called_once_with(
+            server_hostname="workspace.example.com",
+            http_path="/sql/1.0/warehouses/abc123",
+            access_token="tok456",
+            _socket_timeout=ConnectionManager._CONNECT_TIMEOUT,
+        )
 
     def test_successful_connection(self):
         os.environ["DATABRICKS_SERVER_HOSTNAME"] = "host.test"
@@ -266,7 +314,7 @@ class TestConnectionManager:
         assert self.mgr._ping() is True
         assert self.mgr.last_verified_at > 0
         mock_conn.cursor.return_value.__enter__.return_value.execute.assert_called_once_with(
-            "SELECT 1", timeout=ConnectionManager._PING_TIMEOUT
+            "SELECT 1"
         )
 
     def test_ping_failure_disconnects(self):
@@ -318,7 +366,14 @@ class TestCheckConnectionStatus:
 
     def setup_method(self):
         _cache.clear()
-        for key in ("DATABRICKS_SERVER_HOSTNAME", "DATABRICKS_HTTP_PATH", "DATABRICKS_TOKEN"):
+        for key in (
+            "DATABRICKS_SERVER_HOSTNAME",
+            "DATABRICKS_HTTP_PATH",
+            "DATABRICKS_TOKEN",
+            "DATABRICKS_HOST",
+            "DATABRICKS_WAREHOUSE_ID",
+            "DATABRICKS_ACCESS_TOKEN",
+        ):
             os.environ.pop(key, None)
         _svc._conn_mgr = ConnectionManager()
 
@@ -396,7 +451,14 @@ class TestZoomPassedToWells:
 
     def setup_method(self):
         _cache.clear()
-        for key in ("DATABRICKS_SERVER_HOSTNAME", "DATABRICKS_HTTP_PATH", "DATABRICKS_TOKEN"):
+        for key in (
+            "DATABRICKS_SERVER_HOSTNAME",
+            "DATABRICKS_HTTP_PATH",
+            "DATABRICKS_TOKEN",
+            "DATABRICKS_HOST",
+            "DATABRICKS_WAREHOUSE_ID",
+            "DATABRICKS_ACCESS_TOKEN",
+        ):
             os.environ.pop(key, None)
         _svc._conn_mgr = ConnectionManager()
 
@@ -408,3 +470,32 @@ class TestZoomPassedToWells:
     def test_zoom_none_accepted(self):
         resp = get_wells_in_bounds(bounds=_wide_bounds(), zoom=None)
         assert resp.source == "mock"
+
+
+class TestShapeTrajectoryBuilder:
+    def test_shape_wkt_builds_realistic_trajectory_points(self):
+        well = Well(
+            id="42317408960000",
+            name="Shape-backed well",
+            lat=32.474791,
+            lng=-101.728186,
+            lateralLength=10351.0,
+            status="PRODUCING",
+            operator="SM ENERGY COMPANY",
+            formation="WOLFCAMP B",
+        )
+
+        trajectory = _svc._trajectory_from_shape_wkt(
+            well,
+            "LINESTRING (-101.72818899988938 32.474790000121516, -101.72411043708378 32.4581834942993, -101.71959982050538 32.445128026002649)",
+            zoom=14,
+        )
+
+        assert trajectory is not None
+        assert len(trajectory.path) == 3
+        assert trajectory.surface.depthFt == 0.0
+        assert trajectory.heel.depthFt > 0.0
+        assert trajectory.toe.depthFt >= trajectory.heel.depthFt
+        assert trajectory.surface.lng != trajectory.toe.lng
+        assert trajectory.mdFt is not None
+        assert trajectory.mdFt > well.lateralLength

@@ -403,6 +403,23 @@ export class SlopcastApp {
     return Number.isFinite(value) ? value : 0;
   }
 
+  async isMapInstancePresent(): Promise<boolean> {
+    const raw = (await this.page.getByTestId('map-instance-present').first().textContent())?.trim() || '0';
+    return raw === '1';
+  }
+
+  async readMapViewportWellCount(): Promise<number> {
+    return await this.readNumericTestId('map-viewport-well-count');
+  }
+
+  async readMapSpatialSource(): Promise<string> {
+    return ((await this.page.getByTestId('map-spatial-source').first().textContent())?.trim() || 'none');
+  }
+
+  async readMapTrajectoryError(): Promise<string> {
+    return ((await this.page.getByTestId('map-trajectory-error').first().textContent())?.trim() || '');
+  }
+
   async setStoredMapTestView(view: {
     zoom?: number;
     pitch?: number;

@@ -55,7 +55,7 @@ export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapRes
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
   const readyRef = useRef(false);
-  const [mapInstanceState, setMapInstanceState] = useState<any | null>(null);
+  const [, setMapVersion] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
   const [viewState, setViewState] = useState<MapViewState>({ center, zoom, pitch, bearing });
 
@@ -99,7 +99,7 @@ export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapRes
 
         mapInstance = map;
         mapRef.current = map;
-        setMapInstanceState(map);
+        setMapVersion(version => version + 1);
 
         const markReady = () => {
           if (cancelled || readyRef.current) return;
@@ -178,7 +178,7 @@ export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapRes
       try { mapRef.current?.remove(); } catch { /* container already detached */ }
       mapRef.current = null;
       readyRef.current = false;
-      setMapInstanceState(null);
+      setMapVersion(version => version + 1);
       setIsLoaded(false);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -195,7 +195,7 @@ export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapRes
   }, []);
 
   return {
-    map: mapInstanceState,
+    map: mapRef.current,
     isLoaded,
     mapContainerRef,
     viewState,

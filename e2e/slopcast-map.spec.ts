@@ -72,6 +72,30 @@ test.describe('Map Command Center', () => {
         })
         .toBeGreaterThanOrEqual(14);
       await expect
+        .poll(async () => slopcast.isMapInstancePresent(), {
+          timeout: 15_000,
+          message: 'Expected the real Mapbox instance to be published to React consumers',
+        })
+        .toBe(true);
+      await expect
+        .poll(async () => slopcast.readMapSpatialSource(), {
+          timeout: 15_000,
+          message: 'Expected viewport data to load through the real fetch path',
+        })
+        .not.toBe('none');
+      await expect
+        .poll(async () => slopcast.readMapViewportWellCount(), {
+          timeout: 15_000,
+          message: 'Expected viewport wells to come from a real viewport fetch',
+        })
+        .toBeGreaterThan(0);
+      await expect
+        .poll(async () => slopcast.readMapTrajectoryError(), {
+          timeout: 15_000,
+          message: 'Expected the close-zoom 3D trajectory fetch to complete without errors',
+        })
+        .toBe('');
+      await expect
         .poll(async () => (await slopcast.readWellboreDiagnostics()).mounted, {
           timeout: 10_000,
         })

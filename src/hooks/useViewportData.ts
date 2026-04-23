@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Well, ViewportBounds, SpatialLayerFilter, SpatialDataSourceId } from '../types';
-import { MOCK_WELLS } from '../constants';
 import { getSpatialSource, getStoredSpatialSourceId, type DetailLevel } from '../services/spatialService';
 
 // ---------------------------------------------------------------------------
@@ -91,13 +90,13 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
     includeLaterals = false,
   } = options;
 
-  const [wells, setWells] = useState<Well[]>(MOCK_WELLS);
+  const [wells, setWells] = useState<Well[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingTrajectories, setIsLoadingTrajectories] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [trajectoryError, setTrajectoryError] = useState<string | null>(null);
   const [source, setSource] = useState<'databricks' | 'mock' | null>(null);
-  const [totalCount, setTotalCount] = useState(MOCK_WELLS.length);
+  const [totalCount, setTotalCount] = useState(0);
   const [truncated, setTruncated] = useState(false);
   const [fallbackActive, setFallbackActive] = useState(false);
 
