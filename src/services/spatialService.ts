@@ -63,6 +63,34 @@ function applyFilters(wells: Well[], filters?: SpatialLayerFilter): Well[] {
   return result;
 }
 
+function attachMockTrajectory(well: Well): Well {
+  if (well.trajectory) return well;
+
+  const heelDepthFt = 8000;
+  const toeDepthFt = heelDepthFt;
+  const lateralFeet = Math.max(well.lateralLength || 7500, 3000);
+  const lngDelta = lateralFeet / 364000;
+
+  const surface = { lat: well.lat, lng: well.lng, depthFt: 0 };
+  const heel = { lat: well.lat, lng: well.lng, depthFt: heelDepthFt };
+  const toe = { lat: well.lat, lng: well.lng + lngDelta, depthFt: toeDepthFt };
+
+  return {
+    ...well,
+    trajectory: {
+      surface,
+      heel,
+      toe,
+      mdFt: heelDepthFt + lateralFeet,
+      path: [
+        surface,
+        heel,
+        toe,
+      ],
+    },
+  };
+}
+
 const MOCK_LAYERS: SpatialLayer[] = [
   { id: 'producing', label: 'Producing', description: 'Active producing wells', enabled_by_default: true },
   { id: 'duc', label: 'DUCs', description: 'Drilled but uncompleted wells', enabled_by_default: true },
@@ -78,12 +106,16 @@ const mockSource: SpatialDataSource = {
   id: 'mock',
   label: 'Mock (Client)',
 
-  async fetchViewportWells(bounds, filters, _options) {
+  async fetchViewportWells(bounds, filters, options) {
     const inBounds = MOCK_WELLS.filter((w) => wellInBounds(w, bounds));
     const filtered = applyFilters(inBounds, filters);
+    const detailLevel = options?.detailLevel ?? 'summary';
+    const wells = detailLevel === 'full'
+      ? filtered.map((well) => attachMockTrajectory(well))
+      : filtered;
     return {
-      wells: filtered,
-      total_count: filtered.length,
+      wells,
+      total_count: wells.length,
       truncated: false,
       source: 'mock',
     };

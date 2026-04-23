@@ -327,6 +327,53 @@ describe('MapWellboreLayer', () => {
     expect(gl.deleteBuffer).toHaveBeenCalled();
   });
 
+  it('re-uploads existing wellbores after the layer is re-added', () => {
+    const layer = new MapWellboreLayer();
+    const gl = createMockGL();
+    const map = createMockMap();
+    const matrix = new Array(16).fill(0);
+
+    layer.onAdd(map as any, gl as any);
+    layer.setWellbores([makeWellbore('w-1', 3)]);
+    layer.render(gl as any, matrix);
+
+    expect(gl.bufferData).toHaveBeenCalledTimes(1);
+    expect(gl.drawArrays).toHaveBeenCalledWith(gl.LINES, 0, 4);
+
+    gl.bufferData.mockClear();
+    gl.drawArrays.mockClear();
+
+    layer.onRemove(map as any, gl as any);
+    layer.onAdd(map as any, gl as any);
+    layer.render(gl as any, matrix);
+
+    expect(gl.bufferData).toHaveBeenCalledTimes(1);
+    expect(gl.drawArrays).toHaveBeenCalledWith(gl.LINES, 0, 4);
+  });
+
+  it('reports render diagnostics after uploading and drawing wellbores', () => {
+    const layer = new MapWellboreLayer();
+    const gl = createMockGL();
+    const map = createMockMap();
+    const matrix = new Array(16).fill(0);
+
+    layer.onAdd(map as any, gl as any);
+    layer.setWellbores([makeWellbore('w-1', 4)]);
+    layer.render(gl as any, matrix);
+
+    expect(layer.getDiagnostics()).toMatchObject({
+      mounted: true,
+      hasProgram: true,
+      wellboreCount: 1,
+      vertexCount: 6,
+      uploadCount: 1,
+      drawCalls: 1,
+      lastUploadVertexCount: 6,
+      lastDrawVertexCount: 6,
+      dirty: false,
+    });
+  });
+
   it('empty wellbores array results in zero vertex count', () => {
     const layer = new MapWellboreLayer();
     const gl = createMockGL();

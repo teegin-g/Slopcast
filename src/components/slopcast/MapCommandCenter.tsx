@@ -3,7 +3,7 @@ import { useMapboxMap } from '../../hooks/useMapboxMap';
 import { useTheme } from '../../theme/ThemeProvider';
 import { overlayPanelClass, type MapboxOverrides } from '../../theme/themes';
 import type { Well, WellGroup, SpatialLayerFilter, SpatialDataSourceId } from '../../types';
-import type { WellboreData } from './MapWellboreLayer';
+import type { WellboreData, WellboreRenderDiagnostics } from './MapWellboreLayer';
 import { useViewportData } from '../../hooks/useViewportData';
 import { useConnectionStatus } from '../../hooks/useConnectionStatus';
 import { useToast } from './Toast';
@@ -20,6 +20,19 @@ import { useMapSelection } from '../../hooks/useMapSelection';
 export type WellsMobilePanel = 'GROUPS' | 'MAP';
 
 type SelectionTool = 'lasso' | 'rectangle';
+
+const EMPTY_WELLBORE_DIAGNOSTICS: WellboreRenderDiagnostics = {
+  mounted: false,
+  wellboreCount: 0,
+  vertexCount: 0,
+  totalAllocatedVerts: 0,
+  uploadCount: 0,
+  drawCalls: 0,
+  lastUploadVertexCount: 0,
+  lastDrawVertexCount: 0,
+  dirty: true,
+  hasProgram: false,
+};
 
 interface MapCommandCenterProps {
   isClassic: boolean;
@@ -126,7 +139,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
 }) => {
   const { theme } = useTheme();
   const mp = theme.mapPalette;
-  const { map, isLoaded, mapContainerRef, selectionTrail, wellboreLayer } = useMapboxMap();
+  const { map, isLoaded, mapContainerRef, viewState, selectionTrail, wellboreLayer } = useMapboxMap();
 
   // Detect map canvas presence as a fallback for isLoaded (handles StrictMode race)
   const [canvasDetected, setCanvasDetected] = useState(false);
@@ -150,11 +163,29 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   }, [isLoaded, canvasDetected, mapContainerRef]);
 
   const mapReady = isLoaded || canvasDetected;
+  const ensureTerrain = useCallback((targetMap: any) => {
+    try {
+      if (!targetMap.getSource('mapbox-dem')) {
+        targetMap.addSource('mapbox-dem', {
+          type: 'raster-dem',
+          url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+          tileSize: 512,
+          maxzoom: 14,
+        });
+      }
+      targetMap.setTerrain({ source: 'mapbox-dem', exaggeration: 1.2 });
+    } catch {
+      // Terrain is optional in unsupported environments.
+    }
+  }, []);
 
   const [activeTool, setActiveTool] = useState<SelectionTool | null>(null);
   const [layers, setLayers] = useState<Record<string, boolean>>({ grid: false, heatmap: false, satellite: false });
   const [groupsPanelOpen, setGroupsPanelOpen] = useState(true);
   const [errorDismissed, setErrorDismissed] = useState(false);
+  const [wellboreDiagnostics, setWellboreDiagnostics] = useState<WellboreRenderDiagnostics>(
+    () => wellboreLayer?.getDiagnostics() ?? EMPTY_WELLBORE_DIAGNOSTICS,
+  );
 
   // Hover tooltip state
   const [hoveredWellId, setHoveredWellId] = useState<string | null>(null);
@@ -214,6 +245,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     isLoading: spatialLoading,
     isLoadingTrajectories: spatialLoadingTrajectories,
     error: spatialError,
+    trajectoryError: spatialTrajectoryError,
     source: spatialSource,
     totalCount: spatialTotalCount,
     truncated: spatialTruncated,
@@ -221,11 +253,13 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     refetch: spatialRefetch,
   } = useViewportData({
     map,
-    isLoaded,
+    isLoaded: mapReady,
     filters: spatialFilters,
     dataSourceId,
     includeLaterals: dataLayers.laterals || groupLateralWellIds.size > 0,
   });
+  const displayedSpatialError = spatialError ?? spatialTrajectoryError;
+  const isTrajectoryOnlyError = !spatialError && !!spatialTrajectoryError;
 
   // ---------------------------------------------------------------------------
   // Connection status polling + auto-detect + toasts
@@ -277,8 +311,8 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
 
   // Reset error dismissal when a new error arrives
   useEffect(() => {
-    if (spatialError) setErrorDismissed(false);
-  }, [spatialError]);
+    if (spatialError || spatialTrajectoryError) setErrorDismissed(false);
+  }, [spatialError, spatialTrajectoryError]);
 
   const effectiveWells = useMemo(() => {
     if (viewportWells.length > 0 && spatialSource !== null) {
@@ -325,11 +359,8 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     selectionTrail?.setColor(mp.lassoStroke);
   }, [selectionTrail, mp.lassoStroke]);
 
-  // Feed wellbore data: toggle ON shows all, toggle OFF shows group members of any selected well
-  useEffect(() => {
-    if (!wellboreLayer) return;
-
-    const wellboreData: WellboreData[] = effectiveWells
+  const activeWellboreData = useMemo<WellboreData[]>(() => {
+    return effectiveWells
       .filter(w => {
         if (!w.trajectory || w.trajectory.path.length < 2) return false;
         if (dataLayers.laterals) return true;
@@ -341,9 +372,22 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
         color: getWellColor(w.id),
         selected: selectedWellIds.has(w.id),
       }));
+  }, [effectiveWells, dataLayers.laterals, getWellColor, selectedWellIds, groupLateralWellIds]);
 
-    wellboreLayer.setWellbores(wellboreData);
-  }, [wellboreLayer, effectiveWells, dataLayers.laterals, getWellColor, selectedWellIds, groupLateralWellIds]);
+  // Feed wellbore data: toggle ON shows all, toggle OFF shows group members of any selected well
+  useEffect(() => {
+    if (!wellboreLayer) return;
+    wellboreLayer.setWellbores(activeWellboreData);
+  }, [wellboreLayer, activeWellboreData]);
+
+  useEffect(() => {
+    if (!wellboreLayer) return;
+    setWellboreDiagnostics(wellboreLayer.getDiagnostics());
+    wellboreLayer.setDiagnosticsListener(setWellboreDiagnostics);
+    return () => {
+      wellboreLayer.setDiagnosticsListener(null);
+    };
+  }, [wellboreLayer]);
 
   // Status-differentiated well layer IDs (glow halo is rendered under these)
   const wellLayerIds = useMemo(() => ['wells-producing', 'wells-duc', 'wells-permit'] as const, []);
@@ -675,6 +719,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     map.setStyle(style);
     // Re-add wells source/layers after style change (with clustering)
     map.once('style.load', () => {
+      ensureTerrain(map);
       const sourceId = 'wells-source';
       if (!map.getSource(sourceId)) {
         map.addSource(sourceId, {
@@ -727,6 +772,9 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
       } catch (e) {
         console.warn('[MapCommandCenter] Failed to re-add wellbore layer:', e);
       }
+      if (wellboreLayer) {
+        wellboreLayer.setWellbores(activeWellboreData);
+      }
       if (!layers.satellite) {
         applyMapThemeOverrides(map, mp.mapboxOverrides);
       }
@@ -742,6 +790,16 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
       <div className="sr-only">
         <span data-testid="wells-selected-visible-count">{selectedWellCount}</span>
         <span data-testid="wells-filtered-count">{filteredWellsCount}</span>
+        <span data-testid="map-instance-present">{map ? '1' : '0'}</span>
+        <span data-testid="map-view-zoom">{viewState.zoom.toFixed(2)}</span>
+        <span data-testid="map-viewport-well-count">{viewportWells.length}</span>
+        <span data-testid="map-spatial-source">{spatialSource ?? 'none'}</span>
+        <span data-testid="map-trajectory-error">{spatialTrajectoryError ?? ''}</span>
+        <span data-testid="map-wellbore-mounted">{wellboreDiagnostics.mounted ? '1' : '0'}</span>
+        <span data-testid="map-wellbore-count">{wellboreDiagnostics.wellboreCount}</span>
+        <span data-testid="map-wellbore-vertex-count">{wellboreDiagnostics.vertexCount}</span>
+        <span data-testid="map-wellbore-draw-calls">{wellboreDiagnostics.drawCalls}</span>
+        <span data-testid="map-wellbore-last-draw-vertex-count">{wellboreDiagnostics.lastDrawVertexCount}</span>
       </div>
 
       {/* Mapbox canvas */}
@@ -878,7 +936,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
         />
 
         {/* Error overlay — spatial data loading failure */}
-        {spatialError && !errorDismissed && (
+        {displayedSpatialError && !errorDismissed && (
           <div className="absolute bottom-16 right-4 z-30 pointer-events-auto max-w-xs">
             <div className={`${
               isClassic
@@ -895,10 +953,10 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
                 </svg>
                 <div className="flex-1 min-w-0">
                   <div className={`text-[10px] font-black uppercase tracking-widest ${isClassic ? 'text-red-400' : 'text-red-400'}`}>
-                    Failed to load wells
+                    {isTrajectoryOnlyError ? '3D laterals unavailable' : 'Failed to load wells'}
                   </div>
                   <div className={`text-[9px] mt-1 leading-snug ${isClassic ? 'text-white/50' : 'text-[var(--text-muted)]'}`}>
-                    {spatialError}
+                    {displayedSpatialError}
                   </div>
                   <div className="flex items-center gap-2 mt-2">
                     <button
@@ -912,7 +970,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
                     >
                       Retry
                     </button>
-                    {onSourceChange && (
+                    {spatialError && onSourceChange && (
                       <button
                         type="button"
                         onClick={() => { setErrorDismissed(true); onSourceChange('mock'); }}

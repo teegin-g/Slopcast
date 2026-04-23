@@ -7,6 +7,14 @@ export type ThemeCase = {
 
 export type EconomicsTabCase = 'OVERVIEW' | 'CASH_FLOW' | 'RESERVES';
 
+type WellboreRenderDiagnostics = {
+  mounted: boolean;
+  wellboreCount: number;
+  vertexCount: number;
+  drawCalls: number;
+  lastDrawVertexCount: number;
+};
+
 type ConsoleEntry = {
   type: string;
   text: string;
@@ -21,6 +29,7 @@ const DEV_BYPASS_SESSION = {
     displayName: 'Field Operator',
   },
 } as const;
+const MAP_TEST_VIEW_STORAGE_KEY = 'slopcast-map-test-view';
 
 export const THEMES: ThemeCase[] = [
   { id: 'slate', title: 'Slate' },
@@ -386,6 +395,79 @@ export class SlopcastApp {
       this.page.locator('[data-testid="map-command-center"] canvas.mapboxgl-canvas'),
     ).toBeVisible({ timeout: 30_000 });
     await expect(this.page.getByText('Set VITE_MAPBOX_TOKEN')).not.toBeVisible({ timeout: 5_000 });
+  }
+
+  async readMapZoom(): Promise<number> {
+    const raw = (await this.page.getByTestId('map-view-zoom').first().textContent())?.trim() || '0';
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  async setStoredMapTestView(view: {
+    zoom?: number;
+    pitch?: number;
+    bearing?: number;
+    center?: [number, number];
+  } | null): Promise<void> {
+    await this.page.evaluate(({ key, nextView }) => {
+      if (nextView) {
+        localStorage.setItem(key, JSON.stringify(nextView));
+      } else {
+        localStorage.removeItem(key);
+      }
+    }, { key: MAP_TEST_VIEW_STORAGE_KEY, nextView: view });
+  }
+
+  async reloadForMapTestView(view: {
+    zoom?: number;
+    pitch?: number;
+    bearing?: number;
+    center?: [number, number];
+  }): Promise<void> {
+    await this.page.addInitScript(
+      ({ key, nextView }) => {
+        localStorage.setItem(key, JSON.stringify(nextView));
+      },
+      { key: MAP_TEST_VIEW_STORAGE_KEY, nextView: view },
+    );
+    await this.page.reload({ waitUntil: 'domcontentloaded' });
+    await this.goto();
+  }
+
+  async setMapCloseZoom(): Promise<void> {
+    await expect
+      .poll(async () => this.readMapZoom(), {
+        timeout: 10_000,
+        message: 'Expected map to move to the close-zoom validation state',
+      })
+      .toBeGreaterThanOrEqual(14);
+  }
+
+  async readWellboreDiagnostics(): Promise<WellboreRenderDiagnostics> {
+    const [mounted, wellboreCount, vertexCount, drawCalls, lastDrawVertexCount] = await Promise.all([
+      this.page.getByTestId('map-wellbore-mounted').first().textContent(),
+      this.page.getByTestId('map-wellbore-count').first().textContent(),
+      this.page.getByTestId('map-wellbore-vertex-count').first().textContent(),
+      this.page.getByTestId('map-wellbore-draw-calls').first().textContent(),
+      this.page.getByTestId('map-wellbore-last-draw-vertex-count').first().textContent(),
+    ]);
+
+    return {
+      mounted: mounted?.trim() === '1',
+      wellboreCount: Number(wellboreCount?.trim() || '0'),
+      vertexCount: Number(vertexCount?.trim() || '0'),
+      drawCalls: Number(drawCalls?.trim() || '0'),
+      lastDrawVertexCount: Number(lastDrawVertexCount?.trim() || '0'),
+    };
+  }
+
+  async toggleLaterals(enabled: boolean): Promise<void> {
+    const button = this.page.getByRole('button', { name: 'Laterals' }).first();
+    await expect(button).toBeVisible({ timeout: 10_000 });
+    const isPressed = (await button.getAttribute('aria-pressed')) === 'true';
+    if (isPressed !== enabled) {
+      await button.click();
+    }
   }
 
   async expectMapWellsPopulated(): Promise<void> {

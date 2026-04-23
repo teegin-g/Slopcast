@@ -25,6 +25,7 @@ def create_spatial_router() -> APIRouter:
             filters=req.filters,
             limit=req.limit,
             detail_level=detail,
+            zoom=req.zoom,
         )
 
     @router.get("/layers", response_model=SpatialLayersResponse)

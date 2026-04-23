@@ -8,6 +8,7 @@ const MAPBOX_TOKEN = (typeof import.meta !== 'undefined'
   : '')?.trim() ?? '';
 
 const PERMIAN_CENTER: [number, number] = [-102.3, 31.9];
+const MAP_TEST_VIEW_STORAGE_KEY = 'slopcast-map-test-view';
 
 interface UseMapboxMapOptions {
   center?: [number, number];
@@ -28,16 +29,33 @@ interface UseMapboxMapResult {
   wellboreLayer: MapWellboreLayer;
 }
 
+type StoredMapTestView = Partial<Pick<MapViewState, 'center' | 'zoom' | 'pitch' | 'bearing'>>;
+
+function readStoredMapTestView(): StoredMapTestView | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(MAP_TEST_VIEW_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredMapTestView;
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapResult {
+  const storedTestView = readStoredMapTestView();
   const {
-    center = PERMIAN_CENTER,
-    zoom = 8,
-    pitch = 45,
-    bearing = 0,
+    center = storedTestView?.center ?? PERMIAN_CENTER,
+    zoom = storedTestView?.zoom ?? 8,
+    pitch = storedTestView?.pitch ?? 45,
+    bearing = storedTestView?.bearing ?? 0,
   } = options;
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
+  const readyRef = useRef(false);
+  const [mapInstanceState, setMapInstanceState] = useState<any | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [viewState, setViewState] = useState<MapViewState>({ center, zoom, pitch, bearing });
 
@@ -80,9 +98,11 @@ export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapRes
         });
 
         mapInstance = map;
+        mapRef.current = map;
+        setMapInstanceState(map);
 
         const markReady = () => {
-          if (cancelled || mapRef.current) return;
+          if (cancelled || readyRef.current) return;
 
           // Add 3D terrain (best-effort — may fail in headless/WebGL-limited envs)
           try {
@@ -116,7 +136,7 @@ export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapRes
             console.warn('[useMapboxMap] Failed to add wellbore layer:', e);
           }
 
-          mapRef.current = map;
+          readyRef.current = true;
           setIsLoaded(true);
         };
 
@@ -157,6 +177,8 @@ export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapRes
       mapInstance = null;
       try { mapRef.current?.remove(); } catch { /* container already detached */ }
       mapRef.current = null;
+      readyRef.current = false;
+      setMapInstanceState(null);
       setIsLoaded(false);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -173,7 +195,7 @@ export function useMapboxMap(options: UseMapboxMapOptions = {}): UseMapboxMapRes
   }, []);
 
   return {
-    map: mapRef.current,
+    map: mapInstanceState,
     isLoaded,
     mapContainerRef,
     viewState,

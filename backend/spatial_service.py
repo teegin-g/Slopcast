@@ -273,6 +273,7 @@ def _cache_key(
     filters: SpatialLayerFilter | None,
     limit: int,
     detail_level: DetailLevel,
+    zoom: int | None = None,
 ) -> str:
     f_str = ""
     if filters:
@@ -282,9 +283,12 @@ def _cache_key(
             f"{sorted(filters.formations or [])}|"
             f"{sorted(filters.layers or [])}"
         )
+    zoom_part = ""
+    if detail_level == "full":
+        zoom_part = f"|zoom={zoom if zoom is not None else 'none'}"
     return (
         f"{bounds.sw_lat},{bounds.sw_lng},{bounds.ne_lat},{bounds.ne_lng}"
-        f"|{f_str}|{limit}|detail={detail_level}"
+        f"|{f_str}|{limit}|detail={detail_level}{zoom_part}"
     )
 
 
@@ -318,17 +322,26 @@ def get_wells_in_bounds(
     if include_trajectory and detail_level != "full":
         detail_level = "full"
 
-    key = _cache_key(bounds, filters, limit, detail_level)
+    key = _cache_key(bounds, filters, limit, detail_level, zoom=zoom)
     if key in _cache:
         return _cache[key]
 
+    has_live_credentials = bool(
+        os.getenv("DATABRICKS_SERVER_HOSTNAME")
+        and os.getenv("DATABRICKS_HTTP_PATH")
+        and os.getenv("DATABRICKS_TOKEN")
+    )
     conn = _get_db_connection()
     if conn is not None:
         result = _query_databricks(conn, bounds, filters, limit, detail_level, zoom=zoom)
     else:
         result = _query_mock(bounds, filters, limit, detail_level)
 
-    _cache[key] = result
+    # When live credentials are configured, avoid caching mock fallback results.
+    # A transient Databricks outage would otherwise poison this viewport key and
+    # keep serving stale demo data after the warehouse recovers.
+    if result.source == "databricks" or not has_live_credentials:
+        _cache[key] = result
     return result
 
 

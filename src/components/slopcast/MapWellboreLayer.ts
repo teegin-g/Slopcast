@@ -111,6 +111,19 @@ export interface WellboreData {
   selected: boolean;
 }
 
+export interface WellboreRenderDiagnostics {
+  mounted: boolean;
+  wellboreCount: number;
+  vertexCount: number;
+  totalAllocatedVerts: number;
+  uploadCount: number;
+  drawCalls: number;
+  lastUploadVertexCount: number;
+  lastDrawVertexCount: number;
+  dirty: boolean;
+  hasProgram: boolean;
+}
+
 // ── Custom layer class ──────────────────────────────────────────────────
 export class MapWellboreLayer {
   readonly id = 'wellbore-3d-layer';
@@ -125,6 +138,7 @@ export class MapWellboreLayer {
   private reducedMotion = false;
   private _motionQuery: MediaQueryList | null = null;
   private _handleMotionChange: (() => void) | null = null;
+  private diagnosticsListener: ((diagnostics: WellboreRenderDiagnostics) => void) | null = null;
 
   // Attribute locations
   private aPosition = -1;
@@ -138,6 +152,10 @@ export class MapWellboreLayer {
   // External wellbore data
   private wellbores: WellboreData[] = [];
   private dirty = true;
+  private uploadCount = 0;
+  private drawCalls = 0;
+  private lastUploadVertexCount = 0;
+  private lastDrawVertexCount = 0;
 
   // Incremental upload state
   private static readonly BATCH_SIZE = 100;
@@ -159,9 +177,32 @@ export class MapWellboreLayer {
     this.cancelBatch();
     this.wellbores = wellbores;
     this.dirty = true;
+    this.emitDiagnostics();
     if (this.mapRef) {
       this.mapRef.triggerRepaint();
     }
+  }
+
+  setDiagnosticsListener(
+    listener: ((diagnostics: WellboreRenderDiagnostics) => void) | null,
+  ): void {
+    this.diagnosticsListener = listener;
+    this.emitDiagnostics();
+  }
+
+  getDiagnostics(): WellboreRenderDiagnostics {
+    return {
+      mounted: this.mapRef !== null,
+      wellboreCount: this.wellbores.length,
+      vertexCount: this.vertexCount,
+      totalAllocatedVerts: this.totalAllocatedVerts,
+      uploadCount: this.uploadCount,
+      drawCalls: this.drawCalls,
+      lastUploadVertexCount: this.lastUploadVertexCount,
+      lastDrawVertexCount: this.lastDrawVertexCount,
+      dirty: this.dirty,
+      hasProgram: this.program !== null,
+    };
   }
 
   private cancelBatch(): void {
@@ -170,6 +211,22 @@ export class MapWellboreLayer {
       this.batchRafId = null;
     }
     this.batchQueue = null;
+  }
+
+  private resetUploadState(): void {
+    this.vertexCount = 0;
+    this.totalAllocatedVerts = 0;
+    this.batchByteOffset = 0;
+    this.uploadCount = 0;
+    this.drawCalls = 0;
+    this.lastUploadVertexCount = 0;
+    this.lastDrawVertexCount = 0;
+    this.dirty = true;
+    this.emitDiagnostics();
+  }
+
+  private emitDiagnostics(): void {
+    this.diagnosticsListener?.(this.getDiagnostics());
   }
 
   // ── Lifecycle ───────────────────────────────────────────────────────
@@ -215,6 +272,8 @@ export class MapWellboreLayer {
 
     // Vertex buffer (populated in render when dirty)
     this.vertexBuffer = gl.createBuffer();
+    this.resetUploadState();
+    this.emitDiagnostics();
 
     // Listen for runtime reduced-motion changes
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -249,6 +308,7 @@ export class MapWellboreLayer {
       if (this.dirty) {
         this.uploadVertexData(gl);
         this.dirty = false;
+        this.emitDiagnostics();
       }
 
       if (this.vertexCount === 0) return;
@@ -290,6 +350,9 @@ export class MapWellboreLayer {
 
       // ── Draw ───────────────────────────────────────────────────────
       gl.drawArrays(gl.LINES, 0, this.vertexCount);
+      this.drawCalls += 1;
+      this.lastDrawVertexCount = this.vertexCount;
+      this.emitDiagnostics();
     } finally {
       // ── Restore Mapbox WebGL state ─────────────────────────────────
       for (const attr of enabledAttribs) {
@@ -317,6 +380,7 @@ export class MapWellboreLayer {
 
   onRemove(_map: mapboxgl.Map, gl: WebGLRenderingContext): void {
     this.cancelBatch();
+    this.resetUploadState();
     if (this._motionQuery && this._handleMotionChange) {
       this._motionQuery.removeEventListener('change', this._handleMotionChange);
     }
@@ -325,6 +389,9 @@ export class MapWellboreLayer {
     this.program = null;
     this.vertexBuffer = null;
     this.mapRef = null;
+    this._motionQuery = null;
+    this._handleMotionChange = null;
+    this.emitDiagnostics();
   }
 
   // ── Internal: pack vertex data for a batch of wellbores ─────────────
@@ -373,6 +440,8 @@ export class MapWellboreLayer {
     if (wellbores.length === 0) {
       this.vertexCount = 0;
       this.totalAllocatedVerts = 0;
+      this.lastUploadVertexCount = 0;
+      this.emitDiagnostics();
       return;
     }
 
@@ -384,8 +453,11 @@ export class MapWellboreLayer {
       const data = this.packBatch(wellbores);
       this.vertexCount = data.length / fpv;
       this.totalAllocatedVerts = this.vertexCount;
+      this.uploadCount += 1;
+      this.lastUploadVertexCount = this.vertexCount;
       gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+      this.emitDiagnostics();
       return;
     }
 
@@ -398,6 +470,8 @@ export class MapWellboreLayer {
     // Pre-allocate empty GPU buffer
     this.totalAllocatedVerts = totalLineVerts;
     this.vertexCount = 0;
+    this.uploadCount += 1;
+    this.lastUploadVertexCount = 0;
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, totalLineVerts * fpv * 4, gl.DYNAMIC_DRAW);
 
@@ -429,6 +503,8 @@ export class MapWellboreLayer {
 
       this.batchByteOffset += data.byteLength;
       this.vertexCount += data.length / fpv;
+      this.lastUploadVertexCount = this.vertexCount;
+      this.emitDiagnostics();
 
       // Trigger repaint to render the partial buffer
       if (this.mapRef) this.mapRef.triggerRepaint();
