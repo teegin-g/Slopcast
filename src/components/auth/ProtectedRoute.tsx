@@ -9,8 +9,8 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { status } = useAuth();
-  const { themeId } = useTheme();
-  const isClassic = themeId === 'mario';
+  const { theme } = useTheme();
+  const isClassic = theme.features.isClassicTheme;
   const location = useLocation();
 
   if (status === 'loading') {

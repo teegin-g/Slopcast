@@ -86,8 +86,8 @@ function connectionTypeLabel(ct: ConnectionType): string {
 
 const IntegrationsPage: React.FC = () => {
   const navigate = useNavigate();
-  const { themeId } = useTheme();
-  const isClassic = themeId === 'mario';
+  const { theme } = useTheme();
+  const isClassic = theme.features.isClassicTheme;
 
   const [integrations, setIntegrations] = useState<IntegrationConfig[]>([]);
   const [loading, setLoading] = useState(true);

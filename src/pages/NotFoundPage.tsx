@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../theme/ThemeProvider';
 
 const NotFoundPage: React.FC = () => {
-  const { themeId } = useTheme();
+  const { theme } = useTheme();
   const navigate = useNavigate();
-  const isClassic = themeId === 'mario';
+  const isClassic = theme.features.isClassicTheme;
 
   return (
     <div className="min-h-screen bg-transparent theme-transition flex items-center justify-center px-4">

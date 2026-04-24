@@ -108,10 +108,10 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
   const [mapboxLoaded, setMapboxLoaded] = useState(false);
   const [isSatellite, setIsSatellite] = useState(false);
   const [formationFilter, setFormationFilter] = useState<string | null>(null);
-  const isClassic = themeId === 'mario';
 
   const lassoPointsRef = useRef<[number, number][]>([]);
   const themeMeta = getTheme(themeId);
+  const isClassic = themeMeta.features.isClassicTheme;
   const mp = themeMeta.mapPalette;
 
   const fallbackBasemapUrl = useMemo(() => {

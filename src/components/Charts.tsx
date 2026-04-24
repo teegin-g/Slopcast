@@ -10,8 +10,9 @@ interface ChartsProps {
 }
 
 const Charts: React.FC<ChartsProps> = ({ data, themeId }) => {
-  const { chartPalette: palette } = getTheme(themeId);
-  const isClassic = themeId === 'mario';
+  const themeMeta = getTheme(themeId);
+  const { chartPalette: palette } = themeMeta;
+  const isClassic = themeMeta.features.isClassicTheme;
   const productionChart = useStableChartContainer([themeId, data.length]);
   const cashChart = useStableChartContainer([themeId, data.length]);
 

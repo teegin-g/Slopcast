@@ -18,7 +18,9 @@ const SlopcastPage: React.FC = () => {
           </Suspense>
         </div>
       )}
-      {ws.themeId === 'hyperborea' && <div className="theme-aurora" />}
+      {ws.pageOverlayClasses.map(cls => (
+        <div key={cls} className={cls} />
+      ))}
 
       <PageHeader
         isClassic={ws.isClassic}

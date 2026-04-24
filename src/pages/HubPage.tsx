@@ -58,9 +58,9 @@ function formatDateTime(value?: string): string {
 const HubPage: React.FC = () => {
   const navigate = useNavigate();
   const { status, session, signOut, refreshSession } = useAuth();
-  const { themeId, themes, setThemeId } = useTheme();
+  const { themeId, theme, themes, setThemeId } = useTheme();
 
-  const isClassic = themeId === 'mario';
+  const isClassic = theme.features.isClassicTheme;
   const isAuthenticated = status === 'authenticated';
 
   const openSlopcast = () => {

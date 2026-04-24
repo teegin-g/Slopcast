@@ -75,7 +75,7 @@ export function useSlopcastWorkspace() {
 
   // --- Theme ---
   const { themeId, theme, themes, setThemeId, colorMode, setColorMode, effectiveMode } = useTheme();
-  const isClassic = themeId === 'mario';
+  const isClassic = theme.features.isClassicTheme;
   const isFxTheme = !!theme.fxTheme;
 
   const fxMode = useMemo<FxMode>(() => {
@@ -102,6 +102,7 @@ export function useSlopcastWorkspace() {
   const headerAtmosphereClass = theme.headerAtmosphereClass || '';
   const BackgroundComponent = theme.BackgroundComponent;
   const atmosphericOverlays = theme.atmosphericOverlays || [];
+  const pageOverlayClasses = theme.pageOverlayClasses || [];
 
   // --- Page mode ---
   const [pageMode, setPageMode] = useState<PageMode>('landing');
@@ -709,7 +710,7 @@ export function useSlopcastWorkspace() {
 
     // Theme
     isClassic, themeId, theme, themes, setThemeId, colorMode, setColorMode, effectiveMode,
-    fxClass, atmosphereClass, headerAtmosphereClass, BackgroundComponent, atmosphericOverlays,
+    fxClass, atmosphereClass, headerAtmosphereClass, BackgroundComponent, atmosphericOverlays, pageOverlayClasses,
 
     // Page mode
     pageMode, setPageMode, savedDeals,

@@ -5,8 +5,8 @@ import { useTheme } from '../theme/ThemeProvider';
 
 const AuthPage: React.FC = () => {
   const { status, signIn } = useAuth();
-  const { themeId, themes, setThemeId } = useTheme();
-  const isClassic = themeId === 'mario';
+  const { themeId, theme, themes, setThemeId } = useTheme();
+  const isClassic = theme.features.isClassicTheme;
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
