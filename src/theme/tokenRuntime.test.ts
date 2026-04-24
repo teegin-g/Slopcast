@@ -37,21 +37,23 @@ describe('theme token runtime', () => {
     expect(element.style.getPropertyValue('--font-brand')).toBe('"Orbitron", sans-serif');
   });
 
-  it('resolves mode-aware token maps with dark fallback', () => {
+  it('resolves mode-aware token maps from a theme definition', () => {
     const theme = {
+      id: 'test',
+      label: 'Test',
+      icon: 'x',
+      description: '',
+      appName: '',
+      appSubtitle: '',
+      chartPalette: {} as ThemeDefinition['chartPalette'],
+      mapPalette: {} as ThemeDefinition['mapPalette'],
+      features: {} as ThemeDefinition['features'],
+      variant: 'dark',
       tokens: {
-        dark: {
-          color: {
-            bgDeep: '10 31 24',
-          },
-        },
-        light: {
-          color: {
-            bgDeep: '188 218 196',
-          },
-        },
+        dark: { color: { bgDeep: '10 31 24' } },
+        light: { color: { bgDeep: '188 218 196' } },
       },
-    } as ThemeDefinition;
+    } satisfies ThemeDefinition;
 
     expect(resolveThemeTokens(theme, 'light')?.color?.bgDeep).toBe('188 218 196');
     expect(resolveThemeTokens(theme, 'dark')?.color?.bgDeep).toBe('10 31 24');

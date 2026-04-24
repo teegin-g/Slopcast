@@ -74,6 +74,10 @@ export interface ThemeTokens {
 
 export type ThemeTokenMap = ThemeTokens;
 
+export type ThemeModeTokenMap = Partial<Record<ThemeVariant, ThemeTokenMap>>;
+
+export type ThemeTokenDefinition = ThemeTokenMap | ThemeModeTokenMap;
+
 export interface ThemeDefinition {
   id: ThemeId;
   label: string;
@@ -89,7 +93,7 @@ export interface ThemeDefinition {
   /** Whether this theme has a light mode variant */
   hasLightVariant?: boolean;
   /** Runtime CSS variables for future theme wiring. */
-  tokens?: ThemeTokenMap;
+  tokens?: ThemeTokenDefinition;
   /** Optional animated background component for this theme */
   BackgroundComponent?: React.ComponentType;
   /** CSS class names for atmospheric overlay divs rendered in the header */
