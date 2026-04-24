@@ -2,6 +2,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { loadThemeSnapshotMetadata } from './theme-cases.mjs';
 
 if (process.platform === 'darwin' && process.arch === 'arm64' && !process.env.PLAYWRIGHT_HOST_PLATFORM_OVERRIDE) {
   process.env.PLAYWRIGHT_HOST_PLATFORM_OVERRIDE = 'mac15-arm64';
@@ -15,12 +16,7 @@ const fxMode = (process.env.UI_FX_MODE === 'cinematic' || process.env.UI_FX_MODE
   ? process.env.UI_FX_MODE
   : null;
 
-const THEMES = [
-  { id: 'slate', title: 'Slate' },
-  { id: 'mario', title: 'Classic' },
-  { id: 'permian', title: 'Permian', colorMode: 'dark' },
-  { id: 'permian', title: 'Permian', colorMode: 'light', alias: 'permian-noon' },
-];
+const { themes: THEMES, fxThemeIds: FX_THEME_IDS } = await loadThemeSnapshotMetadata();
 
 const DEFAULT_AUTH_SESSION = {
   provider: 'dev-bypass',
@@ -130,12 +126,11 @@ async function main() {
         seed('slopcast-econ-module', 'PRODUCTION');
         seed('slopcast-onboarding-done', '1');
         if (mode === 'cinematic' || mode === 'max') {
-          seed('slopcast-fx-synthwave', mode);
-          seed('slopcast-fx-tropical', mode);
-          seed('slopcast-fx-mario', mode);
-          seed('slopcast-fx-permian', mode);
+          for (const fxThemeId of fxThemeIds) {
+            seed(`slopcast-fx-${fxThemeId}`, mode);
+          }
         }
-      }, { themeId: THEMES[0].id, session: DEFAULT_AUTH_SESSION, storageKey: 'slopcast-auth-session', mode: fxMode });
+      }, { themeId: THEMES[0].id, session: DEFAULT_AUTH_SESSION, storageKey: 'slopcast-auth-session', mode: fxMode, fxThemeIds: FX_THEME_IDS });
 
       const page = await context.newPage();
       await page.goto(baseURL, { waitUntil: 'domcontentloaded' });

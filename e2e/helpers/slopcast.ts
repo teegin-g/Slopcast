@@ -1,12 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
+import { getUiThemeCases, type UiThemeCase } from '../../src/theme/themes';
 
-export type ThemeCase = {
-  id: 'slate' | 'mario' | 'permian';
-  title: 'Slate' | 'Classic' | 'Permian';
-  colorMode?: 'dark' | 'light';
-  /** Stable alias for screenshot paths when the same theme id covers two modes. */
-  alias?: string;
-};
+export type ThemeCase = UiThemeCase;
 
 export type EconomicsModuleCase = 'PRODUCTION' | 'PRICING' | 'OPEX' | 'TAXES' | 'OWNERSHIP' | 'CAPEX';
 
@@ -34,12 +29,7 @@ const DEV_BYPASS_SESSION = {
 } as const;
 const MAP_TEST_VIEW_STORAGE_KEY = 'slopcast-map-test-view';
 
-export const THEMES: ThemeCase[] = [
-  { id: 'slate', title: 'Slate' },
-  { id: 'mario', title: 'Classic' },
-  { id: 'permian', title: 'Permian', colorMode: 'dark', alias: 'permian-dusk' },
-  { id: 'permian', title: 'Permian', colorMode: 'light', alias: 'permian-noon' },
-];
+export const THEMES: ThemeCase[] = getUiThemeCases();
 
 function hasDimensionWarning(message: ConsoleEntry): boolean {
   return (
