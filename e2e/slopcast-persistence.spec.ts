@@ -8,13 +8,16 @@ test.describe('Slopcast persistence coverage', () => {
   }) => {
     test.skip(isMobileViewport, 'Operator and selection persistence coverage is desktop-only.');
 
+    test.setTimeout(180_000);
     for (const theme of THEMES) {
-      await test.step(`verify ${theme.id} persistence`, async () => {
+      const label = theme.alias || theme.id;
+      await test.step(`verify ${label} persistence`, async () => {
         await slopcast.setTheme(theme);
 
         await slopcast.openDesignView();
         await slopcast.openWellsWorkspace();
         await slopcast.expectWellsWorkspace();
+        await slopcast.resetWellsWorkspaceState();
         await slopcast.assertSaveSnapshotHidden();
 
         const operatorValue = await slopcast.setNonDefaultOperator();

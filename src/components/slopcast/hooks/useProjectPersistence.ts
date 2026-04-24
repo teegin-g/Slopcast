@@ -7,7 +7,8 @@ import type {
   WellGroup,
 } from '../../../types';
 import type { DesignWorkspace } from '../DesignWorkspaceTabs';
-import type { EconomicsResultsTab } from '../EconomicsResultsTabs';
+import type { EconomicsModule } from '../economics/types';
+import { isEconomicsModule } from '../../../services/storage/workspacePreferences';
 import {
   getProject,
   listProjects,
@@ -43,7 +44,7 @@ const toFilterSet = (value: string | string[] | undefined): Set<string> => {
 
 interface PersistenceUiState {
   designWorkspace: DesignWorkspace;
-  economicsResultsTab: EconomicsResultsTab;
+  economicsModule: EconomicsModule;
   operatorFilter: Set<string>;
   formationFilter: Set<string>;
   statusFilter: Set<string>;
@@ -60,7 +61,7 @@ interface UseProjectPersistenceArgs {
   setScenarios: Dispatch<SetStateAction<Scenario[]>>;
   setActiveGroupId: Dispatch<SetStateAction<string>>;
   setDesignWorkspace: Dispatch<SetStateAction<DesignWorkspace>>;
-  setEconomicsResultsTab: Dispatch<SetStateAction<EconomicsResultsTab>>;
+  setEconomicsModule: Dispatch<SetStateAction<EconomicsModule>>;
   setOperatorFilter: Dispatch<SetStateAction<Set<string>>>;
   setFormationFilter: Dispatch<SetStateAction<Set<string>>>;
   setStatusFilter: Dispatch<SetStateAction<Set<string>>>;
@@ -98,7 +99,7 @@ export function useProjectPersistence({
   setScenarios,
   setActiveGroupId,
   setDesignWorkspace,
-  setEconomicsResultsTab,
+  setEconomicsModule,
   setOperatorFilter,
   setFormationFilter,
   setStatusFilter,
@@ -131,7 +132,7 @@ export function useProjectPersistence({
       activeGroupId: snapshot.activeGroupId,
       uiState: {
         designWorkspace: snapshot.uiState.designWorkspace,
-        economicsResultsTab: snapshot.uiState.economicsResultsTab,
+        economicsModule: snapshot.uiState.economicsModule,
         operatorFilter: toStoredFilterArray(snapshot.uiState.operatorFilter),
         formationFilter: toStoredFilterArray(snapshot.uiState.formationFilter),
         statusFilter: toStoredFilterArray(snapshot.uiState.statusFilter),
@@ -293,21 +294,12 @@ export function useProjectPersistence({
         if (storedUi.designWorkspace === 'WELLS' || storedUi.designWorkspace === 'ECONOMICS') {
           setDesignWorkspace(storedUi.designWorkspace);
         }
-        if (
-          storedUi.economicsResultsTab === 'OVERVIEW' ||
-          storedUi.economicsResultsTab === 'CASH_FLOW' ||
-          storedUi.economicsResultsTab === 'RESERVES'
-        ) {
-          setEconomicsResultsTab(storedUi.economicsResultsTab);
-        } else if (
-          storedUi.economicsResultsTab === 'SUMMARY' ||
-          storedUi.economicsResultsTab === 'CHARTS' ||
-          storedUi.economicsResultsTab === 'CASH_FLOW' ||
-          storedUi.economicsResultsTab === 'DRIVERS' ||
-          storedUi.economicsResultsTab === 'RESERVES'
-        ) {
-          // Migrate old tabs to OVERVIEW
-          setEconomicsResultsTab('OVERVIEW');
+        if (isEconomicsModule(storedUi.economicsModule)) {
+          setEconomicsModule(storedUi.economicsModule);
+        } else if (storedUi.economicsResultsTab === 'CASH_FLOW') {
+          setEconomicsModule('CAPEX');
+        } else if (storedUi.economicsResultsTab) {
+          setEconomicsModule('PRODUCTION');
         }
         setOperatorFilter(toFilterSet(storedUi.operatorFilter));
         setFormationFilter(toFilterSet(storedUi.formationFilter));

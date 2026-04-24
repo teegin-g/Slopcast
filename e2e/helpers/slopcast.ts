@@ -1,11 +1,14 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
 export type ThemeCase = {
-  id: 'slate' | 'mario';
-  title: 'Slate' | 'Classic';
+  id: 'slate' | 'mario' | 'permian';
+  title: 'Slate' | 'Classic' | 'Permian';
+  colorMode?: 'dark' | 'light';
+  /** Stable alias for screenshot paths when the same theme id covers two modes. */
+  alias?: string;
 };
 
-export type EconomicsTabCase = 'OVERVIEW' | 'CASH_FLOW' | 'RESERVES';
+export type EconomicsModuleCase = 'PRODUCTION' | 'PRICING' | 'OPEX' | 'TAXES' | 'OWNERSHIP' | 'CAPEX';
 
 type WellboreRenderDiagnostics = {
   mounted: boolean;
@@ -34,6 +37,8 @@ const MAP_TEST_VIEW_STORAGE_KEY = 'slopcast-map-test-view';
 export const THEMES: ThemeCase[] = [
   { id: 'slate', title: 'Slate' },
   { id: 'mario', title: 'Classic' },
+  { id: 'permian', title: 'Permian', colorMode: 'dark', alias: 'permian-dusk' },
+  { id: 'permian', title: 'Permian', colorMode: 'light', alias: 'permian-noon' },
 ];
 
 function hasDimensionWarning(message: ConsoleEntry): boolean {
@@ -73,7 +78,7 @@ export class SlopcastApp {
         localStorage.setItem('slopcast-onboarding-done', '1');
         localStorage.setItem('slopcast-theme', initialThemeId);
         localStorage.setItem('slopcast-design-workspace', 'WELLS');
-        localStorage.setItem('slopcast-econ-results-tab', 'OVERVIEW');
+        localStorage.setItem('slopcast-econ-module', 'PRODUCTION');
       },
       { session: DEV_BYPASS_SESSION, initialThemeId: themeId },
     );
@@ -144,13 +149,58 @@ export class SlopcastApp {
       await this.page.getByTestId('theme-dropdown-toggle').click();
       await this.page.getByTestId(`theme-option-${theme.id}`).click();
     } else {
-      await this.page.locator(`button[title="${theme.title}"]`).first().click();
+      const testIdButton = this.page.getByTestId(`theme-option-${theme.id}`).first();
+      if (await testIdButton.isVisible().catch(() => false)) {
+        await testIdButton.click();
+      } else {
+        await this.page.locator(`button[title="${theme.title}"]`).first().click();
+      }
     }
 
     await this.page.waitForFunction(
       (themeId) => document.documentElement.dataset.theme === themeId,
       theme.id,
     );
+
+    // Apply an explicit color mode when the theme case requires one.
+    // Only reload when switching AWAY from the default 'dark' — the bootstrap
+    // script already sets 'dark', so we can skip the reload in that case.
+    if (theme.colorMode && theme.colorMode !== 'dark') {
+      // The bootstrap init script runs first on every reload and resets
+      // theme/color-mode, so we append a second init script that re-applies
+      // the desired values after the bootstrap script has run.
+      await this.page.addInitScript(
+        ({ themeId, mode }) => {
+          localStorage.setItem('slopcast-theme', themeId);
+          localStorage.setItem('slopcast-color-mode', mode);
+        },
+        { themeId: theme.id, mode: theme.colorMode },
+      );
+      await this.page.evaluate(
+        ({ themeId, mode }) => {
+          localStorage.setItem('slopcast-theme', themeId);
+          localStorage.setItem('slopcast-color-mode', mode);
+        },
+        { themeId: theme.id, mode: theme.colorMode },
+      );
+      await this.page.reload({ waitUntil: 'domcontentloaded' });
+      // After reload, the app goes back through the sign-in/landing flow.
+      // Re-run goto() to land in the design workspace; it is idempotent.
+      await this.goto();
+      await this.page.waitForFunction(
+        (themeId) => document.documentElement.dataset.theme === themeId,
+        theme.id,
+      );
+      await this.page.waitForFunction(
+        (expected) => document.documentElement.dataset.mode === expected,
+        theme.colorMode,
+      );
+      // Framer-motion layoutId animations (e.g. the active design workspace
+      // tab indicator) run on fresh mount. Wait for them to settle so
+      // subsequent clicks don't race the layout animation and trip
+      // Playwright's actionability check.
+      await this.page.waitForTimeout(600);
+    }
   }
 
   async openDesignView(): Promise<void> {
@@ -218,7 +268,7 @@ export class SlopcastApp {
       return;
     }
 
-    const resultsButton = this.page.getByRole('button', { name: 'Results' });
+    const resultsButton = this.page.getByRole('button', { name: 'Workspace' });
     if (await resultsButton.first().isVisible().catch(() => false)) {
       await resultsButton.first().click();
     }
@@ -240,9 +290,9 @@ export class SlopcastApp {
     });
   }
 
-  async setEconomicsResultsTab(tab: EconomicsTabCase): Promise<void> {
-    await this.page.getByTestId(`economics-results-tab-${tab.toLowerCase()}`).click();
-    await this.expectStoredValue('slopcast-econ-results-tab', tab);
+  async setEconomicsModule(module: EconomicsModuleCase): Promise<void> {
+    await this.page.getByTestId(`economics-module-tab-${module.toLowerCase()}`).click();
+    await this.expectStoredValue('slopcast-econ-module', module);
   }
 
   async expectStoredValue(key: string, expected: string): Promise<void> {
@@ -317,6 +367,10 @@ export class SlopcastApp {
 
   async setNonDefaultOperator(): Promise<string | null> {
     const operatorButton = await this.ensureOperatorFilterVisible();
+    const currentValue = await this.readOperatorValue();
+    if (currentValue && currentValue !== 'ALL') {
+      return currentValue;
+    }
 
     // Open the dropdown
     await operatorButton.click();

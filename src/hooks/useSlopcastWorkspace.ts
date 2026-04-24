@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { DEFAULT_CAPEX, DEFAULT_COMMODITY_PRICING, DEFAULT_OPEX, DEFAULT_OWNERSHIP, DEFAULT_TYPE_CURVE, GROUP_COLORS, MOCK_WELLS } from '../constants';
 import { Scenario, ScheduleParams, SpatialDataSourceId, Well, WellGroup } from '../types';
 import { DesignWorkspace } from '../components/slopcast/DesignWorkspaceTabs';
-import { EconomicsResultsTab } from '../components/slopcast/EconomicsResultsTabs';
+import { EconomicsModule } from '../components/slopcast/economics/types';
 import { DesignStep, StepStatus, WorkflowStep } from '../components/slopcast/WorkflowStepper';
 import { WellsMobilePanel } from '../components/slopcast/DesignWellsView';
 import { EconomicsMobilePanel } from '../components/slopcast/DesignEconomicsView';
@@ -22,8 +22,8 @@ import { useWellSelection } from './useWellSelection';
 import {
   getDesignWorkspace,
   setDesignWorkspace as storeDesignWorkspace,
-  getEconomicsResultsTab,
-  setEconomicsResultsTab as storeEconomicsResultsTab,
+  getEconomicsModule,
+  setEconomicsModule as storeEconomicsModule,
   getEconomicsFocusMode,
   setEconomicsFocusMode as storeEconomicsFocusMode,
   getFxMode,
@@ -155,7 +155,7 @@ export function useSlopcastWorkspace() {
     return getViewportLayout(window.innerWidth) === 'mobile' ? 'GROUPS' : 'MAP';
   });
   const [economicsMobilePanel, setEconomicsMobilePanel] = useState<EconomicsMobilePanel>('RESULTS');
-  const [economicsResultsTab, setEconomicsResultsTab] = useState<EconomicsResultsTab>(getEconomicsResultsTab);
+  const [economicsModule, setEconomicsModule] = useState<EconomicsModule>(getEconomicsModule);
   const [economicsFocusMode, setEconomicsFocusMode] = useState<boolean>(getEconomicsFocusMode);
   const [opsTab, setOpsTab] = useState<OpsTab>('SELECTION_ACTIONS');
   const viewportLayout = useViewportLayout();
@@ -210,6 +210,7 @@ export function useSlopcastWorkspace() {
   ]);
 
   const [activeGroupId, setActiveGroupId] = useState<string>('g-1');
+  const [activeScenarioId, setActiveScenarioId] = useState<string>('s-base');
   const [lastSnapshotAt, setLastSnapshotAt] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState('');
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
@@ -243,10 +244,23 @@ export function useSlopcastWorkspace() {
   // --- Computed Economics per Group ---
   const processedGroups = useMemo(() => {
     const baseScenario = scenarios.find(s => s.isBaseCase) || scenarios[0];
-    const basePricing = baseScenario?.pricing || DEFAULT_COMMODITY_PRICING;
+    const activeScenario = scenarios.find(s => s.id === activeScenarioId) || baseScenario;
+    const activePricing = activeScenario?.pricing || DEFAULT_COMMODITY_PRICING;
     return groups.map(group => {
       const groupWells = wells.filter(w => group.wellIds.has(w.id));
-      let { flow, metrics } = cachedCalculateEconomics(groupWells, group.typeCurve, group.capex, basePricing, group.opex, group.ownership);
+      let { flow, metrics } = cachedCalculateEconomics(
+        groupWells,
+        group.typeCurve,
+        group.capex,
+        activePricing,
+        group.opex,
+        group.ownership,
+        {
+          capex: activeScenario?.capexScalar ?? 1,
+          production: activeScenario?.productionScalar ?? 1,
+        },
+        activeScenario?.schedule,
+      );
 
       if (group.taxAssumptions) {
         const taxResult = applyTaxLayer(flow, metrics, group.taxAssumptions);
@@ -266,7 +280,7 @@ export function useSlopcastWorkspace() {
 
       return { ...group, flow, metrics };
     });
-  }, [groups, scenarios, wells]);
+  }, [activeScenarioId, groups, scenarios, wells]);
 
   // --- Aggregate Portfolio Economics ---
   const { flow: aggregateFlow, metrics: aggregateMetrics } = useMemo(() => {
@@ -284,7 +298,7 @@ export function useSlopcastWorkspace() {
     activeGroupId,
     uiState: {
       designWorkspace,
-      economicsResultsTab,
+      economicsModule,
       operatorFilter,
       formationFilter,
       statusFilter,
@@ -293,7 +307,7 @@ export function useSlopcastWorkspace() {
     setScenarios,
     setActiveGroupId,
     setDesignWorkspace,
-    setEconomicsResultsTab,
+    setEconomicsModule,
     setOperatorFilter: replaceOperatorFilter,
     setFormationFilter: replaceFormationFilter,
     setStatusFilter: replaceStatusFilter,
@@ -443,8 +457,9 @@ export function useSlopcastWorkspace() {
     if (filteredWells.length === 0) warnings.push('Current filters exclude all wells.');
     if (selectedVisibleCount === 0) warnings.push('Step 2 incomplete: no visible wells are currently selected in the basin map.');
     const baseScenario = scenarios.find(s => s.isBaseCase) || scenarios[0];
-    const basePricing = baseScenario?.pricing || DEFAULT_COMMODITY_PRICING;
-    if (basePricing.oilPrice <= 0 || basePricing.gasPrice < 0) warnings.push('Scenario pricing inputs are incomplete or invalid.');
+    const activeScenario = scenarios.find(s => s.id === activeScenarioId) || baseScenario;
+    const activePricing = activeScenario?.pricing || DEFAULT_COMMODITY_PRICING;
+    if (activePricing.oilPrice <= 0 || activePricing.gasPrice < 0) warnings.push('Scenario pricing inputs are incomplete or invalid.');
     if (activeGroup.ownership.baseNri <= 0 || activeGroup.ownership.baseNri > 1) warnings.push('Base NRI is invalid in the active group.');
     if (activeGroup.ownership.baseCostInterest < 0 || activeGroup.ownership.baseCostInterest > 1) warnings.push('Base cost interest is invalid in the active group.');
     if ((activeGroup.opex.segments || []).length === 0) warnings.push('OPEX segments are missing for the active group.');
@@ -460,6 +475,7 @@ export function useSlopcastWorkspace() {
     aggregateMetrics.wellCount,
     filteredWells.length,
     selectedVisibleCount,
+    activeScenarioId,
     scenarios,
   ]);
 
@@ -500,7 +516,8 @@ export function useSlopcastWorkspace() {
 
   const handleExportCsv = () => {
     const baseScenario = scenarios.find(s => s.isBaseCase) || scenarios[0];
-    const basePricing = baseScenario?.pricing || DEFAULT_COMMODITY_PRICING;
+    const activeScenario = scenarios.find(s => s.id === activeScenarioId) || baseScenario;
+    const activePricing = activeScenario?.pricing || DEFAULT_COMMODITY_PRICING;
     const rows: Array<Array<string | number>> = [
       ['scope', 'name', 'wells', 'npv10_mm', 'capex_mm', 'eur_mboe', 'roi_cash', 'payout_months', 'deck_oil', 'deck_gas', 'base_nri', 'base_cost_int'],
       [
@@ -512,8 +529,8 @@ export function useSlopcastWorkspace() {
         (aggregateMetrics.eur / 1e3).toFixed(2),
         portfolioRoi.toFixed(2),
         aggregateMetrics.payoutMonths || '-',
-        basePricing.oilPrice,
-        basePricing.gasPrice,
+        activePricing.oilPrice,
+        activePricing.gasPrice,
         '-',
         '-',
       ],
@@ -526,8 +543,8 @@ export function useSlopcastWorkspace() {
         (row.eur / 1e3).toFixed(2),
         row.roi.toFixed(2),
         row.payoutMonths || '-',
-        basePricing.oilPrice,
-        basePricing.gasPrice,
+        activePricing.oilPrice,
+        activePricing.gasPrice,
         row.baseNri.toFixed(3),
         row.baseCostInterest.toFixed(3),
       ]),
@@ -581,8 +598,8 @@ export function useSlopcastWorkspace() {
 
   useEffect(() => {
     if (supabasePersistenceEnabled) return;
-    storeEconomicsResultsTab(economicsResultsTab);
-  }, [economicsResultsTab, supabasePersistenceEnabled]);
+    storeEconomicsModule(economicsModule);
+  }, [economicsModule, supabasePersistenceEnabled]);
 
   useEffect(() => {
     storeEconomicsFocusMode(economicsFocusMode);
@@ -703,7 +720,8 @@ export function useSlopcastWorkspace() {
     designWorkspace, setDesignWorkspace,
     wellsMobilePanel, setWellsMobilePanel,
     economicsMobilePanel, setEconomicsMobilePanel,
-    economicsResultsTab, setEconomicsResultsTab,
+    economicsModule, setEconomicsModule,
+    activeScenarioId, setActiveScenarioId,
     economicsFocusMode, setEconomicsFocusMode,
     viewportLayout,
     controlsOpenSection, setControlsOpenSection,

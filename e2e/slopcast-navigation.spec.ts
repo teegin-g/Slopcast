@@ -2,9 +2,11 @@ import { test } from './fixtures/slopcast';
 import { THEMES } from './helpers/slopcast';
 
 test.describe('Slopcast navigation coverage', () => {
-  test('design and scenarios stay navigable across slate and mario', async ({ slopcast }) => {
+  test('design and scenarios stay navigable across all themes', async ({ slopcast }) => {
+    test.setTimeout(120_000);
     for (const theme of THEMES) {
-      await test.step(`verify ${theme.id} navigation`, async () => {
+      const label = theme.alias || theme.id;
+      await test.step(`verify ${label} navigation`, async () => {
         await slopcast.setTheme(theme);
 
         await slopcast.openDesignView();

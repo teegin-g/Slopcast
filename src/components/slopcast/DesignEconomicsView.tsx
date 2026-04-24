@@ -1,30 +1,29 @@
-import React, { useEffect, useState } from 'react';
-import Controls from '../Controls';
-import Charts from '../Charts';
+import React from 'react';
 import { ThemeId } from '../../theme/themes';
-import { useTheme } from '../../theme/ThemeProvider';
-import { DealMetrics, MonthlyCashFlow, Well, WellGroup } from '../../types';
-import KpiGrid from './KpiGrid';
+import { DealMetrics, MonthlyCashFlow, Scenario, Well, WellGroup } from '../../types';
 import OperationsConsole, { OperationsConsoleProps } from './OperationsConsole';
-import EconomicsDriversPanel from './EconomicsDriversPanel';
-import { WorkflowStep } from './WorkflowStepper';
 import EconomicsGroupBar from './EconomicsGroupBar';
-import EconomicsResultsTabs, { EconomicsResultsTab } from './EconomicsResultsTabs';
-import GroupWellsTable from './GroupWellsTable';
-import GroupComparisonStrip from './GroupComparisonStrip';
+import CapexModule from './economics/CapexModule';
+import EconomicsContextRail from './economics/EconomicsContextRail';
+import EconomicsModuleTabs from './economics/EconomicsModuleTabs';
+import OpexModule from './economics/OpexModule';
+import OwnershipModule from './economics/OwnershipModule';
+import PricingModule from './economics/PricingModule';
+import ProductionModule from './economics/ProductionModule';
+import ScenarioCompareStrip from './economics/ScenarioCompareStrip';
+import TaxesModule from './economics/TaxesModule';
+import { currency, currencyMm, monthsToYears, ratio } from './economics/derived';
+import { EconomicsModule, EconomicsModuleProps, getEconomicsModuleMeta } from './economics/types';
 
 export type EconomicsMobilePanel = 'SETUP' | 'RESULTS';
-
-type ControlsSection = 'TYPE_CURVE' | 'CAPEX' | 'OPEX' | 'OWNERSHIP';
 
 interface DesignEconomicsViewProps {
   isClassic: boolean;
   themeId: ThemeId;
-  workflowSteps: WorkflowStep[];
   mobilePanel: EconomicsMobilePanel;
   onSetMobilePanel: (panel: EconomicsMobilePanel) => void;
-  resultsTab: EconomicsResultsTab;
-  onSetResultsTab: (tab: EconomicsResultsTab) => void;
+  economicsModule: EconomicsModule;
+  onSetEconomicsModule: (module: EconomicsModule) => void;
   wells: Well[];
   groups: WellGroup[];
   activeGroupId: string;
@@ -33,57 +32,53 @@ interface DesignEconomicsViewProps {
   activeGroup: WellGroup;
   onUpdateGroup: (group: WellGroup) => void;
   onMarkDirty: () => void;
-  controlsOpenSection: ControlsSection | null;
-  onControlsOpenHandled: () => void;
-  hasGroup: boolean;
-  hasGroupWells: boolean;
-  hasCapexItems: boolean;
+  scenarios: Scenario[];
+  activeScenarioId: string;
+  onSetActiveScenarioId: (id: string) => void;
   aggregateMetrics: DealMetrics;
   aggregateFlow: MonthlyCashFlow[];
   operationsProps: OperationsConsoleProps;
   breakevenOilPrice?: number | null;
 }
 
-/** SVG progress ring for Setup Insights */
-const SetupProgressRing: React.FC<{ completed: number; total: number }> = ({ completed, total }) => {
-  const { theme } = useTheme();
-  const isClassic = theme.features.isClassicTheme;
-  const r = 10;
-  const circumference = 2 * Math.PI * r;
-  const progress = total > 0 ? completed / total : 0;
-  const dashLen = progress * circumference;
+const BottomKpiStrip: React.FC<{
+  metrics: DealMetrics;
+  breakevenOilPrice?: number | null;
+}> = ({ metrics, breakevenOilPrice }) => {
+  const payout = metrics.payoutMonths > 0 ? `${monthsToYears(metrics.payoutMonths).toFixed(1)} yrs` : '-';
+  const capitalRatio = metrics.totalCapex > 0 ? metrics.npv10 / metrics.totalCapex : 0;
+  const items = [
+    { label: 'NPV10', value: currencyMm(metrics.npv10), delta: 'live' },
+    { label: 'EUR', value: `${(metrics.eur / 1e3).toFixed(0)} Mbo`, delta: `${metrics.wellCount} wells` },
+    { label: 'Payout', value: payout, delta: 'undisc.' },
+    { label: 'Breakeven WTI', value: breakevenOilPrice != null ? currency(breakevenOilPrice, 1) : 'N/A', delta: 'per bbl' },
+    { label: 'Ratio', value: ratio(capitalRatio), delta: 'NPV / CAPEX' },
+  ];
+
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" className="shrink-0">
-      <circle cx="12" cy="12" r={r} fill="none" stroke="currentColor" strokeWidth="2" className={isClassic ? 'text-white/15' : 'text-theme-border'} />
-      <circle
-        cx="12"
-        cy="12"
-        r={r}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeDasharray={`${dashLen} ${circumference}`}
-        strokeLinecap="round"
-        transform="rotate(-90 12 12)"
-        className={isClassic ? 'text-theme-warning' : 'text-theme-cyan'}
-      />
-      <text x="12" y="12" textAnchor="middle" dominantBaseline="central" className="text-[7px] font-black" style={{ fill: isClassic ? 'white' : 'rgb(var(--text))' }}>
-        {completed}/{total}
-      </text>
-    </svg>
+    <div className="rounded-panel border border-theme-border bg-theme-surface1/70 shadow-card p-2">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+        {items.map((item) => (
+          <div key={item.label} className="rounded-inner border border-theme-border bg-theme-bg px-3 py-2 min-h-[58px]">
+            <p className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-muted">{item.label}</p>
+            <div className="mt-1 flex items-end justify-between gap-2">
+              <p className="text-sm lg:text-base font-black text-theme-text tabular-nums">{item.value}</p>
+              <p className="text-[9px] font-semibold text-theme-cyan whitespace-nowrap">{item.delta}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 };
-
-
 
 const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   isClassic,
   themeId,
-  workflowSteps,
   mobilePanel,
   onSetMobilePanel,
-  resultsTab,
-  onSetResultsTab,
+  economicsModule,
+  onSetEconomicsModule,
   wells,
   groups,
   activeGroupId,
@@ -92,60 +87,53 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   activeGroup,
   onUpdateGroup,
   onMarkDirty,
-  controlsOpenSection,
-  onControlsOpenHandled,
-  hasGroup,
-  hasGroupWells,
-  hasCapexItems,
+  scenarios,
+  activeScenarioId,
+  onSetActiveScenarioId,
   aggregateMetrics,
   aggregateFlow,
   operationsProps,
   breakevenOilPrice,
 }) => {
-  const hasReadinessBlocker = !hasGroup || !hasGroupWells || !hasCapexItems;
-  const [showSetupInsights, setShowSetupInsights] = useState(hasReadinessBlocker);
-  const [didAutoOpenInsights, setDidAutoOpenInsights] = useState(hasReadinessBlocker);
+  const baseScenario = scenarios.find((scenario) => scenario.isBaseCase) ?? scenarios[0];
+  const activeScenario = scenarios.find((scenario) => scenario.id === activeScenarioId) ?? baseScenario;
+  const meta = getEconomicsModuleMeta(economicsModule);
 
-  useEffect(() => {
-    if (didAutoOpenInsights) return;
-    if (!hasReadinessBlocker) return;
-    setShowSetupInsights(true);
-    setDidAutoOpenInsights(true);
-  }, [didAutoOpenInsights, hasReadinessBlocker]);
-  const checklist = [
-    { id: 'group', label: 'Choose active group', done: hasGroup },
-    { id: 'wells', label: 'Assign wells to group', done: hasGroupWells },
-    { id: 'capex', label: 'Confirm CAPEX items', done: hasCapexItems },
-  ];
+  const moduleProps: EconomicsModuleProps = {
+    isClassic,
+    activeGroup,
+    groups,
+    wells,
+    scenarios,
+    activeScenario,
+    baseScenario,
+    aggregateFlow,
+    aggregateMetrics,
+    breakevenOilPrice,
+    onUpdateGroup,
+    onMarkDirty,
+  };
 
-  const completedCount = checklist.filter(c => c.done).length;
-
-  const activeWorkflowStep =
-    workflowSteps.find(step => step.status === 'ACTIVE' || step.status === 'STALE') || workflowSteps[0];
-
-  const readinessBlocker =
-    !hasGroup
-      ? 'Choose an active group to begin.'
-      : !hasGroupWells
-        ? 'Assign wells to this group in Wells workspace.'
-        : !hasCapexItems
-          ? 'Add CAPEX line items to see economics.'
-          : 'Ready — economics are live.';
-
-  const chartPanel = (
-    <div
-      className={
-        isClassic
-          ? 'sc-panel theme-transition p-3 min-h-[360px]'
-          : 'rounded-panel border p-3 theme-transition bg-theme-surface1/50 border-theme-border shadow-card min-h-[360px]'
-      }
-    >
-      <Charts data={aggregateFlow} themeId={themeId} />
-    </div>
-  );
+  const moduleCanvas = (() => {
+    switch (economicsModule) {
+      case 'PRICING':
+        return <PricingModule {...moduleProps} />;
+      case 'OPEX':
+        return <OpexModule {...moduleProps} />;
+      case 'TAXES':
+        return <TaxesModule {...moduleProps} />;
+      case 'OWNERSHIP':
+        return <OwnershipModule {...moduleProps} />;
+      case 'CAPEX':
+        return <CapexModule {...moduleProps} />;
+      case 'PRODUCTION':
+      default:
+        return <ProductionModule {...moduleProps} />;
+    }
+  })();
 
   return (
-    <>
+    <div className="space-y-4">
       <EconomicsGroupBar
         isClassic={isClassic}
         groups={groups}
@@ -155,186 +143,73 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
       />
 
       <div
-        className={`lg:hidden mb-4 border p-2 theme-transition ${
+        className={`lg:hidden border p-2 theme-transition ${
           isClassic ? 'sc-panel' : 'rounded-panel bg-theme-surface1/60 border-theme-border shadow-card backdrop-blur-sm'
         }`}
       >
         <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={() => onSetMobilePanel('SETUP')}
-            className={
-              isClassic
-                ? `px-3 py-2 rounded-inner text-[9px] font-bold uppercase tracking-widest border-2 shadow-card transition-colors ${
-                    mobilePanel === 'SETUP' ? 'bg-theme-warning text-black border-black/20' : 'bg-black/15 text-white/90 border-black/25'
-                  }`
-                : `px-3 py-2 rounded-inner text-[9px] font-bold uppercase tracking-widest border transition-colors ${
-                    mobilePanel === 'SETUP'
-                      ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
-                      : 'bg-theme-bg text-theme-muted border-theme-border'
-                  }`
-            }
-          >
-            Setup
-          </button>
-          <button
-            onClick={() => onSetMobilePanel('RESULTS')}
-            className={
-              isClassic
-                ? `px-3 py-2 rounded-inner text-[9px] font-bold uppercase tracking-widest border-2 shadow-card transition-colors ${
-                    mobilePanel === 'RESULTS' ? 'bg-theme-warning text-black border-black/20' : 'bg-black/15 text-white/90 border-black/25'
-                  }`
-                : `px-3 py-2 rounded-inner text-[9px] font-bold uppercase tracking-widest border transition-colors ${
-                    mobilePanel === 'RESULTS'
-                      ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
-                      : 'bg-theme-bg text-theme-muted border-theme-border'
-                  }`
-            }
-          >
-            Results
-          </button>
+          {[
+            ['SETUP', 'Context'],
+            ['RESULTS', 'Workspace'],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onSetMobilePanel(id as EconomicsMobilePanel)}
+              className={`px-3 py-2 rounded-inner text-[9px] font-bold uppercase tracking-widest border transition-colors ${
+                mobilePanel === id
+                  ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
+                  : 'bg-theme-bg text-theme-muted border-theme-border'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 lg:min-h-[calc(100vh-13.5rem)]">
-        <aside
-          className={`lg:col-span-5 xl:col-span-4 space-y-4 lg:max-h-[calc(100vh-13.5rem)] lg:overflow-y-auto lg:pr-1 ${
-            mobilePanel !== 'SETUP' ? 'hidden lg:block' : ''
-          }`}
-        >
-          <Controls
-            group={activeGroup}
-            onUpdateGroup={onUpdateGroup}
-            onMarkDirty={onMarkDirty}
-            openSectionKey={controlsOpenSection}
-            onOpenSectionHandled={onControlsOpenHandled}
-          />
-
-          <GroupWellsTable
-            isClassic={isClassic}
-            group={activeGroup}
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)] gap-4 lg:min-h-[calc(100vh-16rem)]">
+        <div className={mobilePanel !== 'SETUP' ? 'hidden lg:block' : ''}>
+          <EconomicsContextRail
+            activeGroup={activeGroup}
             wells={wells}
-            title="Wells in active group"
-            defaultSort={{ key: 'name', dir: 'asc' }}
-            dense
+            activeScenario={activeScenario}
+            aggregateMetrics={aggregateMetrics}
+            aggregateFlow={aggregateFlow}
+            breakevenOilPrice={breakevenOilPrice}
+          />
+        </div>
+
+        <section className={`space-y-4 min-w-0 ${mobilePanel !== 'RESULTS' ? 'hidden lg:block' : ''}`}>
+          <ScenarioCompareStrip
+            activeGroup={activeGroup}
+            wells={wells}
+            scenarios={scenarios}
+            activeScenarioId={activeScenario.id}
+            onSetActiveScenarioId={onSetActiveScenarioId}
+            baseScenario={baseScenario}
+            aggregateFlow={aggregateFlow}
+            aggregateMetrics={aggregateMetrics}
           />
 
-          {/* Setup Insights - compact vertical checklist with progress ring */}
-          <div
-            className={
-              isClassic
-                ? 'sc-panel theme-transition'
-                : 'rounded-panel border theme-transition bg-theme-surface1/30 border-theme-border'
-            }
-          >
-            <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-4 py-2' : 'px-4 py-2 border-b border-theme-border/60'}>
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <SetupProgressRing completed={completedCount} total={checklist.length} />
-                  <h2 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.24em] text-white heading-font' : 'text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan heading-font'}>
-                    Setup Insights
-                  </h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowSetupInsights(prev => !prev)}
-                  className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-cyan"
-                >
-                  {showSetupInsights ? 'Hide' : 'Show'}
-                </button>
-              </div>
+          <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-theme-muted">Economics</p>
+              <h1 className="mt-1 text-xl font-black tracking-normal text-theme-text">{meta.label}</h1>
             </div>
-            {showSetupInsights && (
-              <div className="p-4 space-y-3">
-                <p className="text-[10px] text-theme-muted">
-                  {activeWorkflowStep?.label || 'Setup'} step is <span className="uppercase font-black text-theme-cyan">{activeWorkflowStep?.status.toLowerCase()}</span>.
-                </p>
-
-                {/* Compact vertical checklist instead of tile grid */}
-                <div className="space-y-1">
-                  {checklist.map((item) => (
-                    <div key={item.id} className="flex items-center gap-2.5 py-1.5 px-2 rounded-inner hover:bg-theme-surface2/50 transition-colors">
-                      <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 text-[8px] font-black ${
-                        item.done
-                          ? 'bg-theme-cyan/20 border-theme-cyan text-theme-cyan'
-                          : 'bg-transparent border-theme-border text-transparent'
-                      }`}>
-                        {item.done ? '✓' : ''}
-                      </span>
-                      <span className={`text-[10px] ${item.done ? 'text-theme-text' : 'text-theme-muted'}`}>
-                        {item.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="rounded-inner border border-theme-border bg-theme-bg px-3 py-2">
-                  <p className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-lavender">Current blocker</p>
-                  <p className="text-[10px] text-theme-muted mt-1">{readinessBlocker}</p>
-                </div>
-              </div>
-            )}
+            <p className="max-w-2xl text-xs text-theme-muted">{meta.eyebrow}</p>
           </div>
-        </aside>
 
-        <section
-          className={`lg:col-span-7 xl:col-span-8 space-y-4 lg:max-h-[calc(100vh-13.5rem)] lg:overflow-y-auto lg:pr-1 ${
-            mobilePanel !== 'RESULTS' ? 'hidden lg:block' : ''
-          }`}
-        >
-          <EconomicsResultsTabs isClassic={isClassic} tab={resultsTab} onChange={onSetResultsTab} />
-
-          {resultsTab === 'OVERVIEW' && (
-            <div className="space-y-4">
-              <KpiGrid
-                isClassic={isClassic}
-                metrics={aggregateMetrics}
-                aggregateFlow={aggregateFlow}
-                breakevenOilPrice={breakevenOilPrice}
-              />
-              <GroupComparisonStrip
-                isClassic={isClassic}
-                groups={groups}
-                activeGroupId={activeGroupId}
-                onActivateGroup={onActivateGroup}
-                scenarioRankings={operationsProps.scenarioRankings}
-              />
-              {chartPanel}
-              <EconomicsDriversPanel
-                isClassic={isClassic}
-                topDrivers={operationsProps.topDrivers}
-                biggestPositive={operationsProps.biggestPositive}
-                biggestNegative={operationsProps.biggestNegative}
-                breakevenOilPrice={operationsProps.breakevenOilPrice}
-                payoutMonths={operationsProps.payoutMonths}
-                fastestPayoutScenarioName={operationsProps.fastestPayoutScenarioName}
-                scenarioRankings={operationsProps.scenarioRankings}
-              />
-            </div>
-          )}
-
-          {resultsTab === 'CASH_FLOW' && (
-            <div className="space-y-4">
-              {chartPanel}
-            </div>
-          )}
-
-          {resultsTab === 'RESERVES' && (
-            <div className="space-y-4">
-              <div
-                className={
-                  isClassic
-                    ? 'sc-panel theme-transition p-4'
-                    : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/70 border-theme-border p-4'
-                }
-              >
-                <p className="text-sm text-theme-muted">Reserve estimates coming soon.</p>
-              </div>
-            </div>
-          )}
+          <EconomicsModuleTabs module={economicsModule} onChange={onSetEconomicsModule} />
+          {moduleCanvas}
         </section>
       </div>
-      <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />
-    </>
+
+      <div className="space-y-3">
+        <BottomKpiStrip metrics={aggregateMetrics} breakevenOilPrice={breakevenOilPrice} />
+        <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />
+      </div>
+    </div>
   );
 };
 

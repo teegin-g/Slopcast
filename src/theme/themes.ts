@@ -91,6 +91,7 @@ const TropicalBackground = React.lazy(() => import('../components/TropicalBackgr
 const MarioOverworldBackground = React.lazy(() => import('../components/MarioOverworldBackground'));
 const StormDuskBackground = React.lazy(() => import('../components/StormDuskBackground'));
 const HyperboreaBackground = React.lazy(() => import('../components/HyperboreaBackground'));
+const PermianBackground = React.lazy(() => import('../components/PermianBackground'));
 
 // ---------------------------------------------------------------------------
 // Theme definitions
@@ -399,11 +400,62 @@ const hyperborea: ThemeMeta = {
   fxTheme: true,
 };
 
+const permian: ThemeMeta = {
+  id: 'permian',
+  variant: 'dark',
+  hasLightVariant: true,
+  label: 'Permian',
+  icon: '🛢️',
+  description: 'Oilpatch dusk-to-noon',
+  appName: 'SLOPCAST',
+  appSubtitle: 'Patch Economics',
+  chartPalette: {
+    oil: '#E87030',
+    cash: '#00E890',
+    lav: '#F0C020',
+    grid: 'rgba(0, 232, 144, 0.14)',
+    text: '#9AA99A',
+    surface: '#0A1F18',
+    border: 'rgba(45, 107, 74, 0.42)',
+  },
+  mapPalette: {
+    gridColor: '#2D6B4A',
+    gridOpacity: 0.32,
+    selectedStroke: '#E87030',
+    glowColor: '#00E890',
+    unassignedFill: '#556070',
+    lassoFill: 'rgba(240, 192, 32, 0.14)',
+    lassoStroke: '#F0C020',
+    lassoDash: '6, 3',
+    mapboxOverrides: {
+      bgColor: '#0A1F18',
+      waterColor: '#14654A',
+      landColor: '#1A3A2A',
+      labelColor: '#6B8870',
+      roadOpacity: 0.14,
+    },
+  },
+  features: {
+    retroGrid: false,
+    brandFont: true,
+    glowEffects: true,
+    panelStyle: 'glass',
+    headingFont: true,
+    denseSpacing: false,
+    isClassicTheme: false,
+  },
+  BackgroundComponent: PermianBackground,
+  atmosphereClass: 'theme-atmo',
+  headerAtmosphereClass: 'theme-atmo-header',
+  atmosphericOverlays: ['theme-atmo-bands', 'theme-atmo-horizon', 'theme-atmo-ridges', 'theme-atmo-heat'],
+  fxTheme: true,
+};
+
 // ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
-export const THEMES: ThemeMeta[] = [slate, synthwave, tropical, league, stormwatch, mario, hyperborea];
+export const THEMES: ThemeMeta[] = [slate, synthwave, tropical, league, stormwatch, mario, hyperborea, permian];
 
 export const DEFAULT_THEME: ThemeId = 'slate';
 

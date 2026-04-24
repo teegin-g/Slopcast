@@ -804,6 +804,142 @@
   --btn-primary-text: 8 18 33;
 }
 
+/* ---------- Permian (Oilpatch Dusk — default) ---------- */
+[data-theme='permian'] {
+  --bg-deep: 10 31 24;
+  --bg-space: 16 46 36;
+  --surface-1: 22 54 42;
+  --surface-2: 34 72 56;
+  --border: 58 102 80;
+  --cyan: 0 232 144;
+  --magenta: 232 112 48;
+  --violet: 232 160 72;
+  --purple: 14 40 30;
+  --lav: 240 192 32;
+  --text: 226 242 232;
+  --text-primary: 226 242 232;
+  --text-secondary: 150 178 160;
+  --text-muted: 112 140 122;
+  --muted: 150 178 160;
+  --success: 0 232 144;
+  --warning: 240 192 32;
+  --danger: 232 72 40;
+
+  --shadow-glow-cyan: 0 0 24px rgba(0, 232, 144, 0.34);
+  --shadow-glow-magenta: 0 0 20px rgba(232, 112, 48, 0.3);
+  --shadow-card: 0 14px 36px rgba(0, 0, 0, 0.56);
+
+  --grad-space:
+    radial-gradient(1200px circle at 12% -18%, rgba(232, 112, 48, 0.14) 0%, rgba(232, 112, 48, 0) 58%),
+    radial-gradient(980px circle at 88% -10%, rgba(0, 232, 144, 0.08) 0%, rgba(0, 232, 144, 0) 54%),
+    linear-gradient(170deg, #102e24 0%, #0a1f18 62%, #061610 100%);
+  --frost-overlay: rgba(0, 232, 144, 0.03);
+  --frost-border: rgba(0, 232, 144, 0.18);
+  --ambient-glow: radial-gradient(ellipse at 70% 2%, rgba(232, 112, 48, 0.14) 0%, transparent 72%);
+  --ambient-pulse: radial-gradient(ellipse at 30% 100%, rgba(0, 232, 144, 0.06) 0%, transparent 64%);
+  --font-brand: 'Syne', 'Inter', sans-serif;
+  --font-heading: 'Barlow Condensed', 'Syne', sans-serif;
+  --ambient-left: 232 112 48;
+  --ambient-right: 0 232 144;
+  --ambient-left-alpha: 0.26;
+  --ambient-right-alpha: 0.18;
+  --ambient-orb-left-alpha: 0.13;
+  --ambient-orb-right-alpha: 0.10;
+
+  --radius-panel: 12px;
+
+  --header-bg-1: 34 72 56;
+  --header-bg-2: 16 46 36;
+  --header-border: 10 31 24;
+  --header-text: 226 242 232;
+
+  --bar-neutral-bg-1: 34 72 56;
+  --bar-neutral-bg-2: 22 54 42;
+  --bar-neutral-text: 226 242 232;
+  --bar-neutral-border: 10 31 24;
+
+  --bar-blue-bg-1: 0 232 144;
+  --bar-blue-bg-2: 0 180 110;
+  --bar-blue-text: 10 31 24;
+  --bar-blue-border: 10 60 40;
+
+  --bar-yellow-bg-1: 240 192 32;
+  --bar-yellow-bg-2: 196 152 18;
+  --bar-yellow-text: 30 22 8;
+  --bar-yellow-border: 96 72 14;
+
+  --btn-primary-bg-1: var(--cyan);
+  --btn-primary-bg-2: 0 180 110;
+  --btn-primary-border: 10 60 40;
+  --btn-primary-text: 10 31 24;
+}
+
+/* ---------- Permian Noon (light variant) ---------- */
+[data-theme='permian'][data-mode='light'] {
+  --bg-deep: 188 218 196;
+  --bg-space: 206 228 212;
+  --surface-1: 226 240 228;
+  --surface-2: 212 230 216;
+  --border: 92 130 104;
+  --cyan: 0 160 108;
+  --magenta: 214 92 40;
+  --violet: 226 148 72;
+  --purple: 232 244 232;
+  --lav: 196 148 28;
+  --text: 20 36 28;
+  --text-primary: 20 36 28;
+  --text-secondary: 72 96 82;
+  --text-muted: 112 136 122;
+  --muted: 88 112 96;
+  --success: 0 160 108;
+  --warning: 196 148 28;
+  --danger: 196 58 30;
+
+  --shadow-glow-cyan: 0 0 18px rgba(0, 160, 108, 0.22);
+  --shadow-glow-magenta: 0 0 16px rgba(214, 92, 40, 0.22);
+  --shadow-card: 0 10px 24px rgba(32, 58, 40, 0.24);
+
+  --grad-space:
+    radial-gradient(1200px circle at 50% -10%, rgba(255, 248, 224, 0.56) 0%, rgba(255, 248, 224, 0) 58%),
+    radial-gradient(980px circle at 88% -10%, rgba(120, 208, 192, 0.28) 0%, rgba(120, 208, 192, 0) 54%),
+    linear-gradient(180deg, #bcdac4 0%, #cee4d4 60%, #e2f0e4 100%);
+  --frost-overlay: rgba(20, 36, 28, 0.04);
+  --frost-border: rgba(20, 36, 28, 0.14);
+  --ambient-glow: radial-gradient(ellipse at 50% -10%, rgba(255, 248, 224, 0.42) 0%, transparent 70%);
+  --ambient-pulse: radial-gradient(ellipse at 50% 100%, rgba(120, 208, 192, 0.22) 0%, transparent 62%);
+  --ambient-left: 120 208 192;
+  --ambient-right: 255 248 224;
+  --ambient-left-alpha: 0.24;
+  --ambient-right-alpha: 0.30;
+  --ambient-orb-left-alpha: 0.10;
+  --ambient-orb-right-alpha: 0.14;
+
+  --header-bg-1: 226 240 228;
+  --header-bg-2: 212 230 216;
+  --header-border: 92 130 104;
+  --header-text: 20 36 28;
+
+  --bar-neutral-bg-1: 226 240 228;
+  --bar-neutral-bg-2: 212 230 216;
+  --bar-neutral-text: 20 36 28;
+  --bar-neutral-border: 92 130 104;
+
+  --bar-blue-bg-1: 0 160 108;
+  --bar-blue-bg-2: 0 128 86;
+  --bar-blue-text: 232 244 232;
+  --bar-blue-border: 10 60 40;
+
+  --bar-yellow-bg-1: 196 148 28;
+  --bar-yellow-bg-2: 160 118 20;
+  --bar-yellow-text: 30 22 8;
+  --bar-yellow-border: 96 72 14;
+
+  --btn-primary-bg-1: var(--cyan);
+  --btn-primary-bg-2: 0 128 86;
+  --btn-primary-border: 10 60 40;
+  --btn-primary-text: 232 244 232;
+}
+
 /* ==========================================================================
    Global base styles
    ========================================================================== */
@@ -1340,6 +1476,194 @@ body {
 [data-theme='stormwatch'] .theme-atmo-ridges.fx-max {
   height: 7.8rem;
   opacity: 1;
+}
+
+/* ---------- Permian atmospheric overlays ---------- */
+[data-theme='permian'] .theme-atmo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(520px 240px at 72% 14%, rgba(232, 112, 48, 0.18) 0%, rgba(232, 112, 48, 0) 72%),
+    radial-gradient(420px 220px at 22% 88%, rgba(0, 232, 144, 0.09) 0%, transparent 78%),
+    linear-gradient(180deg,
+      rgba(10, 31, 24, 0) 0%,
+      rgba(10, 31, 24, 0.10) 48%,
+      rgba(10, 31, 24, 0.28) 100%);
+  opacity: 0.82;
+  z-index: 0;
+}
+
+[data-theme='permian'] .theme-atmo.fx-max::before {
+  background:
+    radial-gradient(620px 280px at 72% 14%, rgba(232, 112, 48, 0.28) 0%, rgba(232, 112, 48, 0) 72%),
+    radial-gradient(520px 260px at 22% 88%, rgba(0, 232, 144, 0.14) 0%, transparent 78%),
+    linear-gradient(180deg,
+      rgba(10, 31, 24, 0) 0%,
+      rgba(10, 31, 24, 0.14) 46%,
+      rgba(10, 31, 24, 0.36) 100%);
+  opacity: 1;
+}
+
+[data-theme='permian'][data-mode='light'] .theme-atmo::before {
+  background:
+    radial-gradient(640px 320px at 50% -6%, rgba(255, 248, 224, 0.42) 0%, rgba(255, 248, 224, 0) 72%),
+    radial-gradient(420px 220px at 22% 92%, rgba(0, 160, 108, 0.06) 0%, transparent 78%),
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0.10) 0%,
+      rgba(255, 255, 255, 0.04) 40%,
+      rgba(20, 36, 28, 0.08) 100%);
+  opacity: 0.74;
+}
+
+[data-theme='permian'] .theme-atmo-header {
+  border-bottom-color: rgb(var(--header-border) / 0.94);
+  box-shadow:
+    inset 0 -1px 0 rgb(var(--magenta) / 0.32),
+    0 12px 28px rgba(0, 0, 0, 0.44);
+}
+
+[data-theme='permian'] .theme-atmo-header.fx-max {
+  box-shadow:
+    inset 0 -1px 0 rgb(var(--magenta) / 0.52),
+    0 16px 34px rgba(0, 0, 0, 0.56);
+}
+
+[data-theme='permian'][data-mode='light'] .theme-atmo-header {
+  box-shadow:
+    inset 0 -1px 0 rgb(var(--border) / 0.60),
+    0 8px 18px rgba(32, 58, 40, 0.16);
+}
+
+[data-theme='permian'] .theme-atmo-bands {
+  inset: 0;
+  background:
+    repeating-linear-gradient(176deg,
+      rgb(var(--cyan) / 0.06) 0,
+      rgb(var(--cyan) / 0.06) 1px,
+      transparent 1px,
+      transparent 14px),
+    repeating-linear-gradient(4deg,
+      rgb(var(--magenta) / 0.05) 0,
+      rgb(var(--magenta) / 0.05) 1px,
+      transparent 1px,
+      transparent 22px);
+  mix-blend-mode: screen;
+  opacity: 0.22;
+}
+
+[data-theme='permian'] .theme-atmo-bands.fx-max {
+  background:
+    repeating-linear-gradient(176deg,
+      rgb(var(--cyan) / 0.10) 0,
+      rgb(var(--cyan) / 0.10) 1px,
+      transparent 1px,
+      transparent 11px),
+    repeating-linear-gradient(4deg,
+      rgb(var(--magenta) / 0.09) 0,
+      rgb(var(--magenta) / 0.09) 1px,
+      transparent 1px,
+      transparent 18px);
+  opacity: 0.42;
+}
+
+[data-theme='permian'] .theme-atmo-horizon {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4.8rem;
+  background:
+    linear-gradient(180deg,
+      rgb(var(--magenta) / 0) 0%,
+      rgb(var(--magenta) / 0.22) 48%,
+      rgb(var(--magenta) / 0.42) 68%,
+      rgb(var(--lav) / 0.18) 88%,
+      rgb(var(--bg-deep) / 0) 100%),
+    linear-gradient(90deg,
+      rgb(var(--bg-deep) / 0.28) 0%,
+      rgb(var(--magenta) / 0.26) 44%,
+      rgb(var(--lav) / 0.20) 78%,
+      rgb(var(--bg-deep) / 0.24) 100%);
+  opacity: 0.78;
+}
+
+[data-theme='permian'] .theme-atmo-horizon.fx-max {
+  height: 6.6rem;
+  opacity: 0.98;
+}
+
+[data-theme='permian'][data-mode='light'] .theme-atmo-horizon {
+  background:
+    linear-gradient(180deg,
+      rgb(255 248 224 / 0) 0%,
+      rgb(255 248 224 / 0.32) 56%,
+      rgb(120 208 192 / 0.24) 88%,
+      rgb(120 208 192 / 0) 100%);
+  opacity: 0.64;
+  height: 3.6rem;
+}
+
+[data-theme='permian'] .theme-atmo-ridges {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6.4rem;
+  background:
+    linear-gradient(168deg, rgb(var(--bg-deep) / 0.96) 20%, rgb(var(--bg-deep) / 0.24) 64%, rgb(var(--bg-deep) / 0) 100%),
+    linear-gradient(22deg, rgb(var(--bg-deep) / 0.84) 22%, rgb(var(--bg-deep) / 0.10) 72%, rgb(var(--bg-deep) / 0) 100%);
+  opacity: 0.9;
+}
+
+[data-theme='permian'] .theme-atmo-ridges.fx-max {
+  height: 8.4rem;
+  opacity: 1;
+}
+
+[data-theme='permian'][data-mode='light'] .theme-atmo-ridges {
+  background:
+    linear-gradient(168deg, rgb(92 130 104 / 0.42) 20%, rgb(92 130 104 / 0.10) 64%, rgb(92 130 104 / 0) 100%),
+    linear-gradient(22deg, rgb(92 130 104 / 0.36) 22%, rgb(92 130 104 / 0.06) 72%, rgb(92 130 104 / 0) 100%);
+  opacity: 0.68;
+}
+
+/* Heat shimmer overlay — noon only, sub-pixel sine-wave via SVG displacement
+   (doesn't actually displace pixels — provides a quiet CSS cue while the
+   real shimmer runs as a shader in PermianBackground). */
+.theme-atmo-heat {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 44%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+}
+
+[data-theme='permian'][data-mode='light'] .theme-atmo-heat {
+  background:
+    repeating-linear-gradient(0deg,
+      rgba(255, 180, 96, 0.07) 0,
+      rgba(255, 180, 96, 0.07) 1px,
+      transparent 1px,
+      transparent 3px),
+    linear-gradient(180deg,
+      rgba(255, 220, 160, 0) 0%,
+      rgba(255, 180, 96, 0.14) 62%,
+      rgba(255, 140, 60, 0.24) 100%);
+  mix-blend-mode: screen;
+  opacity: 0.62;
+}
+
+[data-theme='permian'][data-mode='light'] .theme-atmo-heat.fx-max {
+  opacity: 0.92;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-theme='permian'][data-mode='light'] .theme-atmo-heat {
+    opacity: 0.42;
+  }
 }
 
 [data-theme='mario'] .theme-atmo::before {

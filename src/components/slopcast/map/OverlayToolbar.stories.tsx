@@ -33,7 +33,7 @@ export const Default: Story = {
     await expect(
       canvas.getByRole('button', { name: /data source: mock\. click to switch to databricks\./i }),
     ).toBeVisible();
-    await expect(canvas.getByText('Mock')).toBeVisible();
+    await expect(canvas.getByText('Demo')).toBeVisible();
   },
 };
 
@@ -55,7 +55,7 @@ export const DatabricksSource: Story = {
     await expect(
       canvas.getByRole('button', { name: /data source: databricks\. click to switch to mock\./i }),
     ).toBeVisible();
-    await expect(canvas.getByText('DB')).toBeVisible();
+    await expect(canvas.getByText('Live')).toBeVisible();
   },
 };
 
@@ -70,7 +70,7 @@ export const LiveSelectionWithFallback: Story = {
     await expect(
       canvas.getByRole('button', { name: /using mock fallback while live is selected\. click to switch to mock\./i }),
     ).toBeVisible();
-    await expect(canvas.getByText('Fallback')).toBeVisible();
+    await expect(canvas.getByText('Demo (fallback)')).toBeVisible();
   },
 };
 

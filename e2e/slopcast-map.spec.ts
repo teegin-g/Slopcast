@@ -3,8 +3,10 @@ import { THEMES } from './helpers/slopcast';
 
 test.describe('Map Command Center', () => {
   test('map loads and renders well dots across themes', async ({ slopcast }) => {
+    test.setTimeout(180_000);
     for (const theme of THEMES) {
-      await test.step(`${theme.id}: map loads with wells`, async () => {
+      const label = theme.alias || theme.id;
+      await test.step(`${label}: map loads with wells`, async () => {
         await slopcast.setTheme(theme);
         await slopcast.openDesignView();
         await slopcast.openWellsWorkspace();
@@ -12,7 +14,7 @@ test.describe('Map Command Center', () => {
         await slopcast.navigateToMapTab();
         await slopcast.expectMapLoaded();
         await slopcast.expectMapWellsPopulated();
-        await slopcast.screenshotMap(`${theme.id}__wells-loaded`);
+        await slopcast.screenshotMap(`${label}__wells-loaded`);
       });
     }
   });
@@ -137,7 +139,7 @@ test.describe('Data Source Badge', () => {
     await slopcast.expectMapLoaded();
 
     const mapContainer = slopcast.page.getByTestId('map-command-center');
-    const mockBadge = mapContainer.getByText('Mock', { exact: true });
+    const mockBadge = mapContainer.getByText('Demo', { exact: true });
     await expect(mockBadge).toBeVisible({ timeout: 10_000 });
   });
 
@@ -155,9 +157,9 @@ test.describe('Data Source Badge', () => {
     await slopcast.expectMapLoaded();
 
     // Without a running backend, the live source fails and falls back to mock.
-    // The badge should still be visible (shows either Mock or DB).
+    // The badge should still be visible (shows either Demo or Live/fallback state).
     const mapContainer = slopcast.page.getByTestId('map-command-center');
-    const badge = mapContainer.getByText(/Mock|DB/, { exact: false });
+    const badge = mapContainer.getByText(/Demo|Live/, { exact: false });
     await expect(badge.first()).toBeVisible({ timeout: 10_000 });
   });
 });

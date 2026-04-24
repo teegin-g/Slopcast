@@ -11,6 +11,7 @@
 
 import type { DesignWorkspace } from '../../components/slopcast/DesignWorkspaceTabs';
 import type { EconomicsResultsTab } from '../../components/slopcast/EconomicsResultsTabs';
+import type { EconomicsModule } from '../../components/slopcast/economics/types';
 import type { FxMode, AnalysisOpenSection } from '../../hooks/useSlopcastWorkspace';
 import type { EngineId } from '../economicsEngine';
 
@@ -18,6 +19,7 @@ import type { EngineId } from '../economicsEngine';
 
 export const DESIGN_WORKSPACE_KEY = 'slopcast-design-workspace';
 export const ECONOMICS_RESULTS_TAB_KEY = 'slopcast-econ-results-tab';
+export const ECONOMICS_MODULE_KEY = 'slopcast-econ-module';
 export const ECONOMICS_FOCUS_MODE_KEY = 'slopcast-econ-focus-mode';
 export const FX_QUERY_KEY = 'fx';
 export const FX_STORAGE_KEY_PREFIX = 'slopcast-fx-';
@@ -80,6 +82,34 @@ export function getEconomicsResultsTab(): EconomicsResultsTab {
 
 export function setEconomicsResultsTab(value: EconomicsResultsTab): void {
   safeSet(ECONOMICS_RESULTS_TAB_KEY, value);
+}
+
+// ─── Economics module ────────────────────────────────────────────────────────
+
+const legacyTabToModule = (value: string | null): EconomicsModule | null => {
+  if (value === 'OVERVIEW' || value === 'SUMMARY' || value === 'CHARTS' || value === 'DRIVERS') return 'PRODUCTION';
+  if (value === 'CASH_FLOW') return 'CAPEX';
+  if (value === 'RESERVES') return 'PRODUCTION';
+  return null;
+};
+
+export function isEconomicsModule(value: unknown): value is EconomicsModule {
+  return value === 'PRODUCTION' || value === 'PRICING' || value === 'OPEX' || value === 'TAXES' || value === 'OWNERSHIP' || value === 'CAPEX';
+}
+
+export function getEconomicsModule(): EconomicsModule {
+  const raw = safeGet(ECONOMICS_MODULE_KEY);
+  if (isEconomicsModule(raw)) return raw;
+  const migrated = legacyTabToModule(safeGet(ECONOMICS_RESULTS_TAB_KEY));
+  if (migrated) {
+    safeSet(ECONOMICS_MODULE_KEY, migrated);
+    return migrated;
+  }
+  return 'PRODUCTION';
+}
+
+export function setEconomicsModule(value: EconomicsModule): void {
+  safeSet(ECONOMICS_MODULE_KEY, value);
 }
 
 // ─── Economics focus mode ────────────────────────────────────────────────────

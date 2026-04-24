@@ -261,6 +261,7 @@ export type ModelPresetScope = 'user' | 'organization';
 export interface ProjectUiState {
   designWorkspace?: 'WELLS' | 'ECONOMICS';
   economicsResultsTab?: 'OVERVIEW' | 'CASH_FLOW' | 'RESERVES';
+  economicsModule?: 'PRODUCTION' | 'PRICING' | 'OPEX' | 'TAXES' | 'OWNERSHIP' | 'CAPEX';
   operatorFilter?: string | string[];
   formationFilter?: string | string[];
   statusFilter?: string | string[];

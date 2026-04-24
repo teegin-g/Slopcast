@@ -134,11 +134,10 @@ const SlopcastPage: React.FC = () => {
               <DesignEconomicsView
                 isClassic={ws.isClassic}
                 themeId={ws.themeId}
-                workflowSteps={ws.workflowSteps}
                 mobilePanel={ws.economicsMobilePanel}
                 onSetMobilePanel={ws.setEconomicsMobilePanel}
-                resultsTab={ws.economicsResultsTab}
-                onSetResultsTab={ws.setEconomicsResultsTab}
+                economicsModule={ws.economicsModule}
+                onSetEconomicsModule={ws.setEconomicsModule}
                 wells={ws.wells}
                 groups={ws.processedGroups}
                 activeGroupId={ws.activeGroupId}
@@ -147,11 +146,9 @@ const SlopcastPage: React.FC = () => {
                 activeGroup={ws.activeGroup}
                 onUpdateGroup={ws.handleUpdateGroup}
                 onMarkDirty={() => {}}
-                controlsOpenSection={ws.controlsOpenSection}
-                onControlsOpenHandled={() => ws.setControlsOpenSection(null)}
-                hasGroup={ws.hasGroup}
-                hasGroupWells={ws.hasGroupWells}
-                hasCapexItems={ws.hasCapexItems}
+                scenarios={ws.scenarios}
+                activeScenarioId={ws.activeScenarioId}
+                onSetActiveScenarioId={ws.setActiveScenarioId}
                 aggregateMetrics={ws.aggregateMetrics}
                 aggregateFlow={ws.aggregateFlow}
                 operationsProps={ws.operationsProps}

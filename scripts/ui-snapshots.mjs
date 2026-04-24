@@ -18,6 +18,8 @@ const fxMode = (process.env.UI_FX_MODE === 'cinematic' || process.env.UI_FX_MODE
 const THEMES = [
   { id: 'slate', title: 'Slate' },
   { id: 'mario', title: 'Classic' },
+  { id: 'permian', title: 'Permian', colorMode: 'dark' },
+  { id: 'permian', title: 'Permian', colorMode: 'light', alias: 'permian-noon' },
 ];
 
 const DEFAULT_AUTH_SESSION = {
@@ -31,26 +33,27 @@ const DEFAULT_AUTH_SESSION = {
 };
 
 const DESIGN_SHOTS = [
-  { id: 'design-wells', workspaceTab: 'Wells', expectText: 'Basin Visualizer' },
+  { id: 'design-wells', workspaceTab: 'Wells', expectTestId: 'map-command-center' },
   {
-    id: 'design-economics-summary',
+    id: 'design-economics-production',
     workspaceTab: 'Economics',
-    resultsTabTestId: 'economics-results-tab-summary',
-    expectedResultsTab: 'SUMMARY',
+    moduleTabTestId: 'economics-module-tab-production',
+    expectedModule: 'PRODUCTION',
+    expectText: 'Total Production',
   },
   {
-    id: 'design-economics-charts',
+    id: 'design-economics-pricing',
     workspaceTab: 'Economics',
-    resultsTabTestId: 'economics-results-tab-charts',
-    expectedResultsTab: 'CHARTS',
-    expectText: 'PRODUCTION FORECAST',
+    moduleTabTestId: 'economics-module-tab-pricing',
+    expectedModule: 'PRICING',
+    expectText: 'Realized Net Price',
   },
   {
-    id: 'design-economics-drivers',
+    id: 'design-economics-capex',
     workspaceTab: 'Economics',
-    resultsTabTestId: 'economics-results-tab-drivers',
-    expectedResultsTab: 'DRIVERS',
-    expectText: 'Scenario Rank',
+    moduleTabTestId: 'economics-module-tab-capex',
+    expectedModule: 'CAPEX',
+    expectText: 'CAPEX Summary',
   },
 ];
 
@@ -116,14 +119,21 @@ async function main() {
       });
 
       await context.addInitScript(({ themeId, session, storageKey, mode }) => {
-        localStorage.setItem('slopcast-theme', themeId);
-        localStorage.setItem(storageKey, JSON.stringify(session));
-        localStorage.setItem('slopcast-design-workspace', 'WELLS');
-        localStorage.setItem('slopcast-econ-results-tab', 'SUMMARY');
+        // Seed localStorage defaults only if the key is missing so that
+        // subsequent reloads preserve theme/mode changes made by the test.
+        const seed = (key, value) => {
+          if (localStorage.getItem(key) === null) localStorage.setItem(key, value);
+        };
+        seed('slopcast-theme', themeId);
+        seed(storageKey, JSON.stringify(session));
+        seed('slopcast-design-workspace', 'WELLS');
+        seed('slopcast-econ-module', 'PRODUCTION');
+        seed('slopcast-onboarding-done', '1');
         if (mode === 'cinematic' || mode === 'max') {
-          localStorage.setItem('slopcast-fx-synthwave', mode);
-          localStorage.setItem('slopcast-fx-tropical', mode);
-          localStorage.setItem('slopcast-fx-mario', mode);
+          seed('slopcast-fx-synthwave', mode);
+          seed('slopcast-fx-tropical', mode);
+          seed('slopcast-fx-mario', mode);
+          seed('slopcast-fx-permian', mode);
         }
       }, { themeId: THEMES[0].id, session: DEFAULT_AUTH_SESSION, storageKey: 'slopcast-auth-session', mode: fxMode });
 
@@ -151,7 +161,17 @@ async function main() {
       for (const theme of THEMES) {
         await click(page.getByTitle(theme.title));
         await page.waitForFunction((id) => document.documentElement.dataset.theme === id, theme.id);
+        if (theme.colorMode === 'dark' || theme.colorMode === 'light') {
+          await page.evaluate((mode) => {
+            localStorage.setItem('slopcast-color-mode', mode);
+          }, theme.colorMode);
+          await page.reload({ waitUntil: 'domcontentloaded' });
+          await page.waitForFunction((id) => document.documentElement.dataset.theme === id, theme.id);
+          await page.waitForFunction((expected) => document.documentElement.dataset.mode === expected, theme.colorMode);
+        }
         await page.waitForTimeout(150);
+
+        const themeKey = theme.alias || theme.id;
 
         await click(page.getByRole('button', { name: 'DESIGN' }));
         await page.getByRole('button', { name: /^Wells/i }).first().waitFor({ timeout: 15_000 });
@@ -162,24 +182,26 @@ async function main() {
           if (shot.workspaceTab === 'Economics') {
             await page.locator('[data-testid="economics-group-bar"]').first().waitFor({ timeout: 15_000 });
             if (viewport.isMobile) {
-              const resultsButton = page.getByRole('button', { name: 'Results' }).first();
+              const resultsButton = page.getByRole('button', { name: 'Workspace' }).first();
               if (await resultsButton.isVisible().catch(() => false)) {
                 await click(resultsButton);
               }
             }
-            if (shot.resultsTabTestId) {
-              await clickByTestId(page, shot.resultsTabTestId);
-              if (shot.expectedResultsTab) {
-                await page.waitForFunction((expected) => localStorage.getItem('slopcast-econ-results-tab') === expected, shot.expectedResultsTab, { timeout: 15_000 });
+            if (shot.moduleTabTestId) {
+              await clickByTestId(page, shot.moduleTabTestId);
+              if (shot.expectedModule) {
+                await page.waitForFunction((expected) => localStorage.getItem('slopcast-econ-module') === expected, shot.expectedModule, { timeout: 15_000 });
               }
             }
           }
 
-          if (shot.expectText) {
+          if (shot.expectTestId) {
+            await page.getByTestId(shot.expectTestId).first().waitFor({ state: 'attached', timeout: 15_000 });
+          } else if (shot.expectText) {
             await page.getByText(shot.expectText, { exact: false }).first().waitFor({ timeout: 15_000 });
           }
           await page.waitForTimeout(200);
-          const fileName = `${viewport.id}__${theme.id}__${shot.id}.png`;
+          const fileName = `${viewport.id}__${themeKey}__${shot.id}.png`;
           await page.screenshot({ path: path.join(outDir, fileName), fullPage: true });
         }
 
@@ -188,7 +210,7 @@ async function main() {
           await page.getByText(view.expectText, { exact: false }).first().waitFor({ timeout: 15_000 });
           await page.waitForTimeout(200);
 
-          const fileName = `${viewport.id}__${theme.id}__${view.id}.png`;
+          const fileName = `${viewport.id}__${themeKey}__${view.id}.png`;
           const filePath = path.join(outDir, fileName);
           await page.screenshot({ path: filePath, fullPage: true });
         }
