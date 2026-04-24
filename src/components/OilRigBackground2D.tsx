@@ -5,6 +5,7 @@ import {
   PUMPJACK_SLOTS,
   type PumpjackSlot,
 } from './permian/hillNoise';
+import { computeCanvasSize, getDocumentModeFromDataset } from './permian/backgroundLifecycle';
 import { paletteForMode, type PermianMode, type PermianPalette } from './permian/variants';
 
 /**
@@ -27,7 +28,7 @@ interface Props {
 
 function getDocumentMode(): PermianMode {
   if (typeof document === 'undefined') return 'dusk';
-  return document.documentElement.dataset.mode === 'light' ? 'noon' : 'dusk';
+  return getDocumentModeFromDataset(document.documentElement.dataset.mode);
 }
 
 export default function OilRigBackground2D({ mode }: Props = {}) {
@@ -48,9 +49,13 @@ export default function OilRigBackground2D({ mode }: Props = {}) {
     let palette: PermianPalette = paletteForMode(activeMode);
 
     function resize() {
-      const dpr = window.devicePixelRatio || 1;
-      W = window.innerWidth * dpr;
-      H = window.innerHeight * dpr;
+      const size = computeCanvasSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+        dpr: window.devicePixelRatio,
+      });
+      W = size.width;
+      H = size.height;
       canvas!.width = W;
       canvas!.height = H;
       if (reduceMotion) draw(0);
