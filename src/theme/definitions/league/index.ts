@@ -1,0 +1,45 @@
+import { MoonlightBackground } from '../../backgrounds';
+import type { ThemeDefinition } from '../../types';
+
+export const league: ThemeDefinition = {
+  id: 'league',
+  variant: 'dark',
+  label: 'Nocturne',
+  icon: '🌙',
+  description: 'Moonlit alpine palette',
+  appName: 'SLOPCAST',
+  appSubtitle: 'Night Operations',
+  chartPalette: {
+    oil: '#e9b067',
+    cash: '#67c3ee',
+    lav: '#8ba6d3',
+    grid: 'rgba(89, 115, 157, 0.28)',
+    text: '#9aaecf',
+    surface: '#0b1424',
+    border: 'rgba(95, 125, 170, 0.42)',
+  },
+  mapPalette: {
+    gridColor: '#2f476d',
+    gridOpacity: 0.36,
+    selectedStroke: '#f4d2a4',
+    glowColor: '#e9b067',
+    unassignedFill: '#44638f',
+    lassoFill: 'rgba(233, 176, 103, 0.15)',
+    lassoStroke: '#e9b067',
+    lassoDash: '5, 3',
+    mapboxOverrides: { bgColor: '#0b1424', waterColor: '#0f1c35', landColor: '#122040', labelColor: '#44638f', roadOpacity: 0.10 },
+  },
+  features: {
+    retroGrid: false,
+    brandFont: false,
+    glowEffects: true,
+    panelStyle: 'outline',
+    headingFont: true,
+    denseSpacing: false,
+    isClassicTheme: false,
+  },
+  BackgroundComponent: MoonlightBackground,
+  atmosphereClass: 'theme-atmo',
+  headerAtmosphereClass: 'theme-atmo-header',
+  atmosphericOverlays: ['theme-atmo-bands', 'theme-atmo-ridges'],
+};

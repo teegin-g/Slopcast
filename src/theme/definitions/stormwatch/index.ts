@@ -1,0 +1,46 @@
+import { StormDuskBackground } from '../../backgrounds';
+import type { ThemeDefinition } from '../../types';
+
+export const stormwatch: ThemeDefinition = {
+  id: 'stormwatch',
+  variant: 'dark',
+  label: 'Stormwatch',
+  icon: '⛈️',
+  description: 'Moody dusk storm atmosphere',
+  appName: 'SLOPCAST',
+  appSubtitle: 'Storm Signal',
+  chartPalette: {
+    oil: '#f2a65a',
+    cash: '#9bc4ff',
+    lav: '#c7d8ff',
+    grid: 'rgba(116, 144, 191, 0.26)',
+    text: '#9fb1d3',
+    surface: '#101a2d',
+    border: 'rgba(90, 115, 154, 0.46)',
+  },
+  mapPalette: {
+    gridColor: '#36547f',
+    gridOpacity: 0.34,
+    selectedStroke: '#ffd9a0',
+    glowColor: '#9bc4ff',
+    unassignedFill: '#4e6e9f',
+    lassoFill: 'rgba(242, 166, 90, 0.14)',
+    lassoStroke: '#f2a65a',
+    lassoDash: '6, 3',
+    mapboxOverrides: { bgColor: '#101a2d', waterColor: '#152540', landColor: '#1a2a45', labelColor: '#4e6e9f', roadOpacity: 0.12 },
+  },
+  features: {
+    retroGrid: false,
+    brandFont: false,
+    glowEffects: true,
+    panelStyle: 'solid',
+    headingFont: true,
+    denseSpacing: true,
+    isClassicTheme: false,
+  },
+  BackgroundComponent: StormDuskBackground,
+  atmosphereClass: 'theme-atmo',
+  headerAtmosphereClass: 'theme-atmo-header',
+  atmosphericOverlays: ['theme-atmo-bands', 'theme-atmo-horizon', 'theme-atmo-ridges'],
+  fxTheme: true,
+};

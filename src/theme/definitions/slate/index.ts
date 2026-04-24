@@ -1,0 +1,87 @@
+import type { ThemeDefinition } from '../../types';
+
+export const slate: ThemeDefinition = {
+  id: 'slate',
+  variant: 'dark',
+  hasLightVariant: true,
+  label: 'Slate',
+  icon: '🏢',
+  description: 'Corporate blue-gray',
+  appName: 'SLOPCAST',
+  appSubtitle: 'Deal Intelligence',
+  chartPalette: {
+    oil: '#3b82f6',
+    cash: '#10b981',
+    lav: '#8b5cf6',
+    grid: '#373b44',
+    text: '#9ca0aa',
+    surface: '#12141b',
+    border: '#52565f',
+  },
+  mapPalette: {
+    gridColor: '#23262f',
+    gridOpacity: 0.3,
+    selectedStroke: '#ffffff',
+    glowColor: '#3b82f6',
+    unassignedFill: '#52565f',
+    lassoFill: 'rgba(59, 130, 246, 0.1)',
+    lassoStroke: '#3b82f6',
+    lassoDash: '4',
+    mapboxOverrides: { bgColor: '#12141b', waterColor: '#1c1f26', landColor: '#23262f', labelColor: '#9ca0aa', roadOpacity: 0.15 },
+  },
+  features: {
+    retroGrid: false,
+    brandFont: false,
+    glowEffects: false,
+    panelStyle: 'solid',
+    headingFont: false,
+    denseSpacing: false,
+    isClassicTheme: false,
+  },
+  tokens: {
+    dark: {
+      color: {
+        bgDeep: '18 20 27',
+        bgSpace: '28 31 38',
+        surface1: '35 38 47',
+        surface2: '55 59 68',
+        border: '82 86 95',
+        cyan: '59 130 246',
+        magenta: '236 72 153',
+        lav: '216 180 254',
+      },
+      radius: {
+        panel: '6px',
+        inner: '4px',
+      },
+      typography: {
+        fontSans: "'Inter', sans-serif",
+        fontHeading: "'Inter', sans-serif",
+        fontBrand: "'Inter'",
+        fontScript: "'Permanent Marker', cursive",
+      },
+    },
+    light: {
+      color: {
+        bgDeep: '18 20 27',
+        bgSpace: '28 31 38',
+        surface1: '35 38 47',
+        surface2: '55 59 68',
+        border: '82 86 95',
+        cyan: '59 130 246',
+        magenta: '236 72 153',
+        lav: '216 180 254',
+      },
+      radius: {
+        panel: '6px',
+        inner: '4px',
+      },
+      typography: {
+        fontSans: "'Inter', sans-serif",
+        fontHeading: "'Inter', sans-serif",
+        fontBrand: "'Inter'",
+        fontScript: "'Permanent Marker', cursive",
+      },
+    },
+  },
+};

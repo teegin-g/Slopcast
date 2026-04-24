@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { ThemeId, ThemeMeta, ColorMode, DEFAULT_THEME, getTheme, THEMES } from './themes';
+import { applyThemeTokens, clearThemeTokens, resolveThemeTokens } from './tokenRuntime';
 
 // ---------------------------------------------------------------------------
 // Context
@@ -45,9 +46,16 @@ function getSystemPreference(): 'dark' | 'light' {
   return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
 }
 
-function applyThemeToDOM(id: ThemeId, mode: 'dark' | 'light') {
-  document.documentElement.dataset.theme = id;
+function applyThemeToDOM(theme: ThemeMeta, mode: 'dark' | 'light') {
+  document.documentElement.dataset.theme = theme.id;
   document.documentElement.dataset.mode = mode;
+  const tokens = resolveThemeTokens(theme, mode);
+
+  if (tokens) {
+    applyThemeTokens(document.documentElement, tokens);
+  } else {
+    clearThemeTokens(document.documentElement);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -70,16 +78,16 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [colorMode, theme.hasLightVariant]);
 
   // Apply on first render and changes
-  useEffect(() => { applyThemeToDOM(themeId, effectiveMode); }, [themeId, effectiveMode]);
+  useEffect(() => { applyThemeToDOM(theme, effectiveMode); }, [theme, effectiveMode]);
 
   // Listen for system preference changes when in 'system' mode
   useEffect(() => {
     if (colorMode !== 'system') return;
     const mql = window.matchMedia('(prefers-color-scheme: light)');
-    const handler = () => applyThemeToDOM(themeId, theme.hasLightVariant && mql.matches ? 'light' : 'dark');
+    const handler = () => applyThemeToDOM(theme, theme.hasLightVariant && mql.matches ? 'light' : 'dark');
     mql.addEventListener('change', handler);
     return () => mql.removeEventListener('change', handler);
-  }, [colorMode, themeId, theme.hasLightVariant]);
+  }, [colorMode, theme]);
 
   const setThemeId = useCallback((id: ThemeId) => {
     setThemeIdRaw(id);

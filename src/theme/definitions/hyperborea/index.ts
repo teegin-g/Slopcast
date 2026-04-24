@@ -1,0 +1,47 @@
+import { HyperboreaBackground } from '../../backgrounds';
+import type { ThemeDefinition } from '../../types';
+
+export const hyperborea: ThemeDefinition = {
+  id: 'hyperborea',
+  variant: 'dark',
+  label: 'Hyperborea',
+  icon: '❄️',
+  description: 'Winter village frost',
+  appName: 'SLOPCAST',
+  appSubtitle: 'Arctic Operations',
+  chartPalette: {
+    oil: '#38BDF8',
+    cash: '#7DD3FC',
+    lav: '#CBD5E1',
+    grid: 'rgba(90, 108, 135, 0.25)',
+    text: '#94A3B8',
+    surface: '#141D2E',
+    border: 'rgba(90, 108, 135, 0.4)',
+  },
+  mapPalette: {
+    gridColor: '#5A6C87',
+    gridOpacity: 0.3,
+    selectedStroke: '#38BDF8',
+    glowColor: '#38BDF8',
+    unassignedFill: '#2C4365',
+    lassoFill: 'rgba(125, 211, 252, 0.15)',
+    lassoStroke: '#7DD3FC',
+    lassoDash: '6, 3',
+    mapboxOverrides: { bgColor: '#0a1525', waterColor: '#0f1d35', landColor: '#141D2E', labelColor: '#5A6C87', roadOpacity: 0.10 },
+  },
+  features: {
+    retroGrid: false,
+    brandFont: false,
+    glowEffects: true,
+    panelStyle: 'glass',
+    headingFont: true,
+    denseSpacing: false,
+    isClassicTheme: false,
+  },
+  BackgroundComponent: HyperboreaBackground,
+  atmosphereClass: 'theme-atmo',
+  headerAtmosphereClass: 'theme-atmo-header',
+  atmosphericOverlays: ['theme-atmo-bands', 'theme-atmo-horizon', 'theme-atmo-ridges'],
+  pageOverlayClasses: ['theme-aurora'],
+  fxTheme: true,
+};

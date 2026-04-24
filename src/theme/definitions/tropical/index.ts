@@ -1,0 +1,46 @@
+import { TropicalBackground } from '../../backgrounds';
+import type { ThemeDefinition } from '../../types';
+
+export const tropical: ThemeDefinition = {
+  id: 'tropical',
+  variant: 'dark',
+  label: 'Tropical',
+  icon: '🌴',
+  description: 'Tommy Bahama resort',
+  appName: 'SLOPCAST',
+  appSubtitle: 'Island Economics',
+  chartPalette: {
+    oil: '#2dd4bf',
+    cash: '#B9FF3B',
+    lav: '#c084fc',
+    grid: 'rgba(45, 212, 191, 0.15)',
+    text: '#94a3b8',
+    surface: '#1a2332',
+    border: 'rgba(45, 212, 191, 0.25)',
+  },
+  mapPalette: {
+    gridColor: '#2dd4bf',
+    gridOpacity: 0.15,
+    selectedStroke: '#FF7F6B',
+    glowColor: '#FF7F6B',
+    unassignedFill: '#5eead4',
+    lassoFill: 'rgba(255, 127, 107, 0.12)',
+    lassoStroke: '#FF7F6B',
+    lassoDash: '6, 3',
+    mapboxOverrides: { bgColor: '#0a1520', waterColor: '#0d2030', landColor: '#1a2332', labelColor: '#5eead4', roadOpacity: 0.10 },
+  },
+  features: {
+    retroGrid: false,
+    brandFont: false,
+    glowEffects: true,
+    panelStyle: 'glass',
+    headingFont: true,
+    denseSpacing: false,
+    isClassicTheme: false,
+  },
+  BackgroundComponent: TropicalBackground,
+  atmosphereClass: 'theme-atmo',
+  headerAtmosphereClass: 'theme-atmo-header',
+  atmosphericOverlays: ['theme-atmo-bands', 'theme-atmo-canopy', 'theme-atmo-horizon', 'theme-atmo-ridges', 'theme-atmo-palms'],
+  fxTheme: true,
+};

@@ -1,0 +1,46 @@
+import { MarioOverworldBackground } from '../../backgrounds';
+import type { ThemeDefinition } from '../../types';
+
+export const mario: ThemeDefinition = {
+  id: 'mario',
+  variant: 'dark',
+  label: 'Classic',
+  icon: '🧱',
+  description: 'Slopcast Classic — beveled retro dashboard',
+  appName: 'SLOPCAST',
+  appSubtitle: '1-ECONOMICS',
+  chartPalette: {
+    oil: '#FF2A2A',
+    cash: '#4CAF50',
+    lav: '#BDBDBD',
+    grid: 'rgba(255, 255, 255, 0.10)',
+    text: 'rgba(255, 255, 255, 0.75)',
+    surface: '#101010',
+    border: 'rgba(255, 255, 255, 0.18)',
+  },
+  mapPalette: {
+    gridColor: '#2C2C2C',
+    gridOpacity: 0.35,
+    selectedStroke: '#FFFFFF',
+    glowColor: '#1270FF',
+    unassignedFill: '#3b82f6',
+    lassoFill: 'rgba(255, 213, 0, 0.10)',
+    lassoStroke: '#FFD500',
+    lassoDash: '0',
+    mapboxOverrides: { bgColor: '#101010', waterColor: '#1a1a2e', landColor: '#181818', labelColor: '#666666', roadOpacity: 0.12 },
+  },
+  features: {
+    retroGrid: false,
+    brandFont: false,
+    glowEffects: false,
+    panelStyle: 'glass',
+    headingFont: false,
+    denseSpacing: false,
+    isClassicTheme: true,
+  },
+  BackgroundComponent: MarioOverworldBackground,
+  atmosphereClass: 'theme-atmo',
+  headerAtmosphereClass: 'theme-atmo-header',
+  atmosphericOverlays: ['theme-atmo-bands', 'theme-atmo-horizon', 'theme-atmo-ridges'],
+  fxTheme: true,
+};

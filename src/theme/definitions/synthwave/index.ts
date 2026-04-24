@@ -1,0 +1,46 @@
+import { SynthwaveBackground } from '../../backgrounds';
+import type { ThemeDefinition } from '../../types';
+
+export const synthwave: ThemeDefinition = {
+  id: 'synthwave',
+  variant: 'dark',
+  label: 'Synthwave',
+  icon: '🕹️',
+  description: 'Neon retro vibes',
+  appName: 'SLOPCAST',
+  appSubtitle: 'Electric Forecast',
+  chartPalette: {
+    oil: '#9ED3F0',
+    cash: '#E566DA',
+    lav: '#DBA1DD',
+    grid: 'rgba(96, 83, 160, 0.25)',
+    text: '#A8A3A8',
+    surface: '#0E061A',
+    border: 'rgba(96, 83, 160, 0.4)',
+  },
+  mapPalette: {
+    gridColor: '#6053A0',
+    gridOpacity: 0.4,
+    selectedStroke: '#9ED3F0',
+    glowColor: '#9ED3F0',
+    unassignedFill: '#6053A0',
+    lassoFill: 'rgba(229, 102, 218, 0.15)',
+    lassoStroke: '#E566DA',
+    lassoDash: '8, 4',
+    mapboxOverrides: { bgColor: '#0a0015', waterColor: '#120825', landColor: '#0E061A', labelColor: '#6053A0', roadOpacity: 0.08 },
+  },
+  features: {
+    retroGrid: true,
+    brandFont: true,
+    glowEffects: true,
+    panelStyle: 'outline',
+    headingFont: false,
+    denseSpacing: false,
+    isClassicTheme: false,
+  },
+  BackgroundComponent: SynthwaveBackground,
+  atmosphereClass: 'theme-atmo',
+  headerAtmosphereClass: 'theme-atmo-header',
+  atmosphericOverlays: ['theme-atmo-bands', 'theme-atmo-horizon', 'theme-atmo-ridges'],
+  fxTheme: true,
+};
