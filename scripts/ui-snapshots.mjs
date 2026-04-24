@@ -114,7 +114,7 @@ async function main() {
         hasTouch: viewport.hasTouch,
       });
 
-      await context.addInitScript(({ themeId, session, storageKey, mode }) => {
+      await context.addInitScript(({ themeId, session, storageKey, mode, fxThemeIds }) => {
         // Seed localStorage defaults only if the key is missing so that
         // subsequent reloads preserve theme/mode changes made by the test.
         const seed = (key, value) => {

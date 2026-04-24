@@ -41,6 +41,8 @@ describe('ThemeProvider', () => {
     );
 
     expect(document.documentElement.dataset.theme).toBe('permian');
+    expect(document.documentElement.style.getPropertyValue('--bg-deep')).toBe('10 31 24');
+    expect(document.documentElement.style.getPropertyValue('--font-heading')).toContain('Barlow Condensed');
     expect(screen.getByTestId('active-theme').textContent).toBe('permian');
   });
 
@@ -53,10 +55,12 @@ describe('ThemeProvider', () => {
       </ThemeProvider>,
     );
 
-    screen.getByRole('button', { name: 'Light' }).click();
+    fireEvent.click(screen.getByRole('button', { name: 'Light' }));
 
     await waitFor(() => {
       expect(document.documentElement.dataset.mode).toBe('light');
+      expect(document.documentElement.style.getPropertyValue('--bg-deep')).toBe('188 218 196');
+      expect(document.documentElement.style.getPropertyValue('--cyan')).toBe('0 160 108');
     });
   });
 
@@ -69,10 +73,12 @@ describe('ThemeProvider', () => {
       </ThemeProvider>,
     );
 
-    screen.getByRole('button', { name: 'Mario' }).click();
+    fireEvent.click(screen.getByRole('button', { name: 'Mario' }));
 
     await waitFor(() => {
       expect(document.documentElement.dataset.theme).toBe('mario');
+      expect(document.documentElement.style.getPropertyValue('--bg-deep')).toBe('');
+      expect(document.documentElement.style.getPropertyValue('--font-heading')).toBe('');
       expect(screen.getByTestId('active-theme').textContent).toBe('mario');
     });
   });
