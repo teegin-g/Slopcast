@@ -21,28 +21,32 @@ Display pre-calculated Aries economics alongside Slopcast's own calculations, en
 
 ## Databricks Tables
 
-| Table | Rows | Purpose |
-|-------|------|---------|
-| `eds.resource_dev.view_ac_oneline_evergreen` | 573K | Pre-calculated one-line economics per well per scenario |
-| `epw.aries_evergreen.ac_monthly` | Per-well | Full monthly cash flows from Aries (for detailed comparison) |
+
+| Table                                        | Rows     | Purpose                                                      |
+| -------------------------------------------- | -------- | ------------------------------------------------------------ |
+| `eds.resource_dev.view_ac_oneline_evergreen` | 573K     | Pre-calculated one-line economics per well per scenario      |
+| `epw.aries_evergreen.ac_monthly`             | Per-well | Full monthly cash flows from Aries (for detailed comparison) |
+
 
 ### Key Columns: `view_ac_oneline_evergreen`
 
-| Column | Description | App Mapping |
-|--------|-------------|-------------|
-| `propnum` | Well identifier | Join key |
-| `scenario` | Scenario name (e.g., RD_LOSS_NO) | Filter |
-| `g_tot_eqty_inv` | Total equity investment (CAPEX) | `totalEquityInvestment` |
-| `gross_oil` | Gross oil production | `grossOil` |
-| `gross_gas` | Gross gas production | `grossGas` |
-| `n_prod_rev` | Net production revenue | `netProdRevenue` |
-| `n_tot_opc` | Net total operating costs | `netTotalOpex` |
-| `pw_bfit_net` | PV10 before federal income tax | `pv10Bfit` |
-| `e1` | BFIT rate of return | `bfitRor` |
-| `e3` | BFIT payout (years) | `bfitPayoutYrs` |
-| `m21` | EUR oil (MBO) | `eurOilMbo` |
-| `m22` | EUR gas (MMCF) | `eurGasMmcf` |
-| `m81` | EUR BOE (MBOE) | `eurMboe` |
+
+| Column           | Description                      | App Mapping             |
+| ---------------- | -------------------------------- | ----------------------- |
+| `propnum`        | Well identifier                  | Join key                |
+| `scenario`       | Scenario name (e.g., RD_LOSS_NO) | Filter                  |
+| `g_tot_eqty_inv` | Total equity investment (CAPEX)  | `totalEquityInvestment` |
+| `gross_oil`      | Gross oil production             | `grossOil`              |
+| `gross_gas`      | Gross gas production             | `grossGas`              |
+| `n_prod_rev`     | Net production revenue           | `netProdRevenue`        |
+| `n_tot_opc`      | Net total operating costs        | `netTotalOpex`          |
+| `pw_bfit_net`    | PV10 before federal income tax   | `pv10Bfit`              |
+| `e1`             | BFIT rate of return              | `bfitRor`               |
+| `e3`             | BFIT payout (years)              | `bfitPayoutYrs`         |
+| `m21`            | EUR oil (MBO)                    | `eurOilMbo`             |
+| `m22`            | EUR gas (MMCF)                   | `eurGasMmcf`            |
+| `m81`            | EUR BOE (MBOE)                   | `eurMboe`               |
+
 
 ---
 
@@ -134,6 +138,7 @@ Total OPEX           $12.8M          $13.1M          +2.3%
 ```
 
 **Features**:
+
 - Scenario selector dropdown (default: RD_LOSS_NO)
 - Delta column shows absolute and percentage difference
 - Color-code deltas: green if Slopcast is more conservative (lower NPV), red if more aggressive
@@ -164,3 +169,4 @@ Total OPEX           $12.8M          $13.1M          +2.3%
 4. Scenario dropdown switches between available Aries scenarios
 5. Wells without propnum or without Aries data show appropriate empty state
 6. Batch endpoint works for loading Aries data across a well group
+
