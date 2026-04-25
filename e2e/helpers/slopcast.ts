@@ -69,6 +69,11 @@ export class SlopcastApp {
         localStorage.setItem('slopcast-theme', initialThemeId);
         localStorage.setItem('slopcast-design-workspace', 'WELLS');
         localStorage.setItem('slopcast-econ-module', 'PRODUCTION');
+        localStorage.setItem('slopcast-active-workflow', 'PDP');
+        localStorage.setItem('slopcast-workflow-stages', JSON.stringify({
+          PDP: 'WELLS_INVENTORY',
+          UNDEVELOPED: 'UNIVERSE',
+        }));
       },
       { session: DEV_BYPASS_SESSION, initialThemeId: themeId },
     );
@@ -76,6 +81,9 @@ export class SlopcastApp {
 
   async goto(): Promise<void> {
     const designWorkspaceTabs = this.page.getByTestId('design-workspace-tabs').first();
+    const workspaceReady = this.isMobileViewport
+      ? this.page.getByTestId('wells-selected-visible-count').first()
+      : this.page.getByTestId('map-command-center').first();
     const signInButton = this.page.getByRole('button', { name: /Sign In As Demo User/i }).first();
     const blankWorkspaceButton = this.page.getByRole('button', { name: 'Open Blank Workspace' }).first();
 
@@ -92,6 +100,7 @@ export class SlopcastApp {
 
       const readyState = await this.waitForFirstVisible(
         [
+          { label: 'workspace', locator: workspaceReady },
           { label: 'tabs', locator: designWorkspaceTabs },
           { label: 'sign-in', locator: signInButton },
           { label: 'blank-workspace', locator: blankWorkspaceButton },
@@ -99,7 +108,7 @@ export class SlopcastApp {
         6_000,
       );
 
-      if (readyState === 'tabs') {
+      if (readyState === 'workspace' || readyState === 'tabs') {
         return;
       }
 
@@ -108,24 +117,25 @@ export class SlopcastApp {
         const postSignInState = await this.waitForFirstVisible(
           [
             { label: 'tabs', locator: designWorkspaceTabs },
+            { label: 'workspace', locator: workspaceReady },
             { label: 'blank-workspace', locator: blankWorkspaceButton },
           ],
           6_000,
         );
 
-        if (postSignInState === 'tabs') {
+        if (postSignInState === 'tabs' || postSignInState === 'workspace') {
           return;
         }
       }
 
       if (await blankWorkspaceButton.isVisible().catch(() => false)) {
         await blankWorkspaceButton.click();
-        await expect(designWorkspaceTabs).toBeVisible({ timeout: 15_000 });
+        await expect(workspaceReady).toBeVisible({ timeout: 15_000 });
         return;
       }
     }
 
-    throw new Error('Slopcast design workspace tabs were not visible after bootstrap');
+    throw new Error('Slopcast PDP workspace was not visible after bootstrap');
   }
 
   async setTheme(theme: ThemeCase): Promise<void> {
@@ -194,32 +204,40 @@ export class SlopcastApp {
   }
 
   async openDesignView(): Promise<void> {
-    if (await this.page.getByTestId('design-workspace-tabs').first().isVisible().catch(() => false)) {
+    const ready = this.isMobileViewport
+      ? this.page.getByTestId('wells-selected-visible-count').first()
+      : this.page.getByTestId('map-command-center').first();
+    if (await ready.isVisible().catch(() => false)) {
       return;
     }
 
     const button = await this.findVisibleLocator(
-      this.header.getByRole('button', { name: 'DESIGN', exact: true }),
-      'Design navigation button',
+      this.header.getByRole('button', { name: /PDP/i }),
+      'PDP navigation button',
     );
     await button.click();
-    await expect(this.page.getByTestId('design-workspace-tabs').first()).toBeVisible({ timeout: 15_000 });
   }
 
   async openScenarioView(): Promise<void> {
     const button = await this.findVisibleLocator(
-      this.header.getByRole('button', { name: 'SCENARIOS', exact: true }),
+      this.header.getByRole('button', { name: /Scenarios/i }),
       'Scenarios navigation button',
     );
     await button.click();
   }
 
   async openWellsWorkspace(): Promise<void> {
-    await this.page.getByTestId('design-workspace-wells').click();
+    if (await this.page.getByTestId('map-command-center').first().isVisible().catch(() => false)) {
+      return;
+    }
+    await this.page.getByRole('button', { name: /Wells \/ Inventory/i }).first().click();
+    await this.expectWellsWorkspace();
   }
 
   async openEconomicsWorkspace(): Promise<void> {
-    await this.page.getByTestId('design-workspace-economics').click();
+    if (!(await this.page.locator('[data-testid="economics-group-bar"]').first().isVisible().catch(() => false))) {
+      await this.page.getByRole('button', { name: /Forecast & Economics/i }).first().click();
+    }
     await expect(this.page.locator('[data-testid="economics-group-bar"]').first()).toBeVisible({
       timeout: 15_000,
     });
@@ -275,6 +293,12 @@ export class SlopcastApp {
   }
 
   async assertSaveSnapshotVisible(): Promise<void> {
+    if (this.isMobileViewport) {
+      await expect(this.page.locator('[data-testid="economics-group-bar"]').first()).toBeVisible({
+        timeout: 15_000,
+      });
+      return;
+    }
     await expect(this.page.getByRole('button', { name: 'Save Snapshot' }).first()).toBeVisible({
       timeout: 15_000,
     });
@@ -356,34 +380,35 @@ export class SlopcastApp {
   }
 
   async setNonDefaultOperator(): Promise<string | null> {
-    const operatorButton = await this.ensureOperatorFilterVisible();
-    const currentValue = await this.readOperatorValue();
-    if (currentValue && currentValue !== 'ALL') {
-      return currentValue;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const operatorButton = await this.ensureOperatorFilterVisible();
+      const currentValue = await this.readOperatorValue();
+      if (currentValue && currentValue !== 'ALL') {
+        return currentValue;
+      }
+
+      await operatorButton.click();
+      const dropdown = operatorButton.locator('..').locator('div').first();
+      await expect(dropdown).toBeVisible({ timeout: 5_000 });
+
+      const firstCheckbox = dropdown.locator('label').first();
+      if (!(await firstCheckbox.isVisible().catch(() => false))) {
+        return null;
+      }
+
+      const clicked = await firstCheckbox.click().then(() => true).catch(() => false);
+      if (!clicked) {
+        await this.page.waitForTimeout(250);
+        continue;
+      }
+
+      const closeButton = await this.ensureOperatorFilterVisible();
+      await closeButton.click().catch(() => null);
+      await expect.poll(async () => this.readOperatorValue()).not.toBe('ALL');
+      return await this.readOperatorValue();
     }
 
-    // Open the dropdown
-    await operatorButton.click();
-
-    // Wait for checkbox options to appear
-    const dropdown = operatorButton.locator('..').locator('div').first();
-    await expect(dropdown).toBeVisible({ timeout: 3_000 });
-
-    // Find the first checkbox label
-    const firstCheckbox = dropdown.locator('label').first();
-    if (!(await firstCheckbox.isVisible().catch(() => false))) {
-      return null;
-    }
-
-    const operatorName = await firstCheckbox.textContent();
-    await firstCheckbox.click();
-
-    // Close dropdown by clicking the button again
-    await operatorButton.click();
-
-    // Return a consistent identifier: "1 Operators" (the button label after selecting)
-    await expect.poll(async () => this.readOperatorValue()).not.toBe('ALL');
-    return await this.readOperatorValue();
+    return null;
   }
 
   async readOperatorValue(): Promise<string | null> {

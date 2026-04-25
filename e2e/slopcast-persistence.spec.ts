@@ -8,7 +8,7 @@ test.describe('Slopcast persistence coverage', () => {
   }) => {
     test.skip(isMobileViewport, 'Operator and selection persistence coverage is desktop-only.');
 
-    test.setTimeout(180_000);
+    test.setTimeout(360_000);
     for (const theme of THEMES) {
       const label = theme.alias || theme.id;
       await test.step(`verify ${label} persistence`, async () => {

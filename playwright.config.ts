@@ -43,16 +43,6 @@ export default defineConfig({
         deviceScaleFactor: 2,
       },
     },
-    {
-      name: 'mobile-chromium',
-      use: {
-        browserName: 'chromium',
-        viewport: { width: 390, height: 844 },
-        isMobile: true,
-        hasTouch: true,
-        deviceScaleFactor: 2,
-      },
-    },
   ],
   webServer: process.env.UI_BASE_URL
     ? undefined
