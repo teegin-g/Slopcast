@@ -28,10 +28,16 @@ import { useDerivedMetrics } from './useDerivedMetrics';
 import { useWellFiltering } from './useWellFiltering';
 import { useWellSelection } from './useWellSelection';
 import {
+  getActiveScenarioId,
+  setActiveScenarioId as storeActiveScenarioId,
+  getActiveWorkflow,
+  setActiveWorkflow as storeActiveWorkflow,
   getDesignWorkspace,
   setDesignWorkspace as storeDesignWorkspace,
   getEconomicsModule,
   setEconomicsModule as storeEconomicsModule,
+  getWorkflowStages,
+  setWorkflowStages as storeWorkflowStages,
   getEconomicsFocusMode,
   setEconomicsFocusMode as storeEconomicsFocusMode,
   getFxMode,
@@ -39,6 +45,12 @@ import {
   clearFxMode,
   setAnalysisOpenSection as storeAnalysisOpenSection,
 } from '../services/storage/workspacePreferences';
+import {
+  buildProductionHistoryMap,
+  getPdpReadiness,
+  summarizePdpGroup,
+  summarizeProductionUniverse,
+} from '../utils/pdpForecasting';
 import type { ParsedFilters } from '../components/slopcast/LandingPage';
 import type { DealRecord } from '../types';
 
@@ -159,11 +171,8 @@ export function useSlopcastWorkspace() {
   // --- View state ---
   const [viewMode, setViewMode] = useState<ViewMode>('DASHBOARD');
   const [designWorkspace, setDesignWorkspace] = useState<DesignWorkspace>(getDesignWorkspace);
-  const [activeWorkflow, setActiveWorkflowState] = useState<Phase1WorkflowId>('PDP');
-  const [workflowStages, setWorkflowStages] = useState<Record<AssetWorkflowId, Phase1StageId>>({
-    PDP: 'UNIVERSE',
-    UNDEVELOPED: 'UNIVERSE',
-  });
+  const [activeWorkflow, setActiveWorkflowState] = useState<Phase1WorkflowId>(getActiveWorkflow);
+  const [workflowStages, setWorkflowStages] = useState<Record<AssetWorkflowId, Phase1StageId>>(getWorkflowStages);
   const [wellsMobilePanel, setWellsMobilePanel] = useState<WellsMobilePanel>(() => {
     if (typeof window === 'undefined') return 'MAP';
     return getViewportLayout(window.innerWidth) === 'mobile' ? 'GROUPS' : 'MAP';
@@ -224,7 +233,7 @@ export function useSlopcastWorkspace() {
   ]);
 
   const [activeGroupId, setActiveGroupId] = useState<string>('g-1');
-  const [activeScenarioId, setActiveScenarioId] = useState<string>('s-base');
+  const [activeScenarioId, setActiveScenarioIdState] = useState<string>(getActiveScenarioId);
   const [lastSnapshotAt, setLastSnapshotAt] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState('');
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
@@ -254,6 +263,8 @@ export function useSlopcastWorkspace() {
       setActionMessage('No visible wells match current filters.');
     },
   });
+
+  const productionHistoryByWellId = useMemo(() => buildProductionHistoryMap(wells), [wells]);
 
   // --- Computed Economics per Group ---
   const processedGroups = useMemo(() => {
@@ -292,9 +303,14 @@ export function useSlopcastWorkspace() {
         metrics = applyReservesRisk(metrics, group.reserveCategory);
       }
 
-      return { ...group, flow, metrics };
+      return {
+        ...group,
+        flow,
+        metrics,
+        pdpForecast: summarizePdpGroup(group, wells, productionHistoryByWellId),
+      };
     });
-  }, [activeScenarioId, groups, scenarios, wells]);
+  }, [activeScenarioId, groups, productionHistoryByWellId, scenarios, wells]);
 
   // --- Aggregate Portfolio Economics ---
   const { flow: aggregateFlow, metrics: aggregateMetrics } = useMemo(() => {
@@ -313,6 +329,9 @@ export function useSlopcastWorkspace() {
     uiState: {
       designWorkspace,
       economicsModule,
+      activeWorkflow,
+      workflowStages,
+      activeScenarioId,
       operatorFilter,
       formationFilter,
       statusFilter,
@@ -322,6 +341,9 @@ export function useSlopcastWorkspace() {
     setActiveGroupId,
     setDesignWorkspace,
     setEconomicsModule,
+    setActiveWorkflow: setActiveWorkflowState,
+    setWorkflowStages,
+    setActiveScenarioId: setActiveScenarioIdState,
     setOperatorFilter: replaceOperatorFilter,
     setFormationFilter: replaceFormationFilter,
     setStatusFilter: replaceStatusFilter,
@@ -333,6 +355,23 @@ export function useSlopcastWorkspace() {
   const activeScenario = scenarios.find(s => s.id === activeScenarioId)
     || scenarios.find(s => s.isBaseCase)
     || scenarios[0];
+
+  const setActiveScenarioId = useCallback((scenarioId: string) => {
+    setActiveScenarioIdState(scenarioId);
+  }, []);
+
+  useEffect(() => {
+    storeActiveWorkflow(activeWorkflow);
+  }, [activeWorkflow]);
+
+  useEffect(() => {
+    storeWorkflowStages(workflowStages);
+  }, [workflowStages]);
+
+  useEffect(() => {
+    storeActiveScenarioId(activeScenarioId);
+  }, [activeScenarioId]);
+
   const handleSetScenarios: React.Dispatch<React.SetStateAction<Scenario[]>> = useCallback((next) => {
     setScenarios(next);
   }, []);
@@ -362,6 +401,10 @@ export function useSlopcastWorkspace() {
 
   const handleUpdateGroup = useCallback((updatedGroup: WellGroup) => {
     setGroups(prev => prev.map(g => g.id === updatedGroup.id ? updatedGroup : g));
+  }, []);
+
+  const handleAcknowledgePdpDataQuality = useCallback((groupId: string) => {
+    setGroups(prev => prev.map(group => group.id === groupId ? { ...group, dataQualityAcknowledged: true } : group));
   }, []);
 
   const handleAddGroup = useCallback(() => {
@@ -715,6 +758,9 @@ export function useSlopcastWorkspace() {
     ? 'Global Scenario Workspace'
     : activeWorkflowStageMeta?.label ?? 'Universe';
   const assetContextLabel = `${processedGroups.length} group${processedGroups.length === 1 ? '' : 's'} / ${aggregateMetrics.wellCount} wells`;
+  const pdpGroupSummaries = processedGroups.map((group) => group.pdpForecast).filter((summary): summary is NonNullable<typeof summary> => !!summary);
+  const pdpReadiness = getPdpReadiness(processedGroups, pdpGroupSummaries);
+  const pdpUniverseSummary = summarizeProductionUniverse(filteredWells, productionHistoryByWellId);
 
   const handleRequestOpenControlsSection = (section: ControlsSection) => {
     setControlsOpenSection(section);
@@ -805,6 +851,10 @@ export function useSlopcastWorkspace() {
     // Wells & spatial
     wells,
     spatialSourceId, handleSourceChange, handleWellsLoaded,
+    productionHistoryByWellId,
+    pdpUniverseSummary,
+    pdpGroupSummaries,
+    pdpReadiness,
 
     // Data
     groups, processedGroups, activeGroupId, setActiveGroupId, activeGroup,
@@ -831,6 +881,7 @@ export function useSlopcastWorkspace() {
 
     // Handlers
     handleUpdateGroup, handleAddGroup, handleCloneGroup,
+    handleAcknowledgePdpDataQuality,
     handleAssignWellsToActive, handleCreateGroupFromSelection,
     handleToggleWell, handleSelectWells, handleSelectAll, handleClearSelection,
     handleSaveSnapshot, handleExportCsv, handleExportPdf,
