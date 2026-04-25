@@ -10,6 +10,7 @@
  */
 
 import type { DesignWorkspace } from '../../components/slopcast/DesignWorkspaceTabs';
+import type { AssetWorkflowId, Phase1StageId, Phase1WorkflowId } from '../../components/slopcast/workflowModel';
 import type { EconomicsResultsTab } from '../../components/slopcast/EconomicsResultsTabs';
 import type { EconomicsModule } from '../../components/slopcast/economics/types';
 import type { FxMode, AnalysisOpenSection } from '../../hooks/useSlopcastWorkspace';
@@ -21,6 +22,9 @@ export const DESIGN_WORKSPACE_KEY = 'slopcast-design-workspace';
 export const ECONOMICS_RESULTS_TAB_KEY = 'slopcast-econ-results-tab';
 export const ECONOMICS_MODULE_KEY = 'slopcast-econ-module';
 export const ECONOMICS_FOCUS_MODE_KEY = 'slopcast-econ-focus-mode';
+export const ACTIVE_WORKFLOW_KEY = 'slopcast-active-workflow';
+export const WORKFLOW_STAGES_KEY = 'slopcast-workflow-stages';
+export const ACTIVE_SCENARIO_KEY = 'slopcast-active-scenario';
 export const FX_QUERY_KEY = 'fx';
 export const FX_STORAGE_KEY_PREFIX = 'slopcast-fx-';
 export const ANALYSIS_OPEN_SECTION_KEY = 'slopcast-analysis-open-section';
@@ -53,6 +57,12 @@ function safeRemove(key: string): void {
     // no-op
   }
 }
+
+const isWorkflow = (value: unknown): value is Phase1WorkflowId =>
+  value === 'PDP' || value === 'UNDEVELOPED' || value === 'SCENARIOS';
+
+const isStage = (value: unknown): value is Phase1StageId =>
+  value === 'UNIVERSE' || value === 'WELLS_INVENTORY' || value === 'FORECAST_ECONOMICS' || value === 'REVIEW';
 
 // ─── Design workspace ────────────────────────────────────────────────────────
 
@@ -127,6 +137,47 @@ export function setEconomicsFocusMode(enabled: boolean): void {
   } else {
     safeRemove(ECONOMICS_FOCUS_MODE_KEY);
   }
+}
+
+// ─── Phase 1 workflow shell ─────────────────────────────────────────────────
+
+export function getActiveWorkflow(): Phase1WorkflowId {
+  const raw = safeGet(ACTIVE_WORKFLOW_KEY);
+  return isWorkflow(raw) ? raw : 'PDP';
+}
+
+export function setActiveWorkflow(value: Phase1WorkflowId): void {
+  safeSet(ACTIVE_WORKFLOW_KEY, value);
+}
+
+export function getWorkflowStages(): Record<AssetWorkflowId, Phase1StageId> {
+  const fallback: Record<AssetWorkflowId, Phase1StageId> = {
+    PDP: 'UNIVERSE',
+    UNDEVELOPED: 'UNIVERSE',
+  };
+  const raw = safeGet(WORKFLOW_STAGES_KEY);
+  if (!raw) return fallback;
+  try {
+    const parsed = JSON.parse(raw) as Partial<Record<AssetWorkflowId, unknown>>;
+    return {
+      PDP: isStage(parsed.PDP) ? parsed.PDP : fallback.PDP,
+      UNDEVELOPED: isStage(parsed.UNDEVELOPED) ? parsed.UNDEVELOPED : fallback.UNDEVELOPED,
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+export function setWorkflowStages(value: Record<AssetWorkflowId, Phase1StageId>): void {
+  safeSet(WORKFLOW_STAGES_KEY, JSON.stringify(value));
+}
+
+export function getActiveScenarioId(): string {
+  return safeGet(ACTIVE_SCENARIO_KEY) || 's-base';
+}
+
+export function setActiveScenarioId(value: string): void {
+  safeSet(ACTIVE_SCENARIO_KEY, value);
 }
 
 // ─── FX mode (per-theme) ─────────────────────────────────────────────────────
