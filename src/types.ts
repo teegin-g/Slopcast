@@ -92,6 +92,62 @@ export interface OpexAssumptions {
   segments: OpexSegment[];
 }
 
+export interface ProductionHistoryPoint {
+  month: string;
+  oilBbl: number;
+  gasMcf: number;
+  waterBbl?: number;
+  loeCost?: number;
+}
+
+export type ProductionHistoryQualityFlag =
+  | 'NO_HISTORY'
+  | 'SHORT_HISTORY'
+  | 'MISSING_MONTHS'
+  | 'STALE_PRODUCTION'
+  | 'OIL_ONLY'
+  | 'GAS_ONLY';
+
+export interface WellProductionHistoryStatus {
+  wellId: string;
+  status: 'LOADED' | 'PARTIAL' | 'MISSING';
+  coverageStart: string | null;
+  coverageEnd: string | null;
+  producingMonths: number;
+  missingMonths: number;
+  lastProductionDate: string | null;
+  streams: Array<'OIL' | 'GAS' | 'WATER'>;
+  qualityFlags: ProductionHistoryQualityFlag[];
+  history: ProductionHistoryPoint[];
+}
+
+export interface PdpGroupForecastStatus {
+  groupId: string;
+  loadedWellCount: number;
+  partialWellCount: number;
+  missingWellCount: number;
+  producingWellCount: number;
+  coverageStart: string | null;
+  coverageEnd: string | null;
+  lastProductionDate: string | null;
+  currentOilBblPerDay: number;
+  currentGasMcfPerDay: number;
+  forecastGenerated: boolean;
+  opexForecastAssigned: boolean;
+  averageLoePerBoe: number;
+  qualityFlags: ProductionHistoryQualityFlag[];
+}
+
+export interface PdpReadinessStatus {
+  productionDataLoaded: boolean;
+  groupsSelected: boolean;
+  forecastsGenerated: boolean;
+  opexForecastAssigned: boolean;
+  ownershipTaxesAssigned: boolean;
+  economicsCalculated: boolean;
+  dataQualityAcknowledged: boolean;
+}
+
 export interface JvAgreementTerms {
   conveyRevenuePctOfBase: number; // 0..1 (fraction of base NRI conveyed)
   conveyCostPctOfBase: number; // 0..1 (fraction of base cost interest conveyed)
@@ -215,6 +271,8 @@ export interface WellGroup {
   opex: OpexAssumptions;
   ownership: OwnershipAssumptions;
   reserveCategory?: ReserveCategory;
+  pdpForecast?: PdpGroupForecastStatus;
+  dataQualityAcknowledged?: boolean;
   taxAssumptions?: TaxAssumptions;
   debtAssumptions?: DebtAssumptions;
   // Computed for display
@@ -262,6 +320,9 @@ export interface ProjectUiState {
   designWorkspace?: 'WELLS' | 'ECONOMICS';
   economicsResultsTab?: 'OVERVIEW' | 'CASH_FLOW' | 'RESERVES';
   economicsModule?: 'PRODUCTION' | 'PRICING' | 'OPEX' | 'TAXES' | 'OWNERSHIP' | 'CAPEX';
+  activeWorkflow?: 'PDP' | 'UNDEVELOPED' | 'SCENARIOS';
+  workflowStages?: Partial<Record<'PDP' | 'UNDEVELOPED', 'UNIVERSE' | 'WELLS_INVENTORY' | 'FORECAST_ECONOMICS' | 'REVIEW'>>;
+  activeScenarioId?: string;
   operatorFilter?: string | string[];
   formationFilter?: string | string[];
   statusFilter?: string | string[];
@@ -294,6 +355,8 @@ export interface ProjectGroupRecord {
   capex: CapexAssumptions;
   opex: OpexAssumptions;
   ownership: OwnershipAssumptions;
+  reserveCategory?: ReserveCategory;
+  dataQualityAcknowledged?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
