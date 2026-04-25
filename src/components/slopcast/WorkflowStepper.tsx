@@ -6,15 +6,18 @@ export type DesignStep = 'SETUP' | 'SELECT' | 'RUN' | 'REVIEW';
 export type StepStatus = 'NOT_STARTED' | 'ACTIVE' | 'COMPLETE' | 'STALE';
 
 export interface WorkflowStep {
-  id: DesignStep;
+  id: string;
   label: string;
   status: StepStatus;
+  description?: string;
 }
 
 export interface WorkflowStepperProps {
   isClassic: boolean;
   steps: WorkflowStep[];
   compact?: boolean;
+  title?: string;
+  onStepSelect?: (stepId: string) => void;
 }
 
 const statusTone = (status: StepStatus, isClassic: boolean): string => {
@@ -38,7 +41,7 @@ const caption = (status: StepStatus): string => {
   return 'pending';
 };
 
-const WorkflowStepper: React.FC<WorkflowStepperProps> = ({ isClassic, steps, compact = false }) => {
+const WorkflowStepper: React.FC<WorkflowStepperProps> = ({ isClassic, steps, compact = false, title = 'Workflow', onStepSelect }) => {
   return (
     <div
       className={
@@ -61,22 +64,32 @@ const WorkflowStepper: React.FC<WorkflowStepperProps> = ({ isClassic, steps, com
               : 'text-xs font-black uppercase tracking-[0.24em] text-theme-cyan heading-font'
           }
         >
-          Workflow
+          {title}
         </h2>
       </div>
       <div className="p-3">
-        <div className={`grid ${compact ? 'grid-cols-2 gap-2' : 'grid-cols-4 gap-2'}`}>
+        <div className={`grid ${compact ? 'grid-cols-2 gap-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2'}`}>
           {steps.map((step, idx) => (
-            <motion.div
+            <motion.button
               key={step.id}
-              className={`rounded-inner border px-3 py-2 ${statusTone(step.status, isClassic)} transition-colors`}
+              type="button"
+              onClick={() => onStepSelect?.(step.id)}
+              disabled={!onStepSelect}
+              className={`rounded-inner border px-3 py-2 text-left ${statusTone(step.status, isClassic)} transition-colors focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
+                onStepSelect ? 'cursor-pointer hover:scale-[1.01]' : 'cursor-default'
+              }`}
               initial={{ scale: step.status === 'ACTIVE' ? 0.97 : 1 }}
               animate={{ scale: 1 }}
               transition={SPRING.snappy}
             >
               <p className="text-xs font-black uppercase tracking-[0.18em] heading-font">{idx + 1}. {step.label}</p>
               <p className={`text-xs uppercase tracking-[0.12em] mt-1 ${isClassic ? 'opacity-90' : ''}`}>{caption(step.status)}</p>
-            </motion.div>
+              {step.description && !compact && (
+                <p className={`mt-2 text-[11px] normal-case tracking-normal leading-relaxed ${isClassic ? 'text-white/75' : 'text-theme-muted'}`}>
+                  {step.description}
+                </p>
+              )}
+            </motion.button>
           ))}
         </div>
       </div>
