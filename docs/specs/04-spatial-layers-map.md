@@ -23,26 +23,38 @@ Build the map component using Mapbox GL (already a dependency) and render real w
 ## Databricks Tables
 
 ### Wellbore Sticks
-| Table | Rows | Key Columns |
-|-------|------|-------------|
+
+
+| Table                       | Rows | Key Columns                                                                                                                               |
+| --------------------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `epw.egis.gis__well_master` | 1.6M | `sh_latitude_nad27`, `sh_longitude_nad27`, `bh_latitude_nad27`, `bh_longitude_nad27`, `shape_wkt`, `well_status`, `operator`, `formation` |
-| `epw.egis.gis__well_future` | 7.5K | Same columns + `op_nonop` |
+| `epw.egis.gis__well_future` | 7.5K | Same columns + `op_nonop`                                                                                                                 |
+
 
 ### Land Grid
-| Table | Rows | Key Columns |
-|-------|------|-------------|
-| `epw.egis.gis__lg_section` | View | `sec`, `township`, `rng`, `mer`, `state`, `shape_wkt` |
+
+
+| Table                          | Rows | Key Columns                                                              |
+| ------------------------------ | ---- | ------------------------------------------------------------------------ |
+| `epw.egis.gis__lg_section`     | View | `sec`, `township`, `rng`, `mer`, `state`, `shape_wkt`                    |
 | `epw.egis.gis__lg_tx_abstract` | View | `absna`, `absno`, `county`, `district`, `survna`, `blockna`, `shape_wkt` |
 
+
 ### Lease/Unit Boundaries
-| Table | Rows | Key Columns |
-|-------|------|-------------|
+
+
+| Table                 | Rows | Key Columns                                                                                                                                                                           |
+| --------------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `epw.egis.gis__units` | 146K | `unit_id`, `unit_name`, `formation`, `operator`, `op_nonop_noint`, `density`, `total_wells`, `dev_wells`, `undev_wells`, `nri`, `working_interest`, `gross_eur_oil_mmbo`, `shape_wkt` |
 
+
 ### Reservoir Domains
-| Table | Key Columns |
-|-------|-------------|
+
+
+| Table                             | Key Columns                                                                                                      |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `epw.egis.gis__reservoir_domains` | `asset`, `formation`, `development_group`, `engineer`, `reservoir_domain`, `region`, `phase_window`, `shape_wkt` |
+
 
 ---
 
@@ -81,12 +93,14 @@ def get_reservoir_domains(bbox: tuple) -> FeatureCollection:
 ```
 
 **NAD27→WGS84 conversion**:
+
 - eGIS coordinates use NAD27 datum
 - Use `pyproj` library for datum transformation
 - Apply transform when converting WKT to GeoJSON coordinates
 - Add `pyproj` to `backend/requirements.txt`
 
 **WKT→GeoJSON conversion**:
+
 - Use `shapely` for WKT parsing
 - Convert to `geojson` format
 - Add `shapely`, `geojson` to `backend/requirements.txt`
@@ -176,14 +190,16 @@ export function useReservoirDomains(bbox: BBox)
 
 ## Rendering Rules
 
-| Layer | Stroke | Fill | Opacity | Color Logic |
-|-------|--------|------|---------|-------------|
-| PDP wells | 2px solid | — | 1.0 | By operator or single accent color (`--cyan`) |
-| Undev (Op) | 1.5px solid | — | 0.4 | Same as PDP but translucent |
-| Undev (Non-Op) | 1px dashed | — | 0.3 | Muted gray |
-| Sections | 0.5px solid | transparent | 0.6 | `--surface-2` border |
-| Units | 1px dashed | semi-transparent | 0.3 | `--lav` border |
-| Reservoir Domains | 1px solid | semi-transparent | 0.2 | Categorical by `reservoir_domain` |
+
+| Layer             | Stroke      | Fill             | Opacity | Color Logic                                   |
+| ----------------- | ----------- | ---------------- | ------- | --------------------------------------------- |
+| PDP wells         | 2px solid   | —                | 1.0     | By operator or single accent color (`--cyan`) |
+| Undev (Op)        | 1.5px solid | —                | 0.4     | Same as PDP but translucent                   |
+| Undev (Non-Op)    | 1px dashed  | —                | 0.3     | Muted gray                                    |
+| Sections          | 0.5px solid | transparent      | 0.6     | `--surface-2` border                          |
+| Units             | 1px dashed  | semi-transparent | 0.3     | `--lav` border                                |
+| Reservoir Domains | 1px solid   | semi-transparent | 0.2     | Categorical by `reservoir_domain`             |
+
 
 ---
 
@@ -216,3 +232,4 @@ export function useReservoirDomains(bbox: BBox)
 6. Viewport-based loading only fetches data within the visible bbox
 7. Clicking a well stick selects it and syncs with the well table selection
 8. Coordinates are correctly transformed from NAD27→WGS84
+
