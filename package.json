@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:api": "python -m uvicorn backend.main:app --host 127.0.0.1 --port ${PYTHON_API_PORT:-8001} --reload",
     "dev:full": "./scripts/start-backend.sh",
     "build": "vite build",
     "preview": "vite preview",

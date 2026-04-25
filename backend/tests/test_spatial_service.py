@@ -32,6 +32,8 @@ def setup_function():
         "DATABRICKS_HOST",
         "DATABRICKS_WAREHOUSE_ID",
         "DATABRICKS_ACCESS_TOKEN",
+        "DATABRICKS_CONNECT_MAX_ATTEMPTS",
+        "DATABRICKS_CONNECT_BACKOFF_MS",
     ):
         os.environ.pop(key, None)
     _svc._conn_mgr = ConnectionManager()
@@ -212,6 +214,8 @@ class TestConnectionManager:
 
     def setup_method(self):
         self.mgr = ConnectionManager()
+        os.environ.pop("DATABRICKS_CONNECT_MAX_ATTEMPTS", None)
+        os.environ.pop("DATABRICKS_CONNECT_BACKOFF_MS", None)
 
     def test_initial_state(self):
         assert self.mgr.status == "disconnected"
@@ -289,6 +293,7 @@ class TestConnectionManager:
         os.environ["DATABRICKS_SERVER_HOSTNAME"] = "host.test"
         os.environ["DATABRICKS_HTTP_PATH"] = "/sql/1.0/warehouses/abc"
         os.environ["DATABRICKS_TOKEN"] = "tok123"
+        os.environ["DATABRICKS_CONNECT_MAX_ATTEMPTS"] = "2"
 
         mock_sql_mod = MagicMock()
         mock_sql_mod.connect.side_effect = Exception("warehouse suspended")
@@ -299,10 +304,11 @@ class TestConnectionManager:
             "databricks": mock_databricks,
             "databricks.sql": mock_sql_mod,
         }):
-            result = self.mgr.get_connection()
+            with patch("time.sleep"):
+                result = self.mgr.get_connection()
             assert result is None
             assert self.mgr.status == "disconnected"
-            assert self.mgr.reconnect_attempts == ConnectionManager._MAX_RECONNECT_ATTEMPTS
+            assert self.mgr.reconnect_attempts == 2
             assert "warehouse suspended" in self.mgr.error
 
     def test_ping_success_updates_last_verified(self):
@@ -373,6 +379,8 @@ class TestCheckConnectionStatus:
             "DATABRICKS_HOST",
             "DATABRICKS_WAREHOUSE_ID",
             "DATABRICKS_ACCESS_TOKEN",
+            "DATABRICKS_CONNECT_MAX_ATTEMPTS",
+            "DATABRICKS_CONNECT_BACKOFF_MS",
         ):
             os.environ.pop(key, None)
         _svc._conn_mgr = ConnectionManager()
@@ -404,8 +412,8 @@ class TestCheckConnectionStatus:
         _svc._conn_mgr.error = "warehouse suspended"
         _svc._conn_mgr.reconnect_attempts = 2
 
-        # Patch _get_db_connection to return None without triggering reconnect
-        with patch.object(_svc, "_get_db_connection", return_value=None):
+        # Avoid live reconnect; force "no session" while preserving last error.
+        with patch.object(_svc._conn_mgr, "_get_connection_inner", return_value=None):
             status = check_connection_status()
         assert status["connected"] is False
         assert status["error"] == "warehouse suspended"

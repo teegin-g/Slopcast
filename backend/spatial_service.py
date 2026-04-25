@@ -15,6 +15,7 @@ from __future__ import annotations
 import logging
 import math
 import os
+import threading
 import time
 from decimal import Decimal
 from typing import Any, Literal
@@ -79,7 +80,11 @@ ConnectionStatus = Literal["connected", "disconnected", "connecting"]
 class ConnectionManager:
     """
     Manages a Databricks SQL Warehouse connection with health checks,
-    auto-reconnect (max 2 attempts), and per-operation query timeouts.
+    auto-reconnect, and serialized use of the client connection.
+
+    FastAPI runs sync route handlers in a thread pool; a single DB-API
+    connection must not be used concurrently. An RLock serializes acquire,
+    health ping, queries, and invalidation.
 
     Query timeout guidance (passed to cursor operations):
       - Wells query: 30s
@@ -87,17 +92,36 @@ class ConnectionManager:
       - Health ping: 5s
     """
 
-    _MAX_RECONNECT_ATTEMPTS = 2
+    _MAX_RECONNECT_ATTEMPTS = 4
     _CONNECT_TIMEOUT = 15  # seconds for databricks_sql.connect()
     _PING_INTERVAL = 60  # seconds between health pings
     _PING_TIMEOUT = 5  # seconds for the SELECT 1 health check
 
     def __init__(self) -> None:
+        self._lock = threading.RLock()
         self.connection: Any | None = None
         self.status: ConnectionStatus = "disconnected"
         self.last_verified_at: float = 0.0
         self.reconnect_attempts: int = 0
         self.error: str | None = None
+
+    def _configured_max_attempts(self) -> int:
+        raw = os.getenv("DATABRICKS_CONNECT_MAX_ATTEMPTS", str(self._MAX_RECONNECT_ATTEMPTS))
+        try:
+            n = int(raw)
+        except ValueError:
+            return self._MAX_RECONNECT_ATTEMPTS
+        return max(1, min(n, 10))
+
+    def _reconnect_backoff_sec(self, attempt: int) -> float:
+        """Exponential backoff before retry (attempt is 1-based, post-failure)."""
+        raw_ms = os.getenv("DATABRICKS_CONNECT_BACKOFF_MS", "")
+        if raw_ms.strip():
+            try:
+                return max(0.0, min(float(raw_ms) / 1000.0, 5.0))
+            except ValueError:
+                pass
+        return min(2.0, 0.2 * (2 ** (attempt - 1)))
 
     def get_connection(self) -> Any | None:
         """
@@ -105,21 +129,44 @@ class ConnectionManager:
 
         Performs a health ping if the last verification was >60s ago.
         Returns None if no credentials or all reconnect attempts fail.
+
+        The returned connection must only be used while the caller holds no
+        guarantee across awaits; prefer running queries inside the same
+        critical section as get_wells_in_bounds (see _get_connection_inner).
+        """
+        with self._lock:
+            return self._get_connection_inner()
+
+    def _get_connection_inner(self) -> Any | None:
+        """
+        Like get_connection but caller must hold self._lock (re-entrant safe).
         """
         if self.connection is None or self.status == "disconnected":
-            if not self._reconnect():
+            if not self._reconnect_all_attempts():
                 return None
 
-        # Periodic health check
         if time.time() - self.last_verified_at > self._PING_INTERVAL:
             if not self._ping():
-                if not self._reconnect():
+                if not self._reconnect_all_attempts():
                     return None
 
         return self.connection
 
-    def _reconnect(self) -> bool:
-        """Attempt to establish a new connection (max 2 attempts)."""
+    def invalidate(self, reason: str | None = None) -> None:
+        """Drop the live connection so the next acquire opens a fresh one."""
+        with self._lock:
+            self._close_existing()
+            self.status = "disconnected"
+            if reason is not None:
+                self.error = reason
+
+    def _reconnect_all_attempts(self) -> bool:
+        """
+        Establish a warehouse connection with retries and backoff.
+
+        Caller must hold self._lock. Backoff sleeps run with the lock released
+        so concurrent status checks are not blocked for seconds.
+        """
         hostname = _resolve_server_hostname()
         http_path = _resolve_http_path()
         token = _resolve_access_token()
@@ -132,7 +179,8 @@ class ConnectionManager:
         self._close_existing()
         self.status = "connecting"
 
-        for attempt in range(1, self._MAX_RECONNECT_ATTEMPTS + 1):
+        max_attempts = self._configured_max_attempts()
+        for attempt in range(1, max_attempts + 1):
             try:
                 from databricks import sql as databricks_sql  # type: ignore[import-untyped]
 
@@ -155,9 +203,17 @@ class ConnectionManager:
                 logger.warning(
                     "Databricks connection attempt %d/%d failed: %s",
                     attempt,
-                    self._MAX_RECONNECT_ATTEMPTS,
+                    max_attempts,
                     exc,
                 )
+                self._close_existing()
+                if attempt < max_attempts:
+                    backoff = self._reconnect_backoff_sec(attempt)
+                    self._lock.release()
+                    try:
+                        time.sleep(backoff)
+                    finally:
+                        self._lock.acquire()
 
         self.status = "disconnected"
         return False
@@ -195,9 +251,7 @@ class ConnectionManager:
 # Module-level singleton — tests can patch _conn_mgr or its attributes
 _conn_mgr = ConnectionManager()
 
-# Backward-compat alias: tests that patched _db_connection directly can
-# now patch _conn_mgr.connection instead.  The old _get_db_connection()
-# delegates to the manager.
+# Tests may patch _conn_mgr, _conn_mgr._get_connection_inner, or _conn_mgr.connection.
 _cache: dict[str, SpatialWellsResponse] = {}
 
 # ---------------------------------------------------------------------------
@@ -238,19 +292,6 @@ def _build_mock_wells() -> list[Well]:
 
 
 _MOCK_WELLS: list[Well] = _build_mock_wells()
-
-# ---------------------------------------------------------------------------
-# Databricks connection helpers
-# ---------------------------------------------------------------------------
-
-
-def _get_db_connection() -> Any | None:
-    """
-    Return a live Databricks SQL connection, or None if unavailable.
-    Delegates to the ConnectionManager singleton.
-    """
-    return _conn_mgr.get_connection()
-
 
 # ---------------------------------------------------------------------------
 # NAD27 → WGS84 coordinate transform
@@ -368,10 +409,15 @@ def get_wells_in_bounds(
         and _resolve_http_path()
         and _resolve_access_token()
     )
-    conn = _get_db_connection()
-    if conn is not None:
-        result = _query_databricks(conn, bounds, filters, limit, detail_level, zoom=zoom)
-    else:
+    result: SpatialWellsResponse | None = None
+    if has_live_credentials:
+        # One Databricks connection cannot be used concurrently across thread-pool
+        # workers; hold the manager lock for the full query (including trajectories).
+        with _conn_mgr._lock:
+            conn = _conn_mgr._get_connection_inner()
+            if conn is not None:
+                result = _query_databricks(conn, bounds, filters, limit, detail_level, zoom=zoom)
+    if result is None:
         result = _query_mock(bounds, filters, limit, detail_level)
 
     # When live credentials are configured, avoid caching mock fallback results.
@@ -427,30 +473,31 @@ def check_connection_status() -> dict[str, Any]:
             "reconnect_attempts": 0,
         }
 
-    conn = _get_db_connection()
-    if conn is not None:
-        table = (
-            f"{os.getenv('DATABRICKS_CATALOG', _DEFAULT_DATABRICKS_CATALOG)}."
-            f"{os.getenv('DATABRICKS_SCHEMA', _DEFAULT_DATABRICKS_SCHEMA)}."
-            f"{os.getenv('DATABRICKS_WELLS_TABLE', _DEFAULT_DATABRICKS_WELLS_TABLE)}"
-        )
+    with _conn_mgr._lock:
+        conn = _conn_mgr._get_connection_inner()
+        if conn is not None:
+            table = (
+                f"{os.getenv('DATABRICKS_CATALOG', _DEFAULT_DATABRICKS_CATALOG)}."
+                f"{os.getenv('DATABRICKS_SCHEMA', _DEFAULT_DATABRICKS_SCHEMA)}."
+                f"{os.getenv('DATABRICKS_WELLS_TABLE', _DEFAULT_DATABRICKS_WELLS_TABLE)}"
+            )
+            return {
+                "connected": True,
+                "source": "databricks",
+                "error": None,
+                "table": table,
+                "last_verified_at": _conn_mgr.last_verified_at or None,
+                "reconnect_attempts": _conn_mgr.reconnect_attempts,
+            }
+
         return {
-            "connected": True,
-            "source": "databricks",
-            "error": None,
-            "table": table,
+            "connected": False,
+            "source": "mock",
+            "error": _conn_mgr.error or "Databricks connection unavailable",
+            "table": None,
             "last_verified_at": _conn_mgr.last_verified_at or None,
             "reconnect_attempts": _conn_mgr.reconnect_attempts,
         }
-
-    return {
-        "connected": False,
-        "source": "mock",
-        "error": _conn_mgr.error or "Databricks connection unavailable",
-        "table": None,
-        "last_verified_at": _conn_mgr.last_verified_at or None,
-        "reconnect_attempts": _conn_mgr.reconnect_attempts,
-    }
 
 
 # ---------------------------------------------------------------------------
@@ -520,6 +567,7 @@ def _query_databricks(
             cols = [d[0] for d in cursor.description]
     except Exception as exc:  # noqa: BLE001
         logger.warning("Databricks query failed, falling back to mock: %s", exc)
+        _conn_mgr.invalidate(str(exc))
         return _query_mock(bounds, filters, limit, detail_level)
 
     if detail_level == "points":
