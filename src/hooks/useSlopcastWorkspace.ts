@@ -5,6 +5,14 @@ import { Scenario, ScheduleParams, SpatialDataSourceId, Well, WellGroup } from '
 import { DesignWorkspace } from '../components/slopcast/DesignWorkspaceTabs';
 import { EconomicsModule } from '../components/slopcast/economics/types';
 import { DesignStep, StepStatus, WorkflowStep } from '../components/slopcast/WorkflowStepper';
+import {
+  getWorkflowStageSurface,
+  isAssetWorkflow,
+  phase1WorkflowStages,
+  type AssetWorkflowId,
+  type Phase1StageId,
+  type Phase1WorkflowId,
+} from '../components/slopcast/workflowModel';
 import { WellsMobilePanel } from '../components/slopcast/DesignWellsView';
 import { EconomicsMobilePanel } from '../components/slopcast/DesignEconomicsView';
 import type { OperationsConsoleProps } from '../components/slopcast/OperationsConsole';
@@ -151,6 +159,11 @@ export function useSlopcastWorkspace() {
   // --- View state ---
   const [viewMode, setViewMode] = useState<ViewMode>('DASHBOARD');
   const [designWorkspace, setDesignWorkspace] = useState<DesignWorkspace>(getDesignWorkspace);
+  const [activeWorkflow, setActiveWorkflowState] = useState<Phase1WorkflowId>('PDP');
+  const [workflowStages, setWorkflowStages] = useState<Record<AssetWorkflowId, Phase1StageId>>({
+    PDP: 'UNIVERSE',
+    UNDEVELOPED: 'UNIVERSE',
+  });
   const [wellsMobilePanel, setWellsMobilePanel] = useState<WellsMobilePanel>(() => {
     if (typeof window === 'undefined') return 'MAP';
     return getViewportLayout(window.innerWidth) === 'mobile' ? 'GROUPS' : 'MAP';
@@ -317,9 +330,35 @@ export function useSlopcastWorkspace() {
 
   // --- Handlers ---
   const activeGroup = processedGroups.find(g => g.id === activeGroupId) || processedGroups[0];
+  const activeScenario = scenarios.find(s => s.id === activeScenarioId)
+    || scenarios.find(s => s.isBaseCase)
+    || scenarios[0];
   const handleSetScenarios: React.Dispatch<React.SetStateAction<Scenario[]>> = useCallback((next) => {
     setScenarios(next);
   }, []);
+
+  const setWorkflowStage = useCallback((workflow: AssetWorkflowId, stage: Phase1StageId) => {
+    setActiveWorkflowState(workflow);
+    setWorkflowStages(prev => ({ ...prev, [workflow]: stage }));
+    setViewMode('DASHBOARD');
+
+    const surface = getWorkflowStageSurface(workflow, stage);
+    if (surface === 'WELLS') setDesignWorkspace('WELLS');
+    if (surface === 'ECONOMICS') setDesignWorkspace('ECONOMICS');
+  }, []);
+
+  const setActiveWorkflow = useCallback((workflow: Phase1WorkflowId) => {
+    setActiveWorkflowState(workflow);
+    if (workflow === 'SCENARIOS') {
+      setViewMode('ANALYSIS');
+      return;
+    }
+
+    setViewMode('DASHBOARD');
+    const surface = getWorkflowStageSurface(workflow, workflowStages[workflow]);
+    if (surface === 'WELLS') setDesignWorkspace('WELLS');
+    if (surface === 'ECONOMICS') setDesignWorkspace('ECONOMICS');
+  }, [workflowStages]);
 
   const handleUpdateGroup = useCallback((updatedGroup: WellGroup) => {
     setGroups(prev => prev.map(g => g.id === updatedGroup.id ? updatedGroup : g));
@@ -649,6 +688,34 @@ export function useSlopcastWorkspace() {
   const wellsNeedsAttention = !setupComplete || !selectionComplete;
   const economicsNeedsAttention = !reviewReady;
 
+  const activeWorkflowStage = isAssetWorkflow(activeWorkflow)
+    ? workflowStages[activeWorkflow]
+    : null;
+  const activeWorkflowStageMeta = activeWorkflowStage && isAssetWorkflow(activeWorkflow)
+    ? phase1WorkflowStages[activeWorkflow].find(stage => stage.id === activeWorkflowStage)
+    : null;
+  const activeWorkflowSurface = activeWorkflow === 'SCENARIOS'
+    ? 'SCENARIOS'
+    : getWorkflowStageSurface(activeWorkflow, workflowStages[activeWorkflow]);
+  const phase1WorkflowSteps: WorkflowStep[] = isAssetWorkflow(activeWorkflow)
+    ? phase1WorkflowStages[activeWorkflow].map(stage => ({
+        id: stage.id,
+        label: stage.label,
+        description: stage.description,
+        status: stage.id === workflowStages[activeWorkflow]
+          ? 'ACTIVE'
+          : stage.id === 'UNIVERSE'
+            || (workflowStages[activeWorkflow] === 'FORECAST_ECONOMICS' && stage.id === 'WELLS_INVENTORY')
+            || (workflowStages[activeWorkflow] === 'REVIEW' && stage.id !== 'REVIEW')
+            ? 'COMPLETE'
+            : 'NOT_STARTED',
+      }))
+    : [];
+  const activeStageLabel = activeWorkflow === 'SCENARIOS'
+    ? 'Global Scenario Workspace'
+    : activeWorkflowStageMeta?.label ?? 'Universe';
+  const assetContextLabel = `${processedGroups.length} group${processedGroups.length === 1 ? '' : 's'} / ${aggregateMetrics.wellCount} wells`;
+
   const handleRequestOpenControlsSection = (section: ControlsSection) => {
     setControlsOpenSection(section);
     if (viewportLayout === 'mobile') setEconomicsMobilePanel('SETUP');
@@ -719,6 +786,14 @@ export function useSlopcastWorkspace() {
     // View state
     viewMode, setViewMode,
     designWorkspace, setDesignWorkspace,
+    activeWorkflow, setActiveWorkflow,
+    workflowStages, setWorkflowStage,
+    activeWorkflowStage,
+    activeWorkflowSurface,
+    phase1WorkflowSteps,
+    activeStageLabel,
+    activeScenario,
+    assetContextLabel,
     wellsMobilePanel, setWellsMobilePanel,
     economicsMobilePanel, setEconomicsMobilePanel,
     economicsModule, setEconomicsModule,

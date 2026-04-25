@@ -1,8 +1,6 @@
 import React from 'react';
 import { ThemeMeta } from '../../theme/themes';
-import DesignWorkspaceTabs, { DesignWorkspace } from './DesignWorkspaceTabs';
-
-type ViewMode = 'DASHBOARD' | 'ANALYSIS';
+import { phase1PrimaryNav, type Phase1WorkflowId } from './workflowModel';
 
 interface PageHeaderProps {
   isClassic: boolean;
@@ -10,12 +8,11 @@ interface PageHeaderProps {
   themes: ThemeMeta[];
   themeId: string;
   setThemeId: (id: string) => void;
-  viewMode: ViewMode;
-  onSetViewMode: (mode: ViewMode) => void;
-  designWorkspace: DesignWorkspace;
-  onSetDesignWorkspace: (workspace: DesignWorkspace) => void;
-  economicsNeedsAttention: boolean;
-  wellsNeedsAttention: boolean;
+  activeWorkflow: Phase1WorkflowId;
+  onSetActiveWorkflow: (workflow: Phase1WorkflowId) => void;
+  activeStageLabel: string;
+  activeScenarioName: string;
+  assetContextLabel: string;
   onNavigateHub: () => void;
   atmosphericOverlays: string[];
   headerAtmosphereClass: string;
@@ -28,12 +25,11 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   themes,
   themeId,
   setThemeId,
-  viewMode,
-  onSetViewMode,
-  designWorkspace,
-  onSetDesignWorkspace,
-  economicsNeedsAttention,
-  wellsNeedsAttention,
+  activeWorkflow,
+  onSetActiveWorkflow,
+  activeStageLabel,
+  activeScenarioName,
+  assetContextLabel,
   onNavigateHub,
   atmosphericOverlays,
   headerAtmosphereClass,
@@ -95,8 +91,8 @@ const PageHeader: React.FC<PageHeaderProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 w-full min-w-0 flex-nowrap">
-            <div className={isClassic ? 'flex items-center gap-1.5 min-w-0 flex-nowrap' : 'flex items-center gap-1 p-1 rounded-panel border theme-transition bg-theme-bg border-theme-border min-w-0 flex-nowrap'}>
+          <div className="flex flex-col gap-2 w-full min-w-0">
+            <div className={isClassic ? 'flex items-center gap-1.5 min-w-0 flex-wrap' : 'flex items-center gap-1 p-1 rounded-panel border theme-transition bg-theme-bg border-theme-border min-w-0 flex-wrap'}>
               <button
                 onClick={onNavigateHub}
                 className={
@@ -107,56 +103,45 @@ const PageHeader: React.FC<PageHeaderProps> = ({
               >
                 HUB
               </button>
-              <button
-                onClick={() => onSetViewMode('DASHBOARD')}
-                className={
-                  isClassic
-                    ? `min-h-[44px] px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-md text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition border-2 shadow-card whitespace-nowrap focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
-                        viewMode === 'DASHBOARD'
-                          ? 'bg-theme-cyan text-white border-theme-magenta'
-                        : 'bg-black/15 text-white/90 border-black/25 hover:bg-black/20'
-                      }`
-                    : `min-h-[44px] px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-inner text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition whitespace-nowrap focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
-                        viewMode === 'DASHBOARD'
-                          ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
-                        : 'text-theme-muted hover:text-theme-text'
-                      }`
-                }
-              >
-                DESIGN
-              </button>
-              <button
-                onClick={() => onSetViewMode('ANALYSIS')}
-                className={
-                  isClassic
-                    ? `min-h-[44px] px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-md text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition border-2 shadow-card whitespace-nowrap focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
-                        viewMode === 'ANALYSIS'
-                          ? 'bg-theme-cyan text-white border-theme-magenta'
-                        : 'bg-black/15 text-white/90 border-black/25 hover:bg-black/20'
-                      }`
-                    : `min-h-[44px] px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-inner text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest theme-transition whitespace-nowrap focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
-                        viewMode === 'ANALYSIS'
-                          ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
-                        : 'text-theme-muted hover:text-theme-text'
-                      }`
-                }
-              >
-                SCENARIOS
-              </button>
+              {phase1PrimaryNav.map(item => (
+                <button
+                  key={item.id}
+                  onClick={() => onSetActiveWorkflow(item.id)}
+                  className={
+                    isClassic
+                      ? `min-h-[44px] px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-md text-left theme-transition border-2 shadow-card whitespace-nowrap focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
+                          activeWorkflow === item.id
+                            ? 'bg-theme-cyan text-white border-theme-magenta'
+                            : 'bg-black/15 text-white/90 border-black/25 hover:bg-black/20'
+                        }`
+                      : `min-h-[44px] px-2 md:px-4 lg:px-5 py-1.5 md:py-2 rounded-inner text-left theme-transition whitespace-nowrap focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
+                          activeWorkflow === item.id
+                            ? 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
+                            : 'text-theme-muted hover:text-theme-text'
+                        }`
+                  }
+                >
+                  <span className="block text-[8px] md:text-[9px] lg:text-[10px] font-bold uppercase tracking-widest">
+                    {item.label}
+                  </span>
+                  <span className={`block text-[7px] md:text-[8px] uppercase tracking-[0.16em] ${activeWorkflow === item.id ? 'opacity-80' : 'opacity-60'}`}>
+                    {item.eyebrow}
+                  </span>
+                </button>
+              ))}
             </div>
 
-            {viewMode === 'DASHBOARD' && (
-              <div className="min-w-0 flex-1">
-                <DesignWorkspaceTabs
-                  isClassic={isClassic}
-                  workspace={designWorkspace}
-                  onChange={onSetDesignWorkspace}
-                  economicsNeedsAttention={economicsNeedsAttention}
-                  wellsNeedsAttention={wellsNeedsAttention}
-                  compact
-                />
+            <div className={`flex flex-wrap items-center gap-2 rounded-panel border px-3 py-2 text-[9px] font-black uppercase tracking-[0.16em] ${
+              isClassic ? 'border-black/25 bg-black/10 text-white/80' : 'border-theme-border/50 bg-theme-surface1/35 text-theme-muted'
+            }`}>
+              <span className={isClassic ? 'text-theme-warning' : 'text-theme-cyan'}>{activeWorkflow}</span>
+              <span>/</span>
+              <span>{activeStageLabel}</span>
+              <span className="hidden sm:inline">/</span>
+              <span className="hidden sm:inline">{assetContextLabel}</span>
+              <span className="hidden md:inline">/</span>
+              <span className={`hidden md:inline ${isClassic ? 'text-theme-warning' : 'text-theme-magenta'}`}>{activeScenarioName}</span>
               </div>
-            )}
           </div>
         </div>
 

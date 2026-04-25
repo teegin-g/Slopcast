@@ -13,6 +13,8 @@ interface ScenarioDashboardProps {
   wells: Well[];
   scenarios: Scenario[];
   setScenarios: React.Dispatch<React.SetStateAction<Scenario[]>>;
+  activeScenarioId: string;
+  onSetActiveScenarioId: (scenarioId: string) => void;
 }
 
 const DEFAULT_SCHEDULE: ScheduleParams = { 
@@ -66,12 +68,18 @@ const AccordionItem: React.FC<AccordionItemProps> = ({ title, isOpen, onClick, c
   );
 };
 
-const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, scenarios, setScenarios }) => {
+const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
+  groups,
+  wells,
+  scenarios,
+  setScenarios,
+  activeScenarioId,
+  onSetActiveScenarioId,
+}) => {
   const { theme } = useTheme();
   const { chartPalette } = theme;
   const isClassic = theme.features.isClassicTheme;
 
-  const [activeScenarioId, setActiveScenarioId] = useState<string>('s-base');
   const [editingScenario, setEditingScenario] = useState<boolean>(false);
   const [openSection, setOpenSection] = useState<'PRICING' | 'SCHEDULE' | 'SCALARS'>('PRICING');
 
@@ -157,7 +165,7 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, sc
         productionScalar: 1.0
       };
       setScenarios([...scenarios, newScen]);
-      setActiveScenarioId(newScen.id);
+      onSetActiveScenarioId(newScen.id);
       setEditingScenario(true);
   };
 
@@ -206,7 +214,7 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, sc
                       {scenarios.map(s => (
                         <div
                           key={s.id}
-                          onClick={() => { setActiveScenarioId(s.id); setEditingScenario(true); }}
+                          onClick={() => { onSetActiveScenarioId(s.id); setEditingScenario(true); }}
                           className={`group p-3 rounded-lg border cursor-pointer transition-all ${
                             s.id === activeScenarioId ? 'border-theme-warning bg-black/25' : 'border-black/25 bg-black/10 hover:bg-black/20'
                           }`}
@@ -241,7 +249,7 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, sc
                       {scenarios.map(s => (
                           <div 
                             key={s.id} 
-                            onClick={() => { setActiveScenarioId(s.id); setEditingScenario(true); }}
+                            onClick={() => { onSetActiveScenarioId(s.id); setEditingScenario(true); }}
 	                            className={`group p-4 rounded-inner border cursor-pointer transition-all ${s.id === activeScenarioId ? 'bg-theme-surface2 border-theme-magenta shadow-glow-magenta' : 'bg-theme-bg border-theme-border hover:border-theme-cyan hover:scale-[1.02]'}`}
                           >
                               <div className="flex items-center justify-between mb-3">

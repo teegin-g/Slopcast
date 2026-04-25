@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar';
 import { MobileDrawer } from './MobileDrawer';
 import { Vignette } from '../ui/Vignette';
 import PageHeader from '../slopcast/PageHeader';
+import type { Phase1WorkflowId } from '../slopcast/workflowModel';
 import { ViewTransition } from './ViewTransition';
 import { useSidebarNav } from '../../hooks/useSidebarNav';
 import { getSidebarCollapsed, setSidebarCollapsed } from '../../services/storage/workspacePreferences';
@@ -21,6 +22,11 @@ interface AppShellProps {
     setViewMode: (mode: 'DASHBOARD' | 'ANALYSIS') => void;
     designWorkspace: 'WELLS' | 'ECONOMICS';
     setDesignWorkspace: (ws: 'WELLS' | 'ECONOMICS') => void;
+    activeWorkflow: Phase1WorkflowId;
+    setActiveWorkflow: (workflow: Phase1WorkflowId) => void;
+    activeStageLabel: string;
+    activeScenario?: { name: string };
+    assetContextLabel: string;
     processedGroups: WellGroup[];
     activeGroupId: string | null;
     setActiveGroupId: (id: string) => void;
@@ -147,19 +153,18 @@ export function AppShell({ workspace, children }: AppShellProps) {
 
       {/* Main column: header + content */}
       <div className="relative z-20 flex-1 flex flex-col overflow-hidden">
-        {/* Original PageHeader with brand, HUB/DESIGN/SCENARIOS tabs, theme icons */}
+        {/* Project header with Phase 1 workflow navigation */}
         <PageHeader
           isClassic={workspace.isClassic}
           theme={workspace.theme}
           themes={workspace.themes}
           themeId={workspace.themeId}
           setThemeId={workspace.setThemeId}
-          viewMode={workspace.viewMode}
-          onSetViewMode={workspace.setViewMode}
-          designWorkspace={workspace.designWorkspace}
-          onSetDesignWorkspace={workspace.setDesignWorkspace}
-          economicsNeedsAttention={workspace.economicsNeedsAttention}
-          wellsNeedsAttention={workspace.wellsNeedsAttention}
+          activeWorkflow={workspace.activeWorkflow}
+          onSetActiveWorkflow={workspace.setActiveWorkflow}
+          activeStageLabel={workspace.activeStageLabel}
+          activeScenarioName={workspace.activeScenario?.name ?? 'Base Case'}
+          assetContextLabel={workspace.assetContextLabel}
           onNavigateHub={() => workspace.navigate('/hub')}
           atmosphericOverlays={workspace.atmosphericOverlays}
           headerAtmosphereClass={workspace.headerAtmosphereClass}
