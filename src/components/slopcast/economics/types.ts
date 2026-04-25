@@ -1,4 +1,5 @@
 import type { CommodityPricingAssumptions, DealMetrics, MonthlyCashFlow, Scenario, Well, WellGroup } from '../../../types';
+import type { Phase1WorkflowId } from '../workflowModel';
 
 export type EconomicsModule = 'PRODUCTION' | 'PRICING' | 'OPEX' | 'TAXES' | 'OWNERSHIP' | 'CAPEX';
 
@@ -26,6 +27,7 @@ export const getEconomicsModuleMeta = (module: EconomicsModule) =>
 
 export interface EconomicsModuleProps {
   isClassic: boolean;
+  activeWorkflow?: Phase1WorkflowId;
   activeGroup: WellGroup;
   groups: WellGroup[];
   wells: Well[];

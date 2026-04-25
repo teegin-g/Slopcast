@@ -7,11 +7,13 @@ import { AssumptionTable, InsightBanner, MetricTile, ModulePanel, StableChart } 
 import type { EconomicsModuleProps } from './types';
 
 const ProductionModule: React.FC<EconomicsModuleProps> = ({
+  activeWorkflow,
   activeGroup,
   onUpdateGroup,
   onMarkDirty,
 }) => {
   const summary = summarizeProduction(activeGroup);
+  const pdp = activeWorkflow === 'PDP' ? activeGroup.pdpForecast : null;
   const splitTotal = summary.eur + summary.totalGas;
   const oilPct = splitTotal > 0 ? (summary.eur / splitTotal) * 100 : 0;
   const gasPct = splitTotal > 0 ? (summary.totalGas / splitTotal) * 100 : 0;
@@ -19,7 +21,15 @@ const ProductionModule: React.FC<EconomicsModuleProps> = ({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_260px] gap-4">
-        <ModulePanel accent="cyan" title="Total Production" bodyClassName="p-4">
+        <ModulePanel accent="cyan" title={activeWorkflow === 'PDP' ? 'History-Driven PDP Forecast' : 'Total Production'} bodyClassName="p-4">
+          {pdp && (
+            <div className="mb-4 grid gap-2 md:grid-cols-4">
+              <MetricTile label="Loaded History" value={`${pdp.loadedWellCount + pdp.partialWellCount}`} detail={`${pdp.missingWellCount} missing`} accent={pdp.missingWellCount > 0 ? 'amber' : 'green'} compact />
+              <MetricTile label="Last Production" value={pdp.lastProductionDate ?? 'Missing'} detail="fixture adapter" accent="cyan" compact />
+              <MetricTile label="Current Oil" value={`${Math.round(pdp.currentOilBblPerDay).toLocaleString()} bopd`} detail="last loaded month" accent="green" compact />
+              <MetricTile label="Quality Flags" value={`${pdp.qualityFlags.length}`} detail={pdp.qualityFlags[0] ?? 'Clean'} accent={pdp.qualityFlags.length > 0 ? 'amber' : 'mint'} compact />
+            </div>
+          )}
           <StableChart className="h-[320px]" deps={[summary.flow.length, activeGroup.id]}>
             {({ width, height }) => (
               <LineChart width={width} height={height} data={summary.flow} margin={{ top: 12, right: 16, left: -10, bottom: 0 }}>
@@ -38,7 +48,7 @@ const ProductionModule: React.FC<EconomicsModuleProps> = ({
           </StableChart>
         </ModulePanel>
 
-        <ModulePanel accent="cyan" title="Forecast Metrics" bodyClassName="p-3 space-y-2">
+        <ModulePanel accent="cyan" title={activeWorkflow === 'PDP' ? 'PDP Forecast Status' : 'Forecast Metrics'} bodyClassName="p-3 space-y-2">
           <MetricTile label="EUR" value={`${(summary.eur / 1e3).toFixed(0)} Mbo`} detail={currencyMm(activeGroup.metrics?.npv10 ?? 0)} accent="cyan" compact />
           <MetricTile label="Peak Oil" value={`${Math.round(summary.peakOil).toLocaleString()}`} detail={`Month ${summary.peakMonth || '-'}`} accent="green" compact />
           <MetricTile label="Initial Decline" value={`${summary.initialDecline.toFixed(1)}%`} detail={`b-factor ${summary.bFactor.toFixed(2)}`} accent="violet" compact />
@@ -93,7 +103,9 @@ const ProductionModule: React.FC<EconomicsModuleProps> = ({
       </div>
 
       <InsightBanner accent="cyan">
-        Forecast quality is driven by the decline segments and the active scenario production scalar. Water and NGL streams are not modeled in this version, so this workspace focuses on oil and gas.
+        {activeWorkflow === 'PDP'
+          ? 'PDP forecasts start from loaded historical production, then use decline segments for the forward curve. Third-party source selection is intentionally secondary in this slice.'
+          : 'Forecast quality is driven by the decline segments and the active scenario production scalar. Water and NGL streams are not modeled in this version, so this workspace focuses on oil and gas.'}
       </InsightBanner>
     </div>
   );

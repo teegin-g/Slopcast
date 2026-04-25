@@ -1,6 +1,7 @@
 import React from 'react';
 import { ThemeId } from '../../theme/themes';
 import { DealMetrics, MonthlyCashFlow, Scenario, Well, WellGroup } from '../../types';
+import type { Phase1WorkflowId } from './workflowModel';
 import OperationsConsole, { OperationsConsoleProps } from './OperationsConsole';
 import EconomicsGroupBar from './EconomicsGroupBar';
 import CapexModule from './economics/CapexModule';
@@ -39,6 +40,7 @@ interface DesignEconomicsViewProps {
   aggregateFlow: MonthlyCashFlow[];
   operationsProps: OperationsConsoleProps;
   breakevenOilPrice?: number | null;
+  activeWorkflow?: Phase1WorkflowId;
 }
 
 const BottomKpiStrip: React.FC<{
@@ -94,6 +96,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   aggregateFlow,
   operationsProps,
   breakevenOilPrice,
+  activeWorkflow = 'PDP',
 }) => {
   const baseScenario = scenarios.find((scenario) => scenario.isBaseCase) ?? scenarios[0];
   const activeScenario = scenarios.find((scenario) => scenario.id === activeScenarioId) ?? baseScenario;
@@ -101,6 +104,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
 
   const moduleProps: EconomicsModuleProps = {
     isClassic,
+    activeWorkflow,
     activeGroup,
     groups,
     wells,
@@ -193,14 +197,16 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
           />
 
           <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-theme-muted">Economics</p>
+          <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-theme-muted">
+                {activeWorkflow === 'PDP' ? 'PDP Forecast & Economics' : 'Economics'}
+              </p>
               <h1 className="mt-1 text-xl font-black tracking-normal text-theme-text">{meta.label}</h1>
             </div>
             <p className="max-w-2xl text-xs text-theme-muted">{meta.eyebrow}</p>
           </div>
 
-          <EconomicsModuleTabs module={economicsModule} onChange={onSetEconomicsModule} />
+          <EconomicsModuleTabs module={economicsModule} onChange={onSetEconomicsModule} activeWorkflow={activeWorkflow} />
           {moduleCanvas}
         </section>
       </div>

@@ -4,126 +4,16 @@ import DesignEconomicsView from '../components/slopcast/DesignEconomicsView';
 import DesignWellsView from '../components/slopcast/DesignWellsView';
 import { MapCommandCenter } from '../components/slopcast/MapCommandCenter';
 import PageHeader from '../components/slopcast/PageHeader';
+import { PdpReviewSurface, PdpUniverseSurface, UndevelopedPendingSurface } from '../components/slopcast/PdpWorkflowSurfaces';
 import WorkflowStepper from '../components/slopcast/WorkflowStepper';
-import { isAssetWorkflow, type AssetWorkflowId, type Phase1StageId, type Phase1WorkflowId } from '../components/slopcast/workflowModel';
+import { isAssetWorkflow, type Phase1StageId, type Phase1WorkflowId } from '../components/slopcast/workflowModel';
 import { useSlopcastWorkspace } from '../hooks/useSlopcastWorkspace';
-
-interface Phase1MockStageSurfaceProps {
-  workflow: Phase1WorkflowId;
-  stage: Phase1StageId | null;
-  isClassic: boolean;
-  groupCount: number;
-  wellCount: number;
-  activeScenarioName: string;
-  onSelectStage: (workflow: AssetWorkflowId, stage: Phase1StageId) => void;
-}
-
-const stageCopy: Record<Phase1StageId, { eyebrow: string; title: string; body: string; cards: string[]; next?: Phase1StageId }> = {
-  UNIVERSE: {
-    eyebrow: 'Phase 1 mock surface',
-    title: 'Define the working universe',
-    body: 'This prototype reserves the first step for basin, operator, formation, data coverage, and saved universe presets before users enter the map.',
-    cards: ['Forecast source coverage', 'Data quality warnings', 'Saved universe presets'],
-    next: 'WELLS_INVENTORY',
-  },
-  WELLS_INVENTORY: {
-    eyebrow: 'Existing surface',
-    title: 'Select wells and inventory',
-    body: 'This stage routes into the current map and group-building experience so the mockup stays functional.',
-    cards: ['Map selection', 'Group creation', 'Inventory comparison'],
-    next: 'FORECAST_ECONOMICS',
-  },
-  FORECAST_ECONOMICS: {
-    eyebrow: 'Existing surface',
-    title: 'Forecast and economics setup',
-    body: 'This stage routes into the current economics workspace while the longer-term PDP and undeveloped modules are still being designed.',
-    cards: ['Forecast source', 'OPEX and ownership', 'Scenario pricing'],
-    next: 'REVIEW',
-  },
-  REVIEW: {
-    eyebrow: 'Phase 1 mock surface',
-    title: 'Review scenario readiness',
-    body: 'This prototype gives the review step a home for checklist status, risk flags, and handoff into global scenarios.',
-    cards: ['Readiness checklist', 'Risk flags', 'Scenario handoff'],
-  },
-};
 
 const workflowLabel = (workflow: Phase1WorkflowId) => {
   if (workflow === 'UNDEVELOPED') return 'Undeveloped';
   return workflow;
 };
 
-const Phase1MockStageSurface: React.FC<Phase1MockStageSurfaceProps> = ({
-  workflow,
-  stage,
-  isClassic,
-  groupCount,
-  wellCount,
-  activeScenarioName,
-  onSelectStage,
-}) => {
-  const safeStage = stage ?? 'UNIVERSE';
-  const copy = stageCopy[safeStage];
-  const isPdp = workflow === 'PDP';
-
-  return (
-    <section className={isClassic ? 'sc-panel theme-transition overflow-hidden' : 'rounded-panel border shadow-card theme-transition bg-theme-surface1/75 border-theme-border overflow-hidden'}>
-      <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--neutral px-5 py-4' : 'border-b border-theme-border/60 px-5 py-4'}>
-        <p className={`text-[9px] font-black uppercase tracking-[0.24em] ${isClassic ? 'text-theme-warning' : 'text-theme-magenta'}`}>
-          {copy.eyebrow}
-        </p>
-        <h2 className={`mt-2 text-2xl md:text-4xl font-black tracking-tight ${isClassic ? 'text-white heading-font' : 'text-theme-text heading-font'}`}>
-          {workflowLabel(workflow)} / {copy.title}
-        </h2>
-      </div>
-
-      <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.8fr)]">
-        <div className={`rounded-inner border p-5 ${isClassic ? 'border-black/25 bg-black/15 text-white/85' : 'border-theme-border/60 bg-theme-bg/45 text-theme-muted'}`}>
-          <p className="max-w-3xl text-sm leading-7">{copy.body}</p>
-          <div className="mt-6 grid gap-3 md:grid-cols-3">
-            {copy.cards.map(card => (
-              <div key={card} className={`rounded-inner border p-4 ${isClassic ? 'border-black/20 bg-black/10' : 'border-theme-border/50 bg-theme-surface2/35'}`}>
-                <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isClassic ? 'text-theme-warning' : 'text-theme-cyan'}`}>{card}</p>
-                <p className="mt-3 text-xs leading-5 opacity-75">
-                  {isPdp ? 'PDP-specific controls land here in a later phase.' : 'Inventory-specific controls land here in a later phase.'}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <aside className={`rounded-inner border p-5 ${isClassic ? 'border-black/25 bg-black/20' : 'border-theme-border/60 bg-theme-surface2/45'}`}>
-          <p className={`text-[10px] font-black uppercase tracking-[0.22em] ${isClassic ? 'text-theme-warning' : 'text-theme-lavender'}`}>Context Strip</p>
-          <div className="mt-5 space-y-3 text-sm">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-theme-muted">Active scenario</span>
-              <span className="font-black uppercase text-theme-text">{activeScenarioName}</span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-theme-muted">Groups</span>
-              <span className="font-black text-theme-text">{groupCount}</span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-theme-muted">{isPdp ? 'Producing wells' : 'Inventory wells'}</span>
-              <span className="font-black text-theme-text">{wellCount}</span>
-            </div>
-          </div>
-          {copy.next && isAssetWorkflow(workflow) && (
-            <button
-              type="button"
-              onClick={() => onSelectStage(workflow, copy.next)}
-              className={`mt-6 min-h-[44px] w-full rounded-inner px-4 py-3 text-[10px] font-black uppercase tracking-[0.18em] transition-all focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
-                isClassic ? 'bg-theme-warning text-black shadow-card' : 'bg-theme-cyan text-theme-bg shadow-glow-cyan'
-              }`}
-            >
-              Continue to {stageCopy[copy.next].title}
-            </button>
-          )}
-        </aside>
-      </div>
-    </section>
-  );
-};
 
 const SlopcastPage: React.FC = () => {
   const ws = useSlopcastWorkspace();
@@ -293,20 +183,42 @@ const SlopcastPage: React.FC = () => {
               aggregateFlow={ws.aggregateFlow}
               operationsProps={ws.operationsProps}
               breakevenOilPrice={ws.breakevenOilPrice}
+              activeWorkflow={ws.activeWorkflow}
             />
           </>
         ) : (
           <>
             {stageStepper}
-            <Phase1MockStageSurface
-              workflow={ws.activeWorkflow}
-              stage={ws.activeWorkflowStage}
-              isClassic={ws.isClassic}
-              groupCount={ws.processedGroups.length}
-              wellCount={ws.aggregateMetrics.wellCount}
-              activeScenarioName={ws.activeScenario?.name ?? 'Base Case'}
-              onSelectStage={ws.setWorkflowStage}
-            />
+            {ws.activeWorkflow === 'PDP' && ws.activeWorkflowStage === 'UNIVERSE' ? (
+              <PdpUniverseSurface
+                filteredWells={ws.filteredWells}
+                totalWellCount={ws.wells.length}
+                operatorFilter={ws.operatorFilter}
+                formationFilter={ws.formationFilter}
+                statusFilter={ws.statusFilter}
+                operatorOptions={ws.operatorOptions}
+                formationOptions={ws.formationOptions}
+                statusOptions={ws.statusOptions}
+                onToggleOperator={ws.toggleOperator}
+                onToggleFormation={ws.toggleFormation}
+                onToggleStatus={ws.toggleStatus}
+                onResetFilters={ws.handleResetFilters}
+                historyByWellId={ws.productionHistoryByWellId}
+                summary={ws.pdpUniverseSummary}
+                onContinue={() => ws.setWorkflowStage('PDP', 'WELLS_INVENTORY')}
+              />
+            ) : ws.activeWorkflow === 'PDP' && ws.activeWorkflowStage === 'REVIEW' ? (
+              <PdpReviewSurface
+                groups={ws.processedGroups}
+                summaries={ws.pdpGroupSummaries}
+                readiness={ws.pdpReadiness}
+                activeScenarioName={ws.activeScenario?.name ?? 'Base Case'}
+                onAcknowledge={ws.handleAcknowledgePdpDataQuality}
+                onOpenScenarios={() => ws.setActiveWorkflow('SCENARIOS')}
+              />
+            ) : (
+              <UndevelopedPendingSurface stageLabel={ws.activeStageLabel} />
+            )}
           </>
         )}
 

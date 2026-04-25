@@ -188,6 +188,16 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
   };
 
   const activeScenario = scenarios.find(s => s.id === activeScenarioId);
+  const pdpContribution = useMemo(() => {
+    const activeGroups = groups.filter(group => group.wellIds.size > 0);
+    return {
+      groupCount: activeGroups.length,
+      wellCount: activeGroups.reduce((sum, group) => sum + group.wellIds.size, 0),
+      currentOil: activeGroups.reduce((sum, group) => sum + (group.pdpForecast?.currentOilBblPerDay ?? 0), 0),
+      forecastedGroups: activeGroups.filter(group => group.pdpForecast?.forecastGenerated).length,
+      opexReady: activeGroups.filter(group => group.pdpForecast?.opexForecastAssigned).length,
+    };
+  }, [groups]);
   const inputClass = isClassic
     ? 'w-full rounded-lg px-3 py-2 text-xs font-black sc-inputNavy'
     : 'w-full bg-theme-bg border rounded-lg px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition border-theme-border';
@@ -352,10 +362,10 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
                            </div>
                        </AccordionItem>
 
-                       <AccordionItem title="Risk Scalars" isOpen={openSection === 'SCALARS'} onClick={() => setOpenSection('SCALARS')} useBrandFont={theme.features.brandFont}>
+                       <AccordionItem title="PDP Forecast Scalars" isOpen={openSection === 'SCALARS'} onClick={() => setOpenSection('SCALARS')} useBrandFont={theme.features.brandFont}>
                            <div className="space-y-6">
                                <div>
-                                   <div className="flex justify-between mb-2"><label className={labelClass}>CAPEX MULTIPLIER</label><span className="text-[10px] font-black text-theme-cyan">{(activeScenario.capexScalar * 100).toFixed(0)}%</span></div>
+                                   <div className="flex justify-between mb-2"><label className={labelClass}>MAINTENANCE CAPEX / LOE SCALAR</label><span className="text-[10px] font-black text-theme-cyan">{(activeScenario.capexScalar * 100).toFixed(0)}%</span></div>
                                    <input
                                      type="range"
                                      min="0.5"
@@ -371,7 +381,7 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
                                    />
                                </div>
                                <div>
-                                   <div className="flex justify-between mb-2"><label className={labelClass}>RECOVERY MULTIPLIER</label><span className="text-[10px] font-black text-theme-magenta">{(activeScenario.productionScalar * 100).toFixed(0)}%</span></div>
+                                   <div className="flex justify-between mb-2"><label className={labelClass}>PDP PRODUCTION / EUR SCALAR</label><span className="text-[10px] font-black text-theme-magenta">{(activeScenario.productionScalar * 100).toFixed(0)}%</span></div>
                                    <input
                                      type="range"
                                      min="0.5"
@@ -394,6 +404,28 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
       </div>
 
       <div className="xl:col-span-9 space-y-6">
+          <div className={isClassic ? 'sc-panel theme-transition overflow-hidden' : 'rounded-panel border p-4 shadow-card theme-transition bg-theme-surface1/70 border-theme-border'}>
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan">PDP Contribution</p>
+                      <h2 className="mt-1 text-lg font-black text-theme-text">Historical production forecast case</h2>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+                      {[
+                        ['Groups', pdpContribution.groupCount.toString()],
+                        ['Wells', pdpContribution.wellCount.toString()],
+                        ['Current Oil', `${Math.round(pdpContribution.currentOil).toLocaleString()} bopd`],
+                        ['Forecasted', `${pdpContribution.forecastedGroups}/${pdpContribution.groupCount}`],
+                        ['LOE Ready', `${pdpContribution.opexReady}/${pdpContribution.groupCount}`],
+                      ].map(([label, value]) => (
+                        <div key={label} className="rounded-inner border border-theme-border bg-theme-bg px-3 py-2">
+                          <p className="text-[8px] font-black uppercase tracking-[0.14em] text-theme-muted">{label}</p>
+                          <p className="mt-1 text-sm font-black text-theme-text tabular-nums">{value}</p>
+                        </div>
+                      ))}
+                  </div>
+              </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
               {scenarioResults.map((res) => (
 	                  <div key={res.scenario.id} className={isClassic ? 'sc-panel theme-transition overflow-hidden group' : 'rounded-panel border p-6 relative overflow-hidden theme-transition shadow-card group bg-theme-surface1/80 border-theme-border hover:border-theme-cyan'}>

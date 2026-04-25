@@ -6,11 +6,13 @@ import { AssumptionTable, InsightBanner, MetricTile, ModulePanel, StableChart } 
 import type { EconomicsModuleProps } from './types';
 
 const OpexModule: React.FC<EconomicsModuleProps> = ({
+  activeWorkflow,
   activeGroup,
   onUpdateGroup,
   onMarkDirty,
 }) => {
   const summary = summarizeOpex(activeGroup);
+  const pdp = activeWorkflow === 'PDP' ? activeGroup.pdpForecast : null;
   const wellCount = Math.max(1, activeGroup.wellIds.size);
   const structure = summary.segments.map((segment, index) => ({
     name: segment.label,
@@ -24,7 +26,14 @@ const OpexModule: React.FC<EconomicsModuleProps> = ({
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <ModulePanel accent="amber" title="OPEX Structure" bodyClassName="p-4">
+        <ModulePanel accent="amber" title={activeWorkflow === 'PDP' ? 'PDP LOE Forecast Structure' : 'OPEX Structure'} bodyClassName="p-4">
+          {pdp && (
+            <div className="mb-4 grid gap-2 sm:grid-cols-3">
+              <MetricTile label="History LOE/BOE" value={currency(pdp.averageLoePerBoe)} detail="from loaded months" accent="amber" compact />
+              <MetricTile label="Forecasted Wells" value={`${pdp.loadedWellCount + pdp.partialWellCount}`} detail={`${pdp.producingWellCount} producing`} accent="cyan" compact />
+              <MetricTile label="LOE Status" value={pdp.opexForecastAssigned ? 'Assigned' : 'Missing'} detail="PDP readiness" accent={pdp.opexForecastAssigned ? 'green' : 'red'} compact />
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-[180px_minmax(0,1fr)] gap-4 items-center">
             <StableChart className="h-44" deps={[structure.length, activeGroup.id]}>
               {({ width, height }) => (
@@ -49,7 +58,7 @@ const OpexModule: React.FC<EconomicsModuleProps> = ({
           </div>
         </ModulePanel>
 
-        <ModulePanel accent="amber" title="OPEX Impact" bodyClassName="p-4">
+        <ModulePanel accent="amber" title={activeWorkflow === 'PDP' ? 'LOE Forecast Impact' : 'OPEX Impact'} bodyClassName="p-4">
           <StableChart className="h-64" deps={[impact.length, activeGroup.id]}>
             {({ width, height }) => (
               <BarChart width={width} height={height} data={impact} margin={{ top: 12, right: 16, left: -10, bottom: 0 }}>
@@ -65,7 +74,7 @@ const OpexModule: React.FC<EconomicsModuleProps> = ({
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-4">
-        <ModulePanel accent="amber" title="OPEX Assumptions" bodyClassName="p-4">
+        <ModulePanel accent="amber" title={activeWorkflow === 'PDP' ? 'LOE Forecast Assumptions' : 'OPEX Assumptions'} bodyClassName="p-4">
           <OpexControls
             opex={activeGroup.opex}
             onChange={(opex) => {
@@ -93,7 +102,9 @@ const OpexModule: React.FC<EconomicsModuleProps> = ({
       </div>
 
       <InsightBanner accent="amber">
-        Fixed field costs currently carry the OPEX structure. Segment hover and category cross-highlighting can build on this once Slopcast supports richer cost categories.
+        {activeWorkflow === 'PDP'
+          ? 'PDP LOE starts with fixed field cost and variable oil/gas assumptions, then scenario scalars can sensitize the producing base without changing the base forecast.'
+          : 'Fixed field costs currently carry the OPEX structure. Segment hover and category cross-highlighting can build on this once Slopcast supports richer cost categories.'}
       </InsightBanner>
     </div>
   );
