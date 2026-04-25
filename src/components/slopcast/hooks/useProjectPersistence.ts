@@ -8,6 +8,7 @@ import type {
 } from '../../../types';
 import type { DesignWorkspace } from '../DesignWorkspaceTabs';
 import type { EconomicsModule } from '../economics/types';
+import type { AssetWorkflowId, Phase1StageId, Phase1WorkflowId } from '../workflowModel';
 import { isEconomicsModule } from '../../../services/storage/workspacePreferences';
 import {
   getProject,
@@ -45,6 +46,9 @@ const toFilterSet = (value: string | string[] | undefined): Set<string> => {
 interface PersistenceUiState {
   designWorkspace: DesignWorkspace;
   economicsModule: EconomicsModule;
+  activeWorkflow: Phase1WorkflowId;
+  workflowStages: Record<AssetWorkflowId, Phase1StageId>;
+  activeScenarioId: string;
   operatorFilter: Set<string>;
   formationFilter: Set<string>;
   statusFilter: Set<string>;
@@ -62,6 +66,9 @@ interface UseProjectPersistenceArgs {
   setActiveGroupId: Dispatch<SetStateAction<string>>;
   setDesignWorkspace: Dispatch<SetStateAction<DesignWorkspace>>;
   setEconomicsModule: Dispatch<SetStateAction<EconomicsModule>>;
+  setActiveWorkflow: Dispatch<SetStateAction<Phase1WorkflowId>>;
+  setWorkflowStages: Dispatch<SetStateAction<Record<AssetWorkflowId, Phase1StageId>>>;
+  setActiveScenarioId: Dispatch<SetStateAction<string>>;
   setOperatorFilter: Dispatch<SetStateAction<Set<string>>>;
   setFormationFilter: Dispatch<SetStateAction<Set<string>>>;
   setStatusFilter: Dispatch<SetStateAction<Set<string>>>;
@@ -100,6 +107,9 @@ export function useProjectPersistence({
   setActiveGroupId,
   setDesignWorkspace,
   setEconomicsModule,
+  setActiveWorkflow,
+  setWorkflowStages,
+  setActiveScenarioId,
   setOperatorFilter,
   setFormationFilter,
   setStatusFilter,
@@ -133,6 +143,9 @@ export function useProjectPersistence({
       uiState: {
         designWorkspace: snapshot.uiState.designWorkspace,
         economicsModule: snapshot.uiState.economicsModule,
+        activeWorkflow: snapshot.uiState.activeWorkflow,
+        workflowStages: snapshot.uiState.workflowStages,
+        activeScenarioId: snapshot.uiState.activeScenarioId,
         operatorFilter: toStoredFilterArray(snapshot.uiState.operatorFilter),
         formationFilter: toStoredFilterArray(snapshot.uiState.formationFilter),
         statusFilter: toStoredFilterArray(snapshot.uiState.statusFilter),
@@ -147,6 +160,8 @@ export function useProjectPersistence({
         capex: group.capex,
         opex: group.opex,
         ownership: group.ownership,
+        reserveCategory: group.reserveCategory,
+        dataQualityAcknowledged: group.dataQualityAcknowledged,
       })),
       scenarios: snapshot.scenarios.map((scenario, index) => ({
         id: scenario.id,
@@ -272,6 +287,8 @@ export function useProjectPersistence({
             capex: group.capex,
             opex: group.opex,
             ownership: group.ownership,
+            reserveCategory: group.reserveCategory,
+            dataQualityAcknowledged: group.dataQualityAcknowledged,
           }))
         );
         setScenarios(
@@ -291,6 +308,18 @@ export function useProjectPersistence({
         }
 
         const storedUi = bundle.project.uiState || {};
+        if (storedUi.activeWorkflow === 'PDP' || storedUi.activeWorkflow === 'UNDEVELOPED' || storedUi.activeWorkflow === 'SCENARIOS') {
+          setActiveWorkflow(storedUi.activeWorkflow);
+        }
+        if (storedUi.workflowStages) {
+          setWorkflowStages((prev) => ({
+            PDP: storedUi.workflowStages?.PDP ?? prev.PDP,
+            UNDEVELOPED: storedUi.workflowStages?.UNDEVELOPED ?? prev.UNDEVELOPED,
+          }));
+        }
+        if (typeof storedUi.activeScenarioId === 'string' && storedUi.activeScenarioId) {
+          setActiveScenarioId(storedUi.activeScenarioId);
+        }
         if (storedUi.designWorkspace === 'WELLS' || storedUi.designWorkspace === 'ECONOMICS') {
           setDesignWorkspace(storedUi.designWorkspace);
         }

@@ -56,6 +56,8 @@ export interface SaveProjectPayload {
     capex: unknown;
     opex: unknown;
     ownership: unknown;
+    reserveCategory?: unknown;
+    dataQualityAcknowledged?: boolean;
   }>;
   scenarios: Array<{
     id: string;
@@ -235,6 +237,8 @@ export async function getProject(projectId: string): Promise<LoadedProjectBundle
         capex: (config.capex || {}) as ProjectGroupRecord['capex'],
         opex: (config.opex || {}) as ProjectGroupRecord['opex'],
         ownership: (config.ownership || {}) as ProjectGroupRecord['ownership'],
+        reserveCategory: config.reserveCategory as ProjectGroupRecord['reserveCategory'],
+        dataQualityAcknowledged: Boolean(config.dataQualityAcknowledged),
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       };
@@ -303,6 +307,8 @@ export async function saveProject(payload: SaveProjectPayload): Promise<SaveProj
     capex: toJson(group.capex),
     opex: toJson(group.opex),
     ownership: toJson(group.ownership),
+    reserve_category: group.reserveCategory ?? null,
+    data_quality_acknowledged: group.dataQualityAcknowledged ?? false,
     well_ids: group.wellExternalKeys
       .map((externalKey) => wellIdByExternal.get(externalKey))
       .filter((value): value is string => !!value),
