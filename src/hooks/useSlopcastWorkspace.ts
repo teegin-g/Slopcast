@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DEFAULT_CAPEX, DEFAULT_COMMODITY_PRICING, DEFAULT_OPEX, DEFAULT_OWNERSHIP, DEFAULT_TYPE_CURVE, GROUP_COLORS, MOCK_WELLS } from '../constants';
-import { Scenario, ScheduleParams, SpatialDataSourceId, Well, WellGroup } from '../types';
+import { ForecastCase, Scenario, ScheduleParams, SpatialDataSourceId, UniverseDefinition, Well, WellGroup } from '../types';
 import { DesignWorkspace } from '../components/slopcast/DesignWorkspaceTabs';
 import { EconomicsModule } from '../components/slopcast/economics/types';
 import { DesignStep, StepStatus, WorkflowStep } from '../components/slopcast/WorkflowStepper';
@@ -51,6 +51,11 @@ import {
   summarizePdpGroup,
   summarizeProductionUniverse,
 } from '../utils/pdpForecasting';
+import {
+  buildMockDevelopmentInventory,
+  getUndevelopedReadiness,
+  summarizeDevelopmentInventory,
+} from '../utils/undevelopedInventory';
 import type { ParsedFilters } from '../components/slopcast/LandingPage';
 import type { DealRecord } from '../types';
 
@@ -73,6 +78,12 @@ const DEFAULT_SCHEDULE: ScheduleParams = {
   stimDurationDays: 12,
   rigStartDate: new Date().toISOString().split('T')[0],
 };
+
+const DEFAULT_INCLUDED_WORKFLOWS = ['PDP', 'UNDEVELOPED'] as const;
+
+const defaultEconomicsModuleForWorkflow = (workflow: Phase1WorkflowId): EconomicsModule => (
+  workflow === 'UNDEVELOPED' ? 'PRODUCTION' : 'PRODUCTION'
+);
 
 export const FX_QUERY_KEY = 'fx';
 
@@ -208,7 +219,9 @@ export function useSlopcastWorkspace() {
       pricing: { ...DEFAULT_COMMODITY_PRICING },
       schedule: { ...DEFAULT_SCHEDULE },
       capexScalar: 1.0,
-      productionScalar: 1.0
+      productionScalar: 1.0,
+      loeScalar: 1.0,
+      includedWorkflows: [...DEFAULT_INCLUDED_WORKFLOWS],
     },
     {
       id: 's-upside',
@@ -218,7 +231,9 @@ export function useSlopcastWorkspace() {
       pricing: { ...DEFAULT_COMMODITY_PRICING, oilPrice: 85 },
       schedule: { ...DEFAULT_SCHEDULE },
       capexScalar: 1.0,
-      productionScalar: 1.0
+      productionScalar: 1.08,
+      loeScalar: 0.95,
+      includedWorkflows: [...DEFAULT_INCLUDED_WORKFLOWS],
     },
     {
       id: 's-fast',
@@ -228,7 +243,9 @@ export function useSlopcastWorkspace() {
       pricing: { ...DEFAULT_COMMODITY_PRICING },
       schedule: { ...DEFAULT_SCHEDULE, annualRigs: [1, 2, 3, 4, 4, 4, 4, 4, 4, 4] },
       capexScalar: 1.0,
-      productionScalar: 1.0
+      productionScalar: 1.0,
+      loeScalar: 1.0,
+      includedWorkflows: ['UNDEVELOPED'],
     }
   ]);
 
@@ -265,6 +282,15 @@ export function useSlopcastWorkspace() {
   });
 
   const productionHistoryByWellId = useMemo(() => buildProductionHistoryMap(wells), [wells]);
+  const developmentInventory = useMemo(() => buildMockDevelopmentInventory(), []);
+  const developmentInventorySummary = useMemo(
+    () => summarizeDevelopmentInventory(developmentInventory.groups, developmentInventory.dsus, developmentInventory.plannedWells),
+    [developmentInventory],
+  );
+  const undevelopedReadiness = useMemo(
+    () => getUndevelopedReadiness(developmentInventory.groups, developmentInventorySummary),
+    [developmentInventory.groups, developmentInventorySummary],
+  );
 
   // --- Computed Economics per Group ---
   const processedGroups = useMemo(() => {
@@ -317,6 +343,54 @@ export function useSlopcastWorkspace() {
     return aggregateEconomics(processedGroups);
   }, [processedGroups]);
 
+  const pdpGroupSummaries = processedGroups.map((group) => group.pdpForecast).filter((summary): summary is NonNullable<typeof summary> => !!summary);
+  const pdpReadiness = getPdpReadiness(processedGroups, pdpGroupSummaries);
+  const pdpUniverseSummary = summarizeProductionUniverse(filteredWells, productionHistoryByWellId);
+  const universeDefinitions = useMemo<UniverseDefinition[]>(() => ([
+    {
+      id: 'universe-pdp-producing-base',
+      developmentType: 'PDP',
+      name: 'PDP Producing Base',
+      filters: {
+        operators: Array.from(operatorFilter),
+        formations: Array.from(formationFilter),
+        statuses: Array.from(statusFilter),
+        historyCoveragePct: pdpUniverseSummary.coveragePct,
+      },
+      savedAt: '2026-04-25T00:00:00.000Z',
+    },
+    {
+      id: 'universe-undeveloped-inventory',
+      developmentType: 'UNDEVELOPED',
+      name: 'Structured DSU Inventory',
+      filters: {
+        dsuCount: developmentInventorySummary.dsuCount,
+        plannedWellCount: developmentInventorySummary.plannedWellCount,
+        formations: developmentInventorySummary.formations,
+        benches: developmentInventorySummary.benches,
+      },
+      savedAt: '2026-04-25T00:00:00.000Z',
+    },
+  ]), [developmentInventorySummary, formationFilter, operatorFilter, pdpUniverseSummary.coveragePct, statusFilter]);
+  const forecastCases = useMemo<ForecastCase[]>(() => ([
+    {
+      id: 'case-pdp-base',
+      name: 'PDP Base Case',
+      developmentType: 'PDP',
+      universeId: 'universe-pdp-producing-base',
+      groupIds: processedGroups.filter((group) => group.wellIds.size > 0).map((group) => group.id),
+      readiness: Object.values(pdpReadiness).every(Boolean) ? 'READY' : 'NEEDS_INPUTS',
+    },
+    {
+      id: 'case-undeveloped-base',
+      name: 'Undeveloped Base Case',
+      developmentType: 'UNDEVELOPED',
+      universeId: 'universe-undeveloped-inventory',
+      groupIds: developmentInventory.groups.map((group) => group.id),
+      readiness: Object.values(undevelopedReadiness).every(Boolean) ? 'READY' : 'NEEDS_INPUTS',
+    },
+  ]), [developmentInventory.groups, pdpReadiness, processedGroups, undevelopedReadiness]);
+
   const supabasePersistenceEnabled =
     status === 'authenticated' && session?.provider === 'supabase' && hasSupabaseEnv();
 
@@ -332,6 +406,8 @@ export function useSlopcastWorkspace() {
       activeWorkflow,
       workflowStages,
       activeScenarioId,
+      universeDefinitions,
+      forecastCases,
       operatorFilter,
       formationFilter,
       statusFilter,
@@ -380,6 +456,7 @@ export function useSlopcastWorkspace() {
     setActiveWorkflowState(workflow);
     setWorkflowStages(prev => ({ ...prev, [workflow]: stage }));
     setViewMode('DASHBOARD');
+    setEconomicsModule(defaultEconomicsModuleForWorkflow(workflow));
 
     const surface = getWorkflowStageSurface(workflow, stage);
     if (surface === 'WELLS') setDesignWorkspace('WELLS');
@@ -394,6 +471,7 @@ export function useSlopcastWorkspace() {
     }
 
     setViewMode('DASHBOARD');
+    setEconomicsModule(defaultEconomicsModuleForWorkflow(workflow));
     const surface = getWorkflowStageSurface(workflow, workflowStages[workflow]);
     if (surface === 'WELLS') setDesignWorkspace('WELLS');
     if (surface === 'ECONOMICS') setDesignWorkspace('ECONOMICS');
@@ -758,9 +836,6 @@ export function useSlopcastWorkspace() {
     ? 'Global Scenario Workspace'
     : activeWorkflowStageMeta?.label ?? 'Universe';
   const assetContextLabel = `${processedGroups.length} group${processedGroups.length === 1 ? '' : 's'} / ${aggregateMetrics.wellCount} wells`;
-  const pdpGroupSummaries = processedGroups.map((group) => group.pdpForecast).filter((summary): summary is NonNullable<typeof summary> => !!summary);
-  const pdpReadiness = getPdpReadiness(processedGroups, pdpGroupSummaries);
-  const pdpUniverseSummary = summarizeProductionUniverse(filteredWells, productionHistoryByWellId);
 
   const handleRequestOpenControlsSection = (section: ControlsSection) => {
     setControlsOpenSection(section);
@@ -855,6 +930,9 @@ export function useSlopcastWorkspace() {
     pdpUniverseSummary,
     pdpGroupSummaries,
     pdpReadiness,
+    developmentInventory,
+    developmentInventorySummary,
+    undevelopedReadiness,
 
     // Data
     groups, processedGroups, activeGroupId, setActiveGroupId, activeGroup,
