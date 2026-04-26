@@ -148,6 +148,97 @@ export interface PdpReadinessStatus {
   dataQualityAcknowledged: boolean;
 }
 
+export type DevelopmentType = 'PDP' | 'UNDEVELOPED';
+export type ForecastCaseReadiness = 'DRAFT' | 'NEEDS_INPUTS' | 'READY' | 'ERROR';
+
+export interface ForecastCase {
+  id: string;
+  name: string;
+  developmentType: DevelopmentType;
+  universeId: string;
+  groupIds: string[];
+  readiness: ForecastCaseReadiness;
+}
+
+export interface UniverseDefinition {
+  id: string;
+  developmentType: DevelopmentType;
+  name: string;
+  filters: Record<string, unknown>;
+  savedAt: string;
+}
+
+export interface DsuInventory {
+  id: string;
+  name: string;
+  operator: string;
+  formation: string;
+  bench: string;
+  acreage: number;
+  plannedWellIds: string[];
+  coordinates: [number, number][][];
+}
+
+export interface PlannedWell {
+  id: string;
+  dsuId: string;
+  name: string;
+  formation: string;
+  bench: string;
+  status: 'PUD' | 'DUC' | 'PERMIT' | 'CONCEPT';
+  lateralLength: number;
+  spacingFt: number;
+  firstProductionMonth: number;
+  coordinates: [number, number][];
+}
+
+export interface DevelopmentInventoryGroup {
+  id: string;
+  name: string;
+  color: string;
+  dsuIds: string[];
+  plannedWellIds: string[];
+  spacingAssumptions: {
+    spacingFt: number;
+    lateralLengthFt: number;
+    bench: string;
+    parentChildRisk: number;
+  };
+  typeCurveId: string;
+  capexAssigned: boolean;
+  scheduleAssigned: boolean;
+  loeAssigned: boolean;
+  ownershipAssigned: boolean;
+  taxesAssigned: boolean;
+  riskFactor: number;
+}
+
+export interface UndevelopedReadinessStatus {
+  inventoryCreated: boolean;
+  spacingAssigned: boolean;
+  typeCurveAssigned: boolean;
+  capexAssigned: boolean;
+  scheduleAssigned: boolean;
+  loeOwnershipTaxesAssigned: boolean;
+  economicsCalculated: boolean;
+}
+
+export interface DevelopmentInventorySummary {
+  dsuCount: number;
+  plannedWellCount: number;
+  totalAcreage: number;
+  averageSpacingFt: number;
+  averageLateralLengthFt: number;
+  totalCapex: number;
+  unriskedNpv10: number;
+  riskedNpv10: number;
+  eur: number;
+  wellsPerYear: number;
+  riskFactor: number;
+  benches: string[];
+  formations: string[];
+}
+
 export interface JvAgreementTerms {
   conveyRevenuePctOfBase: number; // 0..1 (fraction of base NRI conveyed)
   conveyCostPctOfBase: number; // 0..1 (fraction of base cost interest conveyed)
@@ -298,7 +389,9 @@ export interface Scenario {
   pricing: CommodityPricingAssumptions; 
   schedule: ScheduleParams; 
   capexScalar: number; 
-  productionScalar: number; 
+  productionScalar: number;
+  loeScalar?: number;
+  includedWorkflows?: DevelopmentType[];
 }
 
 export type SensitivityVariable = 'OIL_PRICE' | 'CAPEX_SCALAR' | 'EUR_SCALAR' | 'RIG_COUNT';
@@ -319,10 +412,12 @@ export type ModelPresetScope = 'user' | 'organization';
 export interface ProjectUiState {
   designWorkspace?: 'WELLS' | 'ECONOMICS';
   economicsResultsTab?: 'OVERVIEW' | 'CASH_FLOW' | 'RESERVES';
-  economicsModule?: 'PRODUCTION' | 'PRICING' | 'OPEX' | 'TAXES' | 'OWNERSHIP' | 'CAPEX';
+  economicsModule?: 'PRODUCTION' | 'PRICING' | 'OPEX' | 'TAXES' | 'OWNERSHIP' | 'CAPEX' | 'SPACING' | 'SCHEDULE' | 'RISK';
   activeWorkflow?: 'PDP' | 'UNDEVELOPED' | 'SCENARIOS';
   workflowStages?: Partial<Record<'PDP' | 'UNDEVELOPED', 'UNIVERSE' | 'WELLS_INVENTORY' | 'FORECAST_ECONOMICS' | 'REVIEW'>>;
   activeScenarioId?: string;
+  universeDefinitions?: UniverseDefinition[];
+  forecastCases?: ForecastCase[];
   operatorFilter?: string | string[];
   formationFilter?: string | string[];
   statusFilter?: string | string[];
@@ -357,6 +452,7 @@ export interface ProjectGroupRecord {
   ownership: OwnershipAssumptions;
   reserveCategory?: ReserveCategory;
   dataQualityAcknowledged?: boolean;
+  developmentInventory?: DevelopmentInventoryGroup[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -371,6 +467,8 @@ export interface ProjectScenarioRecord {
   schedule: ScheduleParams;
   capexScalar: number;
   productionScalar: number;
+  loeScalar?: number;
+  includedWorkflows?: DevelopmentType[];
   sortOrder: number;
   createdAt?: string;
   updatedAt?: string;
