@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import type {
   DealMetrics,
+  ForecastCase,
   Scenario,
+  UniverseDefinition,
   Well,
   WellGroup,
 } from '../../../types';
@@ -49,6 +51,8 @@ interface PersistenceUiState {
   activeWorkflow: Phase1WorkflowId;
   workflowStages: Record<AssetWorkflowId, Phase1StageId>;
   activeScenarioId: string;
+  universeDefinitions: UniverseDefinition[];
+  forecastCases: ForecastCase[];
   operatorFilter: Set<string>;
   formationFilter: Set<string>;
   statusFilter: Set<string>;
@@ -146,6 +150,8 @@ export function useProjectPersistence({
         activeWorkflow: snapshot.uiState.activeWorkflow,
         workflowStages: snapshot.uiState.workflowStages,
         activeScenarioId: snapshot.uiState.activeScenarioId,
+        universeDefinitions: snapshot.uiState.universeDefinitions,
+        forecastCases: snapshot.uiState.forecastCases,
         operatorFilter: toStoredFilterArray(snapshot.uiState.operatorFilter),
         formationFilter: toStoredFilterArray(snapshot.uiState.formationFilter),
         statusFilter: toStoredFilterArray(snapshot.uiState.statusFilter),
@@ -172,6 +178,8 @@ export function useProjectPersistence({
         schedule: scenario.schedule,
         capexScalar: scenario.capexScalar,
         productionScalar: scenario.productionScalar,
+        loeScalar: scenario.loeScalar,
+        includedWorkflows: scenario.includedWorkflows,
         sortOrder: index,
       })),
     }),
@@ -301,6 +309,8 @@ export function useProjectPersistence({
             schedule: scenario.schedule,
             capexScalar: scenario.capexScalar,
             productionScalar: scenario.productionScalar,
+            loeScalar: scenario.loeScalar,
+            includedWorkflows: scenario.includedWorkflows,
           }))
         );
         if (bundle.project.activeGroupId) {

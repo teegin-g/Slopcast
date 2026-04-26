@@ -68,6 +68,8 @@ export interface SaveProjectPayload {
     schedule: unknown;
     capexScalar: number;
     productionScalar: number;
+    loeScalar?: number;
+    includedWorkflows?: unknown;
     sortOrder: number;
   }>;
 }
@@ -253,6 +255,8 @@ export async function getProject(projectId: string): Promise<LoadedProjectBundle
       schedule: unwrapContract(row.schedule_jsonb),
       capexScalar: Number(unwrapContract<Record<string, unknown>>(row.scalar_jsonb).capexScalar ?? 1),
       productionScalar: Number(unwrapContract<Record<string, unknown>>(row.scalar_jsonb).productionScalar ?? 1),
+      loeScalar: Number(unwrapContract<Record<string, unknown>>(row.scalar_jsonb).loeScalar ?? 1),
+      includedWorkflows: (unwrapContract<Record<string, unknown>>(row.scalar_jsonb).includedWorkflows as ProjectScenarioRecord['includedWorkflows']) ?? ['PDP', 'UNDEVELOPED'],
       sortOrder: row.sort_order,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
@@ -323,6 +327,8 @@ export async function saveProject(payload: SaveProjectPayload): Promise<SaveProj
     schedule: toJson(scenario.schedule),
     capex_scalar: scenario.capexScalar,
     production_scalar: scenario.productionScalar,
+    loe_scalar: scenario.loeScalar ?? 1,
+    included_workflows: scenario.includedWorkflows ?? ['PDP', 'UNDEVELOPED'],
     sort_order: scenario.sortOrder,
   }));
 
