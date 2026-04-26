@@ -25,6 +25,14 @@ describe('economics module workspace preferences', () => {
     expect(getEconomicsModule()).toBe('OWNERSHIP');
   });
 
+  it('persists workflow-specific economics modules', () => {
+    setEconomicsModule('SPACING');
+    expect(getEconomicsModule()).toBe('SPACING');
+
+    setEconomicsModule('RISK');
+    expect(getEconomicsModule()).toBe('RISK');
+  });
+
   it('migrates legacy cash-flow tab to CAPEX module', () => {
     localStorage.setItem(ECONOMICS_RESULTS_TAB_KEY, 'CASH_FLOW');
     expect(getEconomicsModule()).toBe('CAPEX');

@@ -104,7 +104,15 @@ const legacyTabToModule = (value: string | null): EconomicsModule | null => {
 };
 
 export function isEconomicsModule(value: unknown): value is EconomicsModule {
-  return value === 'PRODUCTION' || value === 'PRICING' || value === 'OPEX' || value === 'TAXES' || value === 'OWNERSHIP' || value === 'CAPEX';
+  return value === 'PRODUCTION'
+    || value === 'PRICING'
+    || value === 'OPEX'
+    || value === 'TAXES'
+    || value === 'OWNERSHIP'
+    || value === 'CAPEX'
+    || value === 'SPACING'
+    || value === 'SCHEDULE'
+    || value === 'RISK';
 }
 
 export function getEconomicsModule(): EconomicsModule {
