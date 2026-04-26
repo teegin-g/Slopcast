@@ -4,7 +4,13 @@ import DesignEconomicsView from '../components/slopcast/DesignEconomicsView';
 import DesignWellsView from '../components/slopcast/DesignWellsView';
 import { MapCommandCenter } from '../components/slopcast/MapCommandCenter';
 import PageHeader from '../components/slopcast/PageHeader';
-import { PdpReviewSurface, PdpUniverseSurface, UndevelopedPendingSurface } from '../components/slopcast/PdpWorkflowSurfaces';
+import {
+  PdpReviewSurface,
+  PdpUniverseSurface,
+  UndevelopedInventorySurface,
+  UndevelopedReviewSurface,
+  UndevelopedUniverseSurface,
+} from '../components/slopcast/PdpWorkflowSurfaces';
 import WorkflowStepper from '../components/slopcast/WorkflowStepper';
 import { isAssetWorkflow, type Phase1StageId, type Phase1WorkflowId } from '../components/slopcast/workflowModel';
 import { useSlopcastWorkspace } from '../hooks/useSlopcastWorkspace';
@@ -145,7 +151,7 @@ const SlopcastPage: React.FC = () => {
         fxClass={ws.fxClass}
       />
 
-      <main className={ws.activeWorkflowSurface === 'WELLS' && ws.viewportLayout !== 'mobile' ? 'relative flex-1' : 'p-4 md:p-6 max-w-[1920px] mx-auto w-full'}>
+      <main className={ws.activeWorkflowSurface === 'WELLS' && ws.activeWorkflow === 'PDP' && ws.viewportLayout !== 'mobile' ? 'relative flex-1' : 'p-4 md:p-6 max-w-[1920px] mx-auto w-full'}>
 
         {ws.activeWorkflowSurface === 'SCENARIOS' ? (
           <ScenarioDashboard
@@ -155,7 +161,18 @@ const SlopcastPage: React.FC = () => {
             setScenarios={ws.handleSetScenarios}
             activeScenarioId={ws.activeScenarioId}
             onSetActiveScenarioId={ws.setActiveScenarioId}
+            developmentSummary={ws.developmentInventorySummary}
           />
+        ) : ws.activeWorkflowSurface === 'WELLS' && ws.activeWorkflow === 'UNDEVELOPED' ? (
+          <>
+            {stageStepper}
+            <UndevelopedInventorySurface
+              inventory={ws.developmentInventory}
+              summary={ws.developmentInventorySummary}
+              readiness={ws.undevelopedReadiness}
+              onContinue={() => ws.setWorkflowStage('UNDEVELOPED', 'FORECAST_ECONOMICS')}
+            />
+          </>
         ) : ws.activeWorkflowSurface === 'WELLS' ? (
           wellsSurface
         ) : ws.activeWorkflowSurface === 'ECONOMICS' ? (
@@ -184,6 +201,8 @@ const SlopcastPage: React.FC = () => {
               operationsProps={ws.operationsProps}
               breakevenOilPrice={ws.breakevenOilPrice}
               activeWorkflow={ws.activeWorkflow}
+              developmentSummary={ws.developmentInventorySummary}
+              undevelopedReadiness={ws.undevelopedReadiness}
             />
           </>
         ) : (
@@ -216,8 +235,28 @@ const SlopcastPage: React.FC = () => {
                 onAcknowledge={ws.handleAcknowledgePdpDataQuality}
                 onOpenScenarios={() => ws.setActiveWorkflow('SCENARIOS')}
               />
+            ) : ws.activeWorkflow === 'UNDEVELOPED' && ws.activeWorkflowStage === 'UNIVERSE' ? (
+              <UndevelopedUniverseSurface
+                inventory={ws.developmentInventory}
+                summary={ws.developmentInventorySummary}
+                readiness={ws.undevelopedReadiness}
+                onContinue={() => ws.setWorkflowStage('UNDEVELOPED', 'WELLS_INVENTORY')}
+              />
+            ) : ws.activeWorkflow === 'UNDEVELOPED' && ws.activeWorkflowStage === 'REVIEW' ? (
+              <UndevelopedReviewSurface
+                inventory={ws.developmentInventory}
+                summary={ws.developmentInventorySummary}
+                readiness={ws.undevelopedReadiness}
+                activeScenarioName={ws.activeScenario?.name ?? 'Base Case'}
+                onOpenScenarios={() => ws.setActiveWorkflow('SCENARIOS')}
+              />
             ) : (
-              <UndevelopedPendingSurface stageLabel={ws.activeStageLabel} />
+              <UndevelopedInventorySurface
+                inventory={ws.developmentInventory}
+                summary={ws.developmentInventorySummary}
+                readiness={ws.undevelopedReadiness}
+                onContinue={() => ws.setWorkflowStage('UNDEVELOPED', 'FORECAST_ECONOMICS')}
+              />
             )}
           </>
         )}

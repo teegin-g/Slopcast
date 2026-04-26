@@ -1,8 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MOCK_WELLS } from '../../constants';
+import { buildMockDevelopmentInventory, getUndevelopedReadiness, summarizeDevelopmentInventory } from '../../utils/undevelopedInventory';
 import { buildProductionHistoryMap, getPdpReadiness, summarizePdpGroup, summarizeProductionUniverse } from '../../utils/pdpForecasting';
 import { createStoryGroup } from './storybookData';
-import { PdpReviewSurface, PdpUniverseSurface } from './PdpWorkflowSurfaces';
+import {
+  PdpReviewSurface,
+  PdpUniverseSurface,
+  UndevelopedInventorySurface,
+  UndevelopedReviewSurface,
+  UndevelopedUniverseSurface,
+} from './PdpWorkflowSurfaces';
 
 const wells = MOCK_WELLS.slice(0, 16);
 const historyByWellId = buildProductionHistoryMap(wells);
@@ -24,6 +31,13 @@ const groups = [
 }));
 const summaries = groups.map(group => group.pdpForecast!);
 const readiness = getPdpReadiness(groups, summaries);
+const developmentInventory = buildMockDevelopmentInventory();
+const developmentSummary = summarizeDevelopmentInventory(
+  developmentInventory.groups,
+  developmentInventory.dsus,
+  developmentInventory.plannedWells,
+);
+const undevelopedReadiness = getUndevelopedReadiness(developmentInventory.groups, developmentSummary);
 
 const meta = {
   title: 'Slopcast/PDP Workflow Surfaces',
@@ -63,6 +77,40 @@ export const Review: Story = {
       readiness={readiness}
       activeScenarioName="Base Case"
       onAcknowledge={() => {}}
+      onOpenScenarios={() => {}}
+    />
+  ),
+};
+
+export const UndevelopedUniverse: Story = {
+  render: () => (
+    <UndevelopedUniverseSurface
+      inventory={developmentInventory}
+      summary={developmentSummary}
+      readiness={undevelopedReadiness}
+      onContinue={() => {}}
+    />
+  ),
+};
+
+export const UndevelopedInventory: Story = {
+  render: () => (
+    <UndevelopedInventorySurface
+      inventory={developmentInventory}
+      summary={developmentSummary}
+      readiness={undevelopedReadiness}
+      onContinue={() => {}}
+    />
+  ),
+};
+
+export const UndevelopedReview: Story = {
+  render: () => (
+    <UndevelopedReviewSurface
+      inventory={developmentInventory}
+      summary={developmentSummary}
+      readiness={undevelopedReadiness}
+      activeScenarioName="Base Case"
       onOpenScenarios={() => {}}
     />
   ),

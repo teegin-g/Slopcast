@@ -1,7 +1,12 @@
 import React from 'react';
 import type {
+  DevelopmentInventoryGroup,
+  DevelopmentInventorySummary,
+  DsuInventory,
   PdpGroupForecastStatus,
   PdpReadinessStatus,
+  PlannedWell,
+  UndevelopedReadinessStatus,
   Well,
   WellGroup,
   WellProductionHistoryStatus,
@@ -301,3 +306,162 @@ export const UndevelopedPendingSurface: React.FC<{ stageLabel: string }> = ({ st
     </div>
   </Panel>
 );
+
+interface UndevelopedSurfaceProps {
+  inventory: {
+    dsus: DsuInventory[];
+    plannedWells: PlannedWell[];
+    groups: DevelopmentInventoryGroup[];
+  };
+  summary: DevelopmentInventorySummary;
+  readiness: UndevelopedReadinessStatus;
+  activeScenarioName?: string;
+  onContinue?: () => void;
+  onOpenScenarios?: () => void;
+}
+
+export const UndevelopedUniverseSurface: React.FC<UndevelopedSurfaceProps> = ({
+  inventory,
+  summary,
+  onContinue,
+}) => {
+  const preview = inventory.dsus.slice(0, 6);
+
+  return (
+    <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
+      <Panel title="Development Area" eyebrow="Undeveloped Universe">
+        <div className="space-y-3">
+          <Metric label="Gross Acreage" value={number(summary.totalAcreage)} detail="fixture DSU coverage" tone="text-emerald-300" />
+          <Metric label="Formations" value={number(summary.formations.length)} detail={summary.formations.slice(0, 2).join(', ')} />
+          <Metric label="Benches" value={number(summary.benches.length)} detail={summary.benches.slice(0, 2).join(', ')} tone="text-amber-300" />
+          <button type="button" onClick={onContinue} className="w-full rounded-inner bg-theme-cyan px-4 py-3 text-[10px] font-black uppercase tracking-[0.16em] text-theme-bg shadow-glow-cyan">
+            Continue to inventory
+          </button>
+        </div>
+      </Panel>
+
+      <Panel title="Acreage And Analog Coverage" eyebrow="Structured inventory source">
+        <div className="grid gap-3 md:grid-cols-4">
+          <Metric label="DSUs" value={number(summary.dsuCount)} detail="spacing units" />
+          <Metric label="Planned Wells" value={number(summary.plannedWellCount)} detail="PUD / permit sticks" tone="text-emerald-300" />
+          <Metric label="Avg Lateral" value={`${number(summary.averageLateralLengthFt)} ft`} detail="planned sticks" />
+          <Metric label="Risk Factor" value={`${(summary.riskFactor * 100).toFixed(0)}%`} detail="weighted inventory" tone="text-amber-300" />
+        </div>
+        <div className="mt-4 rounded-inner border border-theme-border bg-theme-bg overflow-hidden">
+          <div className="grid grid-cols-[1fr_0.9fr_0.9fr_0.7fr] border-b border-theme-border bg-theme-surface1/70 px-3 py-2 text-[9px] font-black uppercase tracking-[0.12em] text-theme-muted">
+            <span>DSU</span><span>Formation</span><span>Bench</span><span>Wells</span>
+          </div>
+          {preview.map((dsu) => (
+            <div key={dsu.id} className="grid grid-cols-[1fr_0.9fr_0.9fr_0.7fr] border-b border-theme-border/35 px-3 py-2 text-[11px] text-theme-muted last:border-b-0">
+              <span className="font-semibold text-theme-text truncate">{dsu.name}</span>
+              <span>{dsu.formation}</span>
+              <span className="truncate">{dsu.bench}</span>
+              <span>{dsu.plannedWellIds.length}</span>
+            </div>
+          ))}
+        </div>
+      </Panel>
+    </div>
+  );
+};
+
+export const UndevelopedInventorySurface: React.FC<UndevelopedSurfaceProps> = ({
+  inventory,
+  summary,
+  onContinue,
+}) => (
+  <div className="space-y-4">
+    <div className="grid gap-3 md:grid-cols-4">
+      <Metric label="Development Groups" value={number(inventory.groups.length)} detail="DSU programs" />
+      <Metric label="Planned Wells" value={number(summary.plannedWellCount)} detail="structured sticks" tone="text-emerald-300" />
+      <Metric label="Avg Spacing" value={`${number(summary.averageSpacingFt)} ft`} detail="inter-well" tone="text-amber-300" />
+      <Metric label="Wells / Year" value={number(summary.wellsPerYear)} detail="base schedule" />
+    </div>
+
+    <Panel title="Development Groups" eyebrow="Undeveloped Inventory">
+      <div className="grid gap-3 lg:grid-cols-3">
+        {inventory.groups.map((group) => (
+          <div key={group.id} className="rounded-inner border border-theme-border bg-theme-bg p-3">
+            <div className="flex items-center gap-2">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: group.color }} />
+              <p className="truncate text-sm font-black text-theme-text">{group.name}</p>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Metric label="DSUs" value={number(group.dsuIds.length)} detail="units" />
+              <Metric label="Wells" value={number(group.plannedWellIds.length)} detail="planned" />
+              <Metric label="Spacing" value={`${number(group.spacingAssumptions.spacingFt)} ft`} detail={group.spacingAssumptions.bench} tone="text-amber-300" />
+              <Metric label="Risk" value={`${(group.riskFactor * 100).toFixed(0)}%`} detail="base factor" tone="text-amber-300" />
+            </div>
+          </div>
+        ))}
+      </div>
+      <button type="button" onClick={onContinue} className="mt-4 rounded-inner bg-theme-cyan px-4 py-3 text-[10px] font-black uppercase tracking-[0.16em] text-theme-bg shadow-glow-cyan">
+        Continue to type curve & capital
+      </button>
+    </Panel>
+  </div>
+);
+
+export const UndevelopedReviewSurface: React.FC<UndevelopedSurfaceProps> = ({
+  inventory,
+  summary,
+  readiness,
+  activeScenarioName = 'Base Case',
+  onOpenScenarios,
+}) => {
+  const items = [
+    { label: 'DSUs or development groups created', done: readiness.inventoryCreated },
+    { label: 'Spacing and bench assignments set', done: readiness.spacingAssigned },
+    { label: 'Type curve assigned', done: readiness.typeCurveAssigned },
+    { label: 'CAPEX assigned', done: readiness.capexAssigned },
+    { label: 'Schedule assigned', done: readiness.scheduleAssigned },
+    { label: 'LOE, ownership, and taxes assigned', done: readiness.loeOwnershipTaxesAssigned },
+    { label: 'Economics calculated', done: readiness.economicsCalculated },
+  ];
+
+  return (
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="space-y-4">
+        <div className="grid gap-3 md:grid-cols-4">
+          <Metric label="Risked NPV10" value={currencyMm(summary.riskedNpv10)} detail={activeScenarioName} />
+          <Metric label="Unrisked NPV10" value={currencyMm(summary.unriskedNpv10)} detail="before risk" tone="text-emerald-300" />
+          <Metric label="Total CAPEX" value={currencyMm(summary.totalCapex)} detail={`${number(summary.plannedWellCount)} planned wells`} tone="text-amber-300" />
+          <Metric label="EUR" value={`${number(summary.eur / 1_000)} Mbo`} detail="development inventory" />
+        </div>
+
+        <Panel title="Undeveloped Group Status" eyebrow="Review">
+          <div className="space-y-3">
+            {inventory.groups.map((group) => (
+              <div key={group.id} className="rounded-inner border border-theme-border bg-theme-bg p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-black text-theme-text">{group.name}</p>
+                  <span className="rounded-inner border border-theme-border bg-theme-surface1 px-2 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-theme-muted">
+                    {group.typeCurveId ? 'Type curve assigned' : 'Needs type curve'}
+                  </span>
+                </div>
+                <div className="mt-3 grid gap-2 md:grid-cols-4">
+                  <Metric label="DSUs" value={number(group.dsuIds.length)} detail="units" />
+                  <Metric label="Wells" value={number(group.plannedWellIds.length)} detail="planned" />
+                  <Metric label="CAPEX" value={group.capexAssigned ? 'Ready' : 'Missing'} detail="base assumptions" tone={group.capexAssigned ? 'text-emerald-300' : 'text-amber-300'} />
+                  <Metric label="Schedule" value={group.scheduleAssigned ? 'Ready' : 'Missing'} detail="base pace" tone={group.scheduleAssigned ? 'text-emerald-300' : 'text-amber-300'} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Panel>
+      </div>
+
+      <div className="space-y-4">
+        <ReadinessChecklist items={items} />
+        <Panel title="Scenario Handoff" eyebrow="Undeveloped case">
+          <p className="text-sm leading-6 text-theme-muted">
+            This undeveloped case is scenario-ready when inventory, type curve, spacing, CAPEX, schedule, LOE, ownership, taxes, and risk assumptions are established.
+          </p>
+          <button type="button" onClick={onOpenScenarios} className="mt-4 w-full rounded-inner bg-theme-cyan px-4 py-3 text-[10px] font-black uppercase tracking-[0.16em] text-theme-bg shadow-glow-cyan">
+            Send undeveloped case to scenarios
+          </button>
+        </Panel>
+      </div>
+    </div>
+  );
+};

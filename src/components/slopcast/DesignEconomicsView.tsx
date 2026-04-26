@@ -1,6 +1,6 @@
 import React from 'react';
 import { ThemeId } from '../../theme/themes';
-import { DealMetrics, MonthlyCashFlow, Scenario, Well, WellGroup } from '../../types';
+import { DealMetrics, DevelopmentInventorySummary, MonthlyCashFlow, Scenario, UndevelopedReadinessStatus, Well, WellGroup } from '../../types';
 import type { Phase1WorkflowId } from './workflowModel';
 import OperationsConsole, { OperationsConsoleProps } from './OperationsConsole';
 import EconomicsGroupBar from './EconomicsGroupBar';
@@ -14,6 +14,7 @@ import ProductionModule from './economics/ProductionModule';
 import ScenarioCompareStrip from './economics/ScenarioCompareStrip';
 import TaxesModule from './economics/TaxesModule';
 import { currency, currencyMm, monthsToYears, ratio } from './economics/derived';
+import { InsightBanner, MetricTile, ModulePanel } from './economics/EconomicsPrimitives';
 import { EconomicsModule, EconomicsModuleProps, getEconomicsModuleMeta } from './economics/types';
 
 export type EconomicsMobilePanel = 'SETUP' | 'RESULTS';
@@ -41,6 +42,8 @@ interface DesignEconomicsViewProps {
   operationsProps: OperationsConsoleProps;
   breakevenOilPrice?: number | null;
   activeWorkflow?: Phase1WorkflowId;
+  developmentSummary?: DevelopmentInventorySummary;
+  undevelopedReadiness?: UndevelopedReadinessStatus;
 }
 
 const BottomKpiStrip: React.FC<{
@@ -74,6 +77,68 @@ const BottomKpiStrip: React.FC<{
   );
 };
 
+const WorkflowAssumptionModule: React.FC<{
+  module: EconomicsModule;
+  summary?: DevelopmentInventorySummary;
+  readiness?: UndevelopedReadinessStatus;
+}> = ({ module, summary, readiness }) => {
+  if (module === 'SPACING') {
+    return (
+      <div className="space-y-4">
+        <ModulePanel accent="mint" title="Spacing & Inventory" bodyClassName="p-4">
+          <div className="grid gap-3 md:grid-cols-4">
+            <MetricTile label="DSUs" value={`${summary?.dsuCount ?? 0}`} detail="development units" accent="mint" compact />
+            <MetricTile label="Planned Wells" value={`${summary?.plannedWellCount ?? 0}`} detail="sticks in inventory" accent="cyan" compact />
+            <MetricTile label="Avg Spacing" value={`${Math.round(summary?.averageSpacingFt ?? 0)} ft`} detail="well-to-well" accent="amber" compact />
+            <MetricTile label="Avg Lateral" value={`${Math.round((summary?.averageLateralLengthFt ?? 0) / 100) / 10}k ft`} detail="planned length" accent="violet" compact />
+          </div>
+        </ModulePanel>
+        <InsightBanner accent="mint">
+          Undeveloped inventory is modeled as structured DSUs and planned wells in this slice. Full map-based geometry editing remains deferred, but spacing, bench, and lateral assumptions are first-class workflow inputs.
+        </InsightBanner>
+      </div>
+    );
+  }
+
+  if (module === 'SCHEDULE') {
+    return (
+      <div className="space-y-4">
+        <ModulePanel accent="green" title="Development Schedule" bodyClassName="p-4">
+          <div className="grid gap-3 md:grid-cols-4">
+            <MetricTile label="Wells / Year" value={`${summary?.wellsPerYear ?? 0}`} detail="base pace" accent="green" compact />
+            <MetricTile label="Inventory" value={`${summary?.plannedWellCount ?? 0}`} detail="planned wells" accent="cyan" compact />
+            <MetricTile label="CAPEX" value={currencyMm(summary?.totalCapex ?? 0)} detail="unscaled" accent="violet" compact />
+            <MetricTile label="Schedule Ready" value={readiness?.scheduleAssigned ? 'Ready' : 'Missing'} detail="review gate" accent={readiness?.scheduleAssigned ? 'green' : 'red'} compact />
+          </div>
+        </ModulePanel>
+        <InsightBanner accent="green">
+          Scenario schedule controls sensitize pace globally. Base timing and development sequence live in the Undeveloped workflow so scenarios do not overwrite inventory assumptions.
+        </InsightBanner>
+      </div>
+    );
+  }
+
+  if (module === 'RISK') {
+    return (
+      <div className="space-y-4">
+        <ModulePanel accent="red" title="Risking" bodyClassName="p-4">
+          <div className="grid gap-3 md:grid-cols-4">
+            <MetricTile label="Risk Factor" value={`${((summary?.riskFactor ?? 0) * 100).toFixed(0)}%`} detail="weighted inventory" accent="red" compact />
+            <MetricTile label="Unrisked NPV10" value={currencyMm(summary?.unriskedNpv10 ?? 0)} detail="base inventory" accent="cyan" compact />
+            <MetricTile label="Risked NPV10" value={currencyMm(summary?.riskedNpv10 ?? 0)} detail="scenario input" accent="amber" compact />
+            <MetricTile label="Type Curve" value={readiness?.typeCurveAssigned ? 'Assigned' : 'Missing'} detail="review gate" accent={readiness?.typeCurveAssigned ? 'green' : 'red'} compact />
+          </div>
+        </ModulePanel>
+        <InsightBanner accent="red">
+          Risk is undeveloped-specific in this pass: PUD/probable confidence and parent-child degradation affect development value, while PDP confidence remains tied to production history quality.
+        </InsightBanner>
+      </div>
+    );
+  }
+
+  return null;
+};
+
 const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   isClassic,
   themeId,
@@ -97,10 +162,12 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   operationsProps,
   breakevenOilPrice,
   activeWorkflow = 'PDP',
+  developmentSummary,
+  undevelopedReadiness,
 }) => {
   const baseScenario = scenarios.find((scenario) => scenario.isBaseCase) ?? scenarios[0];
   const activeScenario = scenarios.find((scenario) => scenario.id === activeScenarioId) ?? baseScenario;
-  const meta = getEconomicsModuleMeta(economicsModule);
+  const meta = getEconomicsModuleMeta(economicsModule, activeWorkflow);
 
   const moduleProps: EconomicsModuleProps = {
     isClassic,
@@ -130,6 +197,10 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
         return <OwnershipModule {...moduleProps} />;
       case 'CAPEX':
         return <CapexModule {...moduleProps} />;
+      case 'SPACING':
+      case 'SCHEDULE':
+      case 'RISK':
+        return <WorkflowAssumptionModule module={economicsModule} summary={developmentSummary} readiness={undevelopedReadiness} />;
       case 'PRODUCTION':
       default:
         return <ProductionModule {...moduleProps} />;
@@ -199,7 +270,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
           <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-3">
           <div>
               <p className="text-[10px] font-black uppercase tracking-[0.24em] text-theme-muted">
-                {activeWorkflow === 'PDP' ? 'PDP Forecast & Economics' : 'Economics'}
+                {activeWorkflow === 'PDP' ? 'PDP Forecast & Economics' : 'Undeveloped Forecast & Economics'}
               </p>
               <h1 className="mt-1 text-xl font-black tracking-normal text-theme-text">{meta.label}</h1>
             </div>

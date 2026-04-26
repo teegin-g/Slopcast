@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { WellGroup, Well, Scenario, SensitivityVariable, ScheduleParams } from '../types';
+import { DevelopmentInventorySummary, DevelopmentType, WellGroup, Well, Scenario, SensitivityVariable, ScheduleParams } from '../types';
 import { calculateEconomics } from '../utils/economics';
 import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import SensitivityMatrix from './SensitivityMatrix';
@@ -15,6 +15,7 @@ interface ScenarioDashboardProps {
   setScenarios: React.Dispatch<React.SetStateAction<Scenario[]>>;
   activeScenarioId: string;
   onSetActiveScenarioId: (scenarioId: string) => void;
+  developmentSummary?: DevelopmentInventorySummary;
 }
 
 const DEFAULT_SCHEDULE: ScheduleParams = { 
@@ -75,6 +76,7 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
   setScenarios,
   activeScenarioId,
   onSetActiveScenarioId,
+  developmentSummary,
 }) => {
   const { theme } = useTheme();
   const { chartPalette } = theme;
@@ -95,7 +97,9 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
         let scenarioOpex = 0;
         const cumulativeFlows = new Array(120).fill(0);
 
-        groups.forEach(group => {
+        const included = scenario.includedWorkflows ?? ['PDP', 'UNDEVELOPED'];
+
+        if (included.includes('PDP')) groups.forEach(group => {
             const groupWells = wells.filter(w => group.wellIds.has(w.id));
             const { flow, metrics } = calculateEconomics(
               groupWells,
@@ -114,6 +118,21 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
             flow.forEach((f) => { scenarioRevenue += f.revenue; scenarioOpex += f.opex; });
         });
 
+        if (included.includes('UNDEVELOPED') && developmentSummary) {
+          const pricingLift = scenario.pricing.oilPrice / DEFAULT_COMMODITY_PRICING.oilPrice;
+          const developmentNpv = developmentSummary.riskedNpv10 * scenario.productionScalar * pricingLift
+            - developmentSummary.totalCapex * Math.max(0, scenario.capexScalar - 1);
+          scenarioNpv += developmentNpv;
+          scenarioCapex += developmentSummary.totalCapex * scenario.capexScalar;
+          scenarioEur += developmentSummary.eur * scenario.productionScalar;
+          scenarioRevenue += developmentSummary.unriskedNpv10 + developmentSummary.totalCapex;
+          scenarioOpex += developmentSummary.plannedWellCount * 24_000 * (scenario.loeScalar ?? 1);
+          cumulativeFlows.forEach((_, index) => {
+            const ramp = Math.min(1, (index + 1) / 36);
+            cumulativeFlows[index] += (developmentNpv / 120) * ramp;
+          });
+        }
+
         let runningCum = 0;
         return {
             scenario,
@@ -126,7 +145,7 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
             flow: cumulativeFlows.map(cf => { runningCum += cf; return runningCum; })
         };
     }).sort((a,b) => b.metrics.npv10 - a.metrics.npv10);
-  }, [groups, wells, scenarios]);
+  }, [developmentSummary, groups, wells, scenarios]);
 
   const cfChartData = useMemo(() => {
       const data = [];
@@ -162,7 +181,9 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
         pricing: { ...(base?.pricing || DEFAULT_COMMODITY_PRICING) },
         schedule: { ...(base?.schedule || DEFAULT_SCHEDULE) },
         capexScalar: 1.0,
-        productionScalar: 1.0
+        productionScalar: 1.0,
+        loeScalar: 1.0,
+        includedWorkflows: [...(base?.includedWorkflows ?? ['PDP', 'UNDEVELOPED'])],
       };
       setScenarios([...scenarios, newScen]);
       onSetActiveScenarioId(newScen.id);
@@ -170,6 +191,15 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
   };
 
   const updateScenario = (id: string, updates: Partial<Scenario>) => setScenarios(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+  const toggleWorkflow = (id: string, workflow: DevelopmentType) => {
+      const s = scenarios.find(sc => sc.id === id);
+      if (!s) return;
+      const included = s.includedWorkflows ?? ['PDP', 'UNDEVELOPED'];
+      const next = included.includes(workflow)
+        ? included.filter(item => item !== workflow)
+        : [...included, workflow];
+      updateScenario(id, { includedWorkflows: next.length > 0 ? next : [workflow] });
+  };
   const updatePricing = (id: string, field: string, value: number) => {
       const s = scenarios.find(sc => sc.id === id);
       if(s) updateScenario(id, { pricing: { ...s.pricing, [field]: value } });
@@ -196,8 +226,20 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
       currentOil: activeGroups.reduce((sum, group) => sum + (group.pdpForecast?.currentOilBblPerDay ?? 0), 0),
       forecastedGroups: activeGroups.filter(group => group.pdpForecast?.forecastGenerated).length,
       opexReady: activeGroups.filter(group => group.pdpForecast?.opexForecastAssigned).length,
+      npv10: activeGroups.reduce((sum, group) => sum + (group.metrics?.npv10 ?? 0), 0),
+      eur: activeGroups.reduce((sum, group) => sum + (group.metrics?.eur ?? 0), 0),
     };
   }, [groups]);
+  const portfolioConvergence = useMemo(() => {
+    const selected = scenarioResults.find(result => result.scenario.id === activeScenarioId) ?? scenarioResults[0];
+    return {
+      pdpNpv: pdpContribution.npv10,
+      undevelopedNpv: developmentSummary?.riskedNpv10 ?? 0,
+      combinedNpv: selected?.metrics.npv10 ?? pdpContribution.npv10 + (developmentSummary?.riskedNpv10 ?? 0),
+      undevelopedWells: developmentSummary?.plannedWellCount ?? 0,
+      undevelopedCapex: developmentSummary?.totalCapex ?? 0,
+    };
+  }, [activeScenarioId, developmentSummary, pdpContribution.npv10, scenarioResults]);
   const inputClass = isClassic
     ? 'w-full rounded-lg px-3 py-2 text-xs font-black sc-inputNavy'
     : 'w-full bg-theme-bg border rounded-lg px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition border-theme-border';
@@ -242,6 +284,13 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
                               {Math.max(...s.schedule.annualRigs)} RIGS
                             </span>
                           </div>
+                          <div className="mt-2 flex gap-1">
+                            {(s.includedWorkflows ?? ['PDP', 'UNDEVELOPED']).map(workflow => (
+                              <span key={workflow} className="rounded bg-black/25 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.12em] text-white/70">
+                                {workflow === 'UNDEVELOPED' ? 'UNDEV' : workflow}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -275,6 +324,13 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
                                       {Math.max(...s.schedule.annualRigs)} RIGS
                                   </span>
                               </div>
+                              <div className="mt-3 flex flex-wrap gap-1">
+                                {(s.includedWorkflows ?? ['PDP', 'UNDEVELOPED']).map(workflow => (
+                                  <span key={workflow} className="rounded-inner border border-theme-border bg-theme-surface1 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.12em] text-theme-muted">
+                                    {workflow === 'UNDEVELOPED' ? 'UNDEV' : workflow}
+                                  </span>
+                                ))}
+                              </div>
                           </div>
                       ))}
                   </div>
@@ -297,10 +353,23 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
                                    <input type="text" value={activeScenario.name} onChange={e => updateScenario(activeScenario.id, { name: e.target.value.toUpperCase() })} className={inputClass} />
                                </div>
                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className={labelClass}>INDICATOR</label>
-                                        <input type="color" value={activeScenario.color} onChange={e => updateScenario(activeScenario.id, { color: e.target.value })} className="w-full h-10 rounded-lg cursor-pointer sc-inputNavy" />
-                                    </div>
+                               <div>
+                                   <label className={labelClass}>INDICATOR</label>
+                                   <input type="color" value={activeScenario.color} onChange={e => updateScenario(activeScenario.id, { color: e.target.value })} className="w-full h-10 rounded-lg cursor-pointer sc-inputNavy" />
+                               </div>
+                               </div>
+                               <div className="mt-4">
+                                 <label className={labelClass}>INCLUDED WORKFLOWS</label>
+                                 <div className="grid grid-cols-2 gap-2">
+                                   {(['PDP', 'UNDEVELOPED'] as DevelopmentType[]).map(workflow => {
+                                     const active = (activeScenario.includedWorkflows ?? ['PDP', 'UNDEVELOPED']).includes(workflow);
+                                     return (
+                                       <button key={workflow} type="button" onClick={() => toggleWorkflow(activeScenario.id, workflow)} className={`rounded-lg border px-3 py-2 text-[9px] font-black uppercase tracking-[0.14em] ${active ? 'border-theme-warning bg-black/30 text-white' : 'border-black/25 bg-black/10 text-white/55'}`}>
+                                         {workflow === 'UNDEVELOPED' ? 'Undev' : workflow}
+                                       </button>
+                                     );
+                                   })}
+                                 </div>
                                </div>
                              </div>
                            </div>
@@ -317,6 +386,19 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
                                     <label className={labelClass}>INDICATOR</label>
                                     <input type="color" value={activeScenario.color} onChange={e => updateScenario(activeScenario.id, { color: e.target.value })} className="w-full h-10 bg-theme-bg border border-theme-border rounded-lg cursor-pointer" />
                                 </div>
+                           </div>
+                           <div className="mt-4">
+                             <label className={labelClass}>INCLUDED WORKFLOWS</label>
+                             <div className="grid grid-cols-2 gap-2">
+                               {(['PDP', 'UNDEVELOPED'] as DevelopmentType[]).map(workflow => {
+                                 const active = (activeScenario.includedWorkflows ?? ['PDP', 'UNDEVELOPED']).includes(workflow);
+                                 return (
+                                   <button key={workflow} type="button" onClick={() => toggleWorkflow(activeScenario.id, workflow)} className={`rounded-inner border px-3 py-2 text-[9px] font-black uppercase tracking-[0.14em] ${active ? 'border-theme-cyan bg-theme-cyan/15 text-theme-cyan' : 'border-theme-border bg-theme-bg text-theme-muted'}`}>
+                                     {workflow === 'UNDEVELOPED' ? 'Undev' : workflow}
+                                   </button>
+                                 );
+                               })}
+                             </div>
                            </div>
                          </>
                        )}
@@ -362,10 +444,10 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
                            </div>
                        </AccordionItem>
 
-                       <AccordionItem title="PDP Forecast Scalars" isOpen={openSection === 'SCALARS'} onClick={() => setOpenSection('SCALARS')} useBrandFont={theme.features.brandFont}>
+                       <AccordionItem title="Global Scalars By Workflow" isOpen={openSection === 'SCALARS'} onClick={() => setOpenSection('SCALARS')} useBrandFont={theme.features.brandFont}>
                            <div className="space-y-6">
                                <div>
-                                   <div className="flex justify-between mb-2"><label className={labelClass}>MAINTENANCE CAPEX / LOE SCALAR</label><span className="text-[10px] font-black text-theme-cyan">{(activeScenario.capexScalar * 100).toFixed(0)}%</span></div>
+                                   <div className="flex justify-between mb-2"><label className={labelClass}>CAPEX SCALAR · UNDEVELOPED</label><span className="text-[10px] font-black text-theme-cyan">{(activeScenario.capexScalar * 100).toFixed(0)}%</span></div>
                                    <input
                                      type="range"
                                      min="0.5"
@@ -381,7 +463,7 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
                                    />
                                </div>
                                <div>
-                                   <div className="flex justify-between mb-2"><label className={labelClass}>PDP PRODUCTION / EUR SCALAR</label><span className="text-[10px] font-black text-theme-magenta">{(activeScenario.productionScalar * 100).toFixed(0)}%</span></div>
+                                   <div className="flex justify-between mb-2"><label className={labelClass}>PRODUCTION / EUR SCALAR · PDP + UNDEVELOPED</label><span className="text-[10px] font-black text-theme-magenta">{(activeScenario.productionScalar * 100).toFixed(0)}%</span></div>
                                    <input
                                      type="range"
                                      min="0.5"
@@ -396,6 +478,22 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
                                      }
                                    />
                                </div>
+                               <div>
+                                   <div className="flex justify-between mb-2"><label className={labelClass}>LOE / OPEX SCALAR · PDP + UNDEVELOPED</label><span className="text-[10px] font-black text-theme-warning">{((activeScenario.loeScalar ?? 1) * 100).toFixed(0)}%</span></div>
+                                   <input
+                                     type="range"
+                                     min="0.5"
+                                     max="1.75"
+                                     step="0.05"
+                                     value={activeScenario.loeScalar ?? 1}
+                                     onChange={e => updateScenario(activeScenario.id, { loeScalar: parseFloat(e.target.value) })}
+                                     className={
+                                       isClassic
+                                         ? 'w-full h-1.5 sc-rangeNavy appearance-none cursor-pointer'
+                                         : 'w-full h-1.5 bg-theme-surface1 border border-theme-border rounded-lg appearance-none cursor-pointer accent-theme-warning'
+                                     }
+                                   />
+                               </div>
                            </div>
                        </AccordionItem>
                    </div>
@@ -407,16 +505,14 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
           <div className={isClassic ? 'sc-panel theme-transition overflow-hidden' : 'rounded-panel border p-4 shadow-card theme-transition bg-theme-surface1/70 border-theme-border'}>
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan">PDP Contribution</p>
-                      <h2 className="mt-1 text-lg font-black text-theme-text">Historical production forecast case</h2>
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-theme-cyan">Scenario Convergence</p>
+                      <h2 className="mt-1 text-lg font-black text-theme-text">PDP, undeveloped, and combined asset value</h2>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+                  <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
                       {[
-                        ['Groups', pdpContribution.groupCount.toString()],
-                        ['Wells', pdpContribution.wellCount.toString()],
-                        ['Current Oil', `${Math.round(pdpContribution.currentOil).toLocaleString()} bopd`],
-                        ['Forecasted', `${pdpContribution.forecastedGroups}/${pdpContribution.groupCount}`],
-                        ['LOE Ready', `${pdpContribution.opexReady}/${pdpContribution.groupCount}`],
+                        ['PDP NPV10', `$${(portfolioConvergence.pdpNpv / 1e6).toFixed(1)}M`],
+                        ['Undev NPV10', `$${(portfolioConvergence.undevelopedNpv / 1e6).toFixed(1)}M`],
+                        ['Combined', `$${(portfolioConvergence.combinedNpv / 1e6).toFixed(1)}M`],
                       ].map(([label, value]) => (
                         <div key={label} className="rounded-inner border border-theme-border bg-theme-bg px-3 py-2">
                           <p className="text-[8px] font-black uppercase tracking-[0.14em] text-theme-muted">{label}</p>
@@ -424,6 +520,20 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
                         </div>
                       ))}
                   </div>
+              </div>
+              <div className="mt-3 grid gap-2 md:grid-cols-5">
+                {[
+                  ['PDP Wells', pdpContribution.wellCount.toString()],
+                  ['Current Oil', `${Math.round(pdpContribution.currentOil).toLocaleString()} bopd`],
+                  ['PDP Forecasted', `${pdpContribution.forecastedGroups}/${pdpContribution.groupCount}`],
+                  ['Undev Wells', portfolioConvergence.undevelopedWells.toString()],
+                  ['Undev CAPEX', `$${(portfolioConvergence.undevelopedCapex / 1e6).toFixed(1)}M`],
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-inner border border-theme-border/70 bg-theme-bg/70 px-3 py-2">
+                    <p className="text-[8px] font-black uppercase tracking-[0.14em] text-theme-muted">{label}</p>
+                    <p className="mt-1 text-sm font-black text-theme-text tabular-nums">{value}</p>
+                  </div>
+                ))}
               </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
@@ -441,6 +551,13 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
                             <div className="text-3xl font-black tracking-tight theme-transition text-theme-text">
                               ${(res.metrics.npv10 / 1e6).toFixed(1)}M <span className="text-[10px] text-theme-muted font-black tracking-[0.1em] ml-1">NPV10</span>
                             </div>
+                            <div className="mt-3 flex flex-wrap gap-1">
+                              {(res.scenario.includedWorkflows ?? ['PDP', 'UNDEVELOPED']).map(workflow => (
+                                <span key={workflow} className="rounded bg-black/25 px-2 py-1 text-[8px] font-black uppercase tracking-[0.12em] text-white/70">
+                                  {workflow === 'UNDEVELOPED' ? 'UNDEV' : workflow}
+                                </span>
+                              ))}
+                            </div>
                             <div className="flex justify-between mt-6 text-[10px] text-theme-muted font-bold tracking-widest border-t border-white/5 pt-3">
                               <span>ROI: {res.metrics.roi.toFixed(2)}X</span>
                               <span>FLEET: {Math.max(...res.scenario.schedule.annualRigs)} RIGS</span>
@@ -452,6 +569,13 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({
                           <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] mb-4 ml-2 transition-all text-theme-cyan group-hover:text-theme-magenta truncate ${theme.features.brandFont ? 'brand-font' : ''}`}>{res.scenario.name}</h4>
                           <div className="ml-2">
                               <div className="text-3xl font-black tracking-tight theme-transition text-theme-text">${(res.metrics.npv10 / 1e6).toFixed(1)}M <span className="text-[10px] text-theme-muted font-black tracking-[0.1em] ml-1">NPV10</span></div>
+                              <div className="mt-3 flex flex-wrap gap-1">
+                                {(res.scenario.includedWorkflows ?? ['PDP', 'UNDEVELOPED']).map(workflow => (
+                                  <span key={workflow} className="rounded-inner border border-theme-border bg-theme-bg px-2 py-1 text-[8px] font-black uppercase tracking-[0.12em] text-theme-muted">
+                                    {workflow === 'UNDEVELOPED' ? 'UNDEV' : workflow}
+                                  </span>
+                                ))}
+                              </div>
                               <div className="flex justify-between mt-6 text-[10px] text-theme-muted font-bold tracking-widest border-t border-white/5 pt-3">
                                   <span>ROI: {res.metrics.roi.toFixed(2)}X</span>
                                   <span>FLEET: {Math.max(...res.scenario.schedule.annualRigs)} RIGS</span>

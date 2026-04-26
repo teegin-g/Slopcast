@@ -1,5 +1,5 @@
 import React from 'react';
-import { ECONOMICS_MODULES, EconomicsModule } from './types';
+import { EconomicsModule, getEconomicsModulesForWorkflow } from './types';
 import { accentClass } from './EconomicsPrimitives';
 import type { Phase1WorkflowId } from '../workflowModel';
 
@@ -10,16 +10,11 @@ interface EconomicsModuleTabsProps {
 }
 
 const EconomicsModuleTabs: React.FC<EconomicsModuleTabsProps> = ({ module, onChange, activeWorkflow }) => {
+  const modules = getEconomicsModulesForWorkflow(activeWorkflow);
   return (
     <nav className="rounded-panel border border-theme-border bg-theme-surface1/55 shadow-card p-2 theme-transition" aria-label="Economics modules">
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">
-        {ECONOMICS_MODULES.map((item) => {
-          const pdpLabel = activeWorkflow === 'PDP' && item.id === 'PRODUCTION' ? 'PDP Forecast' : item.shortLabel;
-          const pdpEyebrow = activeWorkflow === 'PDP' && item.id === 'PRODUCTION'
-            ? 'History-driven decline'
-            : activeWorkflow === 'PDP' && item.id === 'CAPEX'
-              ? 'Maintenance capital'
-              : item.eyebrow;
+      <div className={`grid grid-cols-2 md:grid-cols-4 gap-2 ${modules.length > 6 ? 'xl:grid-cols-4 2xl:grid-cols-8' : 'xl:grid-cols-6'}`}>
+        {modules.map((item) => {
           const active = item.id === module;
           const tone = accentClass(item.accent);
           return (
@@ -36,9 +31,9 @@ const EconomicsModuleTabs: React.FC<EconomicsModuleTabsProps> = ({ module, onCha
               }`}
             >
               <span className={`block text-[9px] font-black uppercase tracking-[0.15em] ${active ? tone.text : ''}`}>
-                {pdpLabel}
+                {item.shortLabel}
               </span>
-              <span className="mt-1 block text-[9px] leading-snug text-theme-muted">{pdpEyebrow}</span>
+              <span className="mt-1 block text-[9px] leading-snug text-theme-muted">{item.eyebrow}</span>
             </button>
           );
         })}
