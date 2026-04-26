@@ -5,11 +5,7 @@
   "keyword": "$team",
   "phase": "planning",
   "activated_at": "2026-04-10T22:52:32.495Z",
-  "updated_at": "2026-04-10T22:52:32.495Z",
+  "updated_at": "2026-04-26T22:26:13.479Z",
   "source": "keyword-detector",
-  "session_id": "",
-  "thread_id": "019d7981-4bf0-7692-907f-a1a246112210",
-  "turn_id": "019d7985-1884-7491-8e82-11e669393bb7",
-  "iteration": 18,
-  "last_turn_at": "2026-04-25T22:22:16.026Z"
+  "input_lock": null
 }
