@@ -1,3 +1,5 @@
+import '../styles/synthwave.css';
+
 /**
  * SynthwaveBackground – animated inline-SVG backdrop for the synthwave theme.
  *
