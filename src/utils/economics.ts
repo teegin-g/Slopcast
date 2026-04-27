@@ -245,7 +245,7 @@ export const calculateEconomics = (
   if (selectedWells.length === 0) {
       return {
           flow: [],
-          metrics: { totalCapex: 0, eur: 0, npv10: 0, irr: 0, payoutMonths: 0, wellCount: 0 }
+          metrics: { totalCapex: 0, eur: 0, npv10: 0, payoutMonths: 0, wellCount: 0 }
       };
   }
 
@@ -402,7 +402,6 @@ export const calculateEconomics = (
       totalCapex: totalNetCapex,
       eur: totalOil,
       npv10: npv,
-      irr: 0,
       payoutMonths: payoutMonth,
       wellCount: selectedWells.length
     }
@@ -548,7 +547,6 @@ export const applyDebtLayer = (
       ...metrics,
       leveredNpv10: leveredNpv,
       dscr,
-      equityIrr: 0, // simplified - full IRR computation is complex
     },
   };
 };
@@ -631,7 +629,6 @@ export const aggregateEconomics = (groups: WellGroup[]): { flow: MonthlyCashFlow
             totalCapex,
             eur: totalEur,
             npv10: totalNpv10,
-            irr: 0, 
             payoutMonths: payoutMonth,
             wellCount: totalWellCount
         }

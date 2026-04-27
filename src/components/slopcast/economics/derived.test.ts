@@ -27,7 +27,7 @@ const group: WellGroup = {
   opex: { ...DEFAULT_OPEX, segments: DEFAULT_OPEX.segments.map((segment) => ({ ...segment })) },
   ownership: { ...DEFAULT_OWNERSHIP, agreements: [] },
   flow,
-  metrics: { totalCapex: 2_000_000, eur: 2500, npv10: 1_500_000, irr: 0, payoutMonths: 24, wellCount: 1 },
+  metrics: { totalCapex: 2_000_000, eur: 2500, npv10: 1_500_000, payoutMonths: 24, wellCount: 1 },
 };
 
 const wells: Well[] = [

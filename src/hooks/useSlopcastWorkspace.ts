@@ -31,7 +31,6 @@ import {
   clearFxMode,
   setAnalysisOpenSection as storeAnalysisOpenSection,
 } from '../services/storage/workspacePreferences';
-import type { ParsedFilters } from '../components/slopcast/LandingPage';
 import type { DealRecord } from '../types';
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -114,10 +113,6 @@ export function useSlopcastWorkspace() {
 
   const handleCreateDeal = useCallback(() => {
     setPageMode('workspace');
-  }, []);
-
-  const handleAcreageSearch = useCallback((query: string, filters: ParsedFilters) => {
-    console.log('[AcreageSearch]', query, filters);
   }, []);
 
   // --- Wells & spatial source ---
@@ -714,7 +709,7 @@ export function useSlopcastWorkspace() {
 
     // Page mode
     pageMode, setPageMode, savedDeals,
-    handleSelectDeal, handleCreateDeal, handleAcreageSearch,
+    handleSelectDeal, handleCreateDeal,
 
     // View state
     viewMode, setViewMode,

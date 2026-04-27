@@ -26,7 +26,7 @@ export const getGroupWells = (group: WellGroup, wells: Well[]) => wells.filter((
 
 export const getFlow = (group: WellGroup) => group.flow ?? [];
 export const getMetrics = (group: WellGroup): DealMetrics => (
-  group.metrics ?? { totalCapex: 0, eur: 0, npv10: 0, irr: 0, payoutMonths: 0, wellCount: 0 }
+  group.metrics ?? { totalCapex: 0, eur: 0, npv10: 0, payoutMonths: 0, wellCount: 0 }
 );
 
 export function getRealizedPricing(pricing: CommodityPricingAssumptions) {

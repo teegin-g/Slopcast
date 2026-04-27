@@ -190,7 +190,6 @@ export interface DealMetrics {
   totalCapex: number;
   eur: number; // Estimated Ultimate Recovery
   npv10: number; // Net Present Value @ 10%
-  irr: number; // Internal Rate of Return (approximation)
   payoutMonths: number;
   wellCount: number;
   // After-tax metrics (populated when tax assumptions provided)
@@ -198,7 +197,6 @@ export interface DealMetrics {
   afterTaxPayoutMonths?: number;
   // Levered metrics (populated when debt assumptions enabled)
   leveredNpv10?: number;
-  equityIrr?: number;
   dscr?: number; // Debt service coverage ratio
   // Risked metrics (populated when reserves classification set)
   riskedEur?: number;
@@ -574,8 +572,6 @@ export interface MapViewState {
   pitch: number;
   bearing: number;
 }
-
-export type MapLayerVisibility = Record<string, boolean>;
 
 // ---------------------------------------------------------------------------
 // Spatial Data Types

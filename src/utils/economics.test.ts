@@ -42,7 +42,6 @@ describe('calculateEconomics', () => {
     expect(metrics.totalCapex).toBe(0);
     expect(metrics.eur).toBe(0);
     expect(metrics.npv10).toBe(0);
-    expect(metrics.irr).toBe(0);
     expect(metrics.payoutMonths).toBe(0);
     expect(metrics.wellCount).toBe(0);
   });

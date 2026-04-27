@@ -17,8 +17,6 @@ const fmtCurrency = (v: number): string => {
   return `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
-const fmtPct = (v: number): string => `${(v * 100).toFixed(2)}%`;
-
 const fmtInt = (v: number): string => String(Math.round(v));
 
 const fmtNumber = (v: number, decimals = 1): string =>
@@ -35,7 +33,6 @@ interface MetricDef {
 
 const METRIC_DEFS: MetricDef[] = [
   { key: 'npv10', label: 'NPV (10%)', extract: m => m.npv10, format: fmtCurrency },
-  { key: 'irr', label: 'IRR', extract: m => m.irr, format: fmtPct },
   { key: 'payoutMonths', label: 'Payout', extract: m => m.payoutMonths, format: v => `${fmtInt(v)} mo` },
   { key: 'totalCapex', label: 'Total CAPEX', extract: m => m.totalCapex, format: fmtCurrency },
   { key: 'eur', label: 'EUR', extract: m => m.eur, format: v => `${fmtNumber(v / 1e3, 1)} MBOE` },

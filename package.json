@@ -38,7 +38,6 @@
     "@tailwindcss/vite": "^4.2.1",
     "@tanstack/react-table": "^8.21.3",
     "@vitejs/plugin-react": "^5.0.0",
-    "canvas": "^3.2.1",
     "d3": "^7.9.0",
     "express": "^4.22.1",
     "mapbox-gl": "^3.18.1",
