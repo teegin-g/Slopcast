@@ -3,13 +3,9 @@
   "active": true,
   "skill": "team",
   "keyword": "$team",
-  "phase": "planning",
+  "phase": "reviewing",
   "activated_at": "2026-04-10T22:52:32.495Z",
-  "updated_at": "2026-04-10T22:52:32.495Z",
+  "updated_at": "2026-04-29T04:45:59.629Z",
   "source": "keyword-detector",
-  "session_id": "",
-  "thread_id": "019d7981-4bf0-7692-907f-a1a246112210",
-  "turn_id": "019d7985-1884-7491-8e82-11e669393bb7",
-  "iteration": 8,
-  "last_turn_at": "2026-04-24T00:14:33.082Z"
+  "input_lock": null
 }
