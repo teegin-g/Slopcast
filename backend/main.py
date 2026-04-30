@@ -51,8 +51,13 @@ def create_app() -> FastAPI:
             tc=req.typeCurve,
             capex=req.capex,
             pricing=req.pricing,
+            opex=req.opex,
+            ownership=req.ownership,
             scalars=scalars,
             schedule_override=req.scheduleOverride,
+            tax_assumptions=req.taxAssumptions,
+            debt_assumptions=req.debtAssumptions,
+            reserve_category=req.reserveCategory,
         )
 
     @app.post("/api/economics/aggregate", response_model=EconomicsResponse)
@@ -79,4 +84,3 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
-

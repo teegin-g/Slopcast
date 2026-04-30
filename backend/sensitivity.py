@@ -95,6 +95,8 @@ def generate_sensitivity_matrix(
                     group.typeCurve,
                     group.capex,
                     pricing,
+                    group.opex,
+                    group.ownership,
                     scalars,
                     schedule,
                 )
@@ -105,4 +107,3 @@ def generate_sensitivity_matrix(
         matrix.append(row)
 
     return matrix
-

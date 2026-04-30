@@ -1,0 +1,339 @@
+{
+  "caseId": "dual-parity-rich-v1",
+  "description": "Rich economics input covering gas, multi-segment forecasts, OPEX, per-foot CAPEX, JV ownership, schedule, tax, debt, and reserve overlays.",
+  "input": {
+    "wells": [
+      {
+        "id": "well-alpha",
+        "name": "Alpha 1H",
+        "lat": 31.721,
+        "lng": -102.113,
+        "lateralLength": 9200,
+        "status": "PRODUCING",
+        "operator": "Demo Operating",
+        "formation": "Wolfcamp A"
+      },
+      {
+        "id": "well-bravo",
+        "name": "Bravo 2H",
+        "lat": 31.735,
+        "lng": -102.104,
+        "lateralLength": 10150,
+        "status": "DUC",
+        "operator": "Demo Operating",
+        "formation": "Wolfcamp B"
+      }
+    ],
+    "typeCurve": {
+      "qi": 940,
+      "b": 1.15,
+      "di": 68,
+      "terminalDecline": 8,
+      "gorMcfPerBbl": 2.45,
+      "segments": [
+        {
+          "id": "seg-primary",
+          "name": "Primary hyperbolic",
+          "method": "arps",
+          "qi": 940,
+          "b": 1.15,
+          "initialDecline": 68,
+          "cutoffKind": "rate",
+          "cutoffValue": 220
+        },
+        {
+          "id": "seg-tail",
+          "name": "Terminal tail",
+          "method": "arps",
+          "qi": null,
+          "b": 0,
+          "initialDecline": 8,
+          "cutoffKind": "default",
+          "cutoffValue": null
+        }
+      ]
+    },
+    "capex": {
+      "rigCount": 1,
+      "drillDurationDays": 24,
+      "stimDurationDays": 11,
+      "rigStartDate": "2026-01-01",
+      "items": [
+        {
+          "id": "drill",
+          "name": "Drilling",
+          "category": "DRILLING",
+          "value": 2400000,
+          "basis": "PER_WELL",
+          "offsetDays": 0
+        },
+        {
+          "id": "completion",
+          "name": "Completion",
+          "category": "COMPLETION",
+          "value": 430,
+          "basis": "PER_FOOT",
+          "offsetDays": 26
+        },
+        {
+          "id": "facilities",
+          "name": "Facilities",
+          "category": "FACILITIES",
+          "value": 680000,
+          "basis": "PER_WELL",
+          "offsetDays": 45
+        }
+      ]
+    },
+    "pricing": {
+      "oilPrice": 76,
+      "gasPrice": 3.65,
+      "oilDifferential": -2.5,
+      "gasDifferential": -0.35
+    },
+    "opex": {
+      "segments": [
+        {
+          "id": "early",
+          "label": "Early high-touch",
+          "startMonth": 1,
+          "endMonth": 12,
+          "fixedPerWellPerMonth": 21000,
+          "variableOilPerBbl": 6.25,
+          "variableGasPerMcf": 0.55
+        },
+        {
+          "id": "base",
+          "label": "Base operations",
+          "startMonth": 13,
+          "endMonth": 120,
+          "fixedPerWellPerMonth": 14500,
+          "variableOilPerBbl": 4.75,
+          "variableGasPerMcf": 0.42
+        }
+      ]
+    },
+    "ownership": {
+      "baseNri": 0.82,
+      "baseCostInterest": 0.94,
+      "agreements": [
+        {
+          "id": "carry-a",
+          "name": "Carry Partner A",
+          "startMonth": 1,
+          "prePayout": {
+            "conveyRevenuePctOfBase": 0.18,
+            "conveyCostPctOfBase": 0.42
+          },
+          "postPayout": {
+            "conveyRevenuePctOfBase": 0.08,
+            "conveyCostPctOfBase": 0.08
+          }
+        }
+      ]
+    },
+    "scalars": {
+      "capex": 1.04,
+      "production": 0.97
+    },
+    "scheduleOverride": {
+      "rigCount": 1,
+      "annualRigs": [1, 1, 1, 1, 1],
+      "drillDurationDays": 24,
+      "stimDurationDays": 11,
+      "rigStartDate": "2026-01-01"
+    },
+    "taxAssumptions": {
+      "severanceTaxPct": 4.6,
+      "adValoremTaxPct": 1.2,
+      "federalTaxRate": 21,
+      "depletionAllowancePct": 15,
+      "stateTaxRate": 0
+    },
+    "debtAssumptions": {
+      "enabled": true,
+      "revolverSize": 15000000,
+      "revolverRate": 8,
+      "termLoanAmount": 3000000,
+      "termLoanRate": 7.25,
+      "termLoanAmortMonths": 48,
+      "cashSweepPct": 50
+    },
+    "reserveCategory": "PUD"
+  },
+  "expected": {
+    "metrics": {
+      "totalCapex": 8210559.3440000005,
+      "eur": 1750503.9407109916,
+      "npv10": 63870887.39484906,
+      "irr": 0,
+      "payoutMonths": 5,
+      "wellCount": 2,
+      "afterTaxNpv10": 48499970.26128535,
+      "afterTaxPayoutMonths": 6,
+      "leveredNpv10": 45714936.322816744,
+      "equityIrr": 0,
+      "dscr": 7.19906803005758,
+      "riskedEur": 1487928.3496043428,
+      "riskedNpv10": 54290254.2856217
+    },
+    "first12MonthlyFlow": [
+      {
+        "month": 1,
+        "oilProduction": 0,
+        "gasProduction": 0,
+        "revenue": 0,
+        "capex": 4221091.056,
+        "opex": 0,
+        "netCashFlow": -4221091.056,
+        "cumulativeCashFlow": -4221091.056,
+        "afterTaxCashFlow": -4271744.148672,
+        "leveredCashFlow": 0,
+        "outstandingDebt": 7289869.148672
+      },
+      {
+        "month": 2,
+        "oilProduction": 25430.21246177102,
+        "gasProduction": 62304.02053133901,
+        "revenue": 1509865.970075734,
+        "capex": 3989468.288,
+        "opex": 116785.13256001208,
+        "netCashFlow": -2596387.4504842786,
+        "cumulativeCashFlow": -6817478.5064842785,
+        "afterTaxCashFlow": -2713714.9045637627,
+        "leveredCashFlow": 0,
+        "outstandingDebt": 10050341.969773743
+      },
+      {
+        "month": 3,
+        "oilProduction": 48942.95042558292,
+        "gasProduction": 119910.22854267817,
+        "revenue": 2905885.8801821005,
+        "capex": 0,
+        "opex": 225627.78470598126,
+        "netCashFlow": 2680258.0954761193,
+        "cumulativeCashFlow": -4137220.411008159,
+        "afterTaxCashFlow": 2103339.407766053,
+        "leveredCashFlow": 991713.4563754834,
+        "outstandingDebt": 9003911.08008315
+      },
+      {
+        "month": 4,
+        "oilProduction": 45394.06547969635,
+        "gasProduction": 111215.46042525605,
+        "revenue": 2695178.218200773,
+        "capex": 0,
+        "opex": 210927.7460851826,
+        "netCashFlow": 2484250.4721155902,
+        "cumulativeCashFlow": -1652969.938892569,
+        "afterTaxCashFlow": 1949513.2103952246,
+        "leveredCashFlow": 918106.0692113208,
+        "outstandingDebt": 8030756.993063774
+      },
+      {
+        "month": 5,
+        "oilProduction": 42356.6412209219,
+        "gasProduction": 103773.77099125864,
+        "revenue": 2514837.470678498,
+        "capex": 0,
+        "opex": 198346.25792973017,
+        "netCashFlow": 2316491.212748768,
+        "cumulativeCashFlow": 663521.2738561989,
+        "afterTaxCashFlow": 1817856.2447134424,
+        "leveredCashFlow": 855337.9399344674,
+        "outstandingDebt": 7120038.453546994
+      },
+      {
+        "month": 6,
+        "oilProduction": 39725.499419938526,
+        "gasProduction": 97327.4735788494,
+        "revenue": 2358618.8990200562,
+        "capex": 0,
+        "opex": 187447.6555007943,
+        "netCashFlow": 2171171.243519262,
+        "cumulativeCashFlow": 2834692.517375461,
+        "afterTaxCashFlow": 1703809.5669089598,
+        "leveredCashFlow": 801165.7274986743,
+        "outstandingDebt": 6263157.5353435315
+      },
+      {
+        "month": 7,
+        "oilProduction": 37422.7087984081,
+        "gasProduction": 91685.63655609987,
+        "revenue": 2221895.4956711805,
+        "capex": 0,
+        "opex": 177909.13520828774,
+        "netCashFlow": 2043986.3604628928,
+        "cumulativeCashFlow": 4878678.877838354,
+        "afterTaxCashFlow": 1603995.2505666367,
+        "leveredCashFlow": 753929.1217525086,
+        "outstandingDebt": 5453176.610275727
+      },
+      {
+        "month": 8,
+        "oilProduction": 35389.25163232765,
+        "gasProduction": 86703.66649920275,
+        "revenue": 2101163.2060260596,
+        "capex": 0,
+        "opex": 169486.23637360742,
+        "netCashFlow": 1931676.969652452,
+        "cumulativeCashFlow": 6810355.847490806,
+        "afterTaxCashFlow": 1515855.1761082709,
+        "leveredCashFlow": 712372.181595834,
+        "outstandingDebt": 4684413.9790529
+      },
+      {
+        "month": 9,
+        "oilProduction": 33579.58343817477,
+        "gasProduction": 82269.97942352819,
+        "revenue": 1993717.9211080754,
+        "capex": 0,
+        "opex": 161990.30659551968,
+        "netCashFlow": 1831727.6145125558,
+        "cumulativeCashFlow": 8642083.462003361,
+        "afterTaxCashFlow": 1437415.2207267561,
+        "leveredCashFlow": 675526.7778437292,
+        "outstandingDebt": 3952156.0592823485
+      },
+      {
+        "month": 10,
+        "oilProduction": 31957.975044257902,
+        "gasProduction": 78297.03885843186,
+        "revenue": 1897438.295664721,
+        "capex": 0,
+        "opex": 155273.35003539818,
+        "netCashFlow": 1742164.9456293227,
+        "cumulativeCashFlow": 10384248.407632684,
+        "afterTaxCashFlow": 1367126.7056961476,
+        "leveredCashFlow": 642634.2762545709,
+        "outstandingDebt": 3252447.8904518136
+      },
+      {
+        "month": 11,
+        "oilProduction": 30495.98929160532,
+        "gasProduction": 74715.17376443304,
+        "revenue": 1810635.9325313396,
+        "capex": 0,
+        "opex": 149217.57551614803,
+        "netCashFlow": 1661418.3570151916,
+        "cumulativeCashFlow": 12045666.764647875,
+        "afterTaxCashFlow": 1303757.0241285497,
+        "leveredCashFlow": 613091.5497249537,
+        "outstandingDebt": 2581937.626716583
+      },
+      {
+        "month": 12,
+        "oilProduction": 29170.70089150803,
+        "gasProduction": 71468.21718419468,
+        "revenue": 1731949.6903754345,
+        "capex": 0,
+        "opex": 143728.0228926662,
+        "netCashFlow": 1588221.6674827682,
+        "cumulativeCashFlow": 13633888.432130642,
+        "afterTaxCashFlow": 1246312.4808099696,
+        "leveredCashFlow": 977909.9211708421,
+        "outstandingDebt": 2329256.096017176
+      }
+    ]
+  }
+}
