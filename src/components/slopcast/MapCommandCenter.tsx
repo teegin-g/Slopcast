@@ -5,9 +5,6 @@ import { overlayPanelClass, type MapboxOverrides } from '../../theme/themes';
 import type { Well, WellGroup, SpatialLayerFilter, SpatialDataSourceId } from '../../types';
 import type { WellboreData, WellboreRenderDiagnostics } from './MapWellboreLayer';
 import { useViewportData } from '../../hooks/useViewportData';
-import { useConnectionStatus } from '../../hooks/useConnectionStatus';
-import { useToast } from './Toast';
-import { setStoredSpatialSourceId } from '../../services/spatialService';
 import { OverlayGroupsPanel } from './map/OverlayGroupsPanel';
 import { OverlayFiltersBar } from './map/OverlayFiltersBar';
 import { OverlayToolbar } from './map/OverlayToolbar';
@@ -15,6 +12,7 @@ import { OverlaySelectionBar } from './map/OverlaySelectionBar';
 import { OverlayLegend } from './map/OverlayLegend';
 import { MapWellTooltip } from './map/MapWellTooltip';
 import { WellPopupCard } from './map/WellPopupCard';
+import { useSpatialSourcePolicy } from './map/useSpatialSourcePolicy';
 import { useMapSelection } from '../../hooks/useMapSelection';
 
 export type WellsMobilePanel = 'GROUPS' | 'MAP';
@@ -261,53 +259,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   const displayedSpatialError = spatialError ?? spatialTrajectoryError;
   const isTrajectoryOnlyError = !spatialError && !!spatialTrajectoryError;
 
-  // ---------------------------------------------------------------------------
-  // Connection status polling + auto-detect + toasts
-  // ---------------------------------------------------------------------------
-  const { status: connStatus, isInitializing: connInitializing } = useConnectionStatus(dataSourceId ?? 'mock');
-  const { addToast } = useToast();
-  const prevConnected = useRef<boolean | null>(null);
-  const userManuallyToggled = useRef(false);
-
-  // Auto-detect: on first status response, auto-switch to live if backend is connected
-  useEffect(() => {
-    if (connInitializing || !connStatus || userManuallyToggled.current) return;
-
-    // Only auto-switch on initial detection, not on every poll
-    if (prevConnected.current !== null) return;
-
-    if (connStatus.connected && dataSourceId === 'mock') {
-      setStoredSpatialSourceId('live');
-      onSourceChange?.('live');
-      addToast({ message: 'Connected to Databricks', type: 'success', duration: 5000 });
-    } else if (!connStatus.connected && dataSourceId === 'mock') {
-      addToast({ message: 'Database unavailable — showing demo data', type: 'info', duration: 5000 });
-    }
-
-    prevConnected.current = connStatus.connected;
-  }, [connStatus, connInitializing, dataSourceId, onSourceChange, addToast]);
-
-  // Transition toasts: live → mock fallback, or reconnect success
-  useEffect(() => {
-    if (connInitializing || !connStatus || prevConnected.current === null) return;
-
-    const wasConnected = prevConnected.current;
-    const isConnected = connStatus.connected;
-
-    if (wasConnected && !isConnected) {
-      addToast({ message: 'Connection lost — showing demo data', type: 'warning', duration: 5000 });
-    } else if (!wasConnected && isConnected) {
-      addToast({ message: 'Connected to Databricks', type: 'success', duration: 5000 });
-    }
-
-    prevConnected.current = isConnected;
-  }, [connStatus, connInitializing, addToast]);
-
-  // Track manual source toggles so auto-detect doesn't override user choice
-  const handleSourceChange = useCallback((id: SpatialDataSourceId) => {
-    userManuallyToggled.current = true;
-    onSourceChange?.(id);
-  }, [onSourceChange]);
+  const { handleSourceChange } = useSpatialSourcePolicy({ dataSourceId, onSourceChange });
 
   // Reset error dismissal when a new error arrives
   useEffect(() => {

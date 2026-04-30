@@ -15,6 +15,7 @@ from __future__ import annotations
 import logging
 import math
 import os
+import re
 import time
 from decimal import Decimal
 from typing import Any, Literal
@@ -43,6 +44,54 @@ _DEFAULT_DATABRICKS_CATALOG = "epw"
 _DEFAULT_DATABRICKS_SCHEMA = "egis"
 _DEFAULT_DATABRICKS_WELLS_TABLE = "gis__well_master"
 _DEFAULT_DATABRICKS_TRAJECTORY_TABLE = "epw.egis.gis__well_master"
+_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _validate_identifier(value: str, *, label: str) -> str:
+    if not _IDENTIFIER_RE.fullmatch(value):
+        raise ValueError(f"Invalid Databricks {label} identifier: {value!r}")
+    return value
+
+
+def _validate_table_path(value: str, *, label: str) -> str:
+    parts = value.split(".")
+    if not 1 <= len(parts) <= 3:
+        raise ValueError(f"Invalid Databricks {label} table path: {value!r}")
+    return ".".join(_validate_identifier(part, label=label) for part in parts)
+
+
+def _databricks_table_path() -> str:
+    catalog = _validate_identifier(
+        os.getenv("DATABRICKS_CATALOG", _DEFAULT_DATABRICKS_CATALOG),
+        label="catalog",
+    )
+    schema = _validate_identifier(
+        os.getenv("DATABRICKS_SCHEMA", _DEFAULT_DATABRICKS_SCHEMA),
+        label="schema",
+    )
+    table = _validate_identifier(
+        os.getenv("DATABRICKS_WELLS_TABLE", _DEFAULT_DATABRICKS_WELLS_TABLE),
+        label="wells table",
+    )
+    return f"{catalog}.{schema}.{table}"
+
+
+def _trajectory_table_path() -> str:
+    return _validate_table_path(
+        os.getenv("DATABRICKS_TRAJECTORY_TABLE", _DEFAULT_DATABRICKS_TRAJECTORY_TABLE),
+        label="trajectory",
+    )
+
+
+def _build_in_clause(column: str, values: list[str] | None, prefix: str, params: dict[str, Any]) -> str:
+    if not values:
+        return ""
+    placeholders: list[str] = []
+    for index, value in enumerate(values):
+        key = f"{prefix}_{index}"
+        params[key] = value
+        placeholders.append(f"%({key})s")
+    return f"  AND {column} IN ({', '.join(placeholders)})\n"
 
 
 def _resolve_server_hostname() -> str | None:
@@ -429,11 +478,17 @@ def check_connection_status() -> dict[str, Any]:
 
     conn = _get_db_connection()
     if conn is not None:
-        table = (
-            f"{os.getenv('DATABRICKS_CATALOG', _DEFAULT_DATABRICKS_CATALOG)}."
-            f"{os.getenv('DATABRICKS_SCHEMA', _DEFAULT_DATABRICKS_SCHEMA)}."
-            f"{os.getenv('DATABRICKS_WELLS_TABLE', _DEFAULT_DATABRICKS_WELLS_TABLE)}"
-        )
+        try:
+            table = _databricks_table_path()
+        except ValueError as exc:
+            return {
+                "connected": False,
+                "source": "mock",
+                "error": str(exc),
+                "table": None,
+                "last_verified_at": _conn_mgr.last_verified_at or None,
+                "reconnect_attempts": _conn_mgr.reconnect_attempts,
+            }
         return {
             "connected": True,
             "source": "databricks",
@@ -466,10 +521,11 @@ def _query_databricks(
     detail_level: DetailLevel = "summary",
     zoom: int | None = None,
 ) -> SpatialWellsResponse:
-    catalog = os.getenv("DATABRICKS_CATALOG", _DEFAULT_DATABRICKS_CATALOG)
-    schema = os.getenv("DATABRICKS_SCHEMA", _DEFAULT_DATABRICKS_SCHEMA)
-    table = os.getenv("DATABRICKS_WELLS_TABLE", _DEFAULT_DATABRICKS_WELLS_TABLE)
-    full_table = f"{catalog}.{schema}.{table}"
+    try:
+        full_table = _databricks_table_path()
+    except ValueError as exc:
+        logger.warning("Invalid Databricks table configuration, falling back to mock: %s", exc)
+        return _query_mock(bounds, filters, limit, detail_level)
 
     params = {
         "sw_lat": bounds.sw_lat,
@@ -479,17 +535,10 @@ def _query_databricks(
         "limit": limit,
     }
 
-    # Build optional SQL filter clauses for operators/formations.
-    # Use string interpolation for the IN list (values are operator/formation
-    # names from our own filter state, not user-supplied free text).
     extra_where = ""
     if filters:
-        if filters.operators:
-            op_list = ", ".join(f"'{o.replace(chr(39), chr(39)*2)}'" for o in filters.operators)
-            extra_where += f"  AND operator IN ({op_list})\n"
-        if filters.formations:
-            fm_list = ", ".join(f"'{f.replace(chr(39), chr(39)*2)}'" for f in filters.formations)
-            extra_where += f"  AND formation IN ({fm_list})\n"
+        extra_where += _build_in_clause("operator", filters.operators, "operator", params)
+        extra_where += _build_in_clause("formation", filters.formations, "formation", params)
 
     if detail_level == "points":
         sql = f"""
@@ -668,24 +717,26 @@ def _fetch_trajectories(
     survey_api_ids = [a for a in api_ids if well_by_id.get(a) and well_by_id[a].lateralLength > 0]
     shape_wkts = _fetch_shape_wkts(conn, survey_api_ids)
 
-    survey_table = "eds.well.tbl_directional_survey"
+    survey_table = _validate_table_path("eds.well.tbl_directional_survey", label="survey")
 
     # ---- Fetch all survey stations ordered by MD ----
     raw_stations: dict[str, list[dict[str, Any]]] = {}  # api_14 → [row_dicts]
 
     if survey_api_ids:
-        api_list = ", ".join(f"'{a}'" for a in survey_api_ids)
+        survey_params: dict[str, Any] = {}
+        api_clause = _build_in_clause("api_14", survey_api_ids, "api", survey_params).strip()
         sql = f"""
             SELECT api_14, measured_depth, true_vertical_depth,
                    north_south_distance, east_west_distance, kickoff_point
             FROM {survey_table}
-            WHERE api_14 IN ({api_list})
+            WHERE 1 = 1
+              {api_clause.strip()}
             ORDER BY api_14, measured_depth
         """
 
         try:
             with conn.cursor() as cursor:
-                cursor.execute(sql)
+                cursor.execute(sql, survey_params)
                 rows = cursor.fetchall()
                 cols = [d[0] for d in cursor.description]
         except Exception as exc:  # noqa: BLE001
@@ -787,18 +838,25 @@ def _fetch_shape_wkts(conn: Any, api_ids: list[str]) -> dict[str, str]:
     if not api_ids:
         return {}
 
-    api_list = ", ".join(f"'{a.replace(chr(39), chr(39) * 2)}'" for a in api_ids)
-    trajectory_table = os.getenv("DATABRICKS_TRAJECTORY_TABLE", _DEFAULT_DATABRICKS_TRAJECTORY_TABLE)
+    try:
+        trajectory_table = _trajectory_table_path()
+    except ValueError as exc:
+        logger.warning("Invalid Databricks trajectory table configuration, falling back to survey/header trajectories: %s", exc)
+        return {}
+
+    params: dict[str, Any] = {}
+    api_clause = _build_in_clause("api_14", api_ids, "shape_api", params).strip()
     sql = f"""
         SELECT api_14, shape_wkt
         FROM {trajectory_table}
-        WHERE api_14 IN ({api_list})
+        WHERE 1 = 1
+          {api_clause}
           AND shape_wkt IS NOT NULL
     """
 
     try:
         with conn.cursor() as cursor:
-            cursor.execute(sql)
+            cursor.execute(sql, params)
             rows = cursor.fetchall()
     except Exception as exc:  # noqa: BLE001
         logger.warning("Shape trajectory query failed, falling back to survey/header trajectories: %s", exc)
