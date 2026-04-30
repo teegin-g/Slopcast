@@ -173,3 +173,17 @@ export interface DealMetrics {
   riskedEur?: number;
   riskedNpv10?: number;
 }
+
+export interface EconomicsCalculationInput {
+  wells: import('./wells').Well[];
+  typeCurve: TypeCurveParams;
+  capex: CapexAssumptions;
+  pricing: CommodityPricingAssumptions;
+  opex: OpexAssumptions;
+  ownership: OwnershipAssumptions;
+  scalars?: { capex: number; production: number };
+  scheduleOverride?: import('./scenarios').ScheduleParams | null;
+  taxAssumptions?: TaxAssumptions | null;
+  debtAssumptions?: DebtAssumptions | null;
+  reserveCategory?: ReserveCategory | null;
+}

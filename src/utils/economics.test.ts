@@ -5,6 +5,8 @@ import {
   applyDebtLayer,
   applyReservesRisk,
   aggregateEconomics,
+  buildEconomicsInputHash,
+  normalizeEconomicsCalculationInput,
 } from './economics';
 import {
   DEFAULT_TYPE_CURVE,
@@ -455,6 +457,54 @@ describe('aggregateEconomics', () => {
     expect(metrics.eur).toBe(0);
     expect(metrics.npv10).toBe(0);
     expect(metrics.wellCount).toBe(0);
+  });
+});
+
+// ─── Economics Input Contract ───────────────────────────────────────
+
+describe('economics calculation input contract', () => {
+  it('builds a stable versioned hash independent of well order', () => {
+    const input = {
+      wells: [MOCK_WELLS[1], MOCK_WELLS[0]],
+      typeCurve: DEFAULT_TYPE_CURVE,
+      capex: DEFAULT_CAPEX,
+      pricing: DEFAULT_COMMODITY_PRICING,
+      opex: DEFAULT_OPEX,
+      ownership: DEFAULT_OWNERSHIP,
+      scalars: { capex: 1, production: 1 },
+      scheduleOverride: null,
+    };
+
+    const reordered = {
+      ...input,
+      wells: [MOCK_WELLS[0], MOCK_WELLS[1]],
+    };
+
+    expect(buildEconomicsInputHash(input)).toBe(buildEconomicsInputHash(reordered));
+  });
+
+  it('includes rich economics inputs in the normalized hash payload', () => {
+    const normalized = normalizeEconomicsCalculationInput({
+      wells: SINGLE_WELL,
+      typeCurve: DEFAULT_TYPE_CURVE,
+      capex: DEFAULT_CAPEX,
+      pricing: DEFAULT_COMMODITY_PRICING,
+      opex: DEFAULT_OPEX,
+      ownership: DEFAULT_OWNERSHIP,
+      scalars: { capex: 0.95, production: 1.1 },
+      scheduleOverride: null,
+      taxAssumptions: DEFAULT_TAX_ASSUMPTIONS,
+      debtAssumptions: DEFAULT_DEBT_ASSUMPTIONS,
+      reserveCategory: 'PUD',
+    });
+
+    expect(normalized.schemaVersion).toBe('economics-input-v1');
+    expect(normalized.typeCurve.segments).toEqual(DEFAULT_TYPE_CURVE.segments);
+    expect(normalized.opex.segments).toEqual(DEFAULT_OPEX.segments);
+    expect(normalized.ownership.agreements).toEqual(DEFAULT_OWNERSHIP.agreements);
+    expect(normalized.taxAssumptions).toEqual(DEFAULT_TAX_ASSUMPTIONS);
+    expect(normalized.debtAssumptions).toEqual(DEFAULT_DEBT_ASSUMPTIONS);
+    expect(normalized.reserveCategory).toBe('PUD');
   });
 });
 

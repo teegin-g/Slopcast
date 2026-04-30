@@ -1,38 +1,69 @@
 
-import { Well, TypeCurveParams, CapexAssumptions, CommodityPricingAssumptions, MonthlyCashFlow, DealMetrics, WellGroup, Scenario, SensitivityVariable, SensitivityMatrixResult, ScheduleParams, OpexAssumptions, OwnershipAssumptions, JvAgreement, TaxAssumptions, DebtAssumptions, ReserveCategory, DEFAULT_RESERVE_RISK_FACTORS, ForecastSegment, CutoffKind } from '../types';
+import { Well, TypeCurveParams, CapexAssumptions, CommodityPricingAssumptions, MonthlyCashFlow, DealMetrics, WellGroup, Scenario, SensitivityVariable, SensitivityMatrixResult, ScheduleParams, OpexAssumptions, OwnershipAssumptions, JvAgreement, TaxAssumptions, DebtAssumptions, ReserveCategory, DEFAULT_RESERVE_RISK_FACTORS, ForecastSegment, CutoffKind, EconomicsCalculationInput } from '../types';
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
 // --- LRU Memoization Cache for calculateEconomics ---
+export const ECONOMICS_INPUT_SCHEMA_VERSION = 'economics-input-v1';
 const ECON_CACHE_MAX = 100;
 const econCache = new Map<string, { flow: MonthlyCashFlow[], metrics: DealMetrics }>();
 
-const buildEconCacheKey = (
-  wellIds: string[],
-  tc: TypeCurveParams,
-  capex: CapexAssumptions,
-  pricing: CommodityPricingAssumptions,
-  opex: OpexAssumptions,
-  ownership: OwnershipAssumptions,
-  scalars: { capex: number; production: number },
-  schedule?: ScheduleParams,
-): string => {
-  // Sort well IDs for stable keys
-  const sortedIds = [...wellIds].sort().join(',');
-  const parts = [
-    sortedIds,
-    tc.qi, tc.di, tc.b, tc.gorMcfPerBbl || 0,
-    (tc.segments || []).map(s => `${s.qi}:${s.b}:${s.initialDecline}:${s.cutoffKind}:${s.cutoffValue}`).join('|'),
-    capex.rigCount, capex.drillDurationDays, capex.stimDurationDays,
-    capex.items.map(i => `${i.id}:${i.value}:${i.basis}`).join('|'),
-    pricing.oilPrice, pricing.gasPrice, pricing.oilDifferential || 0, pricing.gasDifferential || 0,
-    opex.segments.map(s => `${s.startMonth}:${s.endMonth}:${s.fixedPerWellPerMonth}:${s.variableOilPerBbl}:${s.variableGasPerMcf}`).join('|'),
-    ownership.baseNri, ownership.baseCostInterest,
-    ownership.agreements.map(a => `${a.id}:${a.startMonth}:${a.prePayout.conveyRevenuePctOfBase}:${a.prePayout.conveyCostPctOfBase}:${a.postPayout.conveyRevenuePctOfBase}:${a.postPayout.conveyCostPctOfBase}`).join('|'),
-    scalars.capex, scalars.production,
-    schedule ? `${schedule.annualRigs.join(',')}:${schedule.drillDurationDays}:${schedule.stimDurationDays}` : '',
-  ];
-  return parts.join('::');
+const stableNormalize = (value: unknown): unknown => {
+  if (value instanceof Set) {
+    return [...value].sort();
+  }
+  if (Array.isArray(value)) {
+    return value.map(stableNormalize);
+  }
+  if (value && typeof value === 'object') {
+    const sorted: Record<string, unknown> = {};
+    Object.keys(value as Record<string, unknown>)
+      .sort()
+      .forEach((key) => {
+        const entry = (value as Record<string, unknown>)[key];
+        if (entry !== undefined) sorted[key] = stableNormalize(entry);
+      });
+    return sorted;
+  }
+  return value;
+};
+
+export const stableStringify = (value: unknown): string => JSON.stringify(stableNormalize(value));
+
+export const normalizeEconomicsCalculationInput = (
+  input: EconomicsCalculationInput,
+): EconomicsCalculationInput & { schemaVersion: string } => ({
+  schemaVersion: ECONOMICS_INPUT_SCHEMA_VERSION,
+  wells: [...input.wells]
+    .map((well) => ({
+      ...well,
+      trajectory: well.trajectory
+        ? {
+            ...well.trajectory,
+            path: [...well.trajectory.path],
+          }
+        : undefined,
+    }))
+    .sort((a, b) => a.id.localeCompare(b.id)),
+  typeCurve: input.typeCurve,
+  capex: input.capex,
+  pricing: input.pricing,
+  opex: input.opex,
+  ownership: input.ownership,
+  scalars: input.scalars ?? { capex: 1, production: 1 },
+  scheduleOverride: input.scheduleOverride ?? null,
+  taxAssumptions: input.taxAssumptions ?? null,
+  debtAssumptions: input.debtAssumptions ?? null,
+  reserveCategory: input.reserveCategory ?? null,
+});
+
+export const buildEconomicsInputHash = (input: EconomicsCalculationInput): string => {
+  let hash = 5381;
+  const value = stableStringify(normalizeEconomicsCalculationInput(input));
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash * 33) ^ value.charCodeAt(i);
+  }
+  return `${ECONOMICS_INPUT_SCHEMA_VERSION}:${(hash >>> 0).toString(16)}`;
 };
 
 const cachedCalculateEconomics = (
@@ -45,10 +76,16 @@ const cachedCalculateEconomics = (
   scalars: { capex: number; production: number } = { capex: 1, production: 1 },
   scheduleOverride?: ScheduleParams,
 ): { flow: MonthlyCashFlow[], metrics: DealMetrics } => {
-  const key = buildEconCacheKey(
-    selectedWells.map(w => w.id),
-    tc, capex, pricing, opex, ownership, scalars, scheduleOverride,
-  );
+  const key = buildEconomicsInputHash({
+    wells: selectedWells,
+    typeCurve: tc,
+    capex,
+    pricing,
+    opex,
+    ownership,
+    scalars,
+    scheduleOverride: scheduleOverride ?? null,
+  });
 
   const cached = econCache.get(key);
   if (cached) {

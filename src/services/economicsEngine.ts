@@ -19,6 +19,7 @@ import * as tsCalc from '../utils/economics';
 // ---------------------------------------------------------------------------
 
 export type EngineId = 'typescript' | 'python';
+export const ECONOMICS_ENGINE_VERSION = 'parity-v1';
 
 export interface EconomicsEngineResult {
   flow: MonthlyCashFlow[];
@@ -93,35 +94,6 @@ async function pyFetch<T>(path: string, body: unknown): Promise<T> {
   return res.json();
 }
 
-/**
- * Convert full TS-side assumptions into the flatter PricingAssumptions shape
- * the Python backend currently expects (no OPEX segments / ownership JVs).
- */
-function toPyPricing(
-  pricing: CommodityPricingAssumptions,
-  opex: OpexAssumptions,
-  ownership: OwnershipAssumptions,
-) {
-  return {
-    oilPrice: pricing.oilPrice,
-    gasPrice: pricing.gasPrice,
-    oilDifferential: pricing.oilDifferential,
-    gasDifferential: pricing.gasDifferential,
-    nri: ownership.baseNri,
-    loePerMonth: opex.segments[0]?.fixedPerWellPerMonth ?? 0,
-  };
-}
-
-/** Python TypeCurveParams doesn't carry gorMcfPerBbl yet. */
-function toPyTypeCurve(tc: TypeCurveParams) {
-  return {
-    qi: tc.qi,
-    b: tc.b,
-    di: tc.di,
-    terminalDecline: tc.terminalDecline,
-  };
-}
-
 const pyEngine: EconomicsEngine = {
   id: 'python',
   label: 'Python (FastAPI)',
@@ -129,9 +101,11 @@ const pyEngine: EconomicsEngine = {
   async calculateEconomics(wells, typeCurve, capex, pricing, opex, ownership, scalars, scheduleOverride) {
     return pyFetch<EconomicsEngineResult>('/economics/calculate', {
       wells: wells.map(w => ({ ...w })),
-      typeCurve: toPyTypeCurve(typeCurve),
+      typeCurve,
       capex,
-      pricing: toPyPricing(pricing, opex, ownership),
+      pricing,
+      opex,
+      ownership,
       scalars: scalars ?? { capex: 1, production: 1 },
       scheduleOverride: scheduleOverride ?? null,
     });
@@ -141,11 +115,7 @@ const pyEngine: EconomicsEngine = {
     const pyGroups = groups.map(g => ({
       ...g,
       wellIds: Array.from(g.wellIds),
-      pricing: toPyPricing(
-        { oilPrice: 75, gasPrice: 3.25, oilDifferential: 2.5, gasDifferential: 0.35 },
-        g.opex,
-        g.ownership,
-      ),
+      pricing: { oilPrice: 75, gasPrice: 3.25, oilDifferential: 2.5, gasDifferential: 0.35 },
     }));
     return pyFetch<EconomicsEngineResult>('/economics/aggregate', { groups: pyGroups });
   },
@@ -154,7 +124,7 @@ const pyEngine: EconomicsEngine = {
     const pyGroups = baseGroups.map(g => ({
       ...g,
       wellIds: Array.from(g.wellIds),
-      pricing: toPyPricing(basePricing, g.opex, g.ownership),
+      pricing: basePricing,
     }));
     return pyFetch<SensitivityMatrixResult[][]>('/sensitivity/matrix', {
       baseGroups: pyGroups,

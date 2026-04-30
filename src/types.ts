@@ -203,6 +203,20 @@ export interface DealMetrics {
   riskedNpv10?: number;
 }
 
+export interface EconomicsCalculationInput {
+  wells: Well[];
+  typeCurve: TypeCurveParams;
+  capex: CapexAssumptions;
+  pricing: CommodityPricingAssumptions;
+  opex: OpexAssumptions;
+  ownership: OwnershipAssumptions;
+  scalars?: { capex: number; production: number };
+  scheduleOverride?: ScheduleParams | null;
+  taxAssumptions?: TaxAssumptions | null;
+  debtAssumptions?: DebtAssumptions | null;
+  reserveCategory?: ReserveCategory | null;
+}
+
 export interface WellGroup {
   id: string;
   name: string;
