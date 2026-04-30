@@ -29,9 +29,12 @@ const normalizeRole = (value: string | null | undefined) => {
   return 'viewer' as const;
 };
 
-const unwrapContract = <T>(value: unknown): T => {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return (value ?? {}) as T;
+const unwrapContract = <T>(value: unknown, label = 'jsonb contract'): T => {
+  if (value == null) {
+    return {} as T;
+  }
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error(`Invalid ${label}: expected object JSONB payload.`);
   }
   const next = { ...(value as Record<string, unknown>) };
   delete next.schema_version;
@@ -39,6 +42,71 @@ const unwrapContract = <T>(value: unknown): T => {
   delete next.validator_name;
   return next as T;
 };
+
+export const mapProjectRow = (row: any): ProjectRecord => ({
+  id: row.id,
+  organizationId: row.organization_id,
+  ownerUserId: row.owner_user_id,
+  projectKind: row.project_kind,
+  status: row.status,
+  name: row.name,
+  description: row.description,
+  activeGroupId: row.active_group_id,
+  uiState: unwrapContract<ProjectUiState>(row.ui_state_jsonb, 'project ui_state_jsonb'),
+  currentVersionId: row.current_version_id,
+  metadata: unwrapContract<Record<string, unknown>>(row.metadata_jsonb, 'project metadata_jsonb'),
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
+export const mapProjectGroupRow = (row: any, wellsByGroup = new Map<string, string[]>()): ProjectGroupRecord => {
+  const config = unwrapContract<Record<string, any>>(row.config_jsonb, 'project group config_jsonb');
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    name: row.name,
+    color: row.color,
+    sortOrder: row.sort_order,
+    wellIds: wellsByGroup.get(row.id) || [],
+    typeCurve: unwrapContract(config.typeCurve, 'project group typeCurve'),
+    capex: unwrapContract(config.capex, 'project group capex'),
+    opex: unwrapContract(config.opex, 'project group opex'),
+    ownership: unwrapContract(config.ownership, 'project group ownership'),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+};
+
+export const mapProjectScenarioRow = (row: any): ProjectScenarioRecord => {
+  const scalars = unwrapContract<Record<string, unknown>>(row.scalar_jsonb, 'project scenario scalar_jsonb');
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    name: row.name,
+    color: row.color,
+    isBaseCase: row.is_base_case,
+    pricing: unwrapContract(row.pricing_jsonb, 'project scenario pricing_jsonb'),
+    schedule: unwrapContract(row.schedule_jsonb, 'project scenario schedule_jsonb'),
+    capexScalar: Number(scalars.capexScalar ?? 1),
+    productionScalar: Number(scalars.productionScalar ?? 1),
+    sortOrder: row.sort_order,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+};
+
+export const mapEconomicsRunRow = (row: any): EconomicsRunRecord => ({
+  id: row.id,
+  projectId: row.project_id,
+  projectVersionId: row.project_version_id,
+  triggeredBy: row.triggered_by,
+  inputHash: row.input_hash,
+  runKind: row.run_kind,
+  engineVersion: row.engine_version,
+  portfolioMetrics: unwrapContract(row.portfolio_metrics, 'economics run portfolio_metrics'),
+  warnings: Array.isArray(row.warnings) ? row.warnings as string[] : [],
+  createdAt: row.created_at,
+});
 
 export interface SaveProjectPayload {
   projectId?: string | null;
@@ -85,6 +153,9 @@ export interface LoadedProjectBundle {
 
 export interface RunEconomicsPayload {
   inputHash: string;
+  engineId: string;
+  engineVersion: string;
+  parityStatus?: 'not_run' | 'pass' | 'fail';
   portfolioMetrics: EconomicsRunRecord['portfolioMetrics'];
   warnings: string[];
   groupMetrics: Array<{
@@ -123,21 +194,7 @@ export async function listProjects(): Promise<ProjectRecord[]> {
 
   if (error) throw error;
 
-  return (data || []).map((row: any) => ({
-    id: row.id,
-    organizationId: row.organization_id,
-    ownerUserId: row.owner_user_id,
-    projectKind: row.project_kind,
-    status: row.status,
-    name: row.name,
-    description: row.description,
-    activeGroupId: row.active_group_id,
-    uiState: unwrapContract<ProjectUiState>(row.ui_state_jsonb),
-    currentVersionId: row.current_version_id,
-    metadata: (row.metadata_jsonb || {}) as Record<string, unknown>,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  }));
+  return (data || []).map(mapProjectRow);
 }
 
 export async function getProject(projectId: string): Promise<LoadedProjectBundle> {
@@ -206,53 +263,10 @@ export async function getProject(projectId: string): Promise<LoadedProjectBundle
   }
 
   return {
-    project: {
-      id: projectRow.id,
-      organizationId: projectRow.organization_id,
-      ownerUserId: projectRow.owner_user_id,
-      projectKind: projectRow.project_kind,
-      status: projectRow.status,
-      name: projectRow.name,
-      description: projectRow.description,
-      activeGroupId: projectRow.active_group_id,
-      uiState: unwrapContract<ProjectUiState>(projectRow.ui_state_jsonb),
-      currentVersionId: projectRow.current_version_id,
-      metadata: (projectRow.metadata_jsonb || {}) as Record<string, unknown>,
-      createdAt: projectRow.created_at,
-      updatedAt: projectRow.updated_at,
-    },
+    project: mapProjectRow(projectRow),
     memberRole: normalizeRole((roleData as string | null) ?? null),
-    groups: groupRows.map((row: any) => {
-      const config = (row.config_jsonb || {}) as Record<string, any>;
-      return {
-        id: row.id,
-        projectId: row.project_id,
-        name: row.name,
-        color: row.color,
-        sortOrder: row.sort_order,
-        wellIds: wellsByGroup.get(row.id) || [],
-        typeCurve: (config.typeCurve || {}) as ProjectGroupRecord['typeCurve'],
-        capex: (config.capex || {}) as ProjectGroupRecord['capex'],
-        opex: (config.opex || {}) as ProjectGroupRecord['opex'],
-        ownership: (config.ownership || {}) as ProjectGroupRecord['ownership'],
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-      };
-    }),
-    scenarios: (scenariosRes.data || []).map((row: any) => ({
-      id: row.id,
-      projectId: row.project_id,
-      name: row.name,
-      color: row.color,
-      isBaseCase: row.is_base_case,
-      pricing: unwrapContract(row.pricing_jsonb),
-      schedule: unwrapContract(row.schedule_jsonb),
-      capexScalar: Number(unwrapContract<Record<string, unknown>>(row.scalar_jsonb).capexScalar ?? 1),
-      productionScalar: Number(unwrapContract<Record<string, unknown>>(row.scalar_jsonb).productionScalar ?? 1),
-      sortOrder: row.sort_order,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    })),
+    groups: groupRows.map((row: any) => mapProjectGroupRow(row, wellsByGroup)),
+    scenarios: (scenariosRes.data || []).map(mapProjectScenarioRow),
   };
 }
 
@@ -359,6 +373,8 @@ export async function runEconomics(projectId: string, payload: RunEconomicsPaylo
         metrics: row.metrics,
       }))
     ),
+    p_run_kind: payload.parityStatus && payload.parityStatus !== 'not_run' ? 'analysis' : 'manual',
+    p_engine_version: `${payload.engineId}:${payload.engineVersion}`,
   });
 
   if (error) throw error;
@@ -377,18 +393,7 @@ export async function listRuns(projectId: string): Promise<EconomicsRunRecord[]>
 
   if (error) throw error;
 
-  return (data || []).map((row: any) => ({
-    id: row.id,
-    projectId: row.project_id,
-    projectVersionId: row.project_version_id,
-    triggeredBy: row.triggered_by,
-    inputHash: row.input_hash,
-    runKind: row.run_kind,
-    engineVersion: row.engine_version,
-    portfolioMetrics: row.portfolio_metrics,
-    warnings: (row.warnings || []) as string[],
-    createdAt: row.created_at,
-  }));
+  return (data || []).map(mapEconomicsRunRow);
 }
 
 // ---------------------------------------------------------------------------

@@ -17,6 +17,8 @@ import {
   type RunEconomicsPayload,
   type SaveProjectPayload,
 } from '../../../services/projectRepository';
+import { ECONOMICS_ENGINE_VERSION } from '../../../services/economicsEngine';
+import { ECONOMICS_INPUT_SCHEMA_VERSION, stableStringify } from '../../../utils/economics';
 
 const MIGRATION_KEY = 'slopcast-supabase-v1-migrated';
 
@@ -351,12 +353,16 @@ export function useProjectPersistence({
 
       const runPayload: RunEconomicsPayload = {
         inputHash: buildHash(
-          JSON.stringify({
+          stableStringify({
+            schemaVersion: ECONOMICS_INPUT_SCHEMA_VERSION,
             groups: modelForHash.groups,
             scenarios: modelForHash.scenarios,
             activeGroupId: modelForHash.activeGroupId,
           })
         ),
+        engineId: 'typescript',
+        engineVersion: ECONOMICS_ENGINE_VERSION,
+        parityStatus: 'not_run',
         portfolioMetrics: {
           npv10: aggregateMetrics.npv10,
           totalCapex: aggregateMetrics.totalCapex,
