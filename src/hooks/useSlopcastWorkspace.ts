@@ -20,6 +20,19 @@ import { useDerivedMetrics } from './useDerivedMetrics';
 import { useWellFiltering } from './useWellFiltering';
 import { useWellSelection } from './useWellSelection';
 import {
+  appendWorkspaceGroup,
+  assignWellsToActiveGroup,
+  clearGroupAssignments,
+  cloneWorkspaceGroup,
+  createGroupFromSelection,
+  updateWorkspaceGroup,
+} from '../domain/workspace/groupState';
+import {
+  selectPortfolioRoi,
+  selectScenarioRankings,
+  selectValidationWarnings,
+} from '../domain/workspace/selectors';
+import {
   getDesignWorkspace,
   setDesignWorkspace as storeDesignWorkspace,
   getEconomicsModule,
@@ -137,7 +150,7 @@ export function useSlopcastWorkspace() {
         if (prevIds.has(id)) { hasOverlap = true; break; }
       }
       if (!hasOverlap) {
-        setGroups(prev => prev.map(g => ({ ...g, wellIds: new Set<string>() })));
+        setGroups(clearGroupAssignments);
       }
     }
     prevWellIdsRef.current = newIds;
@@ -317,128 +330,43 @@ export function useSlopcastWorkspace() {
   }, []);
 
   const handleUpdateGroup = useCallback((updatedGroup: WellGroup) => {
-    setGroups(prev => prev.map(g => g.id === updatedGroup.id ? updatedGroup : g));
+    setGroups(prev => updateWorkspaceGroup(prev, updatedGroup));
   }, []);
 
   const handleAddGroup = useCallback(() => {
     const newId = `g-${Date.now()}`;
-    setGroups(prev => {
-      const color = GROUP_COLORS[prev.length % GROUP_COLORS.length];
-      const newGroup: WellGroup = {
-        id: newId,
-        name: `Group ${prev.length + 1}`,
-        color,
-        wellIds: new Set(),
-        typeCurve: { ...DEFAULT_TYPE_CURVE },
-        capex: { ...DEFAULT_CAPEX },
-        opex: { ...DEFAULT_OPEX, segments: DEFAULT_OPEX.segments.map(seg => ({ ...seg, id: `o-${Date.now()}-${Math.random()}` })) },
-        ownership: { ...DEFAULT_OWNERSHIP, agreements: [] }
-      };
-      return [...prev, newGroup];
-    });
+    setGroups(prev => appendWorkspaceGroup(prev, newId));
     setActiveGroupId(newId);
   }, []);
 
   const handleCloneGroup = useCallback((groupId: string) => {
     const newId = `g-${Date.now()}`;
-    setGroups(prev => {
-      const sourceGroup = prev.find(g => g.id === groupId);
-      if (!sourceGroup) return prev;
-      const color = GROUP_COLORS[prev.length % GROUP_COLORS.length];
-      const newGroup: WellGroup = {
-        id: newId,
-        name: `${sourceGroup.name} (Copy)`,
-        color,
-        wellIds: new Set(sourceGroup.wellIds),
-        typeCurve: { ...sourceGroup.typeCurve },
-        capex: {
-          ...sourceGroup.capex,
-          items: sourceGroup.capex.items.map(i => ({ ...i, id: `c-${Date.now()}-${Math.random()}` }))
-        },
-        opex: { ...sourceGroup.opex, segments: sourceGroup.opex.segments.map(seg => ({ ...seg, id: `o-${Date.now()}-${Math.random()}` })) },
-        ownership: { ...sourceGroup.ownership, agreements: sourceGroup.ownership.agreements.map(a => ({ ...a, id: `jv-${Date.now()}-${Math.random()}` })) }
-      };
-      return [...prev, newGroup];
-    });
+    setGroups(prev => cloneWorkspaceGroup(prev, groupId, newId));
     setActiveGroupId(newId);
   }, []);
 
   const handleAssignWellsToActive = useCallback(() => {
     if (selectedWellIds.size === 0) return;
-    setGroups(prevGroups => {
-      return prevGroups.map(g => {
-        const nextIds = new Set(g.wellIds);
-        if (g.id === activeGroupId) {
-          selectedWellIds.forEach(id => nextIds.add(id));
-        } else {
-          selectedWellIds.forEach(id => nextIds.delete(id));
-        }
-        return { ...g, wellIds: nextIds };
-      });
-    });
+    setGroups(prevGroups => assignWellsToActiveGroup(prevGroups, activeGroupId, selectedWellIds));
     setSelectedWellIds(new Set());
   }, [activeGroupId, selectedWellIds, setSelectedWellIds]);
 
   const handleCreateGroupFromSelection = useCallback(() => {
     if (selectedWellIds.size === 0) return;
     const newId = `g-${Date.now()}`;
-    setGroups(prevGroups => {
-      const color = GROUP_COLORS[prevGroups.length % GROUP_COLORS.length];
-      const newGroup: WellGroup = {
-        id: newId,
-        name: `Selection Set ${prevGroups.length + 1}`,
-        color,
-        wellIds: new Set(selectedWellIds),
-        typeCurve: { ...DEFAULT_TYPE_CURVE },
-        capex: { ...DEFAULT_CAPEX },
-        opex: { ...DEFAULT_OPEX, segments: DEFAULT_OPEX.segments.map(seg => ({ ...seg, id: `o-${Date.now()}-${Math.random()}` })) },
-        ownership: { ...DEFAULT_OWNERSHIP, agreements: [] }
-      };
-      const updatedPrevGroups = prevGroups.map(g => {
-        const nextIds = new Set(g.wellIds);
-        selectedWellIds.forEach(id => nextIds.delete(id));
-        return { ...g, wellIds: nextIds };
-      });
-      return [...updatedPrevGroups, newGroup];
-    });
+    setGroups(prevGroups => createGroupFromSelection(prevGroups, newId, selectedWellIds));
     setActiveGroupId(newId);
     setSelectedWellIds(new Set());
   }, [selectedWellIds, setSelectedWellIds]);
 
   // --- Derived analytics ---
   const scenarioRankings = useMemo(() => {
-    return processedGroups
-      .map(group => {
-        const metrics = group.metrics || { npv10: 0, totalCapex: 0, eur: 0, payoutMonths: 0, wellCount: 0 };
-        const totalRevenue = group.flow?.reduce((sum, f) => sum + f.revenue, 0) || 0;
-        const totalOpex = group.flow?.reduce((sum, f) => sum + f.opex, 0) || 0;
-        const roi = metrics.totalCapex > 0
-          ? (totalRevenue - totalOpex) / metrics.totalCapex
-          : 0;
-        return {
-          id: group.id,
-          name: group.name,
-          wellCount: metrics.wellCount,
-          npv10: metrics.npv10,
-          totalCapex: metrics.totalCapex,
-          eur: metrics.eur,
-          roi,
-          payoutMonths: metrics.payoutMonths,
-          baseNri: group.ownership.baseNri,
-          baseCostInterest: group.ownership.baseCostInterest,
-        };
-      })
-      .sort((a, b) => {
-        if (b.npv10 !== a.npv10) return b.npv10 - a.npv10;
-        return b.roi - a.roi;
-      });
+    return selectScenarioRankings(processedGroups);
   }, [processedGroups]);
 
   const portfolioRoi = useMemo(() => {
-    const totalRevenue = aggregateFlow.reduce((sum, f) => sum + f.revenue, 0);
-    const totalOpex = aggregateFlow.reduce((sum, f) => sum + f.opex, 0);
-    return aggregateMetrics.totalCapex > 0 ? (totalRevenue - totalOpex) / aggregateMetrics.totalCapex : 0;
-  }, [aggregateFlow, aggregateMetrics.totalCapex]);
+    return selectPortfolioRoi(aggregateFlow, aggregateMetrics);
+  }, [aggregateFlow, aggregateMetrics]);
 
   const fastestPayoutScenarioName = useMemo(() => {
     const fastest = scenarioRankings
@@ -448,27 +376,17 @@ export function useSlopcastWorkspace() {
   }, [scenarioRankings]);
 
   const validationWarnings = useMemo(() => {
-    const warnings: string[] = [];
-    if (aggregateMetrics.wellCount === 0) warnings.push('No wells assigned to a scenario yet.');
-    if (filteredWells.length === 0) warnings.push('Current filters exclude all wells.');
-    if (selectedVisibleCount === 0) warnings.push('Step 2 incomplete: no visible wells are currently selected in the basin map.');
-    const baseScenario = scenarios.find(s => s.isBaseCase) || scenarios[0];
-    const activeScenario = scenarios.find(s => s.id === activeScenarioId) || baseScenario;
-    const activePricing = activeScenario?.pricing || DEFAULT_COMMODITY_PRICING;
-    if (activePricing.oilPrice <= 0 || activePricing.gasPrice < 0) warnings.push('Scenario pricing inputs are incomplete or invalid.');
-    if (activeGroup.ownership.baseNri <= 0 || activeGroup.ownership.baseNri > 1) warnings.push('Base NRI is invalid in the active group.');
-    if (activeGroup.ownership.baseCostInterest < 0 || activeGroup.ownership.baseCostInterest > 1) warnings.push('Base cost interest is invalid in the active group.');
-    if ((activeGroup.opex.segments || []).length === 0) warnings.push('OPEX segments are missing for the active group.');
-    if (activeGroup.capex.items.length === 0) {
-      warnings.push('CAPEX items are missing for the active group.');
-    }
-    return warnings;
+    return selectValidationWarnings({
+      aggregateMetrics,
+      filteredWellCount: filteredWells.length,
+      selectedVisibleCount,
+      scenarios,
+      activeScenarioId,
+      activeGroup,
+    });
   }, [
-    activeGroup.capex.items.length,
-    activeGroup.opex.segments,
-    activeGroup.ownership.baseCostInterest,
-    activeGroup.ownership.baseNri,
-    aggregateMetrics.wellCount,
+    activeGroup,
+    aggregateMetrics,
     filteredWells.length,
     selectedVisibleCount,
     activeScenarioId,
