@@ -1207,7 +1207,9 @@ create or replace function public.create_economics_run(
   p_input_hash text,
   p_portfolio_metrics jsonb,
   p_warnings jsonb,
-  p_group_metrics jsonb
+  p_group_metrics jsonb,
+  p_run_kind text default 'manual',
+  p_engine_version text default 'ts-v1'
 )
 returns uuid
 language plpgsql
@@ -1251,8 +1253,8 @@ begin
     p_input_hash,
     coalesce(p_portfolio_metrics, '{}'::jsonb),
     coalesce(p_warnings, '[]'::jsonb),
-    'manual',
-    'ts-v1'
+    coalesce(p_run_kind, 'manual'),
+    coalesce(p_engine_version, 'ts-v1')
   )
   returning id into run_id;
 

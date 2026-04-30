@@ -619,6 +619,8 @@ export type Database = {
           p_portfolio_metrics: Json;
           p_warnings: Json;
           p_group_metrics: Json;
+          p_run_kind?: string;
+          p_engine_version?: string;
         };
         Returns: string;
       };
