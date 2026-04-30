@@ -18,6 +18,7 @@
     "ui:shots": "node scripts/ui-snapshots.mjs",
     "ui:verify": "playwright test e2e",
     "ui:verify:legacy": "node scripts/ui-verify-flow.mjs",
+    "bundle:check": "node scripts/bundle-budget.mjs",
     "theme:fx:url:cinematic": "node scripts/theme-fx-toggle.mjs cinematic",
     "theme:fx:url:max": "node scripts/theme-fx-toggle.mjs max",
     "theme:fx:url:clear": "node scripts/theme-fx-toggle.mjs clear",
