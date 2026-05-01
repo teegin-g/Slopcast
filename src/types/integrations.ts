@@ -14,9 +14,9 @@ export interface ProjectUiState {
   designWorkspace?: 'WELLS' | 'ECONOMICS';
   economicsResultsTab?: 'OVERVIEW' | 'CASH_FLOW' | 'RESERVES';
   economicsModule?: 'PRODUCTION' | 'PRICING' | 'OPEX' | 'TAXES' | 'OWNERSHIP' | 'CAPEX';
-  operatorFilter?: string;
-  formationFilter?: string;
-  statusFilter?: Well['status'] | 'ALL';
+  operatorFilter?: string | string[];
+  formationFilter?: string | string[];
+  statusFilter?: Well['status'] | 'ALL' | string[];
 }
 
 export interface ProjectRecord {

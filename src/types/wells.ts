@@ -8,6 +8,20 @@ import type { DebtAssumptions } from './economics';
 import type { DealMetrics } from './economics';
 import type { MonthlyCashFlow } from './economics';
 
+export interface WellTrajectoryPoint {
+  lat: number;
+  lng: number;
+  depthFt: number;
+}
+
+export interface WellTrajectory {
+  path: WellTrajectoryPoint[];
+  surface: WellTrajectoryPoint;
+  heel: WellTrajectoryPoint;
+  toe: WellTrajectoryPoint;
+  mdFt?: number;
+}
+
 export interface Well {
   id: string;
   name: string;
@@ -17,6 +31,7 @@ export interface Well {
   status: 'PRODUCING' | 'DUC' | 'PERMIT';
   operator: string;
   formation: string;
+  trajectory?: WellTrajectory;
 }
 
 export interface WellGroup {

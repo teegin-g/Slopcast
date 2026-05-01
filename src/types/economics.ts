@@ -159,7 +159,7 @@ export interface DealMetrics {
   totalCapex: number;
   eur: number; // Estimated Ultimate Recovery
   npv10: number; // Net Present Value @ 10%
-  irr: number; // Internal Rate of Return (approximation)
+  irr?: number; // Internal Rate of Return (approximation)
   payoutMonths: number;
   wellCount: number;
   // After-tax metrics (populated when tax assumptions provided)
