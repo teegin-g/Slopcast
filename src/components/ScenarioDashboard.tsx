@@ -386,22 +386,31 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, sc
       </div>
 
       <div className="xl:col-span-9 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {scenarioResults.map((res) => (
-	                  <div key={res.scenario.id} className={isClassic ? 'sc-panel theme-transition overflow-hidden group' : 'rounded-panel border p-6 relative overflow-hidden theme-transition shadow-card group bg-theme-surface1/80 border-theme-border hover:border-theme-cyan'}>
-                      <div className="absolute top-0 left-0 w-1.5 h-full opacity-60" style={{ backgroundColor: res.scenario.color }}></div>
-                      <div className="absolute top-0 right-0 w-32 h-32 blur-[50px] opacity-10 pointer-events-none" style={{ backgroundColor: res.scenario.color }}></div>
+	                  <button
+                      key={res.scenario.id}
+                      type="button"
+                      onClick={() => { setActiveScenarioId(res.scenario.id); setEditingScenario(true); }}
+                      className={
+                        isClassic
+                          ? 'sc-panel theme-transition overflow-hidden group text-left min-h-[104px]'
+                          : 'rounded-panel border px-4 py-3 relative overflow-hidden theme-transition shadow-card group bg-theme-surface1/78 border-theme-border hover:border-theme-cyan text-left min-h-[104px]'
+                      }
+                    >
+                      <div className="absolute top-0 left-0 w-1 h-full opacity-70" style={{ backgroundColor: res.scenario.color }}></div>
+                      <div className="absolute top-0 right-0 w-20 h-20 blur-[42px] opacity-10 pointer-events-none" style={{ backgroundColor: res.scenario.color }}></div>
                       
                       {isClassic ? (
                         <>
-                          <div className="sc-panelTitlebar sc-titlebar--red px-5 py-3 flex items-center min-w-0">
-                            <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] text-white truncate ${theme.features.brandFont ? 'brand-font' : ''}`}>{res.scenario.name}</h4>
+                          <div className="sc-panelTitlebar sc-titlebar--red px-4 py-2 flex items-center min-w-0">
+                            <h4 className={`text-[9px] font-black uppercase tracking-[0.24em] text-white truncate ${theme.features.brandFont ? 'brand-font' : ''}`}>{res.scenario.name}</h4>
                           </div>
-                          <div className="p-5">
-                            <div className="text-3xl font-black tracking-tight theme-transition text-theme-text">
+                          <div className="px-4 py-3">
+                            <div className="text-xl font-black tracking-tight theme-transition text-theme-text">
                               ${(res.metrics.npv10 / 1e6).toFixed(1)}M <span className="text-[10px] text-theme-muted font-black tracking-[0.1em] ml-1">NPV10</span>
                             </div>
-                            <div className="flex justify-between mt-6 text-[10px] text-theme-muted font-bold tracking-widest border-t border-white/5 pt-3">
+                            <div className="flex justify-between gap-3 mt-3 text-[9px] text-theme-muted font-bold tracking-widest border-t border-white/5 pt-2">
                               <span>ROI: {res.metrics.roi.toFixed(2)}X</span>
                               <span>FLEET: {Math.max(...res.scenario.schedule.annualRigs)} RIGS</span>
                             </div>
@@ -409,17 +418,17 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, sc
                         </>
                       ) : (
                         <>
-                          <h4 className={`text-[10px] font-black uppercase tracking-[0.3em] mb-4 ml-2 transition-all text-theme-cyan group-hover:text-theme-magenta truncate ${theme.features.brandFont ? 'brand-font' : ''}`}>{res.scenario.name}</h4>
-                          <div className="ml-2">
-                              <div className="text-3xl font-black tracking-tight theme-transition text-theme-text">${(res.metrics.npv10 / 1e6).toFixed(1)}M <span className="text-[10px] text-theme-muted font-black tracking-[0.1em] ml-1">NPV10</span></div>
-                              <div className="flex justify-between mt-6 text-[10px] text-theme-muted font-bold tracking-widest border-t border-white/5 pt-3">
+                          <h4 className={`text-[9px] font-black uppercase tracking-[0.24em] mb-2 pl-2 transition-all text-theme-cyan group-hover:text-theme-magenta truncate ${theme.features.brandFont ? 'brand-font' : ''}`}>{res.scenario.name}</h4>
+                          <div className="pl-2">
+                              <div className="text-xl font-black tracking-tight theme-transition text-theme-text">${(res.metrics.npv10 / 1e6).toFixed(1)}M <span className="text-[9px] text-theme-muted font-black tracking-[0.1em] ml-1">NPV10</span></div>
+                              <div className="flex justify-between gap-3 mt-3 text-[9px] text-theme-muted font-bold tracking-widest border-t border-theme-border/40 pt-2">
                                   <span>ROI: {res.metrics.roi.toFixed(2)}X</span>
                                   <span>FLEET: {Math.max(...res.scenario.schedule.annualRigs)} RIGS</span>
                               </div>
                           </div>
                         </>
                       )}
-                  </div>
+                  </button>
               ))}
           </div>
 
