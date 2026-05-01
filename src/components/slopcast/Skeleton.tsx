@@ -70,14 +70,14 @@ export const TableSkeleton: React.FC<{ rows?: number; cols?: number }> = ({ rows
   <div className="rounded-panel border border-theme-border overflow-hidden">
     <div className="grid gap-4 p-4 border-b border-theme-border bg-theme-surface2/30">
       {Array.from({ length: cols }).map((_, i) => (
-        <Skeleton key={i} className="h-3 inline-block" width={`${60 + Math.random() * 40}%`} />
+        <Skeleton key={i} className="h-3 inline-block" width={`${60 + ((i * 17) % 35)}%`} />
       ))}
     </div>
     <div className="divide-y divide-theme-border/50">
       {Array.from({ length: rows }).map((_, row) => (
         <div key={row} className="grid gap-4 p-4" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
           {Array.from({ length: cols }).map((_, col) => (
-            <Skeleton key={col} className="h-3" width={`${50 + Math.random() * 50}%`} />
+            <Skeleton key={col} className="h-3" width={`${50 + ((row + col * 11) % 45)}%`} />
           ))}
         </div>
       ))}
@@ -92,7 +92,7 @@ export const ChartSkeleton: React.FC<{ height?: string }> = ({ height = 'h-64' }
       <motion.div
         key={i}
         className="flex-1 bg-theme-surface2/40 rounded-t"
-        style={{ height: `${20 + Math.random() * 70}%` }}
+        style={{ height: `${24 + ((i * 23) % 62)}%` }}
         variants={shimmerVariants}
         initial="initial"
         animate="animate"
