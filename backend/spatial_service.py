@@ -551,10 +551,7 @@ def _query_databricks(
         """
     else:
         sql = f"""
-            SELECT api_14, well_name,
-                   sh_latitude_nad27, sh_longitude_nad27,
-                   bh_latitude_nad27, bh_longitude_nad27,
-                   lateral_length, well_status, operator, formation
+            SELECT *
             FROM {full_table}
             WHERE sh_latitude_nad27 BETWEEN %(sw_lat)s AND %(ne_lat)s
               AND sh_longitude_nad27 BETWEEN %(sw_lng)s AND %(ne_lng)s
@@ -605,8 +602,8 @@ def _query_databricks(
             source="databricks",
         )
 
-    # summary or full: build intermediate well data including raw BH coords for trajectory
-    well_data: list[tuple[Well, float, float, float, float]] = []  # (well, sh_lat_wgs84, sh_lng_wgs84, bh_lat_wgs84, bh_lng_wgs84)
+    # summary or full: build intermediate well data including raw geometry for trajectory
+    well_data: list[tuple[Well, float, float, float, float, dict[str, Any]]] = []
     for row in rows:
         row_dict = dict(zip(cols, row))
         raw_lat = row_dict.get("sh_latitude_nad27")
@@ -645,7 +642,7 @@ def _query_databricks(
 
         if filters and not _passes_filter(well, filters):
             continue
-        well_data.append((well, lat, lng, bh_lat_wgs84, bh_lng_wgs84))
+        well_data.append((well, lat, lng, bh_lat_wgs84, bh_lng_wgs84, row_dict))
 
     result_wells = [wd[0] for wd in well_data]
 
@@ -692,7 +689,7 @@ def _subsample(items: list[Any], max_count: int) -> list[Any]:
 def _fetch_trajectories(
     conn: Any,
     api_ids: list[str],
-    well_data: list[tuple[Well, float, float, float, float]],
+    well_data: list[tuple[Well, float, float, float, float, dict[str, Any]]],
     zoom: int | None = None,
 ) -> dict[str, WellTrajectory]:
     """
@@ -708,10 +705,11 @@ def _fetch_trajectories(
     # Lookup: api_14 → (sh_lat_wgs84, sh_lng_wgs84, bh_lat_wgs84, bh_lng_wgs84)
     well_coords: dict[str, tuple[float, float, float, float]] = {
         w.id: (sh_lat, sh_lng, bh_lat, bh_lng)
-        for w, sh_lat, sh_lng, bh_lat, bh_lng in well_data
+        for w, sh_lat, sh_lng, bh_lat, bh_lng, _row in well_data
     }
     # Lookup: api_14 → Well (for lateral_length check)
     well_by_id: dict[str, Well] = {w.id: w for w, *_ in well_data}
+    well_master_rows: dict[str, dict[str, Any]] = {w.id: row for w, *_coords, row in well_data}
 
     # Only query surveys for wells with lateral_length > 0
     survey_api_ids = [a for a in api_ids if well_by_id.get(a) and well_by_id[a].lateralLength > 0]
@@ -757,13 +755,19 @@ def _fetch_trajectories(
             continue
         sh_lat, sh_lng, bh_lat, bh_lng = coords
         stations = raw_stations.get(api, [])
-        shape_wkt = shape_wkts.get(api)
+        row = well_master_rows.get(api, {})
+        shape_wkt = _first_present(row, ["shape_wkt", "lateral_wkt", "wellbore_wkt", "geometry_wkt"]) or shape_wkts.get(api)
 
         if shape_wkt:
             shape_trajectory = _trajectory_from_shape_wkt(well_by_id[api], shape_wkt, zoom=zoom)
             if shape_trajectory is not None:
                 trajectories[api] = shape_trajectory
                 continue
+
+        coordinate_trajectory = _trajectory_from_well_master_points(well_by_id[api], row, sh_lat, sh_lng, bh_lat, bh_lng)
+        if coordinate_trajectory is not None:
+            trajectories[api] = coordinate_trajectory
+            continue
 
         if stations:
             # Subsample if too many stations (adaptive to zoom)
@@ -832,6 +836,135 @@ def _fetch_trajectories(
             )
 
     return trajectories
+
+
+def _first_present(row: dict[str, Any], names: list[str]) -> Any | None:
+    match = _first_present_with_name(row, names)
+    return match[1] if match else None
+
+
+def _first_present_with_name(row: dict[str, Any], names: list[str]) -> tuple[str, Any] | None:
+    lower_map = {key.lower(): value for key, value in row.items()}
+    for name in names:
+        value = lower_map.get(name.lower())
+        if value not in (None, ""):
+            return name, value
+    return None
+
+
+def _float_from(row: dict[str, Any], names: list[str]) -> tuple[str, float] | None:
+    match = _first_present_with_name(row, names)
+    if not match:
+        return None
+    name, value = match
+    if value in (None, ""):
+        return None
+    try:
+        return name, float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _coord_from_row(
+    row: dict[str, Any],
+    lat_names: list[str],
+    lng_names: list[str],
+    *,
+    default: tuple[float, float] | None = None,
+) -> tuple[float, float] | None:
+    lat_match = _float_from(row, lat_names)
+    lng_match = _float_from(row, lng_names)
+    if lat_match is None or lng_match is None:
+        return default
+    lat_name, lat = lat_match
+    lng_name, lng = lng_match
+    if "nad27" in lat_name.lower() or "nad27" in lng_name.lower():
+        return _transform_coords(lat, lng)
+    return lat, lng
+
+
+def _trajectory_depth_for_lateral(well: Well) -> float:
+    if well.lateralLength > 0:
+        return max(4000.0, min(12000.0, well.lateralLength * 0.8))
+    return 8000.0
+
+
+def _trajectory_from_well_master_points(
+    well: Well,
+    row: dict[str, Any],
+    sh_lat: float,
+    sh_lng: float,
+    bh_lat: float,
+    bh_lng: float,
+) -> WellTrajectory | None:
+    """Build trajectory from explicit well-master surface/heel/toe columns.
+
+    The EPW well master has changed field names across extracts, so this
+    accepts the common surface-hole, heel, toe, and bottom-hole aliases while
+    preserving the stable WellTrajectory response contract.
+    """
+    surface = _coord_from_row(
+        row,
+        ["surface_latitude", "surface_latitude_nad27", "sh_latitude", "sh_latitude_nad27", "surface_hole_latitude"],
+        ["surface_longitude", "surface_longitude_nad27", "sh_longitude", "sh_longitude_nad27", "surface_hole_longitude"],
+        default=(sh_lat, sh_lng),
+    )
+    toe = _coord_from_row(
+        row,
+        [
+            "toe_latitude",
+            "toe_latitude_nad27",
+            "bottomhole_latitude",
+            "bottom_hole_latitude",
+            "bh_latitude",
+            "bh_latitude_nad27",
+        ],
+        [
+            "toe_longitude",
+            "toe_longitude_nad27",
+            "bottomhole_longitude",
+            "bottom_hole_longitude",
+            "bh_longitude",
+            "bh_longitude_nad27",
+        ],
+        default=(bh_lat, bh_lng),
+    )
+    if surface is None or toe is None:
+        return None
+
+    heel = _coord_from_row(
+        row,
+        ["heel_latitude", "heel_latitude_nad27", "heel_point_latitude"],
+        ["heel_longitude", "heel_longitude_nad27", "heel_point_longitude"],
+    )
+
+    tvd_match = _float_from(
+        row,
+        ["tvd", "tvd_ft", "true_vertical_depth", "heel_tvd", "heel_tvd_ft", "landing_zone_tvd"],
+    )
+    tvd = tvd_match[1] if tvd_match else _trajectory_depth_for_lateral(well)
+
+    surface_pt = WellTrajectoryPoint(lat=surface[0], lng=surface[1], depthFt=0.0)
+    if heel is None:
+        heel_pt = WellTrajectoryPoint(
+            lat=(surface[0] + toe[0]) / 2.0,
+            lng=(surface[1] + toe[1]) / 2.0,
+            depthFt=tvd,
+        )
+    else:
+        heel_pt = WellTrajectoryPoint(lat=heel[0], lng=heel[1], depthFt=tvd)
+    toe_pt = WellTrajectoryPoint(lat=toe[0], lng=toe[1], depthFt=tvd)
+
+    if surface_pt.lat == toe_pt.lat and surface_pt.lng == toe_pt.lng:
+        return None
+
+    return WellTrajectory(
+        path=[surface_pt, heel_pt, toe_pt],
+        surface=surface_pt,
+        heel=heel_pt,
+        toe=toe_pt,
+        mdFt=(well.lateralLength + tvd) if well.lateralLength > 0 else None,
+    )
 
 
 def _fetch_shape_wkts(conn: Any, api_ids: list[str]) -> dict[str, str]:

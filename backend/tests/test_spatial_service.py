@@ -499,3 +499,71 @@ class TestShapeTrajectoryBuilder:
         assert trajectory.surface.lng != trajectory.toe.lng
         assert trajectory.mdFt is not None
         assert trajectory.mdFt > well.lateralLength
+
+    def test_well_master_points_build_surface_heel_toe_trajectory(self):
+        well = Well(
+            id="42317408960000",
+            name="Coordinate-backed well",
+            lat=32.10,
+            lng=-102.10,
+            lateralLength=10000.0,
+            status="PRODUCING",
+            operator="TEST OPERATOR",
+            formation="WOLFCAMP A",
+        )
+
+        trajectory = _svc._trajectory_from_well_master_points(
+            well,
+            {
+                "surface_latitude": 32.10,
+                "surface_longitude": -102.10,
+                "heel_latitude": 32.09,
+                "heel_longitude": -102.08,
+                "toe_latitude": 32.06,
+                "toe_longitude": -102.00,
+                "tvd_ft": 9500,
+            },
+            sh_lat=32.10,
+            sh_lng=-102.10,
+            bh_lat=32.06,
+            bh_lng=-102.00,
+        )
+
+        assert trajectory is not None
+        assert trajectory.surface.depthFt == 0.0
+        assert trajectory.heel.depthFt == 9500
+        assert trajectory.toe.depthFt == 9500
+        assert trajectory.path == [trajectory.surface, trajectory.heel, trajectory.toe]
+        assert trajectory.mdFt == 19500
+
+    def test_well_master_points_fall_back_to_bottomhole_when_toe_missing(self):
+        well = Well(
+            id="42317408960001",
+            name="Bottomhole-backed well",
+            lat=32.10,
+            lng=-102.10,
+            lateralLength=7500.0,
+            status="DUC",
+            operator="TEST OPERATOR",
+            formation="WOLFCAMP B",
+        )
+
+        trajectory = _svc._trajectory_from_well_master_points(
+            well,
+            {
+                "sh_latitude": 32.10,
+                "sh_longitude": -102.10,
+                "bottom_hole_latitude": 32.02,
+                "bottom_hole_longitude": -102.00,
+            },
+            sh_lat=32.10,
+            sh_lng=-102.10,
+            bh_lat=32.02,
+            bh_lng=-102.00,
+        )
+
+        assert trajectory is not None
+        assert trajectory.toe.lat == 32.02
+        assert trajectory.toe.lng == -102.00
+        assert trajectory.heel.depthFt == trajectory.toe.depthFt
+        assert trajectory.toe.depthFt > 0
