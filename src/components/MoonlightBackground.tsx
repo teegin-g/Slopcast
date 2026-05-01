@@ -22,9 +22,9 @@ const COLORS = {
   skyLow: '#0e2040',
   horizon: '#1a3454',
   moonBody: '#e9b067',
-  moonGlow1: 'rgba(233, 176, 103, 0.35)',
-  moonGlow2: 'rgba(244, 210, 164, 0.12)',
-  moonGlow3: 'rgba(103, 195, 238, 0.06)',
+  moonGlow1: 'rgba(244, 210, 164, 0.42)',
+  moonGlow2: 'rgba(166, 196, 235, 0.16)',
+  moonGlow3: 'rgba(103, 195, 238, 0.09)',
   auroraGreen: '#22cc66',
   auroraAmber: '#e09030',
   auroraRed: '#cc3030',
@@ -41,13 +41,22 @@ const COLORS = {
   starWhite: '#d4e4ff',
   starWarm: '#f4d2a4',
   mistBase: 'rgba(100, 160, 200, 0.03)',
+  pineSilhouette: '#02060c',
+  valleyLamp: '#e9b067',
 };
+
+function seededRandom(seed: number) {
+  let s = seed;
+  return () => {
+    s = (s * 16807 + 0) % 2147483647;
+    return s / 2147483647;
+  };
+}
 
 // ── Star data (pre-generated for determinism) ───────────────────────────
 function generateStars(count: number, seed: number) {
   const stars: { x: number; y: number; r: number; brightness: number; speed: number; color: string }[] = [];
-  let s = seed;
-  const rand = () => { s = (s * 16807 + 0) % 2147483647; return s / 2147483647; };
+  const rand = seededRandom(seed);
   const colors = [COLORS.starWhite, COLORS.starWarm, '#e0e8ff', '#ffd6ff', '#d4f0ff'];
   for (let i = 0; i < count; i++) {
     stars.push({
@@ -81,22 +90,39 @@ function generateAuroraBands() {
 // ── Mist particle data ──────────────────────────────────────────────────
 function generateMistParticles(count: number) {
   const particles: { x: number; y: number; size: number; speed: number; opacity: number; drift: number }[] = [];
+  const rand = seededRandom(123);
   for (let i = 0; i < count; i++) {
     particles.push({
-      x: Math.random(),
-      y: 0.38 + Math.random() * 0.22,  // around horizon area
-      size: 80 + Math.random() * 200,
-      speed: 0.002 + Math.random() * 0.006,
-      opacity: 0.01 + Math.random() * 0.04,
-      drift: Math.random() * Math.PI * 2,
+      x: rand(),
+      y: 0.40 + rand() * 0.26,  // layered around horizon and ridge passes
+      size: 120 + rand() * 260,
+      speed: 0.0015 + rand() * 0.004,
+      opacity: 0.012 + rand() * 0.035,
+      drift: rand() * Math.PI * 2,
     });
   }
   return particles;
 }
 
+function generateValleyLights(count: number) {
+  const rand = seededRandom(909);
+  const lights: { x: number; y: number; r: number; phase: number; warmth: number }[] = [];
+  for (let i = 0; i < count; i++) {
+    lights.push({
+      x: 0.16 + rand() * 0.70,
+      y: 0.66 + rand() * 0.13,
+      r: 1.4 + rand() * 2.8,
+      phase: rand() * Math.PI * 2,
+      warmth: 0.55 + rand() * 0.45,
+    });
+  }
+  return lights;
+}
+
 const STARS = generateStars(140, 42);
 const AURORA_BANDS = generateAuroraBands();
 const MIST = generateMistParticles(25);
+const VALLEY_LIGHTS = generateValleyLights(24);
 
 export default function MoonlightBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -127,23 +153,23 @@ export default function MoonlightBackground() {
     // ── Pre-computed mountain paths (fractions of W/H) ────────────────
     // Far mountains
     const farMtn = [
-      [0, 0.56], [0.06, 0.54], [0.12, 0.57], [0.18, 0.53], [0.25, 0.56],
-      [0.32, 0.52], [0.38, 0.55], [0.44, 0.51], [0.50, 0.54], [0.56, 0.50],
-      [0.62, 0.53], [0.68, 0.49], [0.74, 0.52], [0.80, 0.48], [0.86, 0.51],
-      [0.92, 0.53], [1.0, 0.50],
+      [0, 0.57], [0.06, 0.54], [0.12, 0.58], [0.18, 0.52], [0.25, 0.56],
+      [0.32, 0.50], [0.38, 0.55], [0.44, 0.49], [0.50, 0.54], [0.56, 0.48],
+      [0.62, 0.53], [0.68, 0.47], [0.74, 0.52], [0.80, 0.46], [0.86, 0.51],
+      [0.92, 0.53], [1.0, 0.49],
     ];
     // Mid mountains
     const midMtn = [
-      [0, 0.62], [0.05, 0.58], [0.10, 0.61], [0.16, 0.56], [0.22, 0.59],
-      [0.28, 0.55], [0.35, 0.60], [0.42, 0.54], [0.48, 0.58], [0.55, 0.53],
-      [0.62, 0.57], [0.68, 0.52], [0.75, 0.56], [0.82, 0.54], [0.88, 0.58],
-      [0.94, 0.55], [1.0, 0.57],
+      [0, 0.63], [0.05, 0.58], [0.10, 0.62], [0.16, 0.55], [0.22, 0.60],
+      [0.28, 0.54], [0.35, 0.61], [0.42, 0.53], [0.48, 0.58], [0.55, 0.52],
+      [0.62, 0.58], [0.68, 0.51], [0.75, 0.57], [0.82, 0.53], [0.88, 0.59],
+      [0.94, 0.55], [1.0, 0.58],
     ];
     // Near mountains (very dark, large foreground)
     const nearMtn = [
-      [0, 0.72], [0.08, 0.66], [0.15, 0.70], [0.22, 0.63], [0.30, 0.68],
-      [0.38, 0.72], [0.45, 0.65], [0.52, 0.70], [0.58, 0.64], [0.65, 0.68],
-      [0.72, 0.62], [0.78, 0.67], [0.85, 0.60], [0.92, 0.65], [1.0, 0.62],
+      [0, 0.76], [0.08, 0.68], [0.15, 0.72], [0.22, 0.62], [0.30, 0.69],
+      [0.38, 0.74], [0.45, 0.64], [0.52, 0.70], [0.58, 0.63], [0.65, 0.69],
+      [0.72, 0.61], [0.78, 0.68], [0.85, 0.58], [0.92, 0.66], [1.0, 0.63],
     ];
 
     function drawMountainPath(points: number[][], close: boolean) {
@@ -179,25 +205,25 @@ export default function MoonlightBackground() {
 
     function drawHorizonHaze(time: number) {
       // Warm amber/teal horizon glow
-      const hY = H * 0.42;
-      const hH = H * 0.22;
+      const hY = H * 0.50;
+      const hH = H * 0.28;
 
       // Teal base
       const g1 = ctx!.createLinearGradient(0, hY - hH * 0.3, 0, hY + hH);
       g1.addColorStop(0, 'rgba(58, 136, 153, 0)');
-      g1.addColorStop(0.3, 'rgba(58, 136, 153, 0.08)');
-      g1.addColorStop(0.5, 'rgba(123, 172, 184, 0.12)');
-      g1.addColorStop(0.7, 'rgba(192, 128, 64, 0.10)');
+      g1.addColorStop(0.28, 'rgba(86, 137, 174, 0.10)');
+      g1.addColorStop(0.50, 'rgba(166, 196, 235, 0.14)');
+      g1.addColorStop(0.72, 'rgba(192, 128, 64, 0.16)');
       g1.addColorStop(1.0, 'rgba(192, 128, 64, 0)');
       ctx!.fillStyle = g1;
       ctx!.fillRect(0, hY - hH * 0.3, W, hH * 1.3);
 
       // Drifting cloud layers
-      const cloudCount = 5;
+      const cloudCount = 7;
       for (let i = 0; i < cloudCount; i++) {
         const cy = hY + (i / cloudCount) * hH * 0.8;
-        const drift = Math.sin(time * 0.08 + i * 1.5) * W * 0.02;
-        const alpha = 0.04 + Math.sin(time * 0.05 + i) * 0.015;
+        const drift = Math.sin(time * 0.045 + i * 1.5) * W * 0.025;
+        const alpha = 0.045 + Math.sin(time * 0.04 + i) * 0.012;
 
         const cg = ctx!.createLinearGradient(drift, 0, W + drift, 0);
         cg.addColorStop(0, `rgba(192, 128, 64, 0)`);
@@ -211,14 +237,14 @@ export default function MoonlightBackground() {
     }
 
     function drawAtmosphericBands(time: number) {
-      // Subtle horizontal scan lines in upper sky (cyan tones, like the reference)
-      const bandCount = 20;
+      // Moonlit fog bands, not neon scanlines, keep Nocturne distinct from Synthwave.
+      const bandCount = 16;
       for (let i = 0; i < bandCount; i++) {
-        const yFrac = 0.24 + (i / bandCount) * 0.18;
+        const yFrac = 0.30 + (i / bandCount) * 0.28;
         const y = yFrac * H;
-        const alpha = 0.02 + Math.sin(time * 0.1 + i * 0.7) * 0.012;
-        ctx!.strokeStyle = `rgba(60, 180, 220, ${alpha})`;
-        ctx!.lineWidth = 1;
+        const alpha = 0.024 + Math.sin(time * 0.055 + i * 0.7) * 0.010;
+        ctx!.strokeStyle = `rgba(166, 196, 235, ${alpha})`;
+        ctx!.lineWidth = i % 3 === 0 ? 2 : 1;
         ctx!.beginPath();
         ctx!.moveTo(0, y);
         ctx!.lineTo(W, y);
@@ -228,16 +254,16 @@ export default function MoonlightBackground() {
 
     function drawAurora(time: number) {
       for (const band of AURORA_BANDS) {
-        const y0 = band.y * H;
+        const y0 = (band.y + 0.04) * H;
         ctx!.strokeStyle = band.color;
-        ctx!.lineWidth = band.width * (W / 1920);
-        ctx!.globalAlpha = band.opacity * (0.7 + 0.3 * Math.sin(time * 0.2 + band.y * 30));
+        ctx!.lineWidth = band.width * 1.35 * (W / 1920);
+        ctx!.globalAlpha = band.opacity * 0.72 * (0.7 + 0.3 * Math.sin(time * 0.14 + band.y * 30));
         ctx!.beginPath();
-        for (let x = 0; x <= W; x += 3) {
+        for (let x = 0; x <= W; x += 5) {
+          const curtain = Math.sin((x / W) * Math.PI * 5 + time * band.speed * 0.8);
           const wave1 = Math.sin(x * band.freq + time * band.speed) * band.amplitude;
-          const wave2 = Math.sin(x * band.freq * 1.7 + time * band.speed * 0.8 + 2.0) * band.amplitude * 0.5;
-          const wave3 = Math.sin(x * band.freq * 0.4 + time * band.speed * 1.3 + 4.5) * band.amplitude * 0.3;
-          const yPos = y0 + (wave1 + wave2 + wave3) * (H / 1080);
+          const wave2 = Math.sin(x * band.freq * 1.7 + time * band.speed * 0.65 + 2.0) * band.amplitude * 0.5;
+          const yPos = y0 + (wave1 + wave2) * (H / 1080) + curtain * H * 0.010;
           if (x === 0) ctx!.moveTo(x, yPos);
           else ctx!.lineTo(x, yPos);
         }
@@ -247,20 +273,36 @@ export default function MoonlightBackground() {
     }
 
     function drawMoon(time: number) {
-      const mx = W * 0.5;
-      const my = H * 0.32;
-      const mr = Math.min(W, H) * 0.028;
+      const mx = W * 0.68;
+      const my = H * 0.22;
+      const mr = Math.min(W, H) * 0.072;
 
       // Outer glow rings (pulsing)
       const pulse = 1 + Math.sin(time * 0.3) * 0.06;
 
       // Large diffuse glow
       const g3 = ctx!.createRadialGradient(mx, my, 0, mx, my, mr * 12 * pulse);
-      g3.addColorStop(0, 'rgba(233, 176, 103, 0.06)');
-      g3.addColorStop(0.4, 'rgba(103, 195, 238, 0.03)');
+      g3.addColorStop(0, 'rgba(244, 210, 164, 0.12)');
+      g3.addColorStop(0.45, 'rgba(103, 195, 238, 0.06)');
       g3.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx!.fillStyle = g3;
       ctx!.fillRect(mx - mr * 14, my - mr * 14, mr * 28, mr * 28);
+
+      // Diagonal moon rays rake across the war-room background without covering panels.
+      ctx!.save();
+      ctx!.globalCompositeOperation = 'screen';
+      ctx!.translate(mx, my);
+      ctx!.rotate(-0.34);
+      for (let i = 0; i < 3; i++) {
+        const rayY = (i - 1) * mr * 1.4;
+        const ray = ctx!.createLinearGradient(0, rayY, -W * 0.72, rayY + H * 0.12);
+        ray.addColorStop(0, 'rgba(244, 210, 164, 0.13)');
+        ray.addColorStop(0.38, 'rgba(166, 196, 235, 0.055)');
+        ray.addColorStop(1, 'rgba(166, 196, 235, 0)');
+        ctx!.fillStyle = ray;
+        ctx!.fillRect(-W * 0.78, rayY - mr * 0.18, W * 0.90, mr * 0.36);
+      }
+      ctx!.restore();
 
       // Medium glow
       const g2 = ctx!.createRadialGradient(mx, my, 0, mx, my, mr * 5 * pulse);
@@ -350,6 +392,8 @@ export default function MoonlightBackground() {
       }
       ctx!.globalAlpha = 1;
 
+      drawValleyLights();
+
       // Near mountains
       ctx!.fillStyle = COLORS.mountainNear;
       drawMountainPath(nearMtn, true);
@@ -365,6 +409,24 @@ export default function MoonlightBackground() {
       }
     }
 
+    function drawValleyLights() {
+      for (const light of VALLEY_LIGHTS) {
+        const x = light.x * W;
+        const y = light.y * H;
+        const r = light.r * (W / 1920);
+        const glow = ctx!.createRadialGradient(x, y, 0, x, y, r * 10);
+        glow.addColorStop(0, `rgba(233, 176, 103, ${0.34 * light.warmth})`);
+        glow.addColorStop(0.28, `rgba(233, 176, 103, ${0.12 * light.warmth})`);
+        glow.addColorStop(1, 'rgba(233, 176, 103, 0)');
+        ctx!.fillStyle = glow;
+        ctx!.fillRect(x - r * 10, y - r * 10, r * 20, r * 20);
+        ctx!.fillStyle = `rgba(244, 210, 164, ${0.38 + 0.30 * light.warmth})`;
+        ctx!.beginPath();
+        ctx!.arc(x, y, Math.max(1, r), 0, Math.PI * 2);
+        ctx!.fill();
+      }
+    }
+
     function drawMist(time: number) {
       for (const p of MIST) {
         const x = ((p.x + time * p.speed) % 1.4 - 0.2) * W;
@@ -376,6 +438,44 @@ export default function MoonlightBackground() {
         ctx!.fillStyle = grad;
         ctx!.fillRect(x - p.size, y - p.size, p.size * 2, p.size * 2);
       }
+    }
+
+    function drawForegroundSilhouettes() {
+      ctx!.fillStyle = COLORS.pineSilhouette;
+
+      function drawPine(x: number, baseY: number, h: number, lean: number) {
+        const w = h * 0.28;
+        ctx!.save();
+        ctx!.translate(x, baseY);
+        ctx!.rotate(lean);
+        ctx!.fillRect(-w * 0.05, -h * 0.48, w * 0.10, h * 0.48);
+        for (let i = 0; i < 5; i++) {
+          const y = -h * (0.18 + i * 0.14);
+          const tierW = w * (1 - i * 0.12);
+          ctx!.beginPath();
+          ctx!.moveTo(0, y - h * 0.18);
+          ctx!.lineTo(-tierW, y + h * 0.10);
+          ctx!.lineTo(tierW, y + h * 0.10);
+          ctx!.closePath();
+          ctx!.fill();
+        }
+        ctx!.restore();
+      }
+
+      for (let i = 0; i < 7; i++) {
+        drawPine(W * (0.015 + i * 0.035), H * (0.96 - i * 0.018), H * (0.20 + i * 0.018), -0.035);
+        drawPine(W * (0.985 - i * 0.038), H * (0.95 - i * 0.014), H * (0.18 + i * 0.015), 0.032);
+      }
+
+      ctx!.beginPath();
+      ctx!.moveTo(0, H * 0.90);
+      ctx!.quadraticCurveTo(W * 0.18, H * 0.82, W * 0.36, H * 0.88);
+      ctx!.quadraticCurveTo(W * 0.52, H * 0.94, W * 0.72, H * 0.84);
+      ctx!.quadraticCurveTo(W * 0.88, H * 0.78, W, H * 0.86);
+      ctx!.lineTo(W, H);
+      ctx!.lineTo(0, H);
+      ctx!.closePath();
+      ctx!.fill();
     }
 
     function drawVignette() {
@@ -431,6 +531,7 @@ export default function MoonlightBackground() {
       drawHorizonHaze(time);
       drawMountains();
       drawMist(time);
+      drawForegroundSilhouettes();
       drawGrain();
       drawVignette();
 
