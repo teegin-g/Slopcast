@@ -4,7 +4,6 @@ import { DealMetrics, MonthlyCashFlow, Scenario, Well, WellGroup } from '../../t
 import OperationsConsole, { OperationsConsoleProps } from './OperationsConsole';
 import EconomicsGroupBar from './EconomicsGroupBar';
 import CapexModule from './economics/CapexModule';
-import EconomicsContextRail from './economics/EconomicsContextRail';
 import EconomicsModuleTabs from './economics/EconomicsModuleTabs';
 import OpexModule from './economics/OpexModule';
 import OwnershipModule from './economics/OwnershipModule';
@@ -12,8 +11,8 @@ import PricingModule from './economics/PricingModule';
 import ProductionModule from './economics/ProductionModule';
 import ScenarioCompareStrip from './economics/ScenarioCompareStrip';
 import TaxesModule from './economics/TaxesModule';
-import { currency, currencyMm, monthsToYears, ratio } from './economics/derived';
-import { EconomicsModule, EconomicsModuleProps, getEconomicsModuleMeta } from './economics/types';
+import { currency, currencyMm, getFlow, getMetrics, monthsToYears, ratio } from './economics/derived';
+import { EconomicsModule, EconomicsModuleProps } from './economics/types';
 
 export type EconomicsMobilePanel = 'SETUP' | 'RESULTS';
 
@@ -57,6 +56,7 @@ const BottomKpiStrip: React.FC<{
 
   return (
     <div className="rounded-panel border border-theme-border bg-theme-surface1/70 shadow-card p-2">
+      <p className="px-1 pb-2 text-[9px] font-black uppercase tracking-[0.12em] text-theme-muted">Portfolio</p>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
         {items.map((item) => (
           <div key={item.label} className="rounded-inner border border-theme-border bg-theme-bg px-3 py-2 min-h-[58px]">
@@ -72,11 +72,31 @@ const BottomKpiStrip: React.FC<{
   );
 };
 
+const GroupPulse: React.FC<{
+  metrics: DealMetrics;
+}> = ({ metrics }) => {
+  const payout = metrics.payoutMonths > 0 ? `${monthsToYears(metrics.payoutMonths).toFixed(1)} yrs` : '-';
+  const items = [
+    { label: 'NPV10', value: currencyMm(metrics.npv10) },
+    { label: 'Payout', value: payout },
+    { label: 'CAPEX', value: currencyMm(metrics.totalCapex) },
+    { label: 'EUR', value: `${(metrics.eur / 1e3).toFixed(0)} Mbo` },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+      {items.map((item) => (
+        <div key={item.label} className="rounded-inner border border-theme-border bg-theme-bg/75 px-3 py-2">
+          <p className="text-[9px] font-black uppercase tracking-[0.1em] text-theme-muted">{item.label}</p>
+          <p className="mt-1 text-sm font-black text-theme-text tabular-nums">{item.value}</p>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   isClassic,
-  themeId,
-  mobilePanel,
-  onSetMobilePanel,
   economicsModule,
   onSetEconomicsModule,
   wells,
@@ -91,13 +111,13 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
   activeScenarioId,
   onSetActiveScenarioId,
   aggregateMetrics,
-  aggregateFlow,
   operationsProps,
   breakevenOilPrice,
 }) => {
   const baseScenario = scenarios.find((scenario) => scenario.isBaseCase) ?? scenarios[0];
   const activeScenario = scenarios.find((scenario) => scenario.id === activeScenarioId) ?? baseScenario;
-  const meta = getEconomicsModuleMeta(economicsModule);
+  const selectedGroupMetrics = getMetrics(activeGroup);
+  const selectedGroupFlow = getFlow(activeGroup);
 
   const moduleProps: EconomicsModuleProps = {
     isClassic,
@@ -107,8 +127,8 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
     scenarios,
     activeScenario,
     baseScenario,
-    aggregateFlow,
-    aggregateMetrics,
+    aggregateFlow: selectedGroupFlow,
+    aggregateMetrics: selectedGroupMetrics,
     breakevenOilPrice,
     onUpdateGroup,
     onMarkDirty,
@@ -134,80 +154,62 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
 
   return (
     <div className="space-y-4">
-      <EconomicsGroupBar
-        isClassic={isClassic}
-        groups={groups}
-        activeGroupId={activeGroupId}
-        onActivateGroup={onActivateGroup}
-        onCloneActiveGroup={() => onCloneGroup(activeGroupId)}
-      />
+      <div className={`lg:sticky lg:top-0 lg:z-20 space-y-3 border p-3 theme-transition ${
+        isClassic ? 'sc-panel' : 'rounded-panel bg-theme-surface1/75 border-theme-border shadow-card backdrop-blur-sm'
+      }`}>
+        <ScenarioCompareStrip
+          activeGroup={activeGroup}
+          wells={wells}
+          scenarios={scenarios}
+          activeScenarioId={activeScenario.id}
+          onSetActiveScenarioId={onSetActiveScenarioId}
+          baseScenario={baseScenario}
+          aggregateFlow={selectedGroupFlow}
+          aggregateMetrics={selectedGroupMetrics}
+        />
 
-      <div
-        className={`lg:hidden border p-2 theme-transition ${
-          isClassic ? 'sc-panel' : 'rounded-panel bg-theme-surface1/60 border-theme-border shadow-card backdrop-blur-sm'
-        }`}
-      >
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            ['SETUP', 'Context'],
-            ['RESULTS', 'Workspace'],
-          ].map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => onSetMobilePanel(id as EconomicsMobilePanel)}
-              className={`px-3 py-2 rounded-inner text-[9px] font-bold uppercase tracking-widest border transition-colors ${
-                mobilePanel === id
-                  ? 'bg-theme-cyan text-theme-bg border-theme-cyan shadow-glow-cyan'
-                  : 'bg-theme-bg text-theme-muted border-theme-border'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
+        <EconomicsGroupBar
+          isClassic={isClassic}
+          groups={groups}
+          wells={wells}
+          activeGroupId={activeGroupId}
+          onActivateGroup={onActivateGroup}
+          onCloneActiveGroup={() => onCloneGroup(activeGroupId)}
+        />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)] gap-4 lg:min-h-[calc(100vh-16rem)]">
-        <div className={mobilePanel !== 'SETUP' ? 'hidden lg:block' : ''}>
-          <EconomicsContextRail
-            activeGroup={activeGroup}
-            wells={wells}
-            activeScenario={activeScenario}
-            aggregateMetrics={aggregateMetrics}
-            aggregateFlow={aggregateFlow}
-            breakevenOilPrice={breakevenOilPrice}
-          />
-        </div>
-
-        <section className={`space-y-4 min-w-0 ${mobilePanel !== 'RESULTS' ? 'hidden lg:block' : ''}`}>
-          <ScenarioCompareStrip
-            activeGroup={activeGroup}
-            wells={wells}
-            scenarios={scenarios}
-            activeScenarioId={activeScenario.id}
-            onSetActiveScenarioId={onSetActiveScenarioId}
-            baseScenario={baseScenario}
-            aggregateFlow={aggregateFlow}
-            aggregateMetrics={aggregateMetrics}
-          />
-
-          <div className="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-theme-muted">Economics</p>
-              <h1 className="mt-1 text-xl font-black tracking-normal text-theme-text">{meta.label}</h1>
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.75fr)] lg:items-end">
+          <div className="min-w-0 space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[9px] font-black uppercase tracking-[0.12em] text-theme-muted">Driver</p>
+              <button
+                type="button"
+                onClick={operationsProps.onSaveSnapshot}
+                disabled={!operationsProps.canUseSecondaryActions}
+                className="rounded-inner border border-theme-cyan/35 bg-theme-cyan/10 px-3 py-2 text-[9px] font-black uppercase tracking-[0.12em] text-theme-cyan transition-colors hover:bg-theme-cyan/15 disabled:cursor-not-allowed disabled:border-theme-border disabled:bg-theme-bg disabled:text-theme-muted"
+              >
+                Save Snapshot
+              </button>
             </div>
-            <p className="max-w-2xl text-xs text-theme-muted">{meta.eyebrow}</p>
+            <EconomicsModuleTabs module={economicsModule} onChange={onSetEconomicsModule} variant="compact" />
           </div>
-
-          <EconomicsModuleTabs module={economicsModule} onChange={onSetEconomicsModule} />
-          {moduleCanvas}
-        </section>
+          <GroupPulse metrics={selectedGroupMetrics} />
+        </div>
       </div>
+
+      <section className="min-w-0 space-y-4">
+        {moduleCanvas}
+      </section>
 
       <div className="space-y-3">
         <BottomKpiStrip metrics={aggregateMetrics} breakevenOilPrice={breakevenOilPrice} />
-        <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />
+        <details className="rounded-panel border border-theme-border bg-theme-surface1/55 shadow-card">
+          <summary className="cursor-pointer px-4 py-3 text-[10px] font-black uppercase tracking-[0.12em] text-theme-muted">
+            Operations
+          </summary>
+          <div className="border-t border-theme-border p-3">
+            <OperationsConsole {...operationsProps} showSelectionActions={false} compactEconomics />
+          </div>
+        </details>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import type { DealMetrics, MonthlyCashFlow, Scenario, Well, WellGroup } from '../../../types';
-import { buildWhatChanged } from './derived';
+import { buildWhatChanged, currency, ratio } from './derived';
 
 interface ScenarioCompareStripProps {
   activeGroup: WellGroup;
@@ -29,50 +29,51 @@ const ScenarioCompareStrip: React.FC<ScenarioCompareStripProps> = ({
     () => buildWhatChanged({ activeGroup, wells, activeScenario, baseScenario, aggregateFlow, aggregateMetrics }),
     [activeGroup, aggregateFlow, aggregateMetrics, activeScenario, baseScenario, wells],
   );
+  const activeIsBase = activeScenario.id === baseScenario.id;
+  const scenarioSummary = (scenario: Scenario) => {
+    const priceChanged = scenario.pricing.oilPrice !== baseScenario.pricing.oilPrice || scenario.pricing.gasPrice !== baseScenario.pricing.gasPrice;
+    if (priceChanged) return `WTI ${currency(scenario.pricing.oilPrice, 0)} | Gas ${currency(scenario.pricing.gasPrice, 2)}`;
+    if (scenario.productionScalar !== 1 || scenario.capexScalar !== 1) return `Prod ${ratio(scenario.productionScalar)} | CAPEX ${ratio(scenario.capexScalar)}`;
+    return 'Flat price | Base costs';
+  };
 
   return (
-    <div className="rounded-panel border border-theme-border bg-theme-surface1/55 shadow-card p-3 theme-transition relative">
-      <div className="flex flex-col xl:flex-row xl:items-center gap-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 xl:w-[380px]">
-          <label className="space-y-1">
-            <span className="block text-[9px] font-black uppercase tracking-[0.2em] text-theme-muted">Scenario</span>
-            <select
-              value={activeScenario.id}
-              onChange={(event) => onSetActiveScenarioId(event.target.value)}
-              className="w-full rounded-inner border border-theme-border bg-theme-bg px-3 py-2 text-xs font-semibold text-theme-text outline-none focus:border-theme-cyan"
-            >
-              {scenarios.map((scenario) => (
-                <option key={scenario.id} value={scenario.id}>{scenario.name}</option>
-              ))}
-            </select>
-          </label>
-          <label className="space-y-1">
-            <span className="block text-[9px] font-black uppercase tracking-[0.2em] text-theme-muted">Compare to</span>
-            <select
-              value={baseScenario.id}
-              disabled
-              className="w-full rounded-inner border border-theme-border bg-theme-bg/70 px-3 py-2 text-xs font-semibold text-theme-muted outline-none"
-            >
-              <option>{baseScenario.name}</option>
-            </select>
-          </label>
+    <div className="rounded-panel border border-theme-border bg-theme-surface1/55 shadow-card px-3 py-2 theme-transition relative">
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+        <div className="flex items-center gap-2 lg:w-32">
+          <span className="text-[9px] font-black uppercase tracking-[0.12em] text-theme-muted">Scenario</span>
+          <span className="hidden lg:inline text-[10px] text-theme-muted">
+            {activeIsBase ? 'Base active' : `vs ${baseScenario.name}`}
+          </span>
         </div>
 
-        <div className="flex-1 flex flex-wrap items-center gap-2">
+        <div className="flex-1 flex items-stretch gap-1 overflow-x-auto pb-1 lg:pb-0">
           {scenarios.map((scenario) => {
             const active = scenario.id === activeScenario.id;
+            const base = scenario.id === baseScenario.id;
+            const label = scenario.isBaseCase ? 'Base' : scenario.name.replace(/scenario/i, '').trim();
             return (
               <button
                 key={scenario.id}
                 type="button"
                 onClick={() => onSetActiveScenarioId(scenario.id)}
-                className={`rounded-inner border px-3 py-2 text-[9px] font-black uppercase tracking-[0.13em] transition-colors ${
+                aria-pressed={active}
+                aria-current={active ? 'true' : undefined}
+                className={`min-w-[132px] rounded-inner border px-3 py-2 text-left transition-colors ${
                   active
-                    ? 'border-theme-cyan bg-theme-cyan/12 text-theme-cyan'
-                    : 'border-theme-border bg-theme-bg text-theme-muted hover:text-theme-text'
+                    ? 'border-theme-cyan bg-theme-cyan/12 text-theme-text'
+                    : 'border-theme-border/70 bg-theme-bg/80 text-theme-muted hover:text-theme-text'
                 }`}
               >
-                {scenario.isBaseCase ? 'Base' : scenario.name.replace(/scenario/i, '').trim()}
+                <span className="flex items-center justify-between gap-2">
+                  <span className={`text-[10px] font-black uppercase tracking-[0.08em] ${active ? 'text-theme-cyan' : ''}`}>
+                    {label}
+                  </span>
+                  {base && <span className="text-[8px] font-black uppercase tracking-[0.08em] text-theme-muted">Base</span>}
+                </span>
+                <span className="mt-1 block text-[10px] font-semibold normal-case tracking-normal text-theme-muted">
+                  {scenarioSummary(scenario)}
+                </span>
               </button>
             );
           })}
@@ -82,9 +83,9 @@ const ScenarioCompareStrip: React.FC<ScenarioCompareStripProps> = ({
           <button
             type="button"
             onClick={() => setOpen((prev) => !prev)}
-            className="rounded-inner border border-theme-cyan/40 bg-theme-cyan/10 px-3 py-2 text-[9px] font-black uppercase tracking-[0.15em] text-theme-cyan hover:bg-theme-cyan/15 transition-colors"
+            className="rounded-inner border border-theme-cyan/35 bg-theme-cyan/10 px-3 py-2 text-[9px] font-black uppercase tracking-[0.12em] text-theme-cyan hover:bg-theme-cyan/15 transition-colors whitespace-nowrap"
           >
-            What Changed? <span className="ml-1 rounded-full bg-theme-cyan/20 px-1.5 py-0.5">{changes.length}</span>
+            What changed <span className="ml-1 rounded-full bg-theme-cyan/20 px-1.5 py-0.5">{changes.length}</span>
           </button>
           {open && (
             <div className="absolute right-0 top-full z-30 mt-2 w-[min(420px,calc(100vw-2rem))] rounded-panel border border-theme-border bg-theme-surface1 shadow-card p-3">

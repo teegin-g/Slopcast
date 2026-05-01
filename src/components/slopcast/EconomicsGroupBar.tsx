@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { WellGroup } from '../../types';
+import { Well, WellGroup } from '../../types';
+import { currencyMm } from './economics/derived';
 import { useToast } from './Toast';
 
 type GroupSortKey = 'NPV' | 'ROI' | 'PAYOUT' | 'CAPEX' | 'NAME';
@@ -16,6 +17,7 @@ type GroupMetrics = {
 export interface EconomicsGroupBarProps {
   isClassic: boolean;
   groups: WellGroup[];
+  wells?: Well[];
   activeGroupId: string;
   onActivateGroup: (id: string) => void;
   onCloneActiveGroup: () => void;
@@ -27,6 +29,7 @@ export interface EconomicsGroupBarProps {
 const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
   isClassic,
   groups,
+  wells = [],
   activeGroupId,
   onActivateGroup,
   onCloneActiveGroup,
@@ -152,6 +155,17 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
   const activeMetrics = activeGroup ? metricsById.get(activeGroup.id) : undefined;
   const activeHealth = activeGroup ? groupHealth(activeGroup) : { done: 0, total: 3 };
   const isActiveHealthy = activeHealth.done === activeHealth.total;
+  const groupWells = activeGroup ? wells.filter((well) => activeGroup.wellIds.has(well.id)) : [];
+  const statusCounts = groupWells.reduce<Record<Well['status'], number>>((acc, well) => {
+    acc[well.status] = (acc[well.status] ?? 0) + 1;
+    return acc;
+  }, { PRODUCING: 0, DUC: 0, PERMIT: 0 });
+  const selectedMetrics = activeMetrics ?? activeGroup?.metrics;
+  const commandSummary = [
+    `${activeGroup?.wellIds.size ?? 0} wells`,
+    selectedMetrics ? `${currencyMm(selectedMetrics.totalCapex)} CAPEX` : null,
+    selectedMetrics ? `${currencyMm(selectedMetrics.npv10)} NPV` : null,
+  ].filter(Boolean).join(' · ');
 
   return (
     <div
@@ -161,14 +175,31 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
         isClassic ? 'sc-panel' : 'rounded-panel bg-theme-surface1/65 border-theme-border shadow-card'
       }`}
     >
-      {/* Scope label */}
-      <div className={`text-[7px] font-black uppercase tracking-[0.2em] mb-1 ${
-        isClassic ? 'text-white/40' : 'text-theme-muted/50'
-      }`}>
-        Group
-      </div>
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-black uppercase tracking-[0.12em] text-theme-muted">Group</span>
+            {activeGroup && (
+              <span
+                className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.08em] ${
+                  isActiveHealthy
+                    ? 'bg-emerald-500/15 text-emerald-400'
+                    : (isClassic ? 'bg-theme-warning/80 text-black' : 'bg-theme-warning/15 text-theme-warning')
+                }`}
+              >
+                {isActiveHealthy ? 'Fresh' : 'Inputs changed'}
+              </span>
+            )}
+          </div>
+          {activeGroup && (
+            <p className={`mt-1 truncate text-xs ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
+              <span className="font-bold text-theme-text">{activeGroup.name}</span>
+              {commandSummary ? ` · ${commandSummary}` : ''}
+            </p>
+          )}
+        </div>
 
-      <div className="flex items-center gap-1.5">
+        <div className="flex min-w-0 items-center gap-1.5">
         <button
           type="button"
           data-testid="economics-group-prev"
@@ -391,53 +422,35 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
         >
           Clone Group
         </button>
+        </div>
       </div>
 
-      {/* Selection summary row */}
       {activeGroup && (
-        <div className={`flex items-center gap-2 mt-1.5 pt-1.5 border-t theme-transition ${
+        <div className={`flex flex-wrap items-center gap-2 mt-2 pt-2 border-t theme-transition ${
           isClassic ? 'border-black/15' : 'border-theme-border/30'
         }`}>
-          {/* Active group name with color dot */}
-          <span className="flex items-center gap-1.5 min-w-0">
+          <span className="flex min-w-0 items-center gap-1.5">
             <span
               className="w-2 h-2 rounded-full shrink-0"
               style={{ backgroundColor: activeGroup.color || '#4F8BFF' }}
             />
-            <span className={`text-xs font-bold truncate ${
+            <span className={`text-[10px] font-black uppercase tracking-[0.08em] truncate ${
               isClassic ? 'text-white/80' : 'text-theme-text/80'
             }`}>
-              {activeGroup.name}
+              Status
             </span>
           </span>
 
-          {/* Compute status badge */}
-          <span className={`shrink-0 px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-[0.1em] ${
-            isActiveHealthy
-              ? 'bg-emerald-500/90 text-white'
-              : (isClassic ? 'bg-theme-warning/80 text-black' : 'bg-theme-warning/80 text-theme-bg')
-          }`}>
-            {isActiveHealthy ? 'Compute: Fresh' : 'Compute: Stale'}
-          </span>
-
-          {/* Wells count */}
-          <span className={`shrink-0 text-xs tabular-nums ${
-            isClassic ? 'text-white/50' : 'text-theme-muted/60'
-          }`}>
-            {activeGroup.wellIds.size} well{activeGroup.wellIds.size !== 1 ? 's' : ''}
-          </span>
-
-          {/* Spacer */}
-          <span className="flex-1" />
-
-          {/* NPV if available */}
-          {activeMetrics && (
-            <span className={`shrink-0 text-xs font-bold tabular-nums ${
-              isClassic ? 'text-white/70' : 'text-theme-cyan/70'
-            }`}>
-              NPV {formatMillions(activeMetrics.npv10)}
+          {(['PRODUCING', 'DUC', 'PERMIT'] as const).map((status) => (
+            <span
+              key={status}
+              className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold tabular-nums ${
+                isClassic ? 'border-black/20 bg-black/15 text-white/75' : 'border-theme-border bg-theme-bg/80 text-theme-muted'
+              }`}
+            >
+              <span className="font-black text-theme-text">{statusCounts[status] ?? 0}</span> {status.toLowerCase()}
             </span>
-          )}
+          ))}
         </div>
       )}
     </div>
