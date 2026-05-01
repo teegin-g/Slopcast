@@ -1,0 +1,126 @@
+- generic [ref=e49]:
+  - banner [ref=e50]:
+    - generic [ref=e51]:
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - generic [ref=e55]: SL
+          - generic [ref=e56]:
+            - heading "SLOPCAST" [level=1] [ref=e57]
+            - generic [ref=e58]: Deal Intelligence
+        - generic [ref=e59]:
+          - generic [ref=e60]:
+            - button "HUB" [ref=e61]
+            - button "DESIGN" [ref=e62]
+            - button "SCENARIOS" [ref=e63]
+          - generic [ref=e66]:
+            - button "Wells Ready" [ref=e67]:
+              - generic [ref=e70]:
+                - generic [ref=e71]: Wells
+                - generic [ref=e72]: Ready
+            - button "Economics Current" [ref=e73]:
+              - generic [ref=e75]:
+                - generic [ref=e76]: Economics
+                - generic [ref=e77]: Current
+      - generic [ref=e79]:
+        - button "🏢" [ref=e80]:
+          - generic [ref=e81]: 🏢
+        - button "🕹️" [ref=e82]:
+          - generic [ref=e83]: 🕹️
+        - button "🌴" [ref=e84]:
+          - generic [ref=e85]: 🌴
+        - button "🌙" [ref=e86]:
+          - generic [ref=e87]: 🌙
+        - button "⛈️" [ref=e88]:
+          - generic [ref=e89]: ⛈️
+        - button "🧱" [ref=e90]:
+          - generic [ref=e91]: 🧱
+        - button "❄️" [ref=e92]:
+          - generic [ref=e93]: ❄️
+        - button "🛢️" [ref=e94]:
+          - generic [ref=e95]: 🛢️
+  - main [ref=e96]:
+    - generic [ref=e97]:
+      - generic [ref=e98]:
+        - text: 04018.0040mock
+        - text: "10000"
+      - generic [ref=e99]:
+        - region "Map" [ref=e100]
+        - generic:
+          - generic [ref=e101]:
+            - button "Zoom in" [ref=e102] [cursor=pointer]
+            - button "Zoom out" [ref=e104] [cursor=pointer]
+          - generic:
+            - generic [ref=e106]: 10 mi
+            - link "Mapbox homepage" [ref=e108] [cursor=pointer]:
+              - /url: https://www.mapbox.com/
+      - generic:
+        - generic [ref=e109]:
+          - button [ref=e110]:
+            - img [ref=e111]
+          - generic [ref=e114]:
+            - generic [ref=e115]:
+              - generic [ref=e116]:
+                - heading "Scenarios / Groups" [level=3] [ref=e117]
+                - button "+ New Group" [ref=e118]
+              - generic [ref=e120] [cursor=pointer]:
+                - generic [ref=e121]:
+                  - generic [ref=e124]: Tier 1 - Core
+                  - generic [ref=e125]:
+                    - button "Clone Group" [ref=e126]:
+                      - img [ref=e127]
+                    - generic [ref=e130]: 40 Wells
+                - generic [ref=e131]:
+                  - generic [ref=e132]:
+                    - generic [ref=e133]: NPV10
+                    - generic [ref=e134]: $783.4M
+                  - generic [ref=e135]:
+                    - generic [ref=e136]: EUR
+                    - generic [ref=e137]: 32685 MBoe
+            - generic [ref=e140]:
+              - generic [ref=e142]:
+                - text: Wells in group
+                - generic [ref=e143]: (40)
+              - button "Show" [ref=e144]
+        - generic [ref=e147]:
+          - generic [ref=e148]:
+            - generic [ref=e149]: 40 Visible
+            - generic [ref=e150]: / 0 Selected
+            - generic [ref=e151]: / 40 Total
+          - generic [ref=e153]:
+            - button "All Operators▾" [ref=e155]
+            - button "All Formations▾" [ref=e157]
+            - button "All Statuses▾" [ref=e159]
+          - button "Select Filtered" [ref=e161]
+        - generic [ref=e163]:
+          - button "Lasso Select" [ref=e164]:
+            - img [ref=e165]
+          - button "Rectangle Select" [ref=e167]:
+            - img [ref=e168]
+          - button "Section Grid" [ref=e171]:
+            - img [ref=e172]
+          - button "Heatmap" [ref=e174]:
+            - img [ref=e175]
+          - button "Satellite" [ref=e178]:
+            - img [ref=e179]
+          - generic [ref=e183]: Data
+          - button "Producing Wells" [pressed] [ref=e184]:
+            - img [ref=e185]
+          - button "DUCs" [pressed] [ref=e187]:
+            - img [ref=e188]
+          - button "Permits" [pressed] [ref=e190]:
+            - img [ref=e191]
+          - button "Laterals" [ref=e194]:
+            - img [ref=e195]
+          - generic [ref=e196]:
+            - generic [ref=e197]: "40"
+            - 'button "Data source: Mock. Click to switch to Databricks." [ref=e198] [cursor=pointer]': Demo
+        - generic:
+          - generic:
+            - generic: 0 selected
+            - button "Assign to Group"
+            - button "New Group"
+            - button "Select All"
+            - button "Clear"
+        - button "Show Legend" [ref=e200]:
+          - img [ref=e201]
+        - generic: Shift+drag to select
