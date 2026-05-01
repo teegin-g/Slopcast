@@ -14,6 +14,15 @@ import { MapWellTooltip } from './map/MapWellTooltip';
 import { WellPopupCard } from './map/WellPopupCard';
 import { useSpatialSourcePolicy } from './map/useSpatialSourcePolicy';
 import { useMapSelection } from '../../hooks/useMapSelection';
+import {
+  WELL_CLUSTER_LAYER_ID,
+  WELL_SOURCE_ID,
+  WELL_STATUS_LAYER_IDS,
+  addWellSourceAndLayers,
+  bindWellLayerEvents,
+  buildWellColorMatchExpression,
+  updateWellLayerPaint,
+} from './map/wellLayerController';
 
 export type WellsMobilePanel = 'GROUPS' | 'MAP';
 
@@ -179,6 +188,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
 
   const [activeTool, setActiveTool] = useState<SelectionTool | null>(null);
   const [layers, setLayers] = useState<Record<string, boolean>>({ grid: false, heatmap: false, satellite: false });
+  const [mapLayerEpoch, setMapLayerEpoch] = useState(0);
   const [groupsPanelOpen, setGroupsPanelOpen] = useState(true);
   const [errorDismissed, setErrorDismissed] = useState(false);
   const [wellboreDiagnostics, setWellboreDiagnostics] = useState<WellboreRenderDiagnostics>(
@@ -341,15 +351,12 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     };
   }, [wellboreLayer]);
 
-  // Status-differentiated well layer IDs (glow halo is rendered under these)
-  const wellLayerIds = useMemo(() => ['wells-producing', 'wells-duc', 'wells-permit'] as const, []);
-
   // Map selection tools (lasso / rectangle)
   const { selectionOverlay } = useMapSelection({
     map,
     mapContainerRef,
     activeTool,
-    wellLayerIds: wellLayerIds as unknown as string[],
+    wellLayerIds: [...WELL_STATUS_LAYER_IDS],
     theme: { lassoFill: mp.lassoFill, lassoStroke: mp.lassoStroke, lassoDash: mp.lassoDash },
     onSelectWells,
   });
@@ -374,131 +381,22 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
 
   // Build color match expression for Mapbox
   const colorMatchExpr = useMemo(() => {
-    const pairs: (string)[] = [];
-    const colorMap = new Map<string, string>();
-    wells.forEach(w => {
-      const color = getWellColor(w.id);
-      if (!colorMap.has(w.id)) colorMap.set(w.id, color);
-    });
-    colorMap.forEach((color, id) => {
-      pairs.push(id, color);
-    });
-    return ['match', ['get', 'id'], ...pairs, mp.unassignedFill] as any;
+    return buildWellColorMatchExpression(wells, getWellColor, mp.unassignedFill) as any;
   }, [wells, getWellColor, mp.unassignedFill]);
-
-  // Helper: add the 3 status layers + glow halo + event handlers to the map
-  const addWellLayers = useCallback((m: any, src: string) => {
-    const defaultRadius = ['interpolate', ['linear'], ['zoom'], 6, 3, 10, 6, 14, 10];
-    const permitRadius = ['interpolate', ['linear'], ['zoom'], 6, 2, 10, 4, 14, 7];
-    const baseOpacity = ['case', ['get', 'dimmed'], 0.3, ['get', 'visible'], 1, 0.3];
-
-    // GLOW HALO — soft, blurred circle rendered UNDER the well dots.
-    // Size and opacity scale by status (PRODUCING brightest, PERMIT dimmest).
-    // At zoom-out, overlapping halos merge into an ambient heat aura.
-    const glowRadius = ['interpolate', ['linear'], ['zoom'], 6, 6, 10, 14, 14, 22];
-    const glowOpacity: any = [
-      'case',
-      ['get', 'dimmed'], 0.05,
-      ['!', ['get', 'visible']], 0.05,
-      ['==', ['get', 'status'], 'PRODUCING'], 0.35,
-      ['==', ['get', 'status'], 'DUC'], 0.18,
-      0.10, // PERMIT
-    ];
-
-    m.addLayer({
-      id: 'wells-glow', type: 'circle', source: src,
-      filter: ['!', ['has', 'point_count']],
-      paint: {
-        'circle-radius': glowRadius,
-        'circle-color': colorMatchExpr,
-        'circle-blur': 0.7,
-        'circle-opacity': glowOpacity,
-        'circle-opacity-transition': { duration: 300 },
-        'circle-radius-transition': { duration: 300 },
-      },
-    });
-
-    // PRODUCING — solid filled circle
-    m.addLayer({
-      id: 'wells-producing', type: 'circle', source: src,
-      filter: ['==', ['get', 'status'], 'PRODUCING'],
-      paint: {
-        'circle-radius': defaultRadius,
-        'circle-color': colorMatchExpr,
-        'circle-stroke-width': ['case', ['get', 'selected'], 2, 0],
-        'circle-stroke-color': mp.selectedStroke,
-        'circle-opacity': baseOpacity,
-      },
-    });
-
-    // DUC — ring/outline (high stroke, low fill)
-    m.addLayer({
-      id: 'wells-duc', type: 'circle', source: src,
-      filter: ['==', ['get', 'status'], 'DUC'],
-      paint: {
-        'circle-radius': defaultRadius,
-        'circle-color': colorMatchExpr,
-        'circle-opacity': ['case', ['get', 'dimmed'], 0.1, ['get', 'visible'], 0.15, 0.1],
-        'circle-stroke-width': ['case', ['get', 'selected'], 2.5, 2],
-        'circle-stroke-color': colorMatchExpr,
-        'circle-stroke-opacity': baseOpacity,
-      },
-    });
-
-    // PERMIT — smaller, muted dot
-    m.addLayer({
-      id: 'wells-permit', type: 'circle', source: src,
-      filter: ['==', ['get', 'status'], 'PERMIT'],
-      paint: {
-        'circle-radius': permitRadius,
-        'circle-color': colorMatchExpr,
-        'circle-stroke-width': ['case', ['get', 'selected'], 2, 0],
-        'circle-stroke-color': mp.selectedStroke,
-        'circle-opacity': ['case', ['get', 'dimmed'], 0.15, ['get', 'visible'], 0.5, 0.15],
-      },
-    });
-
-    const allLayers = ['wells-producing', 'wells-duc', 'wells-permit'];
-    for (const layerId of allLayers) {
-      m.on('click', layerId, (e: any) => {
-        const feature = e.features?.[0];
-        if (feature?.properties?.id) {
-          onToggleWell(feature.properties.id);
-          const pt = m.project(e.features[0].geometry.coordinates);
-          setPopupWellId(feature.properties.id);
-          setPopupPos({ x: pt.x, y: pt.y });
-          setHoveredWellId(null);
-          setTooltipPos(null);
-        }
-      });
-      m.on('mouseenter', layerId, () => { m.getCanvas().style.cursor = 'pointer'; });
-      m.on('mousemove', layerId, (e: any) => {
-        const feature = e.features?.[0];
-        if (feature?.properties?.id) {
-          setHoveredWellId(feature.properties.id);
-          setTooltipPos({ x: e.point.x, y: e.point.y });
-        }
-      });
-      m.on('mouseleave', layerId, () => {
-        m.getCanvas().style.cursor = '';
-        setHoveredWellId(null);
-        setTooltipPos(null);
-      });
-    }
-    m.on('click', (e: any) => {
-      const features = m.queryRenderedFeatures(e.point, { layers: allLayers });
-      if (!features || features.length === 0) {
-        setPopupWellId(null);
-        setPopupPos(null);
-      }
-    });
-  }, [colorMatchExpr, mp.selectedStroke, onToggleWell]);
 
   // Derive theme colors for cluster/label layers
   const clusterColor = mp.glowColor;
   const wellLabelColor = mp.mapboxOverrides?.labelColor ?? 'rgba(255,255,255,0.7)';
   const clusterTextColor = '#ffffff';
   const wellLabelHalo = mp.mapboxOverrides?.bgColor ?? 'rgba(0,0,0,0.6)';
+  const wellLayerTheme = useMemo(() => ({
+    clusterColor,
+    clusterTextColor,
+    wellLabelColor,
+    wellLabelHalo,
+    unassignedFill: mp.unassignedFill,
+    selectedStroke: mp.selectedStroke,
+  }), [clusterColor, clusterTextColor, wellLabelColor, wellLabelHalo, mp.unassignedFill, mp.selectedStroke]);
 
   // Themed map container frame
   const mapFrameClass = isClassic
@@ -511,125 +409,41 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   useEffect(() => {
     if (!map || !isLoaded) return;
 
-    const sourceId = 'wells-source';
-    const clustersId = 'wells-clusters';
-    const clusterCountId = 'wells-cluster-count';
-    const labelsId = 'wells-labels';
-
-    const source = map.getSource(sourceId);
+    const source = map.getSource(WELL_SOURCE_ID);
     if (source) {
       source.setData(wellsGeoJson);
-      // Update paint on glow halo layer
-      if (map.getLayer('wells-glow')) {
-        map.setPaintProperty('wells-glow', 'circle-color', colorMatchExpr);
-      }
-      // Update paint on status-differentiated layers
-      for (const layerId of wellLayerIds) {
-        if (map.getLayer(layerId)) {
-          map.setPaintProperty(layerId, 'circle-color', colorMatchExpr);
-          if (layerId === 'wells-duc') {
-            map.setPaintProperty(layerId, 'circle-stroke-color', colorMatchExpr);
-          }
-        }
-      }
-      // Update cluster color if theme changed
-      if (map.getLayer(clustersId)) {
-        map.setPaintProperty(clustersId, 'circle-color', clusterColor);
-        map.setPaintProperty(clustersId, 'circle-stroke-color', clusterColor);
-      }
-      // Update well label color if theme changed
-      if (map.getLayer(labelsId)) {
-        map.setPaintProperty(labelsId, 'text-color', wellLabelColor);
-      }
+      updateWellLayerPaint(map, colorMatchExpr, wellLayerTheme);
       return;
     }
 
-    // First time — add clustered source
-    map.addSource(sourceId, {
-      type: 'geojson',
-      data: wellsGeoJson,
-      cluster: true,
-      clusterRadius: 100,
-      clusterMaxZoom: 12,
-    });
+    addWellSourceAndLayers(map, wellsGeoJson, colorMatchExpr, wellLayerTheme);
+    setMapLayerEpoch(epoch => epoch + 1);
+  }, [map, isLoaded, wellsGeoJson, colorMatchExpr, wellLayerTheme]);
 
-    // Cluster circles
-    map.addLayer({
-      id: clustersId,
-      type: 'circle',
-      source: sourceId,
-      filter: ['has', 'point_count'],
-      paint: {
-        'circle-radius': [
-          'interpolate', ['linear'], ['zoom'],
-          5, ['interpolate', ['linear'], ['get', 'point_count'], 10, 20, 50, 30, 200, 40],
-          8, ['interpolate', ['linear'], ['get', 'point_count'], 10, 15, 50, 22, 200, 30],
-          11, ['interpolate', ['linear'], ['get', 'point_count'], 10, 12, 50, 18, 100, 22],
-        ],
-        'circle-color': clusterColor,
-        'circle-opacity': 0.7,
-        'circle-stroke-width': 2,
-        'circle-stroke-color': clusterColor,
-        'circle-stroke-opacity': 0.4,
+  useEffect(() => {
+    if (!map || !isLoaded || !map.getLayer(WELL_CLUSTER_LAYER_ID)) return;
+    return bindWellLayerEvents(map, {
+      onWellClick: (id, point) => {
+        onToggleWell(id);
+        setPopupWellId(id);
+        setPopupPos(point);
+        setHoveredWellId(null);
+        setTooltipPos(null);
+      },
+      onWellHover: (id, point) => {
+        setHoveredWellId(id);
+        setTooltipPos(point);
+      },
+      onWellLeave: () => {
+        setHoveredWellId(null);
+        setTooltipPos(null);
+      },
+      onMapEmptyClick: () => {
+        setPopupWellId(null);
+        setPopupPos(null);
       },
     });
-
-    // Cluster count labels
-    map.addLayer({
-      id: clusterCountId,
-      type: 'symbol',
-      source: sourceId,
-      filter: ['has', 'point_count'],
-      layout: {
-        'text-field': ['get', 'point_count_abbreviated'],
-        'text-size': ['interpolate', ['linear'], ['zoom'], 5, 14, 8, 12, 11, 10],
-        'text-allow-overlap': true,
-      },
-      paint: { 'text-color': clusterTextColor },
-    });
-
-    // Status-differentiated well layers + event handlers
-    addWellLayers(map, sourceId);
-
-    // Well name labels (high zoom only, unclustered points)
-    map.addLayer({
-      id: labelsId,
-      type: 'symbol',
-      source: sourceId,
-      filter: ['!', ['has', 'point_count']],
-      minzoom: 12,
-      layout: {
-        'text-field': ['get', 'name'],
-        'text-size': 10,
-        'text-offset': [0, 1.4],
-        'text-anchor': 'top',
-        'text-allow-overlap': false,
-        'text-optional': true,
-        'text-max-width': 12,
-      },
-      paint: {
-        'text-color': wellLabelColor,
-        'text-halo-color': wellLabelHalo,
-        'text-halo-width': 1,
-      },
-    });
-
-    // Click clusters — zoom to expand
-    map.on('click', clustersId, (e: any) => {
-      const feature = e.features?.[0];
-      if (!feature) return;
-      const cid = feature.properties.cluster_id;
-      const src = map.getSource(sourceId) as any;
-      src.getClusterExpansionZoom(cid, (err: any, zoom: number) => {
-        if (err) return;
-        map.easeTo({ center: feature.geometry.coordinates, zoom });
-      });
-    });
-
-    // Cursor change on hover for clusters
-    map.on('mouseenter', clustersId, () => { map.getCanvas().style.cursor = 'pointer'; });
-    map.on('mouseleave', clustersId, () => { map.getCanvas().style.cursor = ''; });
-  }, [map, isLoaded, wellsGeoJson, colorMatchExpr, wellLayerIds, addWellLayers, clusterColor, wellLabelColor]);
+  }, [map, isLoaded, onToggleWell, mapLayerEpoch]);
 
   // Apply theme map overrides when theme changes or map loads
   useEffect(() => {
@@ -672,50 +486,8 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     // Re-add wells source/layers after style change (with clustering)
     map.once('style.load', () => {
       ensureTerrain(map);
-      const sourceId = 'wells-source';
-      if (!map.getSource(sourceId)) {
-        map.addSource(sourceId, {
-          type: 'geojson',
-          data: wellsGeoJson,
-          cluster: true,
-          clusterRadius: 100,
-          clusterMaxZoom: 12,
-        });
-        // Cluster circles
-        map.addLayer({
-          id: 'wells-clusters', type: 'circle', source: sourceId,
-          filter: ['has', 'point_count'],
-          paint: {
-            'circle-radius': [
-              'interpolate', ['linear'], ['zoom'],
-              5, ['interpolate', ['linear'], ['get', 'point_count'], 10, 20, 50, 30, 200, 40],
-              8, ['interpolate', ['linear'], ['get', 'point_count'], 10, 15, 50, 22, 200, 30],
-              11, ['interpolate', ['linear'], ['get', 'point_count'], 10, 12, 50, 18, 100, 22],
-            ],
-            'circle-color': clusterColor, 'circle-opacity': 0.7,
-            'circle-stroke-width': 2, 'circle-stroke-color': clusterColor, 'circle-stroke-opacity': 0.4,
-          },
-        });
-        // Cluster count labels
-        map.addLayer({
-          id: 'wells-cluster-count', type: 'symbol', source: sourceId,
-          filter: ['has', 'point_count'],
-          layout: { 'text-field': ['get', 'point_count_abbreviated'], 'text-size': ['interpolate', ['linear'], ['zoom'], 5, 14, 8, 12, 11, 10], 'text-allow-overlap': true },
-          paint: { 'text-color': clusterTextColor },
-        });
-        // Status-differentiated well layers
-        addWellLayers(map, sourceId);
-        // Well name labels
-        map.addLayer({
-          id: 'wells-labels', type: 'symbol', source: sourceId,
-          filter: ['!', ['has', 'point_count']], minzoom: 12,
-          layout: {
-            'text-field': ['get', 'name'], 'text-size': 10, 'text-offset': [0, 1.4],
-            'text-anchor': 'top', 'text-allow-overlap': false, 'text-optional': true, 'text-max-width': 12,
-          },
-          paint: { 'text-color': wellLabelColor, 'text-halo-color': wellLabelHalo, 'text-halo-width': 1 },
-        });
-      }
+      addWellSourceAndLayers(map, wellsGeoJson, colorMatchExpr, wellLayerTheme);
+      setMapLayerEpoch(epoch => epoch + 1);
       // Re-register wellbore layer after style change
       try {
         if (wellboreLayer && !map.getLayer(wellboreLayer.id)) {
