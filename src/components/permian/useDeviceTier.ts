@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useDeviceTier as useThemeDeviceTier } from '../../theme/scene/useDeviceTier';
 
 /**
  * Decide whether to render the full 3D Permian scene or fall back to the 2D
  * canvas. Fallback triggers:
- *   - `navigator.hardwareConcurrency < 4`  (low CPU)
- *   - `navigator.deviceMemory < 4`         (low RAM)
+ *   - shared scene runtime marks the device as low tier (low CPU/RAM or no WebGL2)
  *   - WebGL2 unavailable / context creation fails
  *   - `forceFallback` URL hint (`?permianFallback=1`) — handy for manual QA
  *
@@ -18,7 +17,7 @@ interface TierOptions {
   force?: PermianTier;
 }
 
-function detectTier(): PermianTier {
+function readForcedTierFromUrl(): PermianTier | undefined {
   if (typeof window === 'undefined') return 'fallback-2d';
 
   try {
@@ -28,38 +27,16 @@ function detectTier(): PermianTier {
     /* ignore — malformed URL */
   }
 
-  const nav = navigator as Navigator & { deviceMemory?: number };
-  if (typeof nav.hardwareConcurrency === 'number' && nav.hardwareConcurrency < 4) {
-    return 'fallback-2d';
-  }
-  if (typeof nav.deviceMemory === 'number' && nav.deviceMemory < 4) {
-    return 'fallback-2d';
-  }
-
-  // Probe for a WebGL2 context. A failed probe means the user is either on a
-  // very old browser or has hardware acceleration disabled — either way, the
-  // 2D scene is the safer bet.
-  try {
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl2');
-    if (!gl) return 'fallback-2d';
-  } catch {
-    return 'fallback-2d';
-  }
-
-  return 'full-3d';
+  return undefined;
 }
 
 export function useDeviceTier({ force }: TierOptions = {}): PermianTier {
-  const [tier, setTier] = useState<PermianTier>(() => force ?? 'full-3d');
+  const forcedTier = force ?? readForcedTierFromUrl();
+  const sharedTier = useThemeDeviceTier({
+    force: forcedTier === 'fallback-2d' ? 'low' : forcedTier === 'full-3d' ? 'standard' : undefined,
+    requiresWebGL: true,
+  });
 
-  useEffect(() => {
-    if (force) {
-      setTier(force);
-      return;
-    }
-    setTier(detectTier());
-  }, [force]);
-
-  return tier;
+  if (forcedTier) return forcedTier;
+  return sharedTier === 'low' ? 'fallback-2d' : 'full-3d';
 }

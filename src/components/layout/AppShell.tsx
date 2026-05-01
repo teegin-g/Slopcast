@@ -1,7 +1,6 @@
-import React, { Suspense, useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from './Sidebar';
 import { MobileDrawer } from './MobileDrawer';
-import { Vignette } from '../ui/Vignette';
 import PageHeader from '../slopcast/PageHeader';
 import { ViewTransition } from './ViewTransition';
 import { useSidebarNav } from '../../hooks/useSidebarNav';
@@ -9,6 +8,7 @@ import { getSidebarCollapsed, setSidebarCollapsed } from '../../services/storage
 import { useViewportLayout } from '../slopcast/hooks/useViewportLayout';
 import type { WellGroup } from '../../types';
 import type { ThemeMeta } from '../../theme/themes';
+import { ThemeSceneLayer, type ThemeSceneFxMode } from '../../theme/scene';
 
 interface AppShellProps {
   /** The workspace object from useSlopcastWorkspace */
@@ -30,9 +30,12 @@ interface AppShellProps {
     setThemeId: (id: string) => void;
     themes: ThemeMeta[];
     theme: ThemeMeta;
+    effectiveMode: 'dark' | 'light';
+    fxMode: ThemeSceneFxMode;
     navigate: (path: string) => void;
     atmosphericOverlays: string[];
     headerAtmosphereClass: string;
+    pageOverlayClasses: string[];
   };
   children: React.ReactNode;
 }
@@ -105,21 +108,14 @@ export function AppShell({ workspace, children }: AppShellProps) {
   const sectionLabel = section === 'wells' ? 'Wells' : section === 'economics' ? 'Economics' : 'Scenarios';
 
   return (
-    <div className={`flex h-screen overflow-hidden ${workspace.atmosphereClass} ${workspace.fxClass}`}>
-      {/* Animated background - fixed behind everything */}
-      <div className="fixed inset-0 z-0">
-        {workspace.BackgroundComponent && (
-          <Suspense fallback={null}>
-            <workspace.BackgroundComponent />
-          </Suspense>
-        )}
-      </div>
-
-      {/* Vignette overlay — skip when theme has an animated background,
-          because each canvas scene draws its own tuned vignette. Stacking
-          both darkens corners past 0.8 effective opacity, wasting the
-          background art. */}
-      {!workspace.BackgroundComponent && <Vignette />}
+    <div className={`flex h-screen overflow-hidden theme-transition ${workspace.atmosphereClass} ${workspace.fxClass}`}>
+      <ThemeSceneLayer
+        theme={workspace.theme}
+        effectiveMode={workspace.effectiveMode}
+        fxMode={workspace.fxMode}
+        pageOverlayClasses={workspace.pageOverlayClasses}
+        fxClass={workspace.fxClass}
+      />
 
       {/* Desktop/mid sidebar */}
       {viewport !== 'mobile' && (

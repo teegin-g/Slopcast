@@ -1,4 +1,5 @@
 import type React from 'react';
+import type { ThemeSceneConfig } from './scene/types';
 
 export type KnownThemeId =
   | 'slate'
@@ -96,6 +97,8 @@ export interface ThemeDefinition {
   tokens?: ThemeTokenDefinition;
   /** Optional animated background component for this theme */
   BackgroundComponent?: React.ComponentType;
+  /** Formal scene renderer metadata; falls back to BackgroundComponent during migration. */
+  scene?: ThemeSceneConfig;
   /** CSS class names for atmospheric overlay divs rendered in the header */
   atmosphericOverlays?: string[];
   /** CSS class applied to the header for atmospheric effects */
