@@ -4,6 +4,7 @@ import { useTheme } from '../theme/ThemeProvider';
 import { InlineEditableValue } from './inline/InlineEditableValue';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useStableChartContainer } from './slopcast/hooks/useStableChartContainer';
+import { createLocalId } from '../utils/id';
 
 interface CapexControlsProps {
   capex: CapexAssumptions;
@@ -44,7 +45,7 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
 
   const handleAddItem = () => {
     const newItem: CapexItem = {
-      id: `c-${Date.now()}`,
+      id: createLocalId('c'),
       name: 'New Item',
       category: 'OTHER',
       value: 0,

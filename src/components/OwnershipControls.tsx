@@ -2,6 +2,7 @@ import React from 'react';
 import { JvAgreement, OwnershipAssumptions } from '../types';
 import { useTheme } from '../theme/ThemeProvider';
 import { InlineEditableValue } from './inline/InlineEditableValue';
+import { createLocalId } from '../utils/id';
 
 interface OwnershipControlsProps {
   ownership: OwnershipAssumptions;
@@ -32,7 +33,7 @@ const OwnershipControls: React.FC<OwnershipControlsProps> = ({ ownership, onChan
 
   const addAgreement = () => {
     const newAgreement: JvAgreement = {
-      id: `jv-${Date.now()}`,
+      id: createLocalId('jv'),
       name: `JV ${ownership.agreements.length + 1}`,
       startMonth: 1,
       prePayout: { conveyRevenuePctOfBase: 0, conveyCostPctOfBase: 0 },

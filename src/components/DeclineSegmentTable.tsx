@@ -2,6 +2,7 @@ import React from 'react';
 import { ForecastSegment, CutoffKind } from '../types';
 import { useTheme } from '../theme/ThemeProvider';
 import { InlineEditableValue } from './inline/InlineEditableValue';
+import { createLocalId } from '../utils/id';
 
 interface DeclineSegmentTableProps {
   segments: ForecastSegment[];
@@ -27,7 +28,7 @@ const DeclineSegmentTable: React.FC<DeclineSegmentTableProps> = ({ segments, gor
 
   const handleAddSegment = () => {
     const newSeg: ForecastSegment = {
-      id: `s-${Date.now()}`,
+      id: createLocalId('s'),
       name: `segment ${segments.length + 1}`,
       method: 'arps',
       qi: null,

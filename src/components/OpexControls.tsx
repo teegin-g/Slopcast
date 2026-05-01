@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { OpexAssumptions, OpexSegment } from '../types';
 import { useTheme } from '../theme/ThemeProvider';
 import { InlineEditableValue } from './inline/InlineEditableValue';
+import { createLocalId } from '../utils/id';
 
 interface OpexControlsProps {
   opex: OpexAssumptions;
@@ -53,7 +54,7 @@ const OpexControls: React.FC<OpexControlsProps> = ({ opex, onChange }) => {
     const lastEnd = segments.reduce((maxEnd, seg) => Math.max(maxEnd, seg.endMonth), 0);
     const startMonth = lastEnd + 1 || 1;
     const newSeg: OpexSegment = {
-      id: `o-${Date.now()}`,
+      id: createLocalId('o'),
       label: `Segment ${segments.length + 1}`,
       startMonth,
       endMonth: Math.max(startMonth, startMonth + 11),

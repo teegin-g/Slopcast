@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { SPRING } from '../../theme/motion';
+import { createLocalId } from '../../utils/id';
 
 type ToastType = 'success' | 'info' | 'warning' | 'error';
 
@@ -73,7 +74,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
-    const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const id = createLocalId('toast');
     setToasts(prev => [...prev, { ...toast, id }]);
   }, []);
 

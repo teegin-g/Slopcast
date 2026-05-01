@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { SPRING } from '../../theme/motion';
 import type { WellGroup, CommodityPricingAssumptions } from '../../types';
+import { createLocalId } from '../../utils/id';
 import {
   parsePrompt,
   applyActions,
@@ -63,7 +64,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({
 
     // Add user message
     const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
+      id: createLocalId('user'),
       role: 'user',
       content: prompt,
       timestamp: Date.now(),
@@ -77,7 +78,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({
 
       if (hasUnknown) {
         const assistantMsg: ChatMessage = {
-          id: `asst-${Date.now()}`,
+          id: createLocalId('asst'),
           role: 'assistant',
           content: 'I couldn\'t understand that command. Try something like "set oil price to $80" or "increase capex by 10%".',
           timestamp: Date.now(),
@@ -97,7 +98,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({
 
       // Push to undo stack
       pushHistory({
-        id: `hist-${Date.now()}`,
+        id: createLocalId('hist'),
         prompt,
         actions,
         timestamp: Date.now(),
@@ -115,7 +116,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({
 
       // Assistant response
       const assistantMsg: ChatMessage = {
-        id: `asst-${Date.now()}`,
+        id: createLocalId('asst'),
         role: 'assistant',
         content: `Applied ${result.changes.length} change${result.changes.length !== 1 ? 's' : ''}:\n${result.changes.map(c => `  - ${c}`).join('\n')}`,
         actions,
@@ -139,7 +140,7 @@ const AiAssistant: React.FC<AiAssistantProps> = ({
     }
 
     const undoMsg: ChatMessage = {
-      id: `undo-${Date.now()}`,
+      id: createLocalId('undo'),
       role: 'assistant',
       content: `Undid: "${entry.prompt}"`,
       timestamp: Date.now(),
