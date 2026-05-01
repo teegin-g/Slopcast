@@ -19,7 +19,7 @@ import * as tsCalc from '../utils/economics';
 // ---------------------------------------------------------------------------
 
 export type EngineId = 'typescript' | 'python';
-export const ECONOMICS_ENGINE_VERSION = 'parity-v1';
+export const ECONOMICS_ENGINE_VERSION = 'typescript-authoritative-v1';
 
 export interface EconomicsEngineResult {
   flow: MonthlyCashFlow[];
@@ -60,7 +60,7 @@ export interface EconomicsEngine {
 
 const tsEngine: EconomicsEngine = {
   id: 'typescript',
-  label: 'TypeScript (Browser)',
+  label: 'TypeScript (Authoritative)',
 
   async calculateEconomics(wells, typeCurve, capex, pricing, opex, ownership, scalars, scheduleOverride) {
     return tsCalc.calculateEconomics(wells, typeCurve, capex, pricing, opex, ownership, scalars, scheduleOverride);
@@ -96,7 +96,7 @@ async function pyFetch<T>(path: string, body: unknown): Promise<T> {
 
 const pyEngine: EconomicsEngine = {
   id: 'python',
-  label: 'Python (FastAPI)',
+  label: 'Python (Experimental Comparison)',
 
   async calculateEconomics(wells, typeCurve, capex, pricing, opex, ownership, scalars, scheduleOverride) {
     return pyFetch<EconomicsEngineResult>('/economics/calculate', {
