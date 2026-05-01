@@ -11,7 +11,7 @@ Users build well groups, assign type curves / CAPEX / OPEX / ownership, and run 
 src/
   App.tsx              # Router / route definitions
   index.tsx            # React root (providers: Theme → BrowserRouter → Auth)
-  types.ts             # All TypeScript interfaces (Well, WellGroup, Scenario, DealRecord, …)
+  types/               # Domain type modules; import through src/types/index.ts barrel
   constants.ts         # Mock wells, default assumptions (type curve, CAPEX, OPEX, ownership)
   constants/templates.ts  # Assumption template presets
   pages/               # Route-level pages (SlopcastPage, HubPage, AuthPage, …)
@@ -72,7 +72,7 @@ Syncs groups/scenarios/UI state to Supabase when authenticated; falls back to lo
 - **Components:** PascalCase (`DesignEconomicsView.tsx`)
 - **Hooks:** `use*` prefix (`useDerivedMetrics.ts`)
 - **Services:** Repository pattern (`projectRepository.ts`, `dealRepository.ts`)
-- **Types:** All in `src/types.ts`, interfaces PascalCase
+- **Types:** Domain modules live in `src/types/*`; `src/types/index.ts` is the public barrel
 - **Constants:** UPPER_SNAKE_CASE exports in `src/constants.ts`
 
 ## Key Types (src/types.ts)

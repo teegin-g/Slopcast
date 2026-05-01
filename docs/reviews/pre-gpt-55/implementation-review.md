@@ -23,6 +23,12 @@ Recommended fix:
 - Add golden fixtures covering gas, segmented OPEX, JV payout, tax/debt overlays, and multi-segment forecasts.
 - Require TypeScript/Python parity only where parity is intended. Otherwise label the Python engine as experimental and keep it out of primary workflows.
 
+Current status:
+
+- TypeScript economics is the authoritative app engine.
+- Python is labeled as an experimental comparison engine.
+- `fixtures/economics/dual-parity-rich.json` locks the rich TypeScript calculation contract.
+
 ### Cache Keys Miss Some Economic Inputs
 
 File: `src/utils/economics.ts`

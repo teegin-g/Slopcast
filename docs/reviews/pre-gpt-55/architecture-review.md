@@ -73,15 +73,20 @@ This is a strategic architecture decision, not just a bug:
 - If Python is authoritative, port the full domain model and make the frontend engine a cache/offline adapter.
 - If both must remain, add golden parity fixtures and fail CI when they diverge.
 
-### 4. Domain Types Are Partly Split, Partly Centralized
+### 4. Domain Types Were Partly Split, Partly Centralized
 
-The snapshot has both `src/types.ts` and `src/types/*` re-exports. The root file still contains many core types, including wells, trajectories, forecasts, economics, scenarios, persistence records, and integrations.
+The reviewed snapshot had both `src/types.ts` and `src/types/*` re-exports. The root file contained many core types, including wells, trajectories, forecasts, economics, scenarios, persistence records, and integrations.
 
 Suggested direction:
 
 - Move all domain types into submodules (`wells`, `forecast`, `economics`, `project`, `spatial`, `integrations`).
 - Keep `src/types/index.ts` as the only barrel.
 - Retire `src/types.ts` once import churn is handled.
+
+Current status:
+
+- `src/types/index.ts` is now the public type barrel.
+- `src/types.ts` is retired and guarded by `npm run boundaries:check`.
 
 ### 5. Repositories Mix Data Access With Record Mapping
 
