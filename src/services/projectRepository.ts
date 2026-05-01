@@ -8,6 +8,15 @@ import type {
 } from '../types';
 import type { Json } from '../../supabase/types/database';
 import { getSupabaseClient } from './supabaseClient';
+import {
+  parseGroupConfig,
+  parsePricing,
+  parseProjectMetadata,
+  parseProjectUiState,
+  parseRunMetrics,
+  parseScenarioScalars,
+  parseSchedule,
+} from './projectContracts';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -29,20 +38,6 @@ const normalizeRole = (value: string | null | undefined) => {
   return 'viewer' as const;
 };
 
-const unwrapContract = <T>(value: unknown, label = 'jsonb contract'): T => {
-  if (value == null) {
-    return {} as T;
-  }
-  if (typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error(`Invalid ${label}: expected object JSONB payload.`);
-  }
-  const next = { ...(value as Record<string, unknown>) };
-  delete next.schema_version;
-  delete next.validated_at;
-  delete next.validator_name;
-  return next as T;
-};
-
 export const mapProjectRow = (row: any): ProjectRecord => ({
   id: row.id,
   organizationId: row.organization_id,
@@ -52,15 +47,15 @@ export const mapProjectRow = (row: any): ProjectRecord => ({
   name: row.name,
   description: row.description,
   activeGroupId: row.active_group_id,
-  uiState: unwrapContract<ProjectUiState>(row.ui_state_jsonb, 'project ui_state_jsonb'),
+  uiState: parseProjectUiState(row.ui_state_jsonb),
   currentVersionId: row.current_version_id,
-  metadata: unwrapContract<Record<string, unknown>>(row.metadata_jsonb, 'project metadata_jsonb'),
+  metadata: parseProjectMetadata(row.metadata_jsonb),
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
 
 export const mapProjectGroupRow = (row: any, wellsByGroup = new Map<string, string[]>()): ProjectGroupRecord => {
-  const config = unwrapContract<Record<string, any>>(row.config_jsonb, 'project group config_jsonb');
+  const config = parseGroupConfig(row.config_jsonb);
   return {
     id: row.id,
     projectId: row.project_id,
@@ -68,25 +63,25 @@ export const mapProjectGroupRow = (row: any, wellsByGroup = new Map<string, stri
     color: row.color,
     sortOrder: row.sort_order,
     wellIds: wellsByGroup.get(row.id) || [],
-    typeCurve: unwrapContract(config.typeCurve, 'project group typeCurve'),
-    capex: unwrapContract(config.capex, 'project group capex'),
-    opex: unwrapContract(config.opex, 'project group opex'),
-    ownership: unwrapContract(config.ownership, 'project group ownership'),
+    typeCurve: config.typeCurve || ({} as ProjectGroupRecord['typeCurve']),
+    capex: config.capex || ({} as ProjectGroupRecord['capex']),
+    opex: config.opex || ({} as ProjectGroupRecord['opex']),
+    ownership: config.ownership || ({} as ProjectGroupRecord['ownership']),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 };
 
 export const mapProjectScenarioRow = (row: any): ProjectScenarioRecord => {
-  const scalars = unwrapContract<Record<string, unknown>>(row.scalar_jsonb, 'project scenario scalar_jsonb');
+  const scalars = parseScenarioScalars(row.scalar_jsonb);
   return {
     id: row.id,
     projectId: row.project_id,
     name: row.name,
     color: row.color,
     isBaseCase: row.is_base_case,
-    pricing: unwrapContract(row.pricing_jsonb, 'project scenario pricing_jsonb'),
-    schedule: unwrapContract(row.schedule_jsonb, 'project scenario schedule_jsonb'),
+    pricing: parsePricing(row.pricing_jsonb),
+    schedule: parseSchedule(row.schedule_jsonb),
     capexScalar: Number(scalars.capexScalar ?? 1),
     productionScalar: Number(scalars.productionScalar ?? 1),
     sortOrder: row.sort_order,
@@ -103,7 +98,7 @@ export const mapEconomicsRunRow = (row: any): EconomicsRunRecord => ({
   inputHash: row.input_hash,
   runKind: row.run_kind,
   engineVersion: row.engine_version,
-  portfolioMetrics: unwrapContract(row.portfolio_metrics, 'economics run portfolio_metrics'),
+  portfolioMetrics: parseRunMetrics(row.portfolio_metrics),
   warnings: Array.isArray(row.warnings) ? row.warnings as string[] : [],
   createdAt: row.created_at,
 });
