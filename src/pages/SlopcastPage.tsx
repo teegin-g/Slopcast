@@ -2,9 +2,12 @@ import React, { Suspense } from 'react';
 import ScenarioDashboard from '../components/ScenarioDashboard';
 import DesignEconomicsView from '../components/slopcast/DesignEconomicsView';
 import DesignWellsView from '../components/slopcast/DesignWellsView';
-import { MapCommandCenter } from '../components/slopcast/MapCommandCenter';
 import PageHeader from '../components/slopcast/PageHeader';
 import { useSlopcastWorkspace } from '../hooks/useSlopcastWorkspace';
+
+const MapCommandCenter = React.lazy(() =>
+  import('../components/slopcast/MapCommandCenter').then(module => ({ default: module.MapCommandCenter })),
+);
 
 const SlopcastPage: React.FC = () => {
   const ws = useSlopcastWorkspace();
@@ -92,45 +95,47 @@ const SlopcastPage: React.FC = () => {
                   />
                 </div>
               ) : (
-                <MapCommandCenter
-                  isClassic={ws.isClassic}
-                  theme={ws.theme}
-                  themeId={ws.themeId}
-                  viewportLayout={ws.viewportLayout}
-                  mobilePanel={ws.wellsMobilePanel}
-                  onSetMobilePanel={ws.setWellsMobilePanel}
-                  groups={ws.processedGroups}
-                  activeGroupId={ws.activeGroupId}
-                  selectedWellCount={ws.selectedVisibleCount}
-                  onActivateGroup={ws.setActiveGroupId}
-                  onAddGroup={ws.handleAddGroup}
-                  onCloneGroup={ws.handleCloneGroup}
-                  onAssignWells={ws.handleAssignWellsToActive}
-                  onCreateGroupFromSelection={ws.handleCreateGroupFromSelection}
-                  onSelectAll={ws.handleSelectAll}
-                  onClearSelection={ws.handleClearSelection}
-                  operatorFilter={ws.operatorFilter}
-                  formationFilter={ws.formationFilter}
-                  statusFilter={ws.statusFilter}
-                  operatorOptions={ws.operatorOptions}
-                  formationOptions={ws.formationOptions}
-                  statusOptions={ws.statusOptions}
-                  onToggleOperator={ws.toggleOperator}
-                  onToggleFormation={ws.toggleFormation}
-                  onToggleStatus={ws.toggleStatus}
-                  onResetFilters={ws.handleResetFilters}
-                  filteredWellsCount={ws.filteredWells.length}
-                  totalWellCount={ws.wells.length}
-                  wells={ws.wells}
-                  selectedWellIds={ws.selectedWellIds}
-                  visibleWellIds={ws.visibleWellIds}
-                  dimmedWellIds={ws.dimmedWellIds}
-                  onToggleWell={ws.handleToggleWell}
-                  onSelectWells={ws.handleSelectWells}
-                  dataSourceId={ws.spatialSourceId}
-                  onSourceChange={ws.handleSourceChange}
-                  onWellsLoaded={ws.handleWellsLoaded}
-                />
+                <Suspense fallback={null}>
+                  <MapCommandCenter
+                    isClassic={ws.isClassic}
+                    theme={ws.theme}
+                    themeId={ws.themeId}
+                    viewportLayout={ws.viewportLayout}
+                    mobilePanel={ws.wellsMobilePanel}
+                    onSetMobilePanel={ws.setWellsMobilePanel}
+                    groups={ws.processedGroups}
+                    activeGroupId={ws.activeGroupId}
+                    selectedWellCount={ws.selectedVisibleCount}
+                    onActivateGroup={ws.setActiveGroupId}
+                    onAddGroup={ws.handleAddGroup}
+                    onCloneGroup={ws.handleCloneGroup}
+                    onAssignWells={ws.handleAssignWellsToActive}
+                    onCreateGroupFromSelection={ws.handleCreateGroupFromSelection}
+                    onSelectAll={ws.handleSelectAll}
+                    onClearSelection={ws.handleClearSelection}
+                    operatorFilter={ws.operatorFilter}
+                    formationFilter={ws.formationFilter}
+                    statusFilter={ws.statusFilter}
+                    operatorOptions={ws.operatorOptions}
+                    formationOptions={ws.formationOptions}
+                    statusOptions={ws.statusOptions}
+                    onToggleOperator={ws.toggleOperator}
+                    onToggleFormation={ws.toggleFormation}
+                    onToggleStatus={ws.toggleStatus}
+                    onResetFilters={ws.handleResetFilters}
+                    filteredWellsCount={ws.filteredWells.length}
+                    totalWellCount={ws.wells.length}
+                    wells={ws.wells}
+                    selectedWellIds={ws.selectedWellIds}
+                    visibleWellIds={ws.visibleWellIds}
+                    dimmedWellIds={ws.dimmedWellIds}
+                    onToggleWell={ws.handleToggleWell}
+                    onSelectWells={ws.handleSelectWells}
+                    dataSourceId={ws.spatialSourceId}
+                    onSourceChange={ws.handleSourceChange}
+                    onWellsLoaded={ws.handleWellsLoaded}
+                  />
+                </Suspense>
               )
             ) : (
               <DesignEconomicsView

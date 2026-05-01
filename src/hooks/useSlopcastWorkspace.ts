@@ -1,24 +1,29 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DEFAULT_CAPEX, DEFAULT_COMMODITY_PRICING, DEFAULT_OPEX, DEFAULT_OWNERSHIP, DEFAULT_TYPE_CURVE, GROUP_COLORS, MOCK_WELLS } from '../constants';
-import { Scenario, ScheduleParams, SpatialDataSourceId, Well, WellGroup } from '../types';
-import { DesignWorkspace } from '../components/slopcast/DesignWorkspaceTabs';
-import { EconomicsModule } from '../components/slopcast/economics/types';
+import { Scenario, SpatialDataSourceId, Well, WellGroup } from '../types';
 import { DesignStep, StepStatus, WorkflowStep } from '../components/slopcast/WorkflowStepper';
-import { WellsMobilePanel } from '../components/slopcast/DesignWellsView';
-import { EconomicsMobilePanel } from '../components/slopcast/DesignEconomicsView';
 import type { OperationsConsoleProps } from '../components/slopcast/OperationsConsole';
-import { getViewportLayout, useViewportLayout } from '../components/slopcast/hooks/useViewportLayout';
 import { useProjectPersistence } from '../components/slopcast/hooks/useProjectPersistence';
+import {
+  useWorkspaceUiState,
+  type AnalysisOpenSection,
+  type ControlsSection,
+  type FxMode,
+  type OpsTab,
+  type PageMode,
+  type ViewMode,
+} from '../components/slopcast/hooks/useWorkspaceUiState';
+import { useWorkspaceActions } from '../components/slopcast/hooks/useWorkspaceActions';
 import { useAuth } from '../auth/AuthProvider';
 import { hasSupabaseEnv } from '../services/supabaseClient';
 import { useTheme } from '../theme/ThemeProvider';
 import { aggregateEconomics, cachedCalculateEconomics, applyTaxLayer, applyDebtLayer, applyReservesRisk } from '../utils/economics';
 import { getStoredSpatialSourceId, setStoredSpatialSourceId } from '../services/spatialService';
-import { useKeyboardShortcuts } from './useKeyboardShortcuts';
 import { useDerivedMetrics } from './useDerivedMetrics';
 import { useWellFiltering } from './useWellFiltering';
 import { useWellSelection } from './useWellSelection';
+import { createLocalId } from '../utils/id';
 import {
   appendWorkspaceGroup,
   assignWellsToActiveGroup,
@@ -32,12 +37,10 @@ import {
   selectScenarioRankings,
   selectValidationWarnings,
 } from '../domain/workspace/selectors';
+import { createDefaultScenarios } from '../domain/workspace/scenarios';
 import {
-  getDesignWorkspace,
   setDesignWorkspace as storeDesignWorkspace,
-  getEconomicsModule,
   setEconomicsModule as storeEconomicsModule,
-  getEconomicsFocusMode,
   setEconomicsFocusMode as storeEconomicsFocusMode,
   getFxMode,
   setFxMode,
@@ -46,37 +49,11 @@ import {
 } from '../services/storage/workspacePreferences';
 import type { DealRecord } from '../types';
 
-// ─── Types ──────────────────────────────────────────────────────────
-
-type ViewMode = 'DASHBOARD' | 'ANALYSIS';
-type OpsTab = 'SELECTION_ACTIONS' | 'KEY_DRIVERS';
-type FxMode = 'cinematic' | 'max';
-type ControlsSection = 'TYPE_CURVE' | 'CAPEX' | 'OPEX' | 'OWNERSHIP';
-type AnalysisOpenSection = 'PRICING' | 'SCHEDULE' | 'SCALARS';
-type PageMode = 'landing' | 'workspace';
-
 export type { ViewMode, OpsTab, FxMode, ControlsSection, AnalysisOpenSection, PageMode };
 
 // ─── Constants ──────────────────────────────────────────────────────
 
-const DEFAULT_SCHEDULE: ScheduleParams = {
-  annualRigs: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
-  drillDurationDays: 18,
-  stimDurationDays: 12,
-  rigStartDate: new Date().toISOString().split('T')[0],
-};
-
 export const FX_QUERY_KEY = 'fx';
-
-// ─── Helpers ────────────────────────────────────────────────────────
-
-const csvCell = (value: string | number) => {
-  const raw = String(value);
-  if (/[",\n]/.test(raw)) {
-    return `"${raw.replace(/"/g, '""')}"`;
-  }
-  return raw;
-};
 
 // ─── Hook ───────────────────────────────────────────────────────────
 
@@ -116,8 +93,29 @@ export function useSlopcastWorkspace() {
   const atmosphericOverlays = theme.atmosphericOverlays || [];
   const pageOverlayClasses = theme.pageOverlayClasses || [];
 
-  // --- Page mode ---
-  const [pageMode, setPageMode] = useState<PageMode>('landing');
+  // --- View state ---
+  const {
+    pageMode,
+    setPageMode,
+    viewMode,
+    setViewMode,
+    designWorkspace,
+    setDesignWorkspace,
+    wellsMobilePanel,
+    setWellsMobilePanel,
+    economicsMobilePanel,
+    setEconomicsMobilePanel,
+    economicsModule,
+    setEconomicsModule,
+    economicsFocusMode,
+    setEconomicsFocusMode,
+    opsTab,
+    setOpsTab,
+    controlsOpenSection,
+    setControlsOpenSection,
+    viewportLayout,
+  } = useWorkspaceUiState();
+
   const [savedDeals, setSavedDeals] = useState<DealRecord[]>([]);
 
   const handleSelectDeal = useCallback((dealId: string) => {
@@ -156,21 +154,6 @@ export function useSlopcastWorkspace() {
     prevWellIdsRef.current = newIds;
   }, []);
 
-  // --- View state ---
-  const [viewMode, setViewMode] = useState<ViewMode>('DASHBOARD');
-  const [designWorkspace, setDesignWorkspace] = useState<DesignWorkspace>(getDesignWorkspace);
-  const [wellsMobilePanel, setWellsMobilePanel] = useState<WellsMobilePanel>(() => {
-    if (typeof window === 'undefined') return 'MAP';
-    return getViewportLayout(window.innerWidth) === 'mobile' ? 'GROUPS' : 'MAP';
-  });
-  const [economicsMobilePanel, setEconomicsMobilePanel] = useState<EconomicsMobilePanel>('RESULTS');
-  const [economicsModule, setEconomicsModule] = useState<EconomicsModule>(getEconomicsModule);
-  const [economicsFocusMode, setEconomicsFocusMode] = useState<boolean>(getEconomicsFocusMode);
-  const [opsTab, setOpsTab] = useState<OpsTab>('SELECTION_ACTIONS');
-  const viewportLayout = useViewportLayout();
-  const previousViewportLayoutRef = useRef(viewportLayout);
-  const [controlsOpenSection, setControlsOpenSection] = useState<ControlsSection | null>(null);
-
   // --- Domain state ---
   const [groups, setGroups] = useState<WellGroup[]>([
     {
@@ -185,38 +168,7 @@ export function useSlopcastWorkspace() {
     }
   ]);
 
-  const [scenarios, setScenarios] = useState<Scenario[]>([
-    {
-      id: 's-base',
-      name: 'BASE CASE',
-      color: '#9ED3F0',
-      isBaseCase: true,
-      pricing: { ...DEFAULT_COMMODITY_PRICING },
-      schedule: { ...DEFAULT_SCHEDULE },
-      capexScalar: 1.0,
-      productionScalar: 1.0
-    },
-    {
-      id: 's-upside',
-      name: 'BULL SCENARIO',
-      color: '#E566DA',
-      isBaseCase: false,
-      pricing: { ...DEFAULT_COMMODITY_PRICING, oilPrice: 85 },
-      schedule: { ...DEFAULT_SCHEDULE },
-      capexScalar: 1.0,
-      productionScalar: 1.0
-    },
-    {
-      id: 's-fast',
-      name: 'RAMP PROGRAM',
-      color: '#2DFFB1',
-      isBaseCase: false,
-      pricing: { ...DEFAULT_COMMODITY_PRICING },
-      schedule: { ...DEFAULT_SCHEDULE, annualRigs: [1, 2, 3, 4, 4, 4, 4, 4, 4, 4] },
-      capexScalar: 1.0,
-      productionScalar: 1.0
-    }
-  ]);
+  const [scenarios, setScenarios] = useState<Scenario[]>(createDefaultScenarios);
 
   const [activeGroupId, setActiveGroupId] = useState<string>('g-1');
   const [activeScenarioId, setActiveScenarioId] = useState<string>('s-base');
@@ -334,13 +286,13 @@ export function useSlopcastWorkspace() {
   }, []);
 
   const handleAddGroup = useCallback(() => {
-    const newId = `g-${Date.now()}`;
+    const newId = createLocalId('g');
     setGroups(prev => appendWorkspaceGroup(prev, newId));
     setActiveGroupId(newId);
   }, []);
 
   const handleCloneGroup = useCallback((groupId: string) => {
-    const newId = `g-${Date.now()}`;
+    const newId = createLocalId('g');
     setGroups(prev => cloneWorkspaceGroup(prev, groupId, newId));
     setActiveGroupId(newId);
   }, []);
@@ -353,7 +305,7 @@ export function useSlopcastWorkspace() {
 
   const handleCreateGroupFromSelection = useCallback(() => {
     if (selectedWellIds.size === 0) return;
-    const newId = `g-${Date.now()}`;
+    const newId = createLocalId('g');
     setGroups(prevGroups => createGroupFromSelection(prevGroups, newId, selectedWellIds));
     setActiveGroupId(newId);
     setSelectedWellIds(new Set());
@@ -400,94 +352,22 @@ export function useSlopcastWorkspace() {
     aggregateMetrics.wellCount,
   );
 
-  const handleSaveSnapshot = async () => {
-    setSnapshotHistory(prev => [
-      ...prev.slice(-19),
-      {
-        npv: aggregateMetrics.npv10,
-        capex: aggregateMetrics.totalCapex,
-        eur: aggregateMetrics.eur,
-        payout: aggregateMetrics.payoutMonths,
-        timestamp: Date.now(),
-      },
-    ]);
-
-    if (!supabasePersistenceEnabled) {
-      setLastSnapshotAt(new Date().toISOString());
-      setActionMessage('Snapshot saved locally.');
-      return;
-    }
-
-    try {
-      await persistence.runEconomicsSnapshot(aggregateMetrics, scenarioRankings, validationWarnings);
-      setLastSnapshotAt(new Date().toISOString());
-      setActionMessage(`${activeGroup.name} Snapshot saved.`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Snapshot save failed.';
-      setActionMessage(`Snapshot save failed: ${message}`);
-    }
-  };
-
-  const handleExportCsv = () => {
-    const baseScenario = scenarios.find(s => s.isBaseCase) || scenarios[0];
-    const activeScenario = scenarios.find(s => s.id === activeScenarioId) || baseScenario;
-    const activePricing = activeScenario?.pricing || DEFAULT_COMMODITY_PRICING;
-    const rows: Array<Array<string | number>> = [
-      ['scope', 'name', 'wells', 'npv10_mm', 'capex_mm', 'eur_mboe', 'roi_cash', 'payout_months', 'deck_oil', 'deck_gas', 'base_nri', 'base_cost_int'],
-      [
-        'portfolio',
-        'Portfolio',
-        aggregateMetrics.wellCount,
-        (aggregateMetrics.npv10 / 1e6).toFixed(2),
-        (aggregateMetrics.totalCapex / 1e6).toFixed(2),
-        (aggregateMetrics.eur / 1e3).toFixed(2),
-        portfolioRoi.toFixed(2),
-        aggregateMetrics.payoutMonths || '-',
-        activePricing.oilPrice,
-        activePricing.gasPrice,
-        '-',
-        '-',
-      ],
-      ...scenarioRankings.map(row => [
-        'group',
-        row.name,
-        row.wellCount,
-        (row.npv10 / 1e6).toFixed(2),
-        (row.totalCapex / 1e6).toFixed(2),
-        (row.eur / 1e3).toFixed(2),
-        row.roi.toFixed(2),
-        row.payoutMonths || '-',
-        activePricing.oilPrice,
-        activePricing.gasPrice,
-        row.baseNri.toFixed(3),
-        row.baseCostInterest.toFixed(3),
-      ]),
-    ];
-
-    const csv = rows.map(row => row.map(cell => csvCell(cell)).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `slopcast-economics-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-    setActionMessage('CSV export complete.');
-  };
-
-  const handleExportPdf = () => {
-    window.print();
-    setActionMessage('Print dialog opened for PDF export.');
-  };
-
-  // --- Keyboard Shortcuts ---
-  useKeyboardShortcuts({
-    onSwitchToWells: useCallback(() => setDesignWorkspace('WELLS'), []),
-    onSwitchToEconomics: useCallback(() => setDesignWorkspace('ECONOMICS'), []),
-    onSaveSnapshot: handleSaveSnapshot,
-    onExportCsv: handleExportCsv,
+  const { handleSaveSnapshot, handleExportCsv, handleExportPdf } = useWorkspaceActions({
+    aggregateMetrics,
+    aggregateFlow,
+    portfolioRoi,
+    scenarios,
+    activeScenarioId,
+    activeGroupName: activeGroup.name,
+    scenarioRankings,
+    validationWarnings,
+    supabasePersistenceEnabled,
+    runEconomicsSnapshot: persistence.runEconomicsSnapshot,
+    setSnapshotHistory,
+    setLastSnapshotAt,
+    setActionMessage,
+    onSwitchToWells: useCallback(() => setDesignWorkspace('WELLS'), [setDesignWorkspace]),
+    onSwitchToEconomics: useCallback(() => setDesignWorkspace('ECONOMICS'), [setDesignWorkspace]),
     onSelectAll: handleSelectAll,
     onClearSelection: handleClearSelection,
     onShowHelp: useCallback(() => setShowShortcutsHelp(prev => !prev), []),
@@ -518,15 +398,6 @@ export function useSlopcastWorkspace() {
   useEffect(() => {
     storeEconomicsFocusMode(economicsFocusMode);
   }, [economicsFocusMode]);
-
-  // Auto-switch to GROUPS on mobile transition
-  useEffect(() => {
-    const previousLayout = previousViewportLayoutRef.current;
-    if (viewportLayout === 'mobile' && previousLayout !== 'mobile') {
-      setWellsMobilePanel('GROUPS');
-    }
-    previousViewportLayoutRef.current = viewportLayout;
-  }, [viewportLayout]);
 
   // --- Workflow ---
   const hasGroup = !!activeGroup;
