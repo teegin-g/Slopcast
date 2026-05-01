@@ -1,4 +1,5 @@
 import { SynthwaveBackground } from '../../backgrounds';
+import { SynthwaveThemeIcon } from '../../icons';
 import type { ThemeDefinition } from '../../types';
 
 export const synthwave: ThemeDefinition = {
@@ -6,7 +7,31 @@ export const synthwave: ThemeDefinition = {
   variant: 'dark',
   label: 'Synthwave',
   icon: '🕹️',
+  iconDefinition: { kind: 'svg', component: SynthwaveThemeIcon, fallback: '🕹️', label: 'Synthwave' },
   description: 'Neon retro vibes',
+  preview: {
+    swatch: 'linear-gradient(135deg, #0a0015 0%, #5b1aa0 48%, #e566da 100%)',
+    accent: '#E566DA',
+    surface: '#0E061A',
+    shortLabel: 'Synth',
+    tagline: 'Neon gridlines and electric forecast energy.',
+  },
+  chrome: {
+    density: 'comfortable',
+    panelStyle: 'outline',
+    radius: 'soft',
+    brandTreatment: 'cinematic',
+    navTreatment: 'pills',
+  },
+  scene: {
+    renderer: 'svg',
+    component: SynthwaveBackground,
+    supportsFx: true,
+    requiresWebGL: false,
+    hasFallback: true,
+    pauseWhenHidden: true,
+    respectsReducedMotion: true,
+  },
   appName: 'SLOPCAST',
   appSubtitle: 'Electric Forecast',
   chartPalette: {

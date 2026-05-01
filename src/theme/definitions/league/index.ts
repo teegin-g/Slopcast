@@ -1,4 +1,5 @@
 import { MoonlightBackground } from '../../backgrounds';
+import { NocturneThemeIcon } from '../../icons';
 import type { ThemeDefinition } from '../../types';
 
 export const league: ThemeDefinition = {
@@ -6,7 +7,31 @@ export const league: ThemeDefinition = {
   variant: 'dark',
   label: 'Nocturne',
   icon: '🌙',
+  iconDefinition: { kind: 'svg', component: NocturneThemeIcon, fallback: '🌙', label: 'Nocturne' },
   description: 'Moonlit alpine palette',
+  preview: {
+    swatch: 'linear-gradient(135deg, #0b1424 0%, #122040 54%, #e9b067 100%)',
+    accent: '#e9b067',
+    surface: '#0b1424',
+    shortLabel: 'Night',
+    tagline: 'Moonlit alpine focus for night operations.',
+  },
+  chrome: {
+    density: 'comfortable',
+    panelStyle: 'outline',
+    radius: 'soft',
+    brandTreatment: 'cinematic',
+    navTreatment: 'pills',
+  },
+  scene: {
+    renderer: 'canvas2d',
+    component: MoonlightBackground,
+    supportsFx: false,
+    requiresWebGL: false,
+    hasFallback: true,
+    pauseWhenHidden: true,
+    respectsReducedMotion: true,
+  },
   appName: 'SLOPCAST',
   appSubtitle: 'Night Operations',
   chartPalette: {

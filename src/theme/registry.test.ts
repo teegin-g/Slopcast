@@ -1,5 +1,59 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_THEME, THEMES, getFxThemeIds, getTheme, getUiThemeCases, overlayPanelClass } from './registry';
+import {
+  DEFAULT_THEME,
+  getFxThemeIds,
+  getTheme,
+  getThemeChrome,
+  getThemeIcon,
+  getThemePreview,
+  getThemeScene,
+  getUiThemeCases,
+  overlayPanelClass,
+  THEMES,
+} from './registry';
+
+describe('theme registry metadata helpers', () => {
+  it('exposes selector preview metadata for every registered theme', () => {
+    for (const theme of THEMES) {
+      const preview = getThemePreview(theme);
+
+      expect(preview.shortLabel).toBeTruthy();
+      expect(preview.tagline).toBeTruthy();
+      expect(preview.swatch).toContain('gradient');
+      expect(preview.accent).toBeTruthy();
+      expect(preview.surface).toBeTruthy();
+    }
+  });
+
+  it('exposes SVG icons with emoji fallback preserved', () => {
+    for (const theme of THEMES) {
+      const icon = getThemeIcon(theme);
+
+      expect(icon.kind).toBe('svg');
+      expect(icon.fallback).toBe(theme.icon);
+      expect(icon.label).toBe(theme.label);
+    }
+  });
+
+  it('exposes chrome and scene metadata derived from the theme contract', () => {
+    for (const theme of THEMES) {
+      const chrome = getThemeChrome(theme);
+      const scene = getThemeScene(theme);
+
+      expect(chrome.panelStyle).toBe(theme.features.panelStyle);
+      expect(scene.supportsFx).toBe(Boolean(theme.fxTheme));
+      expect(scene.respectsReducedMotion).toBe(true);
+      expect(['none', 'css', 'svg', 'canvas2d', 'r3f']).toContain(scene.renderer);
+    }
+  });
+
+  it('keeps UI screenshot cases based on registered metadata', () => {
+    const cases = getUiThemeCases();
+
+    expect(cases.map(themeCase => themeCase.alias ?? themeCase.id)).toContain('permian-noon');
+    expect(cases.map(themeCase => themeCase.id)).toContain('mario');
+  });
+});
 
 describe('theme registry', () => {
   it('keeps slate as the default theme id', () => {

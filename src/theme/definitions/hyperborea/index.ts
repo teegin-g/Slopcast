@@ -1,4 +1,5 @@
 import { HyperboreaBackground } from '../../backgrounds';
+import { HyperboreaThemeIcon } from '../../icons';
 import type { ThemeDefinition } from '../../types';
 
 export const hyperborea: ThemeDefinition = {
@@ -6,7 +7,31 @@ export const hyperborea: ThemeDefinition = {
   variant: 'dark',
   label: 'Hyperborea',
   icon: '❄️',
+  iconDefinition: { kind: 'svg', component: HyperboreaThemeIcon, fallback: '❄️', label: 'Hyperborea' },
   description: 'Winter village frost',
+  preview: {
+    swatch: 'linear-gradient(135deg, #0a1525 0%, #2c4365 52%, #7dd3fc 100%)',
+    accent: '#7DD3FC',
+    surface: '#141D2E',
+    shortLabel: 'Arctic',
+    tagline: 'Frosted village atmosphere and aurora depth.',
+  },
+  chrome: {
+    density: 'comfortable',
+    panelStyle: 'glass',
+    radius: 'soft',
+    brandTreatment: 'cinematic',
+    navTreatment: 'pills',
+  },
+  scene: {
+    renderer: 'canvas2d',
+    component: HyperboreaBackground,
+    supportsFx: true,
+    requiresWebGL: false,
+    hasFallback: true,
+    pauseWhenHidden: true,
+    respectsReducedMotion: true,
+  },
   appName: 'SLOPCAST',
   appSubtitle: 'Arctic Operations',
   chartPalette: {

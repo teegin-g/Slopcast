@@ -9,10 +9,14 @@ The target architecture is "add one theme folder": a theme's definition, runtime
 1. Add the theme id to `KnownThemeId` in `src/theme/types.ts`.
 2. Create `src/theme/definitions/<theme-id>/index.ts`.
 3. Export a `ThemeDefinition` from that folder. Keep the export name stable and descriptive, usually the theme id in camel case.
-4. Fill the required palettes and feature flags:
+4. Fill the required palettes, selector metadata, chrome traits, scene metadata, and feature flags:
   - `chartPalette` for charts.
   - `mapPalette` for map wells, selection, and Mapbox overrides.
-  - `features` for panel style, typography, spacing, glow, and classic-theme behavior.
+  - `preview` for theme selector swatches, short labels, and a short theme tagline.
+  - `iconDefinition` for the authored selector icon. Prefer inline SVG icons that use `currentColor`; keep the legacy `icon` emoji as the fallback.
+  - `chrome` for density, panel style, radius, brand treatment, and navigation treatment. Classic-style themes should express their behavior here instead of adding new selector branches.
+  - `scene` for renderer kind, FX support, fallback availability, WebGL requirements, pause behavior, and reduced-motion support.
+  - `features` for current compatibility with panel style, typography, spacing, glow, and classic-theme behavior.
 5. Add runtime tokens in the same definition when the theme owns CSS variables:
   - `tokens` can be a single `ThemeTokenMap` or a mode-aware map such as `{ dark, light }`.
   - Prefer channel values for color tokens, e.g. `bgDeep: '10 31 24'`, because existing CSS uses `rgb(var(--bg-deep) / <alpha-value>)`.
@@ -35,6 +39,16 @@ The target architecture is "add one theme folder": a theme's definition, runtime
 When switching themes or modes, the runtime clears token-managed inline variables before applying the next token set. This prevents stale values when moving from a tokenized theme to a CSS-only theme.
 
 For now, `src/styles/theme.css` still contains the existing per-theme CSS blocks. Slate and Permian define representative runtime tokens; other themes can be migrated by adding tokens to their own definition folders. Do not duplicate new behavior in shell-local maps; add new metadata to `src/theme` first, then migrate CSS blocks to tokens in focused follow-up work.
+
+## Selector Metadata
+
+The brand-area theme selector is registry-driven. Every registered theme should provide:
+
+- `preview.swatch`, `preview.accent`, and `preview.surface` so the selector can show a compact visual read of the theme.
+- `preview.shortLabel` and `preview.tagline` so rows can stay flavorful without becoming technical.
+- `iconDefinition` with an SVG component when possible. The old `icon` emoji remains required as a fallback for compatibility.
+- `chrome` traits instead of component-local theme conditionals.
+- `scene` traits that match the existing background implementation. Use `renderer: 'none'` for themes without a scene, `svg` for SVG art, `canvas2d` for Canvas scenes, and `r3f` for React Three Fiber scenes. Remotion is not a live background renderer unless a future video-export workflow explicitly needs it.
 
 ## Verification
 

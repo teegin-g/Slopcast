@@ -1,4 +1,5 @@
 import { StormDuskBackground } from '../../backgrounds';
+import { StormwatchThemeIcon } from '../../icons';
 import type { ThemeDefinition } from '../../types';
 
 export const stormwatch: ThemeDefinition = {
@@ -6,7 +7,31 @@ export const stormwatch: ThemeDefinition = {
   variant: 'dark',
   label: 'Stormwatch',
   icon: '⛈️',
+  iconDefinition: { kind: 'svg', component: StormwatchThemeIcon, fallback: '⛈️', label: 'Stormwatch' },
   description: 'Moody dusk storm atmosphere',
+  preview: {
+    swatch: 'linear-gradient(135deg, #101a2d 0%, #36547f 52%, #f2a65a 100%)',
+    accent: '#f2a65a',
+    surface: '#101a2d',
+    shortLabel: 'Storm',
+    tagline: 'Cold rain, ember lamps, pressure in the air.',
+  },
+  chrome: {
+    density: 'dense',
+    panelStyle: 'solid',
+    radius: 'soft',
+    brandTreatment: 'cinematic',
+    navTreatment: 'pills',
+  },
+  scene: {
+    renderer: 'canvas2d',
+    component: StormDuskBackground,
+    supportsFx: true,
+    requiresWebGL: false,
+    hasFallback: true,
+    pauseWhenHidden: true,
+    respectsReducedMotion: true,
+  },
   appName: 'SLOPCAST',
   appSubtitle: 'Storm Signal',
   chartPalette: {

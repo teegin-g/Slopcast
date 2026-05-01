@@ -18,6 +18,52 @@ export type ThemeVariant = 'dark' | 'light';
 
 export type PanelStyle = 'glass' | 'solid' | 'outline';
 
+export type ThemeRendererKind = 'none' | 'css' | 'svg' | 'canvas2d' | 'r3f';
+
+export interface ThemeIconDefinition {
+  kind: 'svg' | 'emoji';
+  component?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  value?: string;
+  fallback: string;
+  label: string;
+}
+
+export interface ThemePreview {
+  swatch: string;
+  accent: string;
+  surface: string;
+  shortLabel: string;
+  tagline: string;
+}
+
+export interface ThemeChrome {
+  density: 'comfortable' | 'compact' | 'dense';
+  panelStyle: PanelStyle;
+  radius: 'sharp' | 'soft' | 'round' | 'custom';
+  brandTreatment: 'wordmark' | 'badge' | 'classic-cartridge' | 'cinematic';
+  navTreatment: 'tabs' | 'pills' | 'classic-buttons';
+}
+
+export interface ThemeSceneRuntimeProps {
+  themeId: ThemeId;
+  effectiveMode: ThemeVariant;
+  fxMode: 'clear' | 'cinematic' | 'max';
+  reducedMotion: boolean;
+  paused: boolean;
+  deviceTier: 'low' | 'standard' | 'high';
+}
+
+export interface ThemeSceneConfig {
+  renderer: ThemeRendererKind;
+  component?: React.ComponentType;
+  fallbackComponent?: React.ComponentType;
+  supportsFx: boolean;
+  requiresWebGL: boolean;
+  hasFallback: boolean;
+  pauseWhenHidden: boolean;
+  respectsReducedMotion: boolean;
+}
+
 /** Per-theme chart series colors (Recharts / D3). */
 export interface ChartPalette {
   oil: string;
@@ -92,6 +138,14 @@ export interface ThemeDefinition {
   variant: ThemeVariant;
   /** Whether this theme has a light mode variant */
   hasLightVariant?: boolean;
+  /** Selector-facing visual metadata. */
+  preview?: ThemePreview;
+  /** Authored icon metadata; legacy emoji `icon` remains the fallback. */
+  iconDefinition?: ThemeIconDefinition;
+  /** Theme chrome traits for selectors, headers, and future shell migration. */
+  chrome?: ThemeChrome;
+  /** Scene renderer metadata for background migration. */
+  scene?: ThemeSceneConfig;
   /** Runtime CSS variables for future theme wiring. */
   tokens?: ThemeTokenDefinition;
   /** Optional animated background component for this theme */

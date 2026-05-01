@@ -1,6 +1,7 @@
 import React from 'react';
 import { ThemeMeta } from '../../theme/themes';
 import DesignWorkspaceTabs, { DesignWorkspace } from './DesignWorkspaceTabs';
+import ThemeSelectorMenu from './ThemeSelectorMenu';
 
 type ViewMode = 'DASHBOARD' | 'ANALYSIS';
 
@@ -48,7 +49,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
       {atmosphericOverlays.map(cls => (
         <div key={cls} className={`${cls} ${fxClass} pointer-events-none`} />
       ))}
-      <div className="relative z-10 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-3 md:gap-4 items-start md:items-center">
+      <div className="relative z-10 grid grid-cols-1 gap-3 md:gap-4 items-start md:items-center">
         <div className="min-w-0 flex flex-col md:flex-row md:items-center gap-3 md:gap-10">
           <div className="flex items-center gap-3 md:gap-4 min-w-0">
             <div
@@ -67,21 +68,30 @@ const PageHeader: React.FC<PageHeaderProps> = ({
               </span>
             </div>
 
-            <div className={`flex flex-col pr-2 md:pr-8 min-w-0 ${isClassic ? 'md:border-r md:border-black/20' : 'md:border-r md:border-white/5'}`}>
-              <h1
-                className={`text-base md:text-xl leading-tight theme-transition tracking-tight ${
-                  isClassic ? 'text-white font-black uppercase' : `text-theme-cyan ${theme.features.brandFont ? 'brand-title' : 'font-bold'}`
-                }`}
-              >
-                {theme.appName}
-              </h1>
-              <span
-                className={`text-[8px] md:text-[10px] uppercase font-bold tracking-[0.2em] theme-transition ${
-                  isClassic ? 'text-theme-warning' : 'text-theme-magenta'
-                }`}
-              >
-                {theme.appSubtitle}
-              </span>
+            <div className={`flex flex-col gap-2 pr-2 md:pr-8 min-w-0 ${isClassic ? 'md:border-r md:border-black/20' : 'md:border-r md:border-white/5'}`}>
+              <div className="min-w-0">
+                <h1
+                  className={`text-base md:text-xl leading-tight theme-transition tracking-tight ${
+                    isClassic ? 'text-white font-black uppercase' : `text-theme-cyan ${theme.features.brandFont ? 'brand-title' : 'font-bold'}`
+                  }`}
+                >
+                  {theme.appName}
+                </h1>
+                <span
+                  className={`text-[8px] md:text-[10px] uppercase font-bold tracking-[0.2em] theme-transition ${
+                    isClassic ? 'text-theme-warning' : 'text-theme-magenta'
+                  }`}
+                >
+                  {theme.appSubtitle}
+                </span>
+              </div>
+              <ThemeSelectorMenu
+                isClassic={isClassic}
+                theme={theme}
+                themes={themes}
+                themeId={themeId}
+                setThemeId={setThemeId}
+              />
             </div>
           </div>
 
@@ -147,30 +157,6 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                 />
               </div>
             )}
-          </div>
-        </div>
-
-        <div className="min-w-0 flex items-center justify-between md:justify-end gap-3">
-          <div className={`flex items-center rounded-full p-1 border theme-transition shrink-0 ${isClassic ? 'bg-black/25 border-black/30' : 'bg-theme-bg border-theme-border'}`}>
-            {themes.map(t => (
-              <button
-                key={t.id}
-                onClick={() => setThemeId(t.id)}
-                data-testid={`theme-option-${t.id}`}
-                className={
-                  isClassic
-                    ? `w-7 h-7 md:w-8 md:h-8 min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 rounded-full flex items-center justify-center theme-transition focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
-                        themeId === t.id ? 'bg-theme-warning text-black scale-110 shadow-card' : 'text-white/80 hover:text-white'
-                      }`
-                    : `w-7 h-7 md:w-8 md:h-8 min-w-[44px] min-h-[44px] lg:min-w-0 lg:min-h-0 rounded-full flex items-center justify-center theme-transition focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${
-                        themeId === t.id ? 'bg-theme-cyan text-theme-bg scale-110 shadow-glow-cyan' : 'text-theme-muted hover:text-theme-text'
-                      }`
-                }
-                title={t.label}
-              >
-                <span className="text-xs">{t.icon}</span>
-              </button>
-            ))}
           </div>
         </div>
       </div>
