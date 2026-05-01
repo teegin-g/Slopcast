@@ -56,25 +56,15 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                 isClassic ? 'rounded-full border border-black/30 shadow-card bg-theme-magenta' : 'rounded-panel bg-theme-surface2 border border-theme-border'
               }`}
             >
-              {isClassic ? (
-                <span className="text-white font-black text-lg md:text-xl leading-none">SL</span>
-              ) : (
-                <img
-                  src="sandbox:/mnt/data/slopcast_logo_transparent.png"
-                  alt="SC"
-                  className="w-full h-full object-contain"
-                  onError={e => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                    const parent = (e.target as HTMLImageElement).parentElement;
-                    if (parent && !parent.querySelector('.brand-fallback')) {
-                      const span = document.createElement('span');
-                      span.innerText = theme.appName.substring(0, 2);
-                      span.className = 'text-theme-cyan brand-title text-xl brand-fallback';
-                      parent.appendChild(span);
-                    }
-                  }}
-                />
-              )}
+              <span
+                className={
+                  isClassic
+                    ? 'text-white font-black text-lg md:text-xl leading-none'
+                    : 'text-theme-cyan brand-title text-lg md:text-xl leading-none'
+                }
+              >
+                {theme.appName.substring(0, 2)}
+              </span>
             </div>
 
             <div className={`flex flex-col pr-2 md:pr-8 min-w-0 ${isClassic ? 'md:border-r md:border-black/20' : 'md:border-r md:border-white/5'}`}>
