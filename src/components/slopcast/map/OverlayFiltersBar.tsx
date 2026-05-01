@@ -1,7 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { Well } from '../../../types';
 import { useTheme } from '../../../theme/ThemeProvider';
-import { overlayPanelClass } from '../../../theme/themes';
+import type { ThemeId } from '../../../theme/themes';
+import {
+  mapOverlayControlClass,
+  mapOverlayDividerClass,
+  mapOverlayMenuClass,
+  mapOverlayPanelClass,
+} from './mapOverlayChrome';
 
 interface OverlayFiltersBarProps {
   isClassic: boolean;
@@ -31,6 +37,7 @@ interface FilterDropdownProps {
   options: string[];
   onToggle: (value: string) => void;
   isClassic: boolean;
+  themeId: ThemeId;
   selectClass: string;
   testId: string;
 }
@@ -41,6 +48,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
   options,
   onToggle,
   isClassic,
+  themeId,
   selectClass,
   testId,
 }) => {
@@ -76,11 +84,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
       </button>
       {open && (
         <div
-          className={`absolute top-full left-0 mt-1 min-w-[140px] max-h-48 overflow-y-auto z-30 ${
-            isClassic
-              ? 'rounded-inner bg-[#1a1a2e] border border-white/20 shadow-lg'
-              : 'rounded-inner border border-[var(--border)] bg-[var(--bg-deep)] shadow-lg backdrop-blur-sm'
-          }`}
+          className={`absolute top-full left-0 mt-1 min-w-[140px] max-h-48 overflow-y-auto z-30 ${mapOverlayMenuClass(isClassic, themeId)}`}
         >
           {options.map(opt => (
             <label
@@ -128,15 +132,13 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
   onClearSelection,
 }) => {
   const hasActiveFilters = operatorFilter.size > 0 || formationFilter.size > 0 || statusFilter.size > 0;
-  const { theme } = useTheme();
+  const { themeId } = useTheme();
 
-  const panelClass = isClassic
-    ? 'sc-panel theme-transition'
-    : `rounded-panel ${overlayPanelClass(theme.features.panelStyle)} theme-transition`;
+  const panelClass = mapOverlayPanelClass(isClassic, themeId, 'bar');
 
   const selectClass = isClassic
     ? 'rounded-inner px-2 py-1 text-[10px] font-black sc-inputNavy focus-ring'
-    : 'rounded-inner border border-[var(--border)] bg-[var(--bg-deep)] px-2 py-1 text-[10px] text-[var(--text-primary)] focus-ring';
+    : `rounded-inner px-2 py-1 text-[10px] font-bold focus-ring ${mapOverlayControlClass(false)}`;
 
   return (
     <div
@@ -160,7 +162,7 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
           </div>
 
           {/* Divider */}
-          <div className={`w-px h-4 ${isClassic ? 'bg-white/20' : 'bg-[var(--border)]'}`} />
+          <div className={`w-px h-4 ${mapOverlayDividerClass(isClassic)}`} />
 
           {/* Multi-select filter dropdowns */}
           <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -170,6 +172,7 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
               options={operatorOptions}
               onToggle={onToggleOperator}
               isClassic={isClassic}
+              themeId={themeId}
               selectClass={selectClass}
               testId="wells-filter-operator"
             />
@@ -179,6 +182,7 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
               options={formationOptions}
               onToggle={onToggleFormation}
               isClassic={isClassic}
+              themeId={themeId}
               selectClass={selectClass}
               testId="wells-filter-formation"
             />
@@ -188,6 +192,7 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
               options={statusOptions}
               onToggle={onToggleStatus}
               isClassic={isClassic}
+              themeId={themeId}
               selectClass={selectClass}
               testId="wells-filter-status"
             />
@@ -205,7 +210,7 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
             </button>
           )}
 
-          <div className={`w-px h-4 ${isClassic ? 'bg-white/20' : 'bg-[var(--border)]'}`} />
+          <div className={`w-px h-4 ${mapOverlayDividerClass(isClassic)}`} />
 
           <button
             onClick={onSelectAll}

@@ -2,7 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import type { SpatialDataSourceId } from '../../../types';
 import { setStoredSpatialSourceId } from '../../../services/spatialService';
 import { useTheme } from '../../../theme/ThemeProvider';
-import { overlayPanelClass } from '../../../theme/themes';
+import {
+  mapOverlayControlClass,
+  mapOverlayDividerClass,
+  mapOverlayPanelClass,
+} from './mapOverlayChrome';
 
 const spinKeyframes = `@keyframes spin { to { transform: rotate(360deg) } }
 @keyframes source-flash { 0%,100% { opacity: 1 } 50% { opacity: 0.3 } }`;
@@ -157,15 +161,7 @@ const ToolButton: React.FC<{
     title={title}
     aria-label={title}
     aria-pressed={active}
-    className={`${iconButtonClass} ${
-      active
-        ? isClassic
-          ? 'sc-btnPrimary'
-          : 'bg-[var(--cyan)]/20 text-[var(--cyan)] border border-[var(--cyan)]/40'
-        : isClassic
-          ? 'text-white/60 hover:text-white hover:bg-white/10'
-          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)]'
-    }`}
+    className={`${iconButtonClass} ${mapOverlayControlClass(isClassic, active)}`}
   >
     {children}
   </button>
@@ -247,10 +243,8 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
   onSourceChange,
   fallbackActive,
 }) => {
-  const { theme } = useTheme();
-  const panelClass = isClassic
-    ? 'sc-panel theme-transition'
-    : `rounded-panel ${overlayPanelClass(theme.features.panelStyle)} theme-transition`;
+  const { themeId } = useTheme();
+  const panelClass = mapOverlayPanelClass(isClassic, themeId, 'rail');
   const selectedSourceId = resolveSelectedSourceId(dataSourceId, source);
   const renderedSource = resolveRenderedSource(source, selectedSourceId);
   const nextSourceId: SpatialDataSourceId = selectedSourceId === 'live' ? 'mock' : 'live';
@@ -283,7 +277,7 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
           </svg>
         </ToolButton>
 
-        <div className={`h-px my-0.5 ${isClassic ? 'bg-white/20' : 'bg-[var(--border)]'}`} />
+        <div className={`h-px my-0.5 ${mapOverlayDividerClass(isClassic)}`} />
 
         {layerButtons.map(({ key, title, icon }) => (
           <ToolButton
@@ -297,7 +291,7 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
           </ToolButton>
         ))}
 
-        <div className={`h-px my-0.5 ${isClassic ? 'bg-white/20' : 'bg-[var(--border)]'}`} />
+        <div className={`h-px my-0.5 ${mapOverlayDividerClass(isClassic)}`} />
 
         <div className={`text-[10px] md:text-[9px] font-bold uppercase tracking-widest px-1 py-0.5 ${footerTextClass}`}>
           Data

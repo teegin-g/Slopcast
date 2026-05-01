@@ -48,3 +48,9 @@ export const ClassicTheme: Story = {
     theme: 'mario',
   },
 };
+
+export const TropicalTheme: Story = {
+  globals: {
+    theme: 'tropical',
+  },
+};

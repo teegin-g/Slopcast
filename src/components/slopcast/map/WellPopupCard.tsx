@@ -2,8 +2,8 @@ import React from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { SPRING } from '../../../theme/motion';
 import { useTheme } from '../../../theme/ThemeProvider';
-import { overlayPanelClass } from '../../../theme/themes';
 import type { Well, WellGroup } from '../../../types';
+import { mapOverlayControlClass, mapOverlayDividerClass, mapOverlayPanelClass } from './mapOverlayChrome';
 
 interface WellPopupCardProps {
   well: Well | null;
@@ -37,11 +37,9 @@ export const WellPopupCard: React.FC<WellPopupCardProps> = ({
   isClassic,
   onClose,
 }) => {
-  const { theme } = useTheme();
+  const { themeId } = useTheme();
 
-  const panelClass = isClassic
-    ? 'sc-panel'
-    : `rounded-panel ${overlayPanelClass(theme.features.panelStyle)}`;
+  const panelClass = mapOverlayPanelClass(isClassic, themeId, 'card');
 
   const group = well ? findGroup(well.id, groups) : undefined;
 
@@ -94,7 +92,7 @@ export const WellPopupCard: React.FC<WellPopupCardProps> = ({
               className={`flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-sm transition-colors ${
                 isClassic
                   ? 'text-white/40 hover:text-white/70 hover:bg-white/10'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)]'
+                  : mapOverlayControlClass(false)
               }`}
               aria-label="Close popup"
             >
@@ -105,7 +103,7 @@ export const WellPopupCard: React.FC<WellPopupCardProps> = ({
           </div>
 
           {/* Divider */}
-          <div className={`mx-3 border-t ${isClassic ? 'border-white/10' : 'border-[var(--border)]'}`} />
+          <div className={`mx-3 h-px ${mapOverlayDividerClass(isClassic)}`} />
 
           {/* Detail rows */}
           <div className="px-3 py-2 space-y-1.5">
@@ -132,7 +130,7 @@ export const WellPopupCard: React.FC<WellPopupCardProps> = ({
           </div>
 
           {/* Group assignment */}
-          <div className={`mx-3 border-t ${isClassic ? 'border-white/10' : 'border-[var(--border)]'}`} />
+          <div className={`mx-3 h-px ${mapOverlayDividerClass(isClassic)}`} />
           <div className="flex items-center gap-1.5 px-3 py-2">
             {group ? (
               <>
