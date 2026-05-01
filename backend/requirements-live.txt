@@ -1,0 +1,6 @@
+# Optional live spatial dependencies for Databricks-backed local/dev runs.
+# Install alongside requirements.txt when exercising live spatial endpoints.
+databricks-sql-connector>=4.2.5,<5.0.0
+python-dotenv>=1.2.1,<2.0.0
+pyproj>=3.7.2,<4.0.0
+psycopg2-binary>=2.9.11,<3.0.0
