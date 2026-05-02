@@ -292,11 +292,11 @@ function generateMammoths(): MammothSeed[] {
   const rand = seededRandom(404);
   const mams: MammothSeed[] = [];
   for (let i = 0; i < 3; i++) {
-    const speed = lerp(0.018, 0.038, rand()) * (rand() > 0.5 ? 1 : -1);
+    const speed = lerp(0.010, 0.022, rand()) * (rand() > 0.5 ? 1 : -1);
     mams.push({
       x: rand() * 1.2 - 0.1,
       y: 0.7 + rand() * 0.15,
-      size: 0.02 + rand() * 0.015,
+      size: 0.024 + rand() * 0.018,
       speed,
       phase: rand() * TAU,
     });
@@ -784,10 +784,10 @@ export default function HyperboreaBackground() {
     // ── Draw: Wooly Mammoths ─────────────────────────────────────────
     function drawMammoths(time: number, dt: number) {
       const legDefs = [
-        { hipX: -0.78, hipY: -0.2, offset: 0.0, depth: 0.92 },
-        { hipX: -0.52, hipY: -0.2, offset: 0.5, depth: 0.82 },
-        { hipX: 0.52, hipY: -0.2, offset: 0.5, depth: 0.86 },
-        { hipX: 0.78, hipY: -0.2, offset: 0.0, depth: 0.78 },
+        { hipX: -0.72, hipY: -0.25, offset: 0.0, depth: 0.96 },
+        { hipX: -0.46, hipY: -0.22, offset: 0.5, depth: 0.78 },
+        { hipX: 0.42, hipY: -0.2, offset: 0.5, depth: 0.86 },
+        { hipX: 0.70, hipY: -0.22, offset: 0.0, depth: 0.74 },
       ];
 
       for (const m of mammothsData) {
@@ -810,9 +810,9 @@ export default function HyperboreaBackground() {
         const drawScale = m.speed > 0 ? -1 : 1; // default art faces left; flip when moving right
         const moveDir = -drawScale; // world direction (+1 right, -1 left)
 
-        const stepRate = 1.1 + Math.abs(m.speed) * 10;
-        const strideNorm = clamp((Math.abs(m.speed) / stepRate) * 0.9, 0.018, 0.06);
-        const bob = Math.sin(time * stepRate * TAU * 2 + m.phase) * (s * 0.04);
+        const stepRate = 0.48 + Math.abs(m.speed) * 5.5;
+        const strideNorm = clamp((Math.abs(m.speed) / stepRate) * 0.42, 0.010, 0.025);
+        const bob = Math.sin(time * stepRate * TAU * 2 + m.phase) * (s * 0.018);
 
         const bodyDrawY = groundWorldY + bob;
 
@@ -829,7 +829,7 @@ export default function HyperboreaBackground() {
           }
           if (leg.wasStance && !inStance) {
             // stance -> swing: set next contact deterministically
-            leg.nextContactX = leg.contactX + strideNorm * moveDir;
+            leg.nextContactX = clamp(leg.contactX + strideNorm * moveDir, m.x - 0.032, m.x + 0.032);
           }
           leg.wasStance = inStance;
         }
@@ -839,7 +839,7 @@ export default function HyperboreaBackground() {
         ctx!.scale(drawScale, 1);
 
         // Legs helper
-        const footLiftPx = s * 0.22;
+        const footLiftPx = s * 0.09;
         const drawLegs = (isFrontPass: boolean) => {
           for (let i = 0; i < 4; i++) {
             const def = legDefs[i];
@@ -850,9 +850,11 @@ export default function HyperboreaBackground() {
             const inStance = p < 0.55;
             const swingT = inStance ? 0 : clamp((p - 0.55) / 0.45, 0, 1);
 
-            const footWorldX = inStance
+            const plantedFootX = inStance
               ? m.legs[i].contactX * W
               : lerp(m.legs[i].contactX, m.legs[i].nextContactX, smoothstep(0, 1, swingT)) * W;
+            const maxFootReach = s * 0.42;
+            const footWorldX = clamp(plantedFootX, bodyWorldX - maxFootReach, bodyWorldX + maxFootReach);
             const footWorldY = groundWorldY - Math.sin(Math.PI * swingT) * footLiftPx;
 
             // Hip world position derived from body + local offset
@@ -864,60 +866,95 @@ export default function HyperboreaBackground() {
             const footX = (footWorldX - bodyWorldX) * drawScale;
             const footY = footWorldY - bodyDrawY;
 
-            const midX = (hipX + footX) * 0.5;
-            const midY = (hipY + footY) * 0.5;
-            const kneeBend = (s * 0.14) * (inStance ? 0.55 : 1.0);
-            const kneeX = midX + moveDir * kneeBend;
-            const kneeY = midY - kneeBend * 0.35;
-
-            ctx!.strokeStyle = `rgba(15, 23, 37, ${def.depth})`;
-            ctx!.lineWidth = Math.max(1, s * 0.12);
-            ctx!.lineCap = 'round';
+            const legTop = s * 0.24;
+            const legBot = s * 0.18;
+            const footW = s * 0.30;
+            ctx!.fillStyle = `rgba(15, 23, 37, ${def.depth})`;
             ctx!.beginPath();
-            ctx!.moveTo(hipX, hipY);
-            ctx!.lineTo(kneeX, kneeY);
-            ctx!.lineTo(footX, footY);
-            ctx!.stroke();
+            ctx!.moveTo(hipX - legTop * 0.45, hipY);
+            ctx!.quadraticCurveTo(lerp(hipX, footX, 0.42) - s * 0.04, lerp(hipY, footY, 0.55), footX - legBot * 0.55, footY - s * 0.05);
+            ctx!.lineTo(footX - footW * 0.46, footY);
+            ctx!.quadraticCurveTo(footX, footY + s * 0.05, footX + footW * 0.46, footY);
+            ctx!.lineTo(footX + legBot * 0.55, footY - s * 0.05);
+            ctx!.quadraticCurveTo(lerp(hipX, footX, 0.42) + s * 0.05, lerp(hipY, footY, 0.48), hipX + legTop * 0.45, hipY);
+            ctx!.closePath();
+            ctx!.fill();
           }
         };
 
         // Draw back legs
         drawLegs(false);
 
-        // Body (humped shape)
+        // Body: high shoulder hump, sloped back, and heavy wool belly.
         ctx!.fillStyle = COLORS.mammothBody;
         ctx!.beginPath();
-        ctx!.ellipse(0, -s, s, s * 0.7, 0, Math.PI, 0);
-        ctx!.lineTo(s * 0.95, -s * 0.05);
-        ctx!.lineTo(-s * 1.25, -s * 0.05);
+        ctx!.moveTo(-s * 1.28, -s * 0.46);
+        ctx!.quadraticCurveTo(-s * 1.10, -s * 1.28, -s * 0.35, -s * 1.50);
+        ctx!.bezierCurveTo(s * 0.28, -s * 1.60, s * 0.92, -s * 1.17, s * 1.08, -s * 0.54);
+        ctx!.quadraticCurveTo(s * 0.92, -s * 0.18, s * 0.46, -s * 0.10);
+        ctx!.lineTo(-s * 1.04, -s * 0.10);
+        ctx!.quadraticCurveTo(-s * 1.34, -s * 0.20, -s * 1.28, -s * 0.46);
         ctx!.closePath();
         ctx!.fill();
 
-        // Head
+        // Shaggy belly fringe hides the leg tops and breaks the ellipse silhouette.
         ctx!.beginPath();
-        ctx!.arc(-s * 1.1, -s * 0.72, s * 0.52, 0, TAU);
+        ctx!.moveTo(-s * 1.06, -s * 0.15);
+        for (let i = 0; i <= 12; i++) {
+          const u = i / 12;
+          const x = lerp(-s * 1.06, s * 0.86, u);
+          const y = -s * (0.12 + (i % 2 === 0 ? 0.12 : 0.02));
+          ctx!.lineTo(x, y);
+        }
+        ctx!.lineTo(s * 0.88, -s * 0.34);
+        ctx!.lineTo(-s * 1.06, -s * 0.34);
+        ctx!.closePath();
         ctx!.fill();
 
-        // Trunk
-        const trunkWobble = Math.sin(time * 1.2 + m.phase) * 0.12;
+        // Head, small ear, and buried neck mass.
         ctx!.beginPath();
-        ctx!.moveTo(-s * 1.4, -s * 0.72);
-        ctx!.quadraticCurveTo(-s * 1.85 + trunkWobble * s, -s * 0.2, -s * 1.55, s * 0.35);
-        ctx!.lineWidth = s * 0.18;
+        ctx!.ellipse(-s * 1.22, -s * 0.78, s * 0.42, s * 0.48, -0.18, 0, TAU);
+        ctx!.fill();
+        ctx!.fillStyle = 'rgba(8, 13, 22, 0.76)';
+        ctx!.beginPath();
+        ctx!.ellipse(-s * 0.96, -s * 0.88, s * 0.14, s * 0.20, -0.28, 0, TAU);
+        ctx!.fill();
+
+        // Short, heavy trunk. Reduced motion keeps time fixed at 0 through draw().
+        const trunkWobble = Math.sin(time * 0.65 + m.phase) * 0.035;
+        ctx!.beginPath();
+        ctx!.moveTo(-s * 1.54, -s * 0.72);
+        ctx!.quadraticCurveTo(-s * 1.78 + trunkWobble * s, -s * 0.38, -s * 1.62, -s * 0.06);
+        ctx!.lineWidth = s * 0.24;
         ctx!.lineCap = 'round';
         ctx!.strokeStyle = COLORS.mammothBody;
         ctx!.stroke();
 
-        // Tusk
-        ctx!.beginPath();
-        ctx!.moveTo(-s * 1.18, -s * 0.42);
-        ctx!.quadraticCurveTo(-s * 2.15, -s * 0.2, -s * 2.0, -s * 0.82);
-        ctx!.lineWidth = s * 0.09;
+        // Curved tusks sweep outward then up instead of reading as straight sticks.
+        ctx!.lineCap = 'round';
         ctx!.strokeStyle = COLORS.mammothTusk;
+        ctx!.lineWidth = s * 0.07;
+        ctx!.beginPath();
+        ctx!.moveTo(-s * 1.38, -s * 0.52);
+        ctx!.bezierCurveTo(-s * 1.88, -s * 0.26, -s * 2.08, -s * 0.52, -s * 1.92, -s * 0.83);
         ctx!.stroke();
+        ctx!.globalAlpha = 0.75;
+        ctx!.beginPath();
+        ctx!.moveTo(-s * 1.24, -s * 0.47);
+        ctx!.bezierCurveTo(-s * 1.70, -s * 0.22, -s * 1.88, -s * 0.46, -s * 1.73, -s * 0.72);
+        ctx!.stroke();
+        ctx!.globalAlpha = 1;
 
         // Draw front legs
         drawLegs(true);
+
+        // Snow occlusion integrates feet into the ground and hides any plant artifacts.
+        const snowMask = ctx!.createLinearGradient(0, -s * 0.04, 0, s * 0.16);
+        snowMask.addColorStop(0, 'rgba(143, 159, 184, 0)');
+        snowMask.addColorStop(0.36, 'rgba(143, 159, 184, 0.70)');
+        snowMask.addColorStop(1, 'rgba(143, 159, 184, 0.92)');
+        ctx!.fillStyle = snowMask;
+        ctx!.fillRect(-s * 1.35, -s * 0.05, s * 2.55, s * 0.30);
 
         ctx!.restore();
       }
