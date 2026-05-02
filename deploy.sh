@@ -45,6 +45,38 @@ kill_listeners_on_port() {
   fi
 }
 
+load_env_file() {
+  local env_file="$1"
+  if [[ -f "$env_file" ]]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "$env_file"
+    set +a
+  fi
+}
+
+# Block until FastAPI answers /api/health (Node proxies /api to this port).
+wait_for_backend_health() {
+  local port="$1"
+  local attempts=50
+  local i=0
+  if ! command -v curl >/dev/null 2>&1; then
+    echo "Warning: curl not found; sleeping 2s before starting Node (ensure FastAPI is listening on port ${port})."
+    sleep 2
+    return 0
+  fi
+  while (( i < attempts )); do
+    if curl -sf "http://127.0.0.1:${port}/api/health" >/dev/null; then
+      echo "FastAPI backend is healthy on port ${port}."
+      return 0
+    fi
+    sleep 0.15
+    ((i += 1)) || true
+  done
+  echo "Error: FastAPI did not become healthy at http://127.0.0.1:${port}/api/health"
+  return 1
+}
+
 open_url() {
   local url="$1"
   if command -v open >/dev/null 2>&1; then
@@ -61,8 +93,8 @@ usage() {
 Usage: ./deploy.sh [--dev|--prod] [--build-only] [--skip-install]
 
 Options:
-  --dev           Run the Vite dev server (local development).
-  --prod          Build and run the production server (default).
+  --dev           Run Vite + FastAPI together (npm run dev:full); map /api uses port 3000.
+  --prod          Build and run Node static server + FastAPI on PYTHON_API_PORT (default 8001).
   --build-only    Only build the production bundle, do not start the server.
   --skip-install  Skip npm install.
   --help          Show this help text.
@@ -120,10 +152,10 @@ if [[ "$SKIP_INSTALL" -eq 0 ]]; then
 fi
 
 if [[ "$MODE" == "dev" ]]; then
-  echo "Starting Vite dev server..."
-  DEV_URL="http://localhost:5173"
-  (sleep 1; open_url "$DEV_URL") &
-  npm run dev
+  echo "Starting Vite + FastAPI (dev:full)..."
+  DEV_URL="http://localhost:3000"
+  (sleep 2; open_url "$DEV_URL") &
+  npm run dev:full
   exit 0
 fi
 
@@ -135,9 +167,59 @@ if [[ "$BUILD_ONLY" -eq 1 ]]; then
   exit 0
 fi
 
-echo "Starting production server..."
+echo "Starting production servers (Node + FastAPI)..."
 PORT="${PORT:-8000}"
+PYTHON_API_PORT="${PYTHON_API_PORT:-8001}"
+export PORT PYTHON_API_PORT
+
+kill_listeners_on_port "$PYTHON_API_PORT"
 kill_listeners_on_port "$PORT"
+
+load_env_file "$ROOT_DIR/.env.local"
+load_env_file "$ROOT_DIR/.env.backend.local"
+
+if [[ -d "$ROOT_DIR/.venv" ]]; then
+  # shellcheck disable=SC1091
+  source "$ROOT_DIR/.venv/bin/activate"
+fi
+
+if ! command -v python >/dev/null 2>&1; then
+  echo "Error: Python is required for the FastAPI backend (Node proxies /api to 127.0.0.1:${PYTHON_API_PORT})."
+  echo "Use a project .venv with backend deps installed, or put python on PATH."
+  exit 1
+fi
+
+if ! python -c "import uvicorn" 2>/dev/null; then
+  echo "Error: uvicorn is missing for the active Python. Install backend dependencies, e.g.:"
+  echo "  source .venv/bin/activate && pip install -r backend/requirements.txt"
+  exit 1
+fi
+
+BACKEND_PID=""
+cleanup_backend() {
+  if [[ -n "${BACKEND_PID:-}" ]] && kill -0 "$BACKEND_PID" 2>/dev/null; then
+    echo "Stopping FastAPI (pid ${BACKEND_PID}) ..."
+    kill -TERM "$BACKEND_PID" 2>/dev/null || true
+    local j=0
+    while (( j < 40 )); do
+      kill -0 "$BACKEND_PID" 2>/dev/null || break
+      sleep 0.1
+      ((j += 1)) || true
+    done
+    kill -KILL "$BACKEND_PID" 2>/dev/null || true
+  fi
+}
+trap cleanup_backend EXIT INT TERM
+
+echo "Starting FastAPI (uvicorn, no --reload) on 127.0.0.1:${PYTHON_API_PORT} ..."
+cd "$ROOT_DIR"
+python -m uvicorn backend.main:app --host 127.0.0.1 --port "$PYTHON_API_PORT" &
+BACKEND_PID=$!
+
+if ! wait_for_backend_health "$PYTHON_API_PORT"; then
+  exit 1
+fi
+
 PROD_URL="http://localhost:${PORT}"
 (sleep 1; open_url "$PROD_URL") &
 npm run start
