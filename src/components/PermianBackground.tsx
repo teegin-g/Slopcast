@@ -4,12 +4,12 @@ import {
   resolvePermianMode,
   shouldUseFallback2D,
   useAtmosphereFxLevel,
-  usePageVisibilityPaused,
-  useReducedMotionPreference,
 } from './permian/backgroundLifecycle';
 import { PermianCanvas } from './permian/PermianCanvas';
 import { useDeviceTier, type PermianTier } from './permian/useDeviceTier';
 import { paletteForMode, type PermianFxLevel, type PermianMode } from './permian/variants';
+import { usePageVisibilityPaused } from '../theme/scene/usePageVisibilityPaused';
+import { useReducedMotionPreference } from '../theme/scene/useReducedMotionPreference';
 
 const OilRigBackground2D = React.lazy(() => import('./OilRigBackground2D'));
 

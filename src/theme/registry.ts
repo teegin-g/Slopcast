@@ -13,9 +13,9 @@ import type {
   ThemeIconDefinition,
   ThemeId,
   ThemePreview,
-  ThemeSceneConfig,
   UiThemeCase,
 } from './types';
+import type { ThemeRendererKind, ThemeSceneConfig } from './scene/types';
 
 export const THEMES: ThemeDefinition[] = [slate, synthwave, tropical, league, stormwatch, mario, hyperborea, permian];
 
@@ -74,17 +74,33 @@ export function getThemeChrome(theme: ThemeDefinition): ThemeChrome {
   };
 }
 
+function inferLegacyRenderer(theme: ThemeDefinition): ThemeRendererKind {
+  if (!theme.BackgroundComponent) return theme.atmosphereClass || theme.pageOverlayClasses?.length ? 'css' : 'none';
+  if (theme.id === 'permian') return 'r3f';
+  if (theme.id === 'synthwave') return 'svg';
+  return 'canvas2d';
+}
+
 export function getThemeScene(theme: ThemeDefinition): ThemeSceneConfig {
-  if (theme.scene) return theme.scene;
+  const legacyScene: ThemeSceneConfig = {
+    renderer: inferLegacyRenderer(theme),
+    component: theme.BackgroundComponent,
+    supportsFx: !!theme.fxTheme,
+    requiresWebGL: theme.id === 'permian',
+    hasFallback: true,
+    pauseWhenHidden: !!theme.BackgroundComponent,
+    respectsReducedMotion: !!theme.BackgroundComponent,
+    quality: theme.BackgroundComponent ? 'cinematic' : 'static',
+    ownsVignette: !!theme.BackgroundComponent,
+    ownsGrain: false,
+    ownsAtmosphericOverlays: false,
+  };
 
   return {
-    renderer: theme.BackgroundComponent ? 'canvas2d' : 'none',
-    component: theme.BackgroundComponent,
-    supportsFx: Boolean(theme.fxTheme),
-    requiresWebGL: false,
-    hasFallback: true,
-    pauseWhenHidden: Boolean(theme.BackgroundComponent),
-    respectsReducedMotion: true,
+    ...legacyScene,
+    ...theme.scene,
+    component: theme.scene?.component ?? legacyScene.component,
+    fallbackComponent: theme.scene?.fallbackComponent ?? legacyScene.fallbackComponent,
   };
 }
 

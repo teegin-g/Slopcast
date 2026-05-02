@@ -1,4 +1,5 @@
 import type React from 'react';
+import type { ThemeSceneConfig } from './scene/types';
 
 export type KnownThemeId =
   | 'slate'
@@ -17,8 +18,6 @@ export type ColorMode = 'dark' | 'light' | 'system';
 export type ThemeVariant = 'dark' | 'light';
 
 export type PanelStyle = 'glass' | 'solid' | 'outline';
-
-export type ThemeRendererKind = 'none' | 'css' | 'svg' | 'canvas2d' | 'r3f';
 
 export interface ThemeIconDefinition {
   kind: 'svg' | 'emoji';
@@ -42,26 +41,6 @@ export interface ThemeChrome {
   radius: 'sharp' | 'soft' | 'round' | 'custom';
   brandTreatment: 'wordmark' | 'badge' | 'classic-cartridge' | 'cinematic';
   navTreatment: 'tabs' | 'pills' | 'classic-buttons';
-}
-
-export interface ThemeSceneRuntimeProps {
-  themeId: ThemeId;
-  effectiveMode: ThemeVariant;
-  fxMode: 'clear' | 'cinematic' | 'max';
-  reducedMotion: boolean;
-  paused: boolean;
-  deviceTier: 'low' | 'standard' | 'high';
-}
-
-export interface ThemeSceneConfig {
-  renderer: ThemeRendererKind;
-  component?: React.ComponentType;
-  fallbackComponent?: React.ComponentType;
-  supportsFx: boolean;
-  requiresWebGL: boolean;
-  hasFallback: boolean;
-  pauseWhenHidden: boolean;
-  respectsReducedMotion: boolean;
 }
 
 /** Per-theme chart series colors (Recharts / D3). */
@@ -144,12 +123,12 @@ export interface ThemeDefinition {
   iconDefinition?: ThemeIconDefinition;
   /** Theme chrome traits for selectors, headers, and future shell migration. */
   chrome?: ThemeChrome;
-  /** Scene renderer metadata for background migration. */
-  scene?: ThemeSceneConfig;
   /** Runtime CSS variables for future theme wiring. */
   tokens?: ThemeTokenDefinition;
   /** Optional animated background component for this theme */
   BackgroundComponent?: React.ComponentType;
+  /** Formal scene renderer metadata; falls back to BackgroundComponent during migration. */
+  scene?: ThemeSceneConfig;
   /** CSS class names for atmospheric overlay divs rendered in the header */
   atmosphericOverlays?: string[];
   /** CSS class applied to the header for atmospheric effects */

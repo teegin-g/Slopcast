@@ -58,9 +58,12 @@ function createMockWorkspace(overrides: Partial<MockWorkspace> = {}): MockWorksp
     setThemeId: mockWorkspaceFn<MockWorkspace['setThemeId']>(),
     themes: [],
     theme: { id: 'slate', name: 'Slate' } as any,
+    effectiveMode: 'dark',
+    fxMode: 'cinematic',
     navigate: mockWorkspaceFn<MockWorkspace['navigate']>(),
     atmosphericOverlays: [],
     headerAtmosphereClass: '',
+    pageOverlayClasses: [],
     ...overrides,
   };
 }
@@ -91,12 +94,36 @@ describe('STYLE-06: Animated canvas backgrounds visible through glass UI shell',
 
   it('renders background layer at z-0 (behind everything)', () => {
     const MockBg = () => <div data-testid="canvas-bg">animated bg</div>;
-    const { container } = renderAppShell({ BackgroundComponent: MockBg });
+    const { container } = renderAppShell({
+      BackgroundComponent: MockBg,
+      theme: { id: 'slate', BackgroundComponent: MockBg } as any,
+    });
     // Background container should be fixed at z-0
     const bgLayer = container.querySelector('.fixed.inset-0.z-0');
     expect(bgLayer).not.toBeNull();
     // The background component should render inside it
     expect(screen.getByTestId('canvas-bg')).toBeTruthy();
+  });
+
+  it('renders page overlay classes through the shell scene layer', () => {
+    const { container } = renderAppShell({
+      pageOverlayClasses: ['theme-aurora'],
+      theme: { id: 'hyperborea', pageOverlayClasses: ['theme-aurora'] } as any,
+    });
+
+    expect(container.querySelector('.theme-aurora')).not.toBeNull();
+    expect(screen.getByTestId('theme-page-overlay')).toBeTruthy();
+  });
+
+  it('mounts a single background component through ThemeSceneLayer', () => {
+    const MockBg = vi.fn(() => <div data-testid="single-scene-bg">animated bg</div>);
+    renderAppShell({
+      BackgroundComponent: MockBg,
+      theme: { id: 'hyperborea', BackgroundComponent: MockBg } as any,
+    });
+
+    expect(screen.getAllByTestId('single-scene-bg')).toHaveLength(1);
+    expect(screen.getAllByTestId('theme-scene-background')).toHaveLength(1);
   });
 
   it('renders content area at z-20 (above background, below sidebar)', () => {
