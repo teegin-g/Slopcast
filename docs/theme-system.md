@@ -19,6 +19,7 @@ The target architecture is "add one theme folder": a theme's definition, runtime
   - Populate core tokens first: `bgDeep`, `bgSpace`, `surface1`, `surface2`, `border`, `cyan`, `magenta`, `lav`, `radius.panel`, `radius.inner`, and typography tokens.
 6. Add optional visuals on the theme definition:
   - `BackgroundComponent` for animated or canvas backgrounds.
+  - `scene` for renderer metadata (`renderer`, FX support, WebGL requirements, reduced-motion behavior, pause-on-hidden behavior, and ownership of vignette/grain/overlays).
   - `atmosphereClass`, `headerAtmosphereClass`, and `atmosphericOverlays` for header/page atmosphere layers.
   - `pageOverlayClasses` for shell-level overlays such as `theme-aurora`.
   - `fxTheme` when cinematic/max FX controls apply.
@@ -35,6 +36,21 @@ The target architecture is "add one theme folder": a theme's definition, runtime
 When switching themes or modes, the runtime clears token-managed inline variables before applying the next token set. This prevents stale values when moving from a tokenized theme to a CSS-only theme.
 
 For now, `src/styles/theme.css` still contains the existing per-theme CSS blocks. Slate and Permian define representative runtime tokens; other themes can be migrated by adding tokens to their own definition folders. Do not duplicate new behavior in shell-local maps; add new metadata to `src/theme` first, then migrate CSS blocks to tokens in focused follow-up work.
+
+## Renderer Lifecycle
+
+`AppShell` owns background rendering through `ThemeSceneLayer`. Workspace pages should provide content and workspace state, not mount theme backgrounds or page overlays directly. This keeps scene layers, page overlays, FX classes, and fallback vignette behavior in one place and prevents duplicated Canvas/WebGL/SVG mounts on workspace routes.
+
+Scene runtime hooks live in `src/theme/scene`:
+
+- `useReducedMotionPreference()` centralizes `prefers-reduced-motion`.
+- `usePageVisibilityPaused()` centralizes tab-hidden pause state.
+- `useDeviceTier()` centralizes low/standard/high device checks, including WebGL probing when a renderer requires it.
+- `useThemeSceneRuntime()` passes `{ themeId, effectiveMode, fxMode, reducedMotion, paused, deviceTier }` to scene components.
+
+During migration, `getThemeScene()` adapts legacy `BackgroundComponent`, `fxTheme`, and overlay fields into a formal scene contract. Keep `BackgroundComponent` populated until all scenes have moved to explicit `scene.component` metadata.
+
+Renderer components should clean up all `requestAnimationFrame`, media-query, resize, visibility, and observer listeners. Animated scenes should pause when `runtime.paused` is true and freeze or simplify motion when `runtime.reducedMotion` is true. Canvas/WebGL scenes that draw their own vignette or grain should set `ownsVignette` or `ownsGrain` so the shell does not stack extra effects over the art.
 
 ## Verification
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_THEME, THEMES, getFxThemeIds, getTheme, getUiThemeCases, overlayPanelClass } from './registry';
+import { DEFAULT_THEME, THEMES, getFxThemeIds, getTheme, getThemeScene, getUiThemeCases, overlayPanelClass } from './registry';
 
 describe('theme registry', () => {
   it('keeps slate as the default theme id', () => {
@@ -74,6 +74,29 @@ describe('theme registry', () => {
 
   it('derives fx theme ids from registered themes', () => {
     expect(getFxThemeIds()).toEqual(['synthwave', 'tropical', 'stormwatch', 'mario', 'hyperborea', 'permian']);
+  });
+
+  it('adapts legacy background fields into formal scene metadata', () => {
+    expect(getThemeScene(getTheme('synthwave'))).toMatchObject({
+      renderer: 'svg',
+      supportsFx: true,
+      pauseWhenHidden: true,
+      respectsReducedMotion: true,
+      ownsVignette: true,
+    });
+    expect(getThemeScene(getTheme('slate'))).toMatchObject({
+      renderer: 'none',
+      supportsFx: false,
+      ownsVignette: false,
+    });
+  });
+
+  it('declares WebGL requirements for the Permian renderer path', () => {
+    expect(getThemeScene(getTheme('permian'))).toMatchObject({
+      renderer: 'r3f',
+      requiresWebGL: true,
+      supportsFx: true,
+    });
   });
 
   it('returns the existing overlay panel class names', () => {
