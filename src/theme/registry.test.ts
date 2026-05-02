@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_THEME, THEMES, getFxThemeIds, getTheme, getThemeScene, getUiThemeCases, overlayPanelClass } from './registry';
+import {
+  DEFAULT_THEME,
+  THEMES,
+  getFxThemeIds,
+  getTheme,
+  getThemeChrome,
+  getThemeIcon,
+  getThemePreview,
+  getThemeScene,
+  getUiThemeCases,
+  overlayPanelClass,
+} from './registry';
 
 describe('theme registry', () => {
   it('keeps slate as the default theme id', () => {
@@ -72,8 +83,50 @@ describe('theme registry', () => {
     });
   });
 
+  it('exposes selector preview metadata for every registered theme', () => {
+    for (const theme of THEMES) {
+      const preview = getThemePreview(theme);
+
+      expect(preview.shortLabel).toBeTruthy();
+      expect(preview.tagline).toBeTruthy();
+      expect(preview.swatch).toContain('gradient');
+      expect(preview.accent).toBeTruthy();
+      expect(preview.surface).toBeTruthy();
+    }
+  });
+
+  it('exposes authored selector icons with emoji fallback preserved', () => {
+    for (const theme of THEMES) {
+      const icon = getThemeIcon(theme);
+
+      expect(['svg', 'emoji']).toContain(icon.kind);
+      expect(icon.fallback).toBe(theme.icon);
+      expect(icon.label).toBe(theme.label);
+    }
+  });
+
+  it('exposes chrome traits derived from the theme contract', () => {
+    for (const theme of THEMES) {
+      const chrome = getThemeChrome(theme);
+
+      expect(chrome.panelStyle).toBe(theme.features.panelStyle);
+      expect(['comfortable', 'compact', 'dense']).toContain(chrome.density);
+      expect(['sharp', 'soft', 'round', 'custom']).toContain(chrome.radius);
+    }
+  });
+
   it('derives fx theme ids from registered themes', () => {
     expect(getFxThemeIds()).toEqual(['synthwave', 'tropical', 'stormwatch', 'mario', 'hyperborea', 'permian']);
+  });
+
+  it('exposes scene metadata derived from the theme contract', () => {
+    for (const theme of THEMES) {
+      const scene = getThemeScene(theme);
+
+      expect(scene.supportsFx).toBe(Boolean(theme.fxTheme));
+      expect(scene.respectsReducedMotion).toBe(theme.scene?.respectsReducedMotion ?? Boolean(theme.BackgroundComponent));
+      expect(['none', 'css', 'svg', 'canvas2d', 'r3f']).toContain(scene.renderer);
+    }
   });
 
   it('adapts legacy background fields into formal scene metadata', () => {

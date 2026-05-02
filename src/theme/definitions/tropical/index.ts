@@ -1,4 +1,5 @@
 import { TropicalBackground } from '../../backgrounds';
+import { TropicalThemeIcon } from '../../icons';
 import type { ThemeDefinition } from '../../types';
 
 export const tropical: ThemeDefinition = {
@@ -6,7 +7,31 @@ export const tropical: ThemeDefinition = {
   variant: 'dark',
   label: 'Tropical',
   icon: '🌴',
+  iconDefinition: { kind: 'svg', component: TropicalThemeIcon, fallback: '🌴', label: 'Tropical' },
   description: 'Tommy Bahama resort',
+  preview: {
+    swatch: 'linear-gradient(135deg, #0a1520 0%, #2dd4bf 52%, #ff7f6b 100%)',
+    accent: '#FF7F6B',
+    surface: '#1a2332',
+    shortLabel: 'Tropic',
+    tagline: 'Lagoon glass, coral highlights, resort pacing.',
+  },
+  chrome: {
+    density: 'comfortable',
+    panelStyle: 'glass',
+    radius: 'round',
+    brandTreatment: 'cinematic',
+    navTreatment: 'pills',
+  },
+  scene: {
+    renderer: 'canvas2d',
+    component: TropicalBackground,
+    supportsFx: true,
+    requiresWebGL: false,
+    hasFallback: true,
+    pauseWhenHidden: true,
+    respectsReducedMotion: true,
+  },
   appName: 'SLOPCAST',
   appSubtitle: 'Island Economics',
   chartPalette: {

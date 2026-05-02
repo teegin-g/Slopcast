@@ -1,4 +1,5 @@
 import { MarioOverworldBackground } from '../../backgrounds';
+import { ClassicThemeIcon } from '../../icons';
 import type { ThemeDefinition } from '../../types';
 
 export const mario: ThemeDefinition = {
@@ -6,7 +7,31 @@ export const mario: ThemeDefinition = {
   variant: 'dark',
   label: 'Classic',
   icon: '🧱',
+  iconDefinition: { kind: 'svg', component: ClassicThemeIcon, fallback: '🧱', label: 'Classic' },
   description: 'Slopcast Classic — beveled retro dashboard',
+  preview: {
+    swatch: 'linear-gradient(135deg, #101010 0%, #1270ff 48%, #ffd500 100%)',
+    accent: '#FFD500',
+    surface: '#101010',
+    shortLabel: 'Classic',
+    tagline: 'Beveled cartridge chrome with arcade confidence.',
+  },
+  chrome: {
+    density: 'comfortable',
+    panelStyle: 'glass',
+    radius: 'round',
+    brandTreatment: 'classic-cartridge',
+    navTreatment: 'classic-buttons',
+  },
+  scene: {
+    renderer: 'canvas2d',
+    component: MarioOverworldBackground,
+    supportsFx: true,
+    requiresWebGL: false,
+    hasFallback: true,
+    pauseWhenHidden: true,
+    respectsReducedMotion: true,
+  },
   appName: 'SLOPCAST',
   appSubtitle: '1-ECONOMICS',
   chartPalette: {

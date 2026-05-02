@@ -6,7 +6,15 @@ import { slate } from './definitions/slate';
 import { stormwatch } from './definitions/stormwatch';
 import { synthwave } from './definitions/synthwave';
 import { tropical } from './definitions/tropical';
-import type { ThemeDefinition, ThemeFeatures, ThemeId, UiThemeCase } from './types';
+import type {
+  ThemeChrome,
+  ThemeDefinition,
+  ThemeFeatures,
+  ThemeIconDefinition,
+  ThemeId,
+  ThemePreview,
+  UiThemeCase,
+} from './types';
 import type { ThemeRendererKind, ThemeSceneConfig } from './scene/types';
 
 export const THEMES: ThemeDefinition[] = [slate, synthwave, tropical, league, stormwatch, mario, hyperborea, permian];
@@ -37,6 +45,35 @@ export function getFxThemeIds(themes: readonly ThemeDefinition[] = THEMES): Them
   return themes.filter(theme => theme.fxTheme).map(theme => theme.id);
 }
 
+export function getThemePreview(theme: ThemeDefinition): ThemePreview {
+  return theme.preview ?? {
+    swatch: `linear-gradient(135deg, ${theme.chartPalette.surface} 0%, ${theme.mapPalette.unassignedFill} 58%, ${theme.chartPalette.oil} 100%)`,
+    accent: theme.chartPalette.oil,
+    surface: theme.chartPalette.surface,
+    shortLabel: theme.label,
+    tagline: theme.description,
+  };
+}
+
+export function getThemeIcon(theme: ThemeDefinition): ThemeIconDefinition {
+  return theme.iconDefinition ?? {
+    kind: 'emoji',
+    value: theme.icon,
+    fallback: theme.icon,
+    label: theme.label,
+  };
+}
+
+export function getThemeChrome(theme: ThemeDefinition): ThemeChrome {
+  return theme.chrome ?? {
+    density: theme.features.denseSpacing ? 'dense' : 'comfortable',
+    panelStyle: theme.features.panelStyle,
+    radius: theme.features.isClassicTheme ? 'round' : 'soft',
+    brandTreatment: theme.features.isClassicTheme ? 'classic-cartridge' : theme.features.brandFont ? 'cinematic' : 'wordmark',
+    navTreatment: theme.features.isClassicTheme ? 'classic-buttons' : 'pills',
+  };
+}
+
 function inferLegacyRenderer(theme: ThemeDefinition): ThemeRendererKind {
   if (!theme.BackgroundComponent) return theme.atmosphereClass || theme.pageOverlayClasses?.length ? 'css' : 'none';
   if (theme.id === 'permian') return 'r3f';
@@ -50,6 +87,7 @@ export function getThemeScene(theme: ThemeDefinition): ThemeSceneConfig {
     component: theme.BackgroundComponent,
     supportsFx: !!theme.fxTheme,
     requiresWebGL: theme.id === 'permian',
+    hasFallback: true,
     pauseWhenHidden: !!theme.BackgroundComponent,
     respectsReducedMotion: !!theme.BackgroundComponent,
     quality: theme.BackgroundComponent ? 'cinematic' : 'static',

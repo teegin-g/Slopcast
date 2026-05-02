@@ -20,10 +20,11 @@ export interface ThemeSceneRuntimeProps {
 
 export interface ThemeSceneConfig {
   renderer: ThemeRendererKind;
-  component?: React.ComponentType<Partial<ThemeSceneRuntimeProps>>;
-  fallbackComponent?: React.ComponentType<Partial<ThemeSceneRuntimeProps>>;
+  component?: React.ComponentType<any>;
+  fallbackComponent?: React.ComponentType<any>;
   supportsFx: boolean;
   requiresWebGL: boolean;
+  hasFallback?: boolean;
   pauseWhenHidden: boolean;
   respectsReducedMotion: boolean;
   quality?: ThemeSceneQuality;
