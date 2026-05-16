@@ -29,8 +29,8 @@ const ProductionModule: React.FC<EconomicsModuleProps> = ({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-4">
-        <ModulePanel accent="cyan" title="Production Inputs" bodyClassName="p-4 space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.16fr)_minmax(0,0.84fr)] gap-4">
+        <ModulePanel accent="cyan" title="Production Inputs" bodyClassName="p-5 space-y-4">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-sm font-black text-theme-text">Decline segments and type curve</p>
@@ -39,6 +39,12 @@ const ProductionModule: React.FC<EconomicsModuleProps> = ({
             <span className="rounded-inner border border-theme-cyan/25 bg-theme-cyan/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.08em] text-theme-cyan">
               Scenario scalar {activeScenario.productionScalar.toFixed(2)}x
             </span>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <MetricTile label="Initial Rate" value={`${summary.initialRate.toLocaleString()} bopd`} detail="type curve" accent="cyan" compact />
+            <MetricTile label="b-factor" value={summary.bFactor.toFixed(2)} detail="decline shape" accent="cyan" compact />
+            <MetricTile label="Initial Decline" value={`${summary.initialDecline.toFixed(1)}%`} detail="annualized" accent="cyan" compact />
           </div>
 
           <DeclineSegmentTable

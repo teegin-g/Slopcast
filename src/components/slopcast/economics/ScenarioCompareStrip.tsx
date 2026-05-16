@@ -38,17 +38,17 @@ const ScenarioCompareStrip: React.FC<ScenarioCompareStripProps> = ({
   };
 
   return (
-    <div className="rounded-panel border border-theme-border bg-theme-surface1/55 shadow-card px-3 py-2 theme-transition relative">
+    <div className="rounded-panel border border-theme-border bg-theme-bg/55 shadow-card px-3 py-2 theme-transition relative">
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
-        <div className="flex items-center gap-2 lg:w-32">
-          <span className="text-[9px] font-black uppercase tracking-[0.12em] text-theme-muted">Scenario</span>
+        <div className="flex items-center gap-2 lg:w-40">
+          <span className="text-[9px] font-black uppercase tracking-[0.12em] text-theme-cyan">Scenario sequence</span>
           <span className="hidden lg:inline text-[10px] text-theme-muted">
             {activeIsBase ? 'Base active' : `vs ${baseScenario.name}`}
           </span>
         </div>
 
-        <div className="flex-1 flex items-stretch gap-1 overflow-x-auto pb-1 lg:pb-0">
-          {scenarios.map((scenario) => {
+        <div className="flex-1 flex items-stretch gap-1.5 overflow-x-auto pb-1 lg:pb-0">
+          {scenarios.map((scenario, index) => {
             const active = scenario.id === activeScenario.id;
             const base = scenario.id === baseScenario.id;
             const label = scenario.isBaseCase ? 'Base' : scenario.name.replace(/scenario/i, '').trim();
@@ -59,17 +59,22 @@ const ScenarioCompareStrip: React.FC<ScenarioCompareStripProps> = ({
                 onClick={() => onSetActiveScenarioId(scenario.id)}
                 aria-pressed={active}
                 aria-current={active ? 'true' : undefined}
-                className={`min-w-[132px] rounded-inner border px-3 py-2 text-left transition-colors ${
+                title={scenarioSummary(scenario)}
+                className={`relative min-w-[148px] rounded-inner border px-3 py-2 text-left transition-colors ${
                   active
-                    ? 'border-theme-cyan bg-theme-cyan/12 text-theme-text'
-                    : 'border-theme-border/70 bg-theme-bg/80 text-theme-muted hover:text-theme-text'
+                    ? 'border-theme-cyan bg-theme-cyan/12 text-theme-text shadow-[inset_0_1px_0_rgb(var(--cyan)/0.18)]'
+                    : base
+                      ? 'border-theme-warning/45 bg-theme-warning/10 text-theme-text hover:border-theme-warning'
+                      : 'border-theme-border/70 bg-theme-surface1/65 text-theme-muted hover:text-theme-text hover:border-theme-cyan/45'
                 }`}
               >
                 <span className="flex items-center justify-between gap-2">
                   <span className={`text-[10px] font-black uppercase tracking-[0.08em] ${active ? 'text-theme-cyan' : ''}`}>
                     {label}
                   </span>
-                  {base && <span className="text-[8px] font-black uppercase tracking-[0.08em] text-theme-muted">Base</span>}
+                  <span className={`text-[8px] font-black uppercase tracking-[0.08em] ${base ? 'text-theme-warning' : 'text-theme-muted'}`}>
+                    {base ? 'Base' : `S${index + 1}`}
+                  </span>
                 </span>
                 <span className="mt-1 block text-[10px] font-semibold normal-case tracking-normal text-theme-muted">
                   {scenarioSummary(scenario)}

@@ -154,7 +154,7 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className={`lg:sticky lg:top-0 lg:z-20 space-y-3 border p-3 theme-transition ${
+      <div className={`lg:sticky lg:top-0 lg:z-20 space-y-2 border p-2.5 theme-transition ${
         isClassic ? 'sc-panel' : 'rounded-panel bg-theme-surface1/75 border-theme-border shadow-card backdrop-blur-sm'
       }`}>
         <ScenarioCompareStrip
@@ -175,24 +175,19 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
           activeGroupId={activeGroupId}
           onActivateGroup={onActivateGroup}
           onCloneActiveGroup={() => onCloneGroup(activeGroupId)}
+          moduleSwitcher={<EconomicsModuleTabs module={economicsModule} onChange={onSetEconomicsModule} variant="compact" />}
+          groupPulse={<GroupPulse metrics={selectedGroupMetrics} />}
         />
 
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.75fr)] lg:items-end">
-          <div className="min-w-0 space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[9px] font-black uppercase tracking-[0.12em] text-theme-muted">Driver</p>
-              <button
-                type="button"
-                onClick={operationsProps.onSaveSnapshot}
-                disabled={!operationsProps.canUseSecondaryActions}
-                className="rounded-inner border border-theme-cyan/35 bg-theme-cyan/10 px-3 py-2 text-[9px] font-black uppercase tracking-[0.12em] text-theme-cyan transition-colors hover:bg-theme-cyan/15 disabled:cursor-not-allowed disabled:border-theme-border disabled:bg-theme-bg disabled:text-theme-muted"
-              >
-                Save Snapshot
-              </button>
-            </div>
-            <EconomicsModuleTabs module={economicsModule} onChange={onSetEconomicsModule} variant="compact" />
-          </div>
-          <GroupPulse metrics={selectedGroupMetrics} />
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={operationsProps.onSaveSnapshot}
+            disabled={!operationsProps.canUseSecondaryActions}
+            className="rounded-inner border border-theme-cyan/35 bg-theme-cyan/10 px-3 py-2 text-[9px] font-black uppercase tracking-[0.12em] text-theme-cyan transition-colors hover:bg-theme-cyan/15 disabled:cursor-not-allowed disabled:border-theme-border disabled:bg-theme-bg disabled:text-theme-muted"
+          >
+            Save Snapshot
+          </button>
         </div>
       </div>
 
