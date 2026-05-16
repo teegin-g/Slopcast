@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:backend": "./scripts/dev-backend.sh",
     "dev:full": "./scripts/start-backend.sh",
     "build": "vite build",
     "preview": "vite preview",
@@ -16,6 +17,7 @@
     "ui:audit": "node scripts/ui-audit.mjs",
     "ui:components": "npm run storybook:build && npm run storybook:test",
     "ui:shots": "node scripts/ui-snapshots.mjs",
+    "ui:handoff": "playwright test e2e/ui-handoff-package.spec.ts --project=desktop-chromium --workers=1",
     "ui:verify": "playwright test e2e",
     "ui:verify:legacy": "node scripts/ui-verify-flow.mjs",
     "bundle:check": "node scripts/bundle-budget.mjs",

@@ -5,29 +5,10 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-BACKEND_DIR="$PROJECT_ROOT/backend"
-VENV_DIR="$PROJECT_ROOT/.venv"
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/_backend_env.sh"
+PROJECT_ROOT="$BACKEND_ENV_ROOT"
 PORT="${PYTHON_API_PORT:-8001}"
-
-load_env_file() {
-  local env_file="$1"
-  if [ -f "$env_file" ]; then
-    set -a
-    # shellcheck disable=SC1090
-    source "$env_file"
-    set +a
-  fi
-}
-
-# Activate virtualenv if present
-if [ -d "$VENV_DIR" ]; then
-  source "$VENV_DIR/bin/activate"
-fi
-
-# Load local runtime env so the backend can reach live services.
-load_env_file "$PROJECT_ROOT/.env.local"
-load_env_file "$PROJECT_ROOT/.env.backend.local"
 
 echo "[start-backend] Starting FastAPI on port $PORT ..."
 cd "$PROJECT_ROOT"

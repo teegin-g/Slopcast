@@ -27,12 +27,16 @@ def create_app() -> FastAPI:
 
     app = FastAPI(title="Slopcast Backend", version="0.1.0", lifespan=lifespan)
 
-    # Local-dev CORS: Vite defaults to :3000, and users may use localhost or 127.0.0.1.
+    # Local-dev CORS: Vite (default :3000; alternate :3001 if busy), and direct tooling on :5173.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[
             "http://127.0.0.1:3000",
             "http://localhost:3000",
+            "http://127.0.0.1:3001",
+            "http://localhost:3001",
+            "http://127.0.0.1:5173",
+            "http://localhost:5173",
         ],
         allow_credentials=True,
         allow_methods=["*"],
