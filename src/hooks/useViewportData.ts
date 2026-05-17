@@ -31,7 +31,18 @@ interface UseViewportDataResult {
   totalCount: number;
   truncated: boolean;
   fallbackActive: boolean;
+  diagnostics: ViewportDataDiagnostics;
   refetch: () => void;
+}
+
+export interface ViewportDataDiagnostics {
+  phase1FetchCount: number;
+  phase2FetchCount: number;
+  phase1CacheHits: number;
+  phase2CacheHits: number;
+  lastPhase1Ms: number;
+  lastPhase2Ms: number;
+  lastPhase2ZoomBucket: number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -79,6 +90,20 @@ function mergeTrajectories(existing: Well[], withTrajectories: Well[]): Well[] {
 const MAX_CACHE_SIZE = 8;
 const MIN_LATERAL_ZOOM = 10;
 
+const EMPTY_DIAGNOSTICS: ViewportDataDiagnostics = {
+  phase1FetchCount: 0,
+  phase2FetchCount: 0,
+  phase1CacheHits: 0,
+  phase2CacheHits: 0,
+  lastPhase1Ms: 0,
+  lastPhase2Ms: 0,
+  lastPhase2ZoomBucket: null,
+};
+
+function nowMs(): number {
+  return typeof performance !== 'undefined' ? performance.now() : Date.now();
+}
+
 export function useViewportData(options: UseViewportDataOptions): UseViewportDataResult {
   const {
     map,
@@ -99,6 +124,7 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
   const [totalCount, setTotalCount] = useState(0);
   const [truncated, setTruncated] = useState(false);
   const [fallbackActive, setFallbackActive] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<ViewportDataDiagnostics>(EMPTY_DIAGNOSTICS);
 
   const cacheRef = useRef(new Map<string, { wells: Well[]; totalCount: number; truncated: boolean; source: 'databricks' | 'mock' }>());
   const abortRef = useRef<AbortController | null>(null);
@@ -113,6 +139,7 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
 
     const bounds = mapboxBoundsToViewport(mapBounds);
     const zoom = map.getZoom();
+    const zoomBucket = Math.round(zoom);
 
     // Always cancel any in-flight phase 2 when starting a new fetch cycle
     trajectoryAbortRef.current?.abort();
@@ -130,6 +157,7 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
     // Check phase 1 cache
     const cached1 = cacheRef.current.get(phase1Key);
     if (cached1) {
+      setDiagnostics(prev => ({ ...prev, phase1CacheHits: prev.phase1CacheHits + 1 }));
       setWells(cached1.wells);
       setTotalCount(cached1.totalCount);
       setTruncated(cached1.truncated);
@@ -145,6 +173,7 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
       setError(null);
 
       try {
+        const startedAt = nowMs();
         const result = await spatialSource.fetchViewportWells(bounds, filters, {
           detailLevel: phase1Detail,
           signal: controller.signal,
@@ -169,6 +198,11 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
         setTruncated(result.truncated);
         setSource(result.source);
         setFallbackActive(false);
+        setDiagnostics(prev => ({
+          ...prev,
+          phase1FetchCount: prev.phase1FetchCount + 1,
+          lastPhase1Ms: nowMs() - startedAt,
+        }));
       } catch (err) {
         if ((err as Error).name === 'AbortError') return;
 
@@ -200,13 +234,18 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
     const needsTrajectories = includeLaterals && zoom >= MIN_LATERAL_ZOOM;
     if (!needsTrajectories) return;
 
-    const phase2Key = `${sourceId}:${boundsToKey(bounds)}:full`;
+    const phase2Key = `${sourceId}:${boundsToKey(bounds)}:full:z${zoomBucket}`;
     const cached2 = cacheRef.current.get(phase2Key);
 
     if (cached2) {
       // Merge cached trajectories — synchronous, batched with phase 1 setState
       setWells(prev => mergeTrajectories(prev, cached2.wells));
       setTrajectoryError(null);
+      setDiagnostics(prev => ({
+        ...prev,
+        phase2CacheHits: prev.phase2CacheHits + 1,
+        lastPhase2ZoomBucket: zoomBucket,
+      }));
     } else {
       const trajController = new AbortController();
       trajectoryAbortRef.current = trajController;
@@ -214,11 +253,12 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
       setTrajectoryError(null);
 
       try {
+        const startedAt = nowMs();
         const fullResult = await spatialSource.fetchViewportWells(bounds, filters, {
           detailLevel: 'full',
           includeLaterals: true,
           signal: trajController.signal,
-          zoom: Math.round(zoom),
+          zoom: zoomBucket,
         });
 
         if (trajController.signal.aborted) return;
@@ -237,6 +277,12 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
 
         // Merge trajectories into existing wells (don't replace — full has lower limit)
         setWells(prev => mergeTrajectories(prev, fullResult.wells));
+        setDiagnostics(prev => ({
+          ...prev,
+          phase2FetchCount: prev.phase2FetchCount + 1,
+          lastPhase2Ms: nowMs() - startedAt,
+          lastPhase2ZoomBucket: zoomBucket,
+        }));
       } catch (err) {
         if ((err as Error).name === 'AbortError') return;
         // Phase-1 points are already rendered. Surface the error so the UI can
@@ -307,6 +353,7 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
     totalCount,
     truncated,
     fallbackActive,
+    diagnostics,
     refetch,
   };
 }

@@ -29,21 +29,16 @@ export interface WellLayerEventHandlers {
   onMapEmptyClick: () => void;
 }
 
+export const buildWellColorExpression = (fallbackColor: string) => {
+  return ['coalesce', ['get', 'groupColor'], fallbackColor];
+};
+
 export const buildWellColorMatchExpression = (
-  wells: Well[],
-  getWellColor: (wellId: string) => string,
+  _wells: Well[],
+  _getWellColor: (wellId: string) => string,
   fallbackColor: string,
 ) => {
-  const pairs: string[] = [];
-  const colorMap = new Map<string, string>();
-  wells.forEach(well => {
-    const color = getWellColor(well.id);
-    if (!colorMap.has(well.id)) colorMap.set(well.id, color);
-  });
-  colorMap.forEach((color, id) => {
-    pairs.push(id, color);
-  });
-  return ['match', ['get', 'id'], ...pairs, fallbackColor];
+  return buildWellColorExpression(fallbackColor);
 };
 
 const clusterRadiusExpression = [
@@ -61,6 +56,7 @@ export function addWellSourceAndLayers(map: any, geoJson: unknown, colorMatchExp
       cluster: true,
       clusterRadius: 100,
       clusterMaxZoom: 12,
+      promoteId: 'id',
     });
   }
 
@@ -126,12 +122,15 @@ export function addWellSourceAndLayers(map: any, geoJson: unknown, colorMatchExp
 export function addWellStatusLayers(map: any, colorMatchExpr: unknown, theme: WellLayerTheme) {
   const defaultRadius = ['interpolate', ['linear'], ['zoom'], 6, 3, 10, 6, 14, 10];
   const permitRadius = ['interpolate', ['linear'], ['zoom'], 6, 2, 10, 4, 14, 7];
-  const baseOpacity = ['case', ['get', 'dimmed'], 0.3, ['get', 'visible'], 1, 0.3];
+  const selectedState = ['boolean', ['feature-state', 'selected'], false];
+  const dimmedState = ['boolean', ['feature-state', 'dimmed'], false];
+  const visibleState = ['boolean', ['feature-state', 'visible'], true];
+  const baseOpacity = ['case', dimmedState, 0.3, visibleState, 1, 0.3];
   const glowRadius = ['interpolate', ['linear'], ['zoom'], 6, 6, 10, 14, 14, 22];
   const glowOpacity = [
     'case',
-    ['get', 'dimmed'], 0.05,
-    ['!', ['get', 'visible']], 0.05,
+    dimmedState, 0.05,
+    ['!', visibleState], 0.05,
     ['==', ['get', 'status'], 'PRODUCING'], 0.35,
     ['==', ['get', 'status'], 'DUC'], 0.18,
     0.10,
@@ -163,7 +162,7 @@ export function addWellStatusLayers(map: any, colorMatchExpr: unknown, theme: We
       paint: {
         'circle-radius': defaultRadius,
         'circle-color': colorMatchExpr,
-        'circle-stroke-width': ['case', ['get', 'selected'], 2, 0],
+        'circle-stroke-width': ['case', selectedState, 2, 0],
         'circle-stroke-color': theme.selectedStroke,
         'circle-opacity': baseOpacity,
       },
@@ -179,8 +178,8 @@ export function addWellStatusLayers(map: any, colorMatchExpr: unknown, theme: We
       paint: {
         'circle-radius': defaultRadius,
         'circle-color': colorMatchExpr,
-        'circle-opacity': ['case', ['get', 'dimmed'], 0.1, ['get', 'visible'], 0.15, 0.1],
-        'circle-stroke-width': ['case', ['get', 'selected'], 2.5, 2],
+        'circle-opacity': ['case', dimmedState, 0.1, visibleState, 0.15, 0.1],
+        'circle-stroke-width': ['case', selectedState, 2.5, 2],
         'circle-stroke-color': colorMatchExpr,
         'circle-stroke-opacity': baseOpacity,
       },
@@ -196,11 +195,34 @@ export function addWellStatusLayers(map: any, colorMatchExpr: unknown, theme: We
       paint: {
         'circle-radius': permitRadius,
         'circle-color': colorMatchExpr,
-        'circle-stroke-width': ['case', ['get', 'selected'], 2, 0],
+        'circle-stroke-width': ['case', selectedState, 2, 0],
         'circle-stroke-color': theme.selectedStroke,
-        'circle-opacity': ['case', ['get', 'dimmed'], 0.15, ['get', 'visible'], 0.5, 0.15],
+        'circle-opacity': ['case', dimmedState, 0.15, visibleState, 0.5, 0.15],
       },
     });
+  }
+}
+
+export function updateWellFeatureState(
+  map: any,
+  wells: Well[],
+  selectedWellIds: Set<string>,
+  dimmedWellIds: Set<string>,
+  visibleWellIds: Set<string>,
+) {
+  for (const well of wells) {
+    try {
+      map.setFeatureState(
+        { source: WELL_SOURCE_ID, id: well.id },
+        {
+          selected: selectedWellIds.has(well.id),
+          dimmed: dimmedWellIds.has(well.id),
+          visible: visibleWellIds.has(well.id),
+        },
+      );
+    } catch {
+      // Style/source can disappear during Mapbox style swaps.
+    }
   }
 }
 

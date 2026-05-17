@@ -17,6 +17,8 @@ import math
 import os
 import re
 import time
+from collections import OrderedDict
+from collections.abc import Callable
 from decimal import Decimal
 from typing import Any, Literal
 
@@ -45,6 +47,8 @@ _DEFAULT_DATABRICKS_SCHEMA = "egis"
 _DEFAULT_DATABRICKS_WELLS_TABLE = "gis__well_master"
 _DEFAULT_DATABRICKS_TRAJECTORY_TABLE = "epw.egis.gis__well_master"
 _IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_DEFAULT_CACHE_MAX_ENTRIES = 128
+_DEFAULT_CACHE_TTL_SECONDS = 30.0
 
 
 def _validate_identifier(value: str, *, label: str) -> str:
@@ -92,6 +96,44 @@ def _build_in_clause(column: str, values: list[str] | None, prefix: str, params:
         params[key] = value
         placeholders.append(f"%({key})s")
     return f"  AND {column} IN ({', '.join(placeholders)})\n"
+
+
+def _build_status_clause(statuses: list[WellStatus] | None, params: dict[str, Any]) -> str:
+    if not statuses:
+        return ""
+
+    exact_values: list[str] = []
+    wants_duc = False
+    wants_permit = False
+    for status in statuses:
+        if status == "PRODUCING":
+            exact_values.append("PRODUCING")
+        elif status == "DUC":
+            exact_values.append("DUC")
+            wants_duc = True
+        elif status == "PERMIT":
+            exact_values.extend(["PERMIT", "PRE-DRILL", "NOT DRILLED"])
+            wants_permit = True
+
+    conditions: list[str] = []
+    if exact_values:
+        placeholders: list[str] = []
+        for index, value in enumerate(dict.fromkeys(exact_values)):
+            key = f"status_{index}"
+            params[key] = value
+            placeholders.append(f"%({key})s")
+        conditions.append(f"UPPER(well_status) IN ({', '.join(placeholders)})")
+
+    if wants_duc:
+        params["status_duc_like"] = "%WAITING ON COMPLETION%"
+        conditions.append("UPPER(well_status) LIKE %(status_duc_like)s")
+    if wants_permit:
+        params["status_permit_like"] = "PERMIT %"
+        conditions.append("UPPER(well_status) LIKE %(status_permit_like)s")
+
+    if not conditions:
+        return ""
+    return f"  AND ({' OR '.join(conditions)})\n"
 
 
 def _resolve_server_hostname() -> str | None:
@@ -247,7 +289,76 @@ _conn_mgr = ConnectionManager()
 # Backward-compat alias: tests that patched _db_connection directly can
 # now patch _conn_mgr.connection instead.  The old _get_db_connection()
 # delegates to the manager.
-_cache: dict[str, SpatialWellsResponse] = {}
+
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return max(1, int(os.getenv(name, str(default))))
+    except ValueError:
+        return default
+
+
+def _env_float(name: str, default: float) -> float:
+    try:
+        return max(0.0, float(os.getenv(name, str(default))))
+    except ValueError:
+        return default
+
+
+class _SpatialResponseCache:
+    """Small in-process LRU cache with TTL for viewport responses."""
+
+    def __init__(
+        self,
+        *,
+        max_entries: int = _DEFAULT_CACHE_MAX_ENTRIES,
+        ttl_seconds: float = _DEFAULT_CACHE_TTL_SECONDS,
+        timer: Callable[[], float] = time.monotonic,
+    ) -> None:
+        self.max_entries = max(1, max_entries)
+        self.ttl_seconds = max(0.0, ttl_seconds)
+        self._timer = timer
+        self._items: OrderedDict[str, tuple[float, Any]] = OrderedDict()
+
+    def clear(self) -> None:
+        self._items.clear()
+
+    def get(self, key: str) -> Any | None:
+        entry = self._items.get(key)
+        if entry is None:
+            return None
+
+        created_at, value = entry
+        if self.ttl_seconds > 0 and self._timer() - created_at > self.ttl_seconds:
+            self._items.pop(key, None)
+            return None
+
+        self._items.move_to_end(key)
+        return value
+
+    def set(self, key: str, value: Any) -> None:
+        self._items[key] = (self._timer(), value)
+        self._items.move_to_end(key)
+        while len(self._items) > self.max_entries:
+            self._items.popitem(last=False)
+
+    def __contains__(self, key: object) -> bool:
+        return isinstance(key, str) and self.get(key) is not None
+
+    def __getitem__(self, key: str) -> Any:
+        value = self.get(key)
+        if value is None:
+            raise KeyError(key)
+        return value
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        self.set(key, value)
+
+
+_cache = _SpatialResponseCache(
+    max_entries=_env_int("SPATIAL_CACHE_MAX_ENTRIES", _DEFAULT_CACHE_MAX_ENTRIES),
+    ttl_seconds=_env_float("SPATIAL_CACHE_TTL_SECONDS", _DEFAULT_CACHE_TTL_SECONDS),
+)
 
 # ---------------------------------------------------------------------------
 # Deterministic mock data — 40 Permian Basin wells
@@ -409,8 +520,9 @@ def get_wells_in_bounds(
         detail_level = "full"
 
     key = _cache_key(bounds, filters, limit, detail_level, zoom=zoom)
-    if key in _cache:
-        return _cache[key]
+    cached = _cache.get(key)
+    if cached is not None:
+        return cached
 
     has_live_credentials = bool(
         _resolve_server_hostname()
@@ -427,7 +539,7 @@ def get_wells_in_bounds(
     # A transient Databricks outage would otherwise poison this viewport key and
     # keep serving stale demo data after the warehouse recovers.
     if result.source == "databricks" or not has_live_credentials:
-        _cache[key] = result
+        _cache.set(key, result)
     return result
 
 
@@ -537,6 +649,7 @@ def _query_databricks(
 
     extra_where = ""
     if filters:
+        extra_where += _build_status_clause(filters.statuses, params)
         extra_where += _build_in_clause("operator", filters.operators, "operator", params)
         extra_where += _build_in_clause("formation", filters.formations, "formation", params)
 
@@ -686,6 +799,89 @@ def _subsample(items: list[Any], max_count: int) -> list[Any]:
     return [items[i] for i in indices]
 
 
+def _trajectory_tolerance_for_zoom(zoom: int | None) -> float:
+    """Return simplification tolerance in degrees for WGS84 trajectory paths."""
+    if zoom is None:
+        return 0.00005
+    if zoom <= 13:
+        return 0.00025
+    if zoom <= 15:
+        return 0.0001
+    return 0.000025
+
+
+def _point_line_distance(point: tuple[float, float], start: tuple[float, float], end: tuple[float, float]) -> float:
+    px, py = point
+    sx, sy = start
+    ex, ey = end
+    dx = ex - sx
+    dy = ey - sy
+    if dx == 0 and dy == 0:
+        return math.hypot(px - sx, py - sy)
+    t = max(0.0, min(1.0, ((px - sx) * dx + (py - sy) * dy) / (dx * dx + dy * dy)))
+    proj_x = sx + t * dx
+    proj_y = sy + t * dy
+    return math.hypot(px - proj_x, py - proj_y)
+
+
+def _rdp_simplify(items: list[Any], tolerance: float, coord: Callable[[Any], tuple[float, float]]) -> list[Any]:
+    if len(items) <= 2:
+        return items
+
+    start = coord(items[0])
+    end = coord(items[-1])
+    max_distance = -1.0
+    index = 0
+    for i in range(1, len(items) - 1):
+        distance = _point_line_distance(coord(items[i]), start, end)
+        if distance > max_distance:
+            max_distance = distance
+            index = i
+
+    if max_distance > tolerance:
+        left = _rdp_simplify(items[: index + 1], tolerance, coord)
+        right = _rdp_simplify(items[index:], tolerance, coord)
+        return left[:-1] + right
+    return [items[0], items[-1]]
+
+
+def _simplify_polyline(
+    items: list[Any],
+    *,
+    max_count: int,
+    tolerance: float,
+    coord: Callable[[Any], tuple[float, float]],
+) -> list[Any]:
+    if len(items) <= 2:
+        return items
+
+    simplified = _rdp_simplify(items, tolerance, coord)
+    effective_tolerance = tolerance
+    while len(simplified) > max_count:
+        effective_tolerance *= 1.5
+        simplified = _rdp_simplify(items, effective_tolerance, coord)
+        if effective_tolerance > 1.0:
+            break
+
+    if len(simplified) > max_count:
+        simplified = _subsample(simplified, max_count)
+    return simplified
+
+
+def _simplify_trajectory_points(
+    points: list[WellTrajectoryPoint],
+    *,
+    max_count: int,
+    tolerance: float,
+) -> list[WellTrajectoryPoint]:
+    return _simplify_polyline(
+        points,
+        max_count=max_count,
+        tolerance=tolerance,
+        coord=lambda point: (point.lat, point.lng),
+    )
+
+
 def _fetch_trajectories(
     conn: Any,
     api_ids: list[str],
@@ -770,10 +966,8 @@ def _fetch_trajectories(
             continue
 
         if stations:
-            # Subsample if too many stations (adaptive to zoom)
-            stations = _subsample(stations, _max_stations_for_zoom(zoom))
-
-            # Convert each station to a WellTrajectoryPoint
+            # Convert each station to a WellTrajectoryPoint, then simplify by
+            # shape tolerance so curves survive better than uniform sampling.
             path: list[WellTrajectoryPoint] = []
             for st in stations:
                 ns = st.get("north_south_distance")
@@ -787,6 +981,13 @@ def _fetch_trajectories(
                 pt_lng = sh_lng + (ew_ft / (364000.0 * math.cos(math.radians(sh_lat))))
                 path.append(WellTrajectoryPoint(lat=pt_lat, lng=pt_lng, depthFt=tvd))
 
+            station_by_point_id = {id(point): st for point, st in zip(path, stations)}
+            path = _simplify_trajectory_points(
+                path,
+                max_count=_max_stations_for_zoom(zoom),
+                tolerance=_trajectory_tolerance_for_zoom(zoom),
+            )
+
             surface_pt = path[0]
             toe_pt = path[-1]
 
@@ -795,9 +996,13 @@ def _fetch_trajectories(
             if kop_raw is not None:
                 kop_depth = float(kop_raw)
                 heel_idx = min(
-                    range(len(stations)),
+                    range(len(path)),
                     key=lambda i: abs(
-                        (float(stations[i]["measured_depth"]) if stations[i].get("measured_depth") is not None else 0.0)
+                        (
+                            float(station_by_point_id[id(path[i])]["measured_depth"])
+                            if station_by_point_id[id(path[i])].get("measured_depth") is not None
+                            else 0.0
+                        )
                         - kop_depth
                     ),
                 )
@@ -1012,8 +1217,12 @@ def _trajectory_from_shape_wkt(
         return None
 
     transformed = [_transform_coords(lat, lng) for lat, lng in coords]
-    if len(transformed) > _max_stations_for_zoom(zoom):
-        transformed = _subsample(transformed, _max_stations_for_zoom(zoom))
+    transformed = _simplify_polyline(
+        transformed,
+        max_count=_max_stations_for_zoom(zoom),
+        tolerance=_trajectory_tolerance_for_zoom(zoom),
+        coord=lambda point: point,
+    )
 
     tvd_estimate = 8000.0
     if well.lateralLength > 0:

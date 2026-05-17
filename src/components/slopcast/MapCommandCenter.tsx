@@ -3,7 +3,7 @@ import { useMapboxMap } from '../../hooks/useMapboxMap';
 import { useTheme } from '../../theme/ThemeProvider';
 import { overlayPanelClass, type MapboxOverrides } from '../../theme/themes';
 import type { Well, WellGroup, SpatialLayerFilter, SpatialDataSourceId } from '../../types';
-import type { WellboreData, WellboreRenderDiagnostics } from './MapWellboreLayer';
+import { simplifyWellborePath, type WellboreData, type WellboreRenderDiagnostics } from './MapWellboreLayer';
 import { useViewportData } from '../../hooks/useViewportData';
 import { OverlayGroupsPanel } from './map/OverlayGroupsPanel';
 import { OverlayFiltersBar } from './map/OverlayFiltersBar';
@@ -20,7 +20,8 @@ import {
   WELL_STATUS_LAYER_IDS,
   addWellSourceAndLayers,
   bindWellLayerEvents,
-  buildWellColorMatchExpression,
+  buildWellColorExpression,
+  updateWellFeatureState,
   updateWellLayerPaint,
 } from './map/wellLayerController';
 
@@ -37,9 +38,25 @@ const EMPTY_WELLBORE_DIAGNOSTICS: WellboreRenderDiagnostics = {
   drawCalls: 0,
   lastUploadVertexCount: 0,
   lastDrawVertexCount: 0,
+  frameCount: 0,
+  lastFrameMs: 0,
   dirty: true,
   hasProgram: false,
 };
+
+const SELECTED_WELLBORE_MIN_ZOOM = 10;
+const BACKGROUND_WELLBORE_MIN_ZOOM = 12;
+const MAX_BACKGROUND_WELLBORES = 250;
+const MAX_TOTAL_WELLBORES = 320;
+
+function wellboreSimplificationTolerance(zoom: number, selected: boolean): number {
+  const base =
+    zoom >= 15 ? 0 :
+    zoom >= 14 ? 0.000035 :
+    zoom >= 12 ? 0.00012 :
+    0.00025;
+  return selected ? base * 0.5 : base;
+}
 
 interface MapCommandCenterProps {
   isClassic: boolean;
@@ -194,6 +211,10 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   const [wellboreDiagnostics, setWellboreDiagnostics] = useState<WellboreRenderDiagnostics>(
     () => wellboreLayer?.getDiagnostics() ?? EMPTY_WELLBORE_DIAGNOSTICS,
   );
+  const [sourceSetDataCount, setSourceSetDataCount] = useState(0);
+  const lastSourceSetDataMs = useRef(0);
+  const previousFeatureStateRef = useRef(new Map<string, { selected: boolean; dimmed: boolean; visible: boolean }>());
+  const hoverRafRef = useRef<number | null>(null);
 
   // Hover tooltip state
   const [hoveredWellId, setHoveredWellId] = useState<string | null>(null);
@@ -258,6 +279,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     totalCount: spatialTotalCount,
     truncated: spatialTruncated,
     fallbackActive: spatialFallback,
+    diagnostics: viewportDiagnostics,
     refetch: spatialRefetch,
   } = useViewportData({
     map,
@@ -322,19 +344,39 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   }, [selectionTrail, mp.lassoStroke]);
 
   const activeWellboreData = useMemo<WellboreData[]>(() => {
+    if (viewState.zoom < SELECTED_WELLBORE_MIN_ZOOM) return [];
+
+    const backgroundBudget = dataLayers.laterals && viewState.zoom >= BACKGROUND_WELLBORE_MIN_ZOOM
+      ? MAX_BACKGROUND_WELLBORES
+      : 0;
+    let backgroundCount = 0;
+
     return effectiveWells
-      .filter(w => {
+      .map(w => {
         if (!w.trajectory || w.trajectory.path.length < 2) return false;
-        if (dataLayers.laterals) return true;
-        return groupLateralWellIds.has(w.id);
+        const selected = selectedWellIds.has(w.id);
+        const groupLateral = groupLateralWellIds.has(w.id);
+        const priority = selected || groupLateral ? 0 : 1;
+        if (!dataLayers.laterals && !groupLateral) return false;
+        if (priority === 1) {
+          if (backgroundCount >= backgroundBudget) return false;
+          backgroundCount += 1;
+        }
+        return { well: w, priority, selected };
       })
-      .map(w => ({
-        id: w.id,
-        path: w.trajectory!.path,
-        color: getWellColor(w.id),
-        selected: selectedWellIds.has(w.id),
+      .filter((entry): entry is { well: Well; priority: number; selected: boolean } => Boolean(entry))
+      .sort((a, b) => a.priority - b.priority)
+      .slice(0, MAX_TOTAL_WELLBORES)
+      .map(({ well, selected }) => ({
+        id: well.id,
+        path: simplifyWellborePath(
+          well.trajectory!.path,
+          wellboreSimplificationTolerance(viewState.zoom, selected),
+        ),
+        color: getWellColor(well.id),
+        selected,
       }));
-  }, [effectiveWells, dataLayers.laterals, getWellColor, selectedWellIds, groupLateralWellIds]);
+  }, [effectiveWells, dataLayers.laterals, getWellColor, selectedWellIds, groupLateralWellIds, viewState.zoom]);
 
   // Feed wellbore data: toggle ON shows all, toggle OFF shows group members of any selected well
   useEffect(() => {
@@ -372,17 +414,14 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
         name: w.name,
         status: w.status,
         groupColor: getWellColor(w.id),
-        selected: selectedWellIds.has(w.id),
-        dimmed: dimmedWellIds.has(w.id),
-        visible: visibleWellIds.has(w.id),
       },
     })),
-  }), [effectiveWells, getWellColor, selectedWellIds, dimmedWellIds, visibleWellIds]);
+  }), [effectiveWells, getWellColor]);
 
-  // Build color match expression for Mapbox
+  // Read per-feature groupColor from GeoJSON instead of building giant per-id match expressions.
   const colorMatchExpr = useMemo(() => {
-    return buildWellColorMatchExpression(wells, getWellColor, mp.unassignedFill) as any;
-  }, [wells, getWellColor, mp.unassignedFill]);
+    return buildWellColorExpression(mp.unassignedFill) as any;
+  }, [mp.unassignedFill]);
 
   // Derive theme colors for cluster/label layers
   const clusterColor = mp.glowColor;
@@ -411,14 +450,41 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
 
     const source = map.getSource(WELL_SOURCE_ID);
     if (source) {
+      const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
       source.setData(wellsGeoJson);
+      lastSourceSetDataMs.current = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startedAt;
+      setSourceSetDataCount(count => count + 1);
+      previousFeatureStateRef.current.clear();
       updateWellLayerPaint(map, colorMatchExpr, wellLayerTheme);
       return;
     }
 
     addWellSourceAndLayers(map, wellsGeoJson, colorMatchExpr, wellLayerTheme);
+    previousFeatureStateRef.current.clear();
+    setSourceSetDataCount(count => count + 1);
     setMapLayerEpoch(epoch => epoch + 1);
   }, [map, isLoaded, wellsGeoJson, colorMatchExpr, wellLayerTheme]);
+
+  useEffect(() => {
+    if (!map || !isLoaded || !map.getSource(WELL_SOURCE_ID)) return;
+
+    const changedWells = effectiveWells.filter(well => {
+      const next = {
+        selected: selectedWellIds.has(well.id),
+        dimmed: dimmedWellIds.has(well.id),
+        visible: visibleWellIds.has(well.id),
+      };
+      const previous = previousFeatureStateRef.current.get(well.id);
+      previousFeatureStateRef.current.set(well.id, next);
+      return !previous ||
+        previous.selected !== next.selected ||
+        previous.dimmed !== next.dimmed ||
+        previous.visible !== next.visible;
+    });
+
+    if (changedWells.length === 0) return;
+    updateWellFeatureState(map, changedWells, selectedWellIds, dimmedWellIds, visibleWellIds);
+  }, [map, isLoaded, effectiveWells, selectedWellIds, dimmedWellIds, visibleWellIds]);
 
   useEffect(() => {
     if (!map || !isLoaded || !map.getLayer(WELL_CLUSTER_LAYER_ID)) return;
@@ -431,10 +497,18 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
         setTooltipPos(null);
       },
       onWellHover: (id, point) => {
-        setHoveredWellId(id);
-        setTooltipPos(point);
+        if (hoverRafRef.current !== null) cancelAnimationFrame(hoverRafRef.current);
+        hoverRafRef.current = requestAnimationFrame(() => {
+          hoverRafRef.current = null;
+          setHoveredWellId(id);
+          setTooltipPos(point);
+        });
       },
       onWellLeave: () => {
+        if (hoverRafRef.current !== null) {
+          cancelAnimationFrame(hoverRafRef.current);
+          hoverRafRef.current = null;
+        }
         setHoveredWellId(null);
         setTooltipPos(null);
       },
@@ -444,6 +518,12 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
       },
     });
   }, [map, isLoaded, onToggleWell, mapLayerEpoch]);
+
+  useEffect(() => {
+    return () => {
+      if (hoverRafRef.current !== null) cancelAnimationFrame(hoverRafRef.current);
+    };
+  }, []);
 
   // Apply theme map overrides when theme changes or map loads
   useEffect(() => {
@@ -524,6 +604,15 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
         <span data-testid="map-wellbore-vertex-count">{wellboreDiagnostics.vertexCount}</span>
         <span data-testid="map-wellbore-draw-calls">{wellboreDiagnostics.drawCalls}</span>
         <span data-testid="map-wellbore-last-draw-vertex-count">{wellboreDiagnostics.lastDrawVertexCount}</span>
+        <span data-testid="map-wellbore-frame-count">{wellboreDiagnostics.frameCount}</span>
+        <span data-testid="map-wellbore-last-frame-ms">{wellboreDiagnostics.lastFrameMs.toFixed(2)}</span>
+        <span data-testid="map-source-setdata-count">{sourceSetDataCount}</span>
+        <span data-testid="map-source-last-setdata-ms">{lastSourceSetDataMs.current.toFixed(2)}</span>
+        <span data-testid="map-viewport-phase1-fetches">{viewportDiagnostics.phase1FetchCount}</span>
+        <span data-testid="map-viewport-phase2-fetches">{viewportDiagnostics.phase2FetchCount}</span>
+        <span data-testid="map-viewport-phase1-cache-hits">{viewportDiagnostics.phase1CacheHits}</span>
+        <span data-testid="map-viewport-phase2-cache-hits">{viewportDiagnostics.phase2CacheHits}</span>
+        <span data-testid="map-viewport-phase2-zoom-bucket">{viewportDiagnostics.lastPhase2ZoomBucket ?? ''}</span>
       </div>
 
       {/* Mapbox canvas */}

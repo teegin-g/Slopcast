@@ -16,7 +16,7 @@ vi.mock('../../utils/webglUtils', () => ({
   linkProgram: (_gl: any, _vs: any, _fs: any) => ({ __program: true }),
 }));
 
-import { MapWellboreLayer, type WellboreData } from './MapWellboreLayer';
+import { MapWellboreLayer, simplifyWellborePath, type WellboreData } from './MapWellboreLayer';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -372,6 +372,23 @@ describe('MapWellboreLayer', () => {
       lastDrawVertexCount: 6,
       dirty: false,
     });
+  });
+
+  it('simplifies wellbore paths while preserving endpoints and bends', () => {
+    const path = [
+      { lng: 0, lat: 0, depthFt: 0 },
+      { lng: 1, lat: 0.01, depthFt: 100 },
+      { lng: 2, lat: 0, depthFt: 200 },
+      { lng: 3, lat: 1, depthFt: 300 },
+      { lng: 4, lat: 0, depthFt: 400 },
+    ];
+
+    const simplified = simplifyWellborePath(path, 0.1);
+
+    expect(simplified[0]).toBe(path[0]);
+    expect(simplified.at(-1)).toBe(path.at(-1));
+    expect(simplified).toContain(path[3]);
+    expect(simplified.length).toBeLessThan(path.length);
   });
 
   it('empty wellbores array results in zero vertex count', () => {

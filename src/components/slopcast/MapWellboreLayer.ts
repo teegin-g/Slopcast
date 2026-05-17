@@ -103,10 +103,12 @@ function mapDepthToVisualZ(depthFt: number, lat: number): number {
 }
 
 // ── Wellbore data fed to the layer ──────────────────────────────────────
+export type WellborePoint = { lng: number; lat: number; depthFt: number };
+
 export interface WellboreData {
   id: string;
   /** Full survey path — array of points from surface to TD */
-  path: Array<{ lng: number; lat: number; depthFt: number }>;
+  path: WellborePoint[];
   color: string; // hex group color
   selected: boolean;
 }
@@ -120,8 +122,61 @@ export interface WellboreRenderDiagnostics {
   drawCalls: number;
   lastUploadVertexCount: number;
   lastDrawVertexCount: number;
+  frameCount: number;
+  lastFrameMs: number;
   dirty: boolean;
   hasProgram: boolean;
+}
+
+function perpendicularDistance(point: WellborePoint, start: WellborePoint, end: WellborePoint): number {
+  const dx = end.lng - start.lng;
+  const dy = end.lat - start.lat;
+  const dz = (end.depthFt - start.depthFt) / 100000;
+  if (dx === 0 && dy === 0 && dz === 0) {
+    const px = point.lng - start.lng;
+    const py = point.lat - start.lat;
+    const pz = (point.depthFt - start.depthFt) / 100000;
+    return Math.sqrt(px * px + py * py + pz * pz);
+  }
+
+  const t = Math.max(0, Math.min(1, (
+    (point.lng - start.lng) * dx +
+    (point.lat - start.lat) * dy +
+    ((point.depthFt - start.depthFt) / 100000) * dz
+  ) / (dx * dx + dy * dy + dz * dz)));
+
+  const projX = start.lng + t * dx;
+  const projY = start.lat + t * dy;
+  const projZ = start.depthFt / 100000 + t * dz;
+  const px = point.lng - projX;
+  const py = point.lat - projY;
+  const pz = point.depthFt / 100000 - projZ;
+  return Math.sqrt(px * px + py * py + pz * pz);
+}
+
+export function simplifyWellborePath(path: WellborePoint[], tolerance: number): WellborePoint[] {
+  if (path.length <= 2 || tolerance <= 0) return path;
+
+  let maxDistance = 0;
+  let splitIndex = -1;
+  const first = path[0];
+  const last = path[path.length - 1];
+
+  for (let i = 1; i < path.length - 1; i++) {
+    const distance = perpendicularDistance(path[i], first, last);
+    if (distance > maxDistance) {
+      maxDistance = distance;
+      splitIndex = i;
+    }
+  }
+
+  if (maxDistance <= tolerance || splitIndex === -1) {
+    return [first, last];
+  }
+
+  const left = simplifyWellborePath(path.slice(0, splitIndex + 1), tolerance);
+  const right = simplifyWellborePath(path.slice(splitIndex), tolerance);
+  return [...left.slice(0, -1), ...right];
 }
 
 // ── Custom layer class ──────────────────────────────────────────────────
@@ -156,6 +211,8 @@ export class MapWellboreLayer {
   private drawCalls = 0;
   private lastUploadVertexCount = 0;
   private lastDrawVertexCount = 0;
+  private frameCount = 0;
+  private lastFrameMs = 0;
 
   // Incremental upload state
   private static readonly BATCH_SIZE = 100;
@@ -200,6 +257,8 @@ export class MapWellboreLayer {
       drawCalls: this.drawCalls,
       lastUploadVertexCount: this.lastUploadVertexCount,
       lastDrawVertexCount: this.lastDrawVertexCount,
+      frameCount: this.frameCount,
+      lastFrameMs: this.lastFrameMs,
       dirty: this.dirty,
       hasProgram: this.program !== null,
     };
@@ -221,6 +280,8 @@ export class MapWellboreLayer {
     this.drawCalls = 0;
     this.lastUploadVertexCount = 0;
     this.lastDrawVertexCount = 0;
+    this.frameCount = 0;
+    this.lastFrameMs = 0;
     this.dirty = true;
     this.emitDiagnostics();
   }
@@ -288,6 +349,7 @@ export class MapWellboreLayer {
 
   render(gl: WebGLRenderingContext, matrix: number[]): void {
     if (!this.program) return;
+    const frameStartedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
     // ── Save Mapbox WebGL state ──────────────────────────────────────
     const prevProgram = gl.getParameter(gl.CURRENT_PROGRAM);
@@ -352,6 +414,8 @@ export class MapWellboreLayer {
       gl.drawArrays(gl.LINES, 0, this.vertexCount);
       this.drawCalls += 1;
       this.lastDrawVertexCount = this.vertexCount;
+      this.frameCount += 1;
+      this.lastFrameMs = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - frameStartedAt;
       this.emitDiagnostics();
     } finally {
       // ── Restore Mapbox WebGL state ─────────────────────────────────

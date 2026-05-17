@@ -63,12 +63,13 @@ const MOCK_TRAJECTORY = {
 /** Minimal mapbox map stub with controllable bounds and zoom. */
 function createMockMap(zoom = 14) {
   const listeners = new Map<string, Set<Function>>();
+  let currentZoom = zoom;
   return {
     getBounds: vi.fn(() => ({
       getSouthWest: () => ({ lat: 31.0, lng: -103.0 }),
       getNorthEast: () => ({ lat: 33.0, lng: -101.0 }),
     })),
-    getZoom: vi.fn(() => zoom),
+    getZoom: vi.fn(() => currentZoom),
     on: vi.fn((event: string, fn: Function) => {
       if (!listeners.has(event)) listeners.set(event, new Set());
       listeners.get(event)!.add(fn);
@@ -79,6 +80,9 @@ function createMockMap(zoom = 14) {
     /** Fire an event to simulate map movement. */
     _fire(event: string) {
       for (const fn of listeners.get(event) ?? []) fn();
+    },
+    _setZoom(nextZoom: number) {
+      currentZoom = nextZoom;
     },
     _listeners: listeners,
   };
@@ -461,6 +465,34 @@ describe('useViewportData', () => {
     );
     expect(fullCalls.length).toBeGreaterThanOrEqual(1);
     expect(fullCalls[0][2]?.zoom).toBe(15);
+  });
+
+  it('keeps separate phase 2 cache entries for different zoom buckets', async () => {
+    const summaryWells = [makeWell({ id: 'w-1' })];
+    const fullWells = [makeWell({ id: 'w-1', trajectory: MOCK_TRAJECTORY as any })];
+
+    mockFetchViewportWells.mockImplementation(async (_bounds: any, _filters: any, opts: any) => {
+      if (opts?.detailLevel === 'full') return makeResponse(fullWells);
+      return makeResponse(summaryWells);
+    });
+
+    const map = createMockMap(10.4);
+    renderHook(() =>
+      useViewportData({ map, isLoaded: true, includeLaterals: true, debounceMs: 1 }),
+    );
+
+    await flushAll();
+
+    map._setZoom(10.6);
+    act(() => {
+      map._fire('moveend');
+    });
+    await flushAll();
+
+    const fullZooms = mockFetchViewportWells.mock.calls
+      .filter((c: any[]) => c[2]?.detailLevel === 'full')
+      .map((c: any[]) => c[2]?.zoom);
+    expect(fullZooms).toEqual(expect.arrayContaining([10, 11]));
   });
 
   // ---- Cleanup on unmount ----

@@ -7,6 +7,9 @@ from backend.spatial_service import (
     get_wells_in_bounds,
     _cache,
     ConnectionManager,
+    _SpatialResponseCache,
+    _query_databricks,
+    _simplify_trajectory_points,
 )
 import backend.spatial_service as _svc
 
@@ -567,3 +570,114 @@ class TestShapeTrajectoryBuilder:
         assert trajectory.toe.lng == -102.00
         assert trajectory.heel.depthFt == trajectory.toe.depthFt
         assert trajectory.toe.depthFt > 0
+
+
+class TestResponseCacheBounds:
+    def test_cache_evicts_least_recently_used_entry(self):
+        now = 100.0
+        cache = _SpatialResponseCache(max_entries=2, ttl_seconds=60.0, timer=lambda: now)
+
+        cache.set("a", "alpha")
+        cache.set("b", "bravo")
+        assert cache.get("a") == "alpha"
+
+        cache.set("c", "charlie")
+
+        assert cache.get("b") is None
+        assert cache.get("a") == "alpha"
+        assert cache.get("c") == "charlie"
+
+    def test_cache_expires_entries_after_ttl(self):
+        now = 100.0
+
+        def timer():
+            return now
+
+        cache = _SpatialResponseCache(max_entries=2, ttl_seconds=5.0, timer=timer)
+        cache.set("a", "alpha")
+
+        now = 106.0
+
+        assert cache.get("a") is None
+        assert "a" not in cache
+
+
+class TestTrajectorySimplification:
+    def test_simplification_reduces_noise_but_keeps_significant_bend(self):
+        points = [
+            _svc.WellTrajectoryPoint(lat=0.0, lng=0.0, depthFt=0.0),
+            _svc.WellTrajectoryPoint(lat=1.0, lng=0.02, depthFt=1000.0),
+            _svc.WellTrajectoryPoint(lat=2.0, lng=-0.01, depthFt=2000.0),
+            _svc.WellTrajectoryPoint(lat=3.0, lng=3.0, depthFt=3000.0),
+            _svc.WellTrajectoryPoint(lat=4.0, lng=0.01, depthFt=4000.0),
+            _svc.WellTrajectoryPoint(lat=5.0, lng=-0.02, depthFt=5000.0),
+            _svc.WellTrajectoryPoint(lat=6.0, lng=0.0, depthFt=6000.0),
+        ]
+
+        simplified = _simplify_trajectory_points(points, max_count=5, tolerance=0.25)
+
+        assert len(simplified) < len(points)
+        assert simplified[0] is points[0]
+        assert simplified[-1] is points[-1]
+        assert points[3] in simplified
+
+
+class _CapturingCursor:
+    description = [
+        ("api_14",),
+        ("well_name",),
+        ("sh_latitude_nad27",),
+        ("sh_longitude_nad27",),
+        ("bh_latitude_nad27",),
+        ("bh_longitude_nad27",),
+        ("lateral_length",),
+        ("well_status",),
+        ("operator",),
+        ("formation",),
+    ]
+
+    def __init__(self):
+        self.sql = ""
+        self.params = {}
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return None
+
+    def execute(self, sql, params=None):
+        self.sql = sql
+        self.params = params or {}
+
+    def fetchall(self):
+        return []
+
+
+class _CapturingConnection:
+    def __init__(self):
+        self.cursor_instance = _CapturingCursor()
+
+    def cursor(self):
+        return self.cursor_instance
+
+
+class TestDatabricksSqlFilters:
+    def test_status_filter_is_pushed_into_sql_with_bound_params(self):
+        conn = _CapturingConnection()
+
+        _query_databricks(
+            conn,
+            _wide_bounds(),
+            SpatialLayerFilter(statuses=["PRODUCING", "DUC"]),
+            10,
+            detail_level="summary",
+        )
+
+        sql = conn.cursor_instance.sql
+        params = conn.cursor_instance.params
+        assert "well_status" in sql
+        assert "%(status_0)s" in sql
+        assert "%(status_1)s" in sql
+        assert params["status_0"] == "PRODUCING"
+        assert params["status_1"] == "DUC"
