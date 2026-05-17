@@ -1,0 +1,228 @@
+{
+  "main": {
+    "id": "6a83036646cc17d0",
+    "type": "split",
+    "children": [
+      {
+        "id": "50cd14017b71fdd7",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "0d0966aac792735e",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "14915f206a39d4e5",
+    "type": "split",
+    "children": [
+      {
+        "id": "974fb20653343d1b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "ff0a8690cdc4ca59",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "665e6977e35a2473",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "32b50d7afa2cc286",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "9c4cd78d84e11695",
+    "type": "split",
+    "children": [
+      {
+        "id": "dd7416c840d184fc",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "c2852c275cee0e07",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "013dd94a6acee577",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "c528437f5d3461be",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "85d1053282092e64",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "75c721d1a0de0787",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "0d0966aac792735e",
+  "lastOpenFiles": [
+    "dist/assets/PermianBackground-CqwTu27F.js",
+    "dist/assets/MapCommandCenter-B4zMn9dI.js",
+    "dist/assets/OilRigBackground2D-DF8iWuZ6.js",
+    "dist/assets/HyperboreaBackground-CEpSAUrU.js",
+    "dist/assets/MarioOverworldBackground-DQjGM9LK.js",
+    "dist/assets/StormDuskBackground-DCOq71sQ.js",
+    "dist/assets/TropicalBackground-lHDJPKn8.js",
+    "dist/assets/SynthwaveBackground-CmR0XmAR.js",
+    "dist/assets/SlopcastPage-Dj8qNMZW.js",
+    "dist/assets/MoonlightBackground-Cyd0KmZJ.js",
+    "dist/assets/IntegrationsPage-CLdWAtpO.js",
+    "docs/theme-selector-and-theme-refactor-plan.md",
+    "docs/5.1.2026 - UI Improvements.md",
+    "docs/changelog/2026-05-16T182100Z-economics-ui-backend-handoff.md",
+    "test-results/slopcast-persistence-Slopc-3da30-en-returning-from-economics-desktop-chromium/error-context.md",
+    "test-results/slopcast-navigation-Slopca-43419-navigable-across-all-themes-desktop-chromium/error-context.md",
+    "test-results/slopcast-navigation-Slopca-43419-navigable-across-all-themes-desktop-chromium/test-failed-1.png",
+    "test-results/slopcast-map-Data-Source-B-15f9e-when-spatial-source-is-mock-desktop-chromium/error-context.md",
+    "test-results/slopcast-map-Data-Source-B-15f9e-when-spatial-source-is-mock-desktop-chromium/test-failed-1.png",
+    "theme-selector-right-header.png",
+    "test-results/ui-handoff-package-Slopcas-b16f3-ads-handoff-desktop-mobile--desktop-chromium/test-failed-1.png",
+    "test-results/ui-handoff-package-Slopcas-177d3-ff-package-desktop-captures-desktop-chromium/error-context.md",
+    "test-results/ui-handoff-package-Slopcas-177d3-ff-package-desktop-captures-desktop-chromium/test-failed-2.png",
+    "test-results/ui-handoff-package-Slopcas-177d3-ff-package-desktop-captures-desktop-chromium/test-failed-1.png",
+    "test-results/ui-handoff-package-Slopcas-177d3-ff-package-desktop-captures-mobile-chromium/error-context.md",
+    "test-results/ui-handoff-package-Slopcas-177d3-ff-package-desktop-captures-mobile-chromium/test-failed-1.png",
+    "docs/economics-ui-declutter-plan.md",
+    "test-results/slopcast-map-Map-Command-C-d3b90-ld-and-render-at-close-zoom-desktop-chromium/error-context.md",
+    "test-results/slopcast-map-Map-Command-C-d3b90-ld-and-render-at-close-zoom-desktop-chromium/test-failed-1.png",
+    "test-results/slopcast-navigation-Slopca-43419-navigable-across-all-themes-mobile-chromium/error-context.md",
+    "test-results/slopcast-navigation-Slopca-43419-navigable-across-all-themes-mobile-chromium/test-failed-1.png",
+    "test-results/slopcast-economics-Slopcas-e25f7-emain-healthy-across-themes-mobile-chromium/error-context.md",
+    "test-results/slopcast-economics-Slopcas-e25f7-emain-healthy-across-themes-mobile-chromium/test-failed-1.png",
+    "test-results/slopcast-economics-Slopcas-e25f7-emain-healthy-across-themes-desktop-chromium/error-context.md",
+    "test-results/slopcast-map-Map-Command-C-caae3-ers-well-dots-across-themes-desktop-chromium/error-context.md",
+    "playground/UI-UX Quality of Life PRD.md",
+    "docs/FEATURE_INSPIRATION_2026-03.md",
+    "ui-review/color-atmosphere/RECOMMENDATIONS.md",
+    "ui-review/color-atmosphere/EXECUTIVE_SUMMARY.md",
+    "ui-review/color-atmosphere/CRITIQUE.md",
+    "ui-review/color-atmosphere/AUDIT.md",
+    "ui-review/visual-hierarchy/RECOMMENDATIONS.md",
+    "ui-review/visual-hierarchy/EXECUTIVE_SUMMARY.md",
+    "ui-review/visual-hierarchy/CRITIQUE.md",
+    "ui-review/visual-hierarchy/AUDIT.md",
+    "ui-review/shape-borders/RECOMMENDATIONS.md"
+  ]
+}
