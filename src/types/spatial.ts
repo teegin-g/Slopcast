@@ -21,6 +21,8 @@ export interface SpatialLayerFilter {
   layers?: string[];
 }
 
+export type SpatialRenderProfile = 'density' | 'sampled' | 'summary' | 'laterals_preview' | 'full';
+
 export interface SpatialWellsResponse {
   wells: Well[];
   total_count: number;

@@ -3,6 +3,15 @@ import { describe, expect, it } from 'vitest';
 import { getSpatialSource } from './spatialService';
 
 describe('spatialService mock source', () => {
+  it('marks laterals as enabled by default in layer metadata', async () => {
+    const source = getSpatialSource('mock');
+
+    const layers = await source.getAvailableLayers();
+
+    const laterals = layers.find((layer) => layer.id === 'laterals');
+    expect(laterals?.enabled_by_default).toBe(true);
+  });
+
   it('attaches trajectories for full-detail mock requests', async () => {
     const source = getSpatialSource('mock');
 

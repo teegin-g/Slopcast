@@ -130,17 +130,17 @@ test.describe('Map Command Center', () => {
 });
 
 test.describe('Data Source Badge', () => {
-  test('shows Mock badge when spatial source is mock', async ({ isMobileViewport, slopcast }) => {
+  test('shows the active data source badge', async ({ isMobileViewport, slopcast }) => {
     test.skip(isMobileViewport, 'Data source badge is only rendered in the desktop MapCommandCenter overlay.');
-    // Default bootstrap sets no spatial source, so getStoredSpatialSourceId() returns 'mock'
+    // A healthy backend can auto-promote the default mock source to Live.
     await slopcast.openDesignView();
     await slopcast.openWellsWorkspace();
     await slopcast.navigateToMapTab();
     await slopcast.expectMapLoaded();
 
     const mapContainer = slopcast.page.getByTestId('map-command-center');
-    const mockBadge = mapContainer.getByText('Demo', { exact: true });
-    await expect(mockBadge).toBeVisible({ timeout: 10_000 });
+    const sourceBadge = mapContainer.getByText(/Demo|Live/, { exact: false });
+    await expect(sourceBadge.first()).toBeVisible({ timeout: 10_000 });
   });
 
   test('shows Mock badge with live source when backend is unavailable', async ({ isMobileViewport, page, slopcast }) => {

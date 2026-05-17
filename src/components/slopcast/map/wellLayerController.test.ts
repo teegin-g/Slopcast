@@ -36,6 +36,38 @@ describe('wellLayerController', () => {
     }));
   });
 
+  it('uses a tighter clustering handoff so individual wells appear earlier', () => {
+    const addSource = vi.fn();
+    const addLayer = vi.fn();
+    const map = {
+      getSource: vi.fn(() => null),
+      addSource,
+      getLayer: vi.fn(() => false),
+      addLayer,
+    };
+
+    addWellSourceAndLayers(map, { type: 'FeatureCollection', features: [] }, ['literal', '#fff'], {
+      clusterColor: '#111',
+      clusterTextColor: '#fff',
+      wellLabelColor: '#fff',
+      wellLabelHalo: '#000',
+      unassignedFill: '#999',
+      selectedStroke: '#0ff',
+    });
+
+    expect(addSource).toHaveBeenCalledWith('wells-source', expect.objectContaining({
+      clusterRadius: 72,
+      clusterMaxZoom: 10,
+    }));
+    expect(addLayer).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'wells-clusters',
+      paint: expect.objectContaining({
+        'circle-opacity': 0.45,
+        'circle-stroke-opacity': 0.25,
+      }),
+    }));
+  });
+
   it('updates selected, dimmed, and visible flags through feature state', () => {
     const setFeatureState = vi.fn();
     const map = { setFeatureState };

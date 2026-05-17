@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { Well, ViewportBounds, SpatialLayerFilter, SpatialDataSourceId } from '../types';
+import type { Well, ViewportBounds, SpatialLayerFilter, SpatialDataSourceId, SpatialRenderProfile } from '../types';
 import { getSpatialSource, getStoredSpatialSourceId, type DetailLevel } from '../services/spatialService';
 
 // ---------------------------------------------------------------------------
@@ -60,13 +60,43 @@ function mapboxBoundsToViewport(mapBounds: any): ViewportBounds {
   };
 }
 
-function boundsToKey(bounds: ViewportBounds): string {
+function tileGridDegrees(zoomBucket: number): number {
+  if (zoomBucket >= 14) return 0.025;
+  if (zoomBucket >= 12) return 0.05;
+  if (zoomBucket >= 10) return 0.1;
+  if (zoomBucket >= 8) return 0.25;
+  return 0.5;
+}
+
+export function expandBoundsToTileBounds(bounds: ViewportBounds, zoom: number): ViewportBounds {
+  const grid = tileGridDegrees(Math.round(zoom));
+  return {
+    sw_lat: Math.floor(bounds.sw_lat / grid) * grid,
+    sw_lng: Math.floor(bounds.sw_lng / grid) * grid,
+    ne_lat: Math.ceil(bounds.ne_lat / grid) * grid,
+    ne_lng: Math.ceil(bounds.ne_lng / grid) * grid,
+  };
+}
+
+export function viewportBoundsToTileCacheKey(bounds: ViewportBounds, zoom: number): string {
+  const zoomBucket = Math.round(zoom);
+  const expanded = expandBoundsToTileBounds(bounds, zoomBucket);
   return [
-    bounds.sw_lat.toFixed(3),
-    bounds.sw_lng.toFixed(3),
-    bounds.ne_lat.toFixed(3),
-    bounds.ne_lng.toFixed(3),
+    `z${zoomBucket}`,
+    expanded.sw_lat.toFixed(4),
+    expanded.sw_lng.toFixed(4),
+    expanded.ne_lat.toFixed(4),
+    expanded.ne_lng.toFixed(4),
   ].join(',');
+}
+
+export function renderProfileForPhase(detailLevel: DetailLevel, zoom: number): SpatialRenderProfile {
+  if (detailLevel === 'full') {
+    return zoom >= 15 ? 'full' : 'laterals_preview';
+  }
+  if (detailLevel === 'points') return 'density';
+  if (zoom < 12) return 'sampled';
+  return 'summary';
 }
 
 /** Merge trajectory data from a full-detail response into existing wells. */
@@ -140,6 +170,8 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
     const bounds = mapboxBoundsToViewport(mapBounds);
     const zoom = map.getZoom();
     const zoomBucket = Math.round(zoom);
+    const requestBounds = expandBoundsToTileBounds(bounds, zoomBucket);
+    const tileCacheKey = viewportBoundsToTileCacheKey(bounds, zoomBucket);
 
     // Always cancel any in-flight phase 2 when starting a new fetch cycle
     trajectoryAbortRef.current?.abort();
@@ -152,7 +184,8 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
 
     // Cache key MUST include sourceId so toggling live <-> mock never serves
     // stale wells from the other source for the same viewport bounds.
-    const phase1Key = `${sourceId}:${boundsToKey(bounds)}:${phase1Detail}`;
+    const phase1RenderProfile = renderProfileForPhase(phase1Detail, zoom);
+    const phase1Key = `${sourceId}:${tileCacheKey}:${phase1Detail}:${phase1RenderProfile}`;
 
     // Check phase 1 cache
     const cached1 = cacheRef.current.get(phase1Key);
@@ -174,9 +207,11 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
 
       try {
         const startedAt = nowMs();
-        const result = await spatialSource.fetchViewportWells(bounds, filters, {
+        const result = await spatialSource.fetchViewportWells(requestBounds, filters, {
           detailLevel: phase1Detail,
+          renderProfile: phase1RenderProfile,
           signal: controller.signal,
+          zoom: zoomBucket,
         });
 
         if (controller.signal.aborted) return;
@@ -209,7 +244,11 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
         // If live source failed, try mock fallback
         if (sourceId === 'live') {
           try {
-            const mockResult = await getSpatialSource('mock').fetchViewportWells(bounds, filters);
+            const mockResult = await getSpatialSource('mock').fetchViewportWells(requestBounds, filters, {
+              detailLevel: phase1Detail,
+              renderProfile: phase1RenderProfile,
+              zoom: zoomBucket,
+            });
             setWells(mockResult.wells);
             setTotalCount(mockResult.total_count);
             setTruncated(mockResult.truncated);
@@ -234,7 +273,8 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
     const needsTrajectories = includeLaterals && zoom >= MIN_LATERAL_ZOOM;
     if (!needsTrajectories) return;
 
-    const phase2Key = `${sourceId}:${boundsToKey(bounds)}:full:z${zoomBucket}`;
+    const phase2RenderProfile = renderProfileForPhase('full', zoom);
+    const phase2Key = `${sourceId}:${tileCacheKey}:full:${phase2RenderProfile}:z${zoomBucket}`;
     const cached2 = cacheRef.current.get(phase2Key);
 
     if (cached2) {
@@ -254,8 +294,9 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
 
       try {
         const startedAt = nowMs();
-        const fullResult = await spatialSource.fetchViewportWells(bounds, filters, {
+        const fullResult = await spatialSource.fetchViewportWells(requestBounds, filters, {
           detailLevel: 'full',
+          renderProfile: phase2RenderProfile,
           includeLaterals: true,
           signal: trajController.signal,
           zoom: zoomBucket,

@@ -27,6 +27,7 @@ from dotenv import load_dotenv
 from .models import Well, WellStatus, WellTrajectory, WellTrajectoryPoint
 from .spatial_models import (
     DetailLevel,
+    RenderProfile,
     SpatialLayer,
     SpatialLayerFilter,
     SpatialLayersResponse,
@@ -471,7 +472,9 @@ def _cache_key(
     limit: int,
     detail_level: DetailLevel,
     zoom: int | None = None,
+    render_profile: RenderProfile | None = None,
 ) -> str:
+    normalized_bounds = _normalize_bounds_for_cache(bounds, zoom)
     f_str = ""
     if filters:
         f_str = (
@@ -484,9 +487,96 @@ def _cache_key(
     if detail_level == "full":
         zoom_part = f"|zoom={zoom if zoom is not None else 'none'}"
     return (
-        f"{bounds.sw_lat},{bounds.sw_lng},{bounds.ne_lat},{bounds.ne_lng}"
-        f"|{f_str}|{limit}|detail={detail_level}{zoom_part}"
+        f"{normalized_bounds.sw_lat:.4f},{normalized_bounds.sw_lng:.4f},"
+        f"{normalized_bounds.ne_lat:.4f},{normalized_bounds.ne_lng:.4f}"
+        f"|{f_str}|{limit}|detail={detail_level}|profile={render_profile or 'default'}{zoom_part}"
     )
+
+
+def _tile_grid_degrees(zoom: int | None) -> float:
+    if zoom is None:
+        return 0.01
+    if zoom >= 14:
+        return 0.025
+    if zoom >= 12:
+        return 0.05
+    if zoom >= 10:
+        return 0.1
+    if zoom >= 8:
+        return 0.25
+    return 0.5
+
+
+def _normalize_bounds_for_cache(bounds: ViewportBounds, zoom: int | None = None) -> ViewportBounds:
+    grid = _tile_grid_degrees(zoom)
+    return ViewportBounds(
+        sw_lat=math.floor(bounds.sw_lat / grid) * grid,
+        sw_lng=math.floor(bounds.sw_lng / grid) * grid,
+        ne_lat=math.ceil(bounds.ne_lat / grid) * grid,
+        ne_lng=math.ceil(bounds.ne_lng / grid) * grid,
+    )
+
+
+def _stable_hash(value: str) -> int:
+    hash_value = 2166136261
+    for char in value:
+        hash_value ^= ord(char)
+        hash_value = (hash_value * 16777619) & 0xFFFFFFFF
+    return hash_value
+
+
+def _sample_wells_deterministically(
+    wells: list[Well],
+    *,
+    budget: int,
+    seed: str,
+    priority_ids: set[str] | None = None,
+) -> list[Well]:
+    priority_ids = priority_ids or set()
+    if budget <= 0:
+        return []
+    priority = sorted(
+        (well for well in wells if well.id in priority_ids),
+        key=lambda well: well.id,
+    )
+    remaining_budget = max(0, budget - len(priority))
+    background = sorted(
+        (well for well in wells if well.id not in priority_ids),
+        key=lambda well: (_stable_hash(f"{seed}|{well.id}"), well.id),
+    )[:remaining_budget]
+    return (priority + background)[:budget]
+
+
+def _sampling_seed(
+    bounds: ViewportBounds,
+    filters: SpatialLayerFilter | None,
+    zoom: int | None,
+    render_profile: RenderProfile | None,
+) -> str:
+    filters_key = ""
+    if filters:
+        filters_key = (
+            f"{sorted(filters.statuses or [])}|"
+            f"{sorted(filters.operators or [])}|"
+            f"{sorted(filters.formations or [])}|"
+            f"{sorted(filters.layers or [])}"
+        )
+    normalized = _normalize_bounds_for_cache(bounds, zoom)
+    return (
+        f"z{zoom if zoom is not None else 'none'}|"
+        f"{normalized.sw_lat:.4f},{normalized.sw_lng:.4f},{normalized.ne_lat:.4f},{normalized.ne_lng:.4f}|"
+        f"{filters_key}|{render_profile or 'default'}"
+    )
+
+
+def _sample_budget_for_render_profile(render_profile: RenderProfile | None, limit: int) -> int:
+    if render_profile == "density":
+        return min(limit, 1200)
+    if render_profile == "sampled":
+        return min(limit, 24)
+    if render_profile == "laterals_preview":
+        return min(limit, 300)
+    return limit
 
 
 # ---------------------------------------------------------------------------
@@ -501,6 +591,7 @@ def get_wells_in_bounds(
     include_trajectory: bool = False,
     detail_level: DetailLevel = "summary",
     zoom: int | None = None,
+    render_profile: RenderProfile | None = None,
 ) -> SpatialWellsResponse:
     """
     Return wells within the given viewport bounds.
@@ -519,7 +610,8 @@ def get_wells_in_bounds(
     if include_trajectory and detail_level != "full":
         detail_level = "full"
 
-    key = _cache_key(bounds, filters, limit, detail_level, zoom=zoom)
+    normalized_bounds = _normalize_bounds_for_cache(bounds, zoom)
+    key = _cache_key(bounds, filters, limit, detail_level, zoom=zoom, render_profile=render_profile)
     cached = _cache.get(key)
     if cached is not None:
         return cached
@@ -531,9 +623,17 @@ def get_wells_in_bounds(
     )
     conn = _get_db_connection()
     if conn is not None:
-        result = _query_databricks(conn, bounds, filters, limit, detail_level, zoom=zoom)
+        result = _query_databricks(
+            conn,
+            normalized_bounds,
+            filters,
+            limit,
+            detail_level,
+            zoom=zoom,
+            render_profile=render_profile,
+        )
     else:
-        result = _query_mock(bounds, filters, limit, detail_level)
+        result = _query_mock(normalized_bounds, filters, limit, detail_level, render_profile=render_profile, zoom=zoom)
 
     # When live credentials are configured, avoid caching mock fallback results.
     # A transient Databricks outage would otherwise poison this viewport key and
@@ -569,7 +669,7 @@ def get_available_layers() -> SpatialLayersResponse:
                 id="laterals",
                 label="Lateral Traces",
                 description="Horizontal wellbore lateral paths",
-                enabled_by_default=False,
+                enabled_by_default=True,
             ),
         ]
     )
@@ -632,12 +732,13 @@ def _query_databricks(
     limit: int,
     detail_level: DetailLevel = "summary",
     zoom: int | None = None,
+    render_profile: RenderProfile | None = None,
 ) -> SpatialWellsResponse:
     try:
         full_table = _databricks_table_path()
     except ValueError as exc:
         logger.warning("Invalid Databricks table configuration, falling back to mock: %s", exc)
-        return _query_mock(bounds, filters, limit, detail_level)
+        return _query_mock(bounds, filters, limit, detail_level, render_profile=render_profile, zoom=zoom)
 
     params = {
         "sw_lat": bounds.sw_lat,
@@ -660,7 +761,8 @@ def _query_databricks(
             WHERE sh_latitude_nad27 BETWEEN %(sw_lat)s AND %(ne_lat)s
               AND sh_longitude_nad27 BETWEEN %(sw_lng)s AND %(ne_lng)s
               AND sh_latitude_nad27 IS NOT NULL
-{extra_where}            LIMIT %(limit)s
+{extra_where}            ORDER BY api_14
+            LIMIT %(limit)s
         """
     else:
         sql = f"""
@@ -669,7 +771,8 @@ def _query_databricks(
             WHERE sh_latitude_nad27 BETWEEN %(sw_lat)s AND %(ne_lat)s
               AND sh_longitude_nad27 BETWEEN %(sw_lng)s AND %(ne_lng)s
               AND sh_latitude_nad27 IS NOT NULL
-{extra_where}            LIMIT %(limit)s
+{extra_where}            ORDER BY api_14
+            LIMIT %(limit)s
         """
 
     try:
@@ -679,7 +782,7 @@ def _query_databricks(
             cols = [d[0] for d in cursor.description]
     except Exception as exc:  # noqa: BLE001
         logger.warning("Databricks query failed, falling back to mock: %s", exc)
-        return _query_mock(bounds, filters, limit, detail_level)
+        return _query_mock(bounds, filters, limit, detail_level, render_profile=render_profile, zoom=zoom)
 
     if detail_level == "points":
         wells: list[Well] = []
@@ -707,11 +810,18 @@ def _query_databricks(
                 continue
             wells.append(well)
 
+        candidate_count = len(wells)
+        if render_profile in {"density", "sampled"}:
+            wells = _sample_wells_deterministically(
+                wells,
+                budget=_sample_budget_for_render_profile(render_profile, limit),
+                seed=_sampling_seed(bounds, filters, zoom, render_profile),
+            )
         total = len(wells)
         return SpatialWellsResponse(
             wells=wells,
             total_count=total,
-            truncated=total >= limit,
+            truncated=candidate_count >= limit or total < candidate_count,
             source="databricks",
         )
 
@@ -758,6 +868,13 @@ def _query_databricks(
         well_data.append((well, lat, lng, bh_lat_wgs84, bh_lng_wgs84, row_dict))
 
     result_wells = [wd[0] for wd in well_data]
+    candidate_count = len(result_wells)
+    if render_profile in {"sampled", "laterals_preview"} and detail_level != "full":
+        result_wells = _sample_wells_deterministically(
+            result_wells,
+            budget=_sample_budget_for_render_profile(render_profile, limit),
+            seed=_sampling_seed(bounds, filters, zoom, render_profile),
+        )
 
     if detail_level == "full" and result_wells:
         api_ids = [w.id for w in result_wells]
@@ -769,7 +886,7 @@ def _query_databricks(
     return SpatialWellsResponse(
         wells=result_wells,
         total_count=total,
-        truncated=total >= limit,
+        truncated=candidate_count >= limit or total < candidate_count,
         source="databricks",
     )
 
@@ -1272,6 +1389,8 @@ def _query_mock(
     filters: SpatialLayerFilter | None,
     limit: int,
     detail_level: DetailLevel = "summary",
+    render_profile: RenderProfile | None = None,
+    zoom: int | None = None,
 ) -> SpatialWellsResponse:
     candidates = [
         w
@@ -1282,8 +1401,16 @@ def _query_mock(
     if filters:
         candidates = [w for w in candidates if _passes_filter(w, filters)]
 
-    truncated = len(candidates) > limit
-    wells = candidates[:limit]
+    budget = _sample_budget_for_render_profile(render_profile, limit)
+    truncated = len(candidates) > budget
+    if render_profile in {"density", "sampled", "laterals_preview"}:
+        wells = _sample_wells_deterministically(
+            candidates,
+            budget=budget,
+            seed=_sampling_seed(bounds, filters, zoom, render_profile),
+        )
+    else:
+        wells = candidates[:limit]
 
     if detail_level == "points":
         # Strip to minimal fields for cluster rendering

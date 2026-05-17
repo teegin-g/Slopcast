@@ -22,7 +22,12 @@ vi.mock('../constants', () => ({
   MOCK_WELLS: [],
 }));
 
-import { useViewportData } from './useViewportData';
+import {
+  expandBoundsToTileBounds,
+  renderProfileForPhase,
+  useViewportData,
+  viewportBoundsToTileCacheKey,
+} from './useViewportData';
 import type { Well, SpatialWellsResponse } from '../types';
 
 // ---------------------------------------------------------------------------
@@ -148,6 +153,18 @@ describe('useViewportData', () => {
 
     const lastCallOpts = mockFetchViewportWells.mock.calls.at(-1)?.[2];
     expect(lastCallOpts?.detailLevel).toBe('points');
+  });
+
+  it('passes a render profile with phase 1 viewport requests', async () => {
+    mockFetchViewportWells.mockResolvedValue(makeResponse([makeWell()]));
+
+    const map = createMockMap(8);
+    renderHook(() => useViewportData({ map, isLoaded: true }));
+
+    await flushAll();
+
+    const lastCallOpts = mockFetchViewportWells.mock.calls.at(-1)?.[2];
+    expect(lastCallOpts?.renderProfile).toBe('density');
   });
 
   it('does nothing when map is null', async () => {
@@ -493,6 +510,39 @@ describe('useViewportData', () => {
       .filter((c: any[]) => c[2]?.detailLevel === 'full')
       .map((c: any[]) => c[2]?.zoom);
     expect(fullZooms).toEqual(expect.arrayContaining([10, 11]));
+  });
+
+  it('builds the same tile-shaped cache key for tiny viewport shifts', () => {
+    const a = viewportBoundsToTileCacheKey(
+      { sw_lat: 31.0001, sw_lng: -103.0001, ne_lat: 33.0001, ne_lng: -101.0001 },
+      11.2,
+    );
+    const b = viewportBoundsToTileCacheKey(
+      { sw_lat: 31.0002, sw_lng: -103.0002, ne_lat: 33.0002, ne_lng: -101.0002 },
+      11.3,
+    );
+
+    expect(b).toBe(a);
+  });
+
+  it('expands request bounds to the tile-shaped cache bucket', () => {
+    const bounds = expandBoundsToTileBounds(
+      { sw_lat: 31.01, sw_lng: -102.99, ne_lat: 31.12, ne_lng: -102.88 },
+      12,
+    );
+
+    expect(bounds.sw_lat).toBeLessThanOrEqual(31.01);
+    expect(bounds.sw_lng).toBeLessThanOrEqual(-102.99);
+    expect(bounds.ne_lat).toBeGreaterThanOrEqual(31.12);
+    expect(bounds.ne_lng).toBeGreaterThanOrEqual(-102.88);
+  });
+
+  it('maps fetch phases to render profiles', () => {
+    expect(renderProfileForPhase('points', 7)).toBe('density');
+    expect(renderProfileForPhase('summary', 11)).toBe('sampled');
+    expect(renderProfileForPhase('summary', 13)).toBe('summary');
+    expect(renderProfileForPhase('full', 12)).toBe('laterals_preview');
+    expect(renderProfileForPhase('full', 16)).toBe('full');
   });
 
   // ---- Cleanup on unmount ----

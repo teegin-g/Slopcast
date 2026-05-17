@@ -105,6 +105,14 @@ describe('STYLE-06: Animated canvas backgrounds visible through glass UI shell',
     expect(contentColumn).not.toBeNull();
   });
 
+  it('keeps main in a lower stacking context than the header (header dropdowns above body UI)', () => {
+    const { container } = renderAppShell();
+    const main = container.querySelector('main');
+    expect(main).not.toBeNull();
+    expect(main!.className).toMatch(/\brelative\b/);
+    expect(main!.className).toMatch(/\bz-0\b/);
+  });
+
   it('renders sidebar at z-30 on desktop (above content)', () => {
     const { container } = renderAppShell({}, 'desktop');
     const sidebar = container.querySelector('aside.z-30');

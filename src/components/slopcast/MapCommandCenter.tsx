@@ -24,6 +24,7 @@ import {
   updateWellFeatureState,
   updateWellLayerPaint,
 } from './map/wellLayerController';
+import { stableSelectWellsForBudget, wellboreZoomBucket } from './map/spatialSampling';
 
 export type WellsMobilePanel = 'GROUPS' | 'MAP';
 
@@ -48,6 +49,10 @@ const SELECTED_WELLBORE_MIN_ZOOM = 10;
 const BACKGROUND_WELLBORE_MIN_ZOOM = 12;
 const MAX_BACKGROUND_WELLBORES = 250;
 const MAX_TOTAL_WELLBORES = 320;
+
+function setKey(values: Set<string>): string {
+  return [...values].sort().join(',');
+}
 
 function wellboreSimplificationTolerance(zoom: number, selected: boolean): number {
   const base =
@@ -228,7 +233,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     producing: true,
     duc: true,
     permit: true,
-    laterals: false,
+    laterals: true,
   });
 
   const spatialFilters = useMemo<SpatialLayerFilter>(() => {
@@ -286,7 +291,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     isLoaded: mapReady,
     filters: spatialFilters,
     dataSourceId,
-    includeLaterals: dataLayers.laterals || groupLateralWellIds.size > 0,
+    includeLaterals: dataLayers.laterals || groupLateralWellIds.size > 0 || selectedWellIds.size > 0,
   });
   const displayedSpatialError = spatialError ?? spatialTrajectoryError;
   const isTrajectoryOnlyError = !spatialError && !!spatialTrajectoryError;
@@ -346,37 +351,46 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   const activeWellboreData = useMemo<WellboreData[]>(() => {
     if (viewState.zoom < SELECTED_WELLBORE_MIN_ZOOM) return [];
 
+    const priorityWellIds = new Set([...selectedWellIds, ...groupLateralWellIds]);
     const backgroundBudget = dataLayers.laterals && viewState.zoom >= BACKGROUND_WELLBORE_MIN_ZOOM
       ? MAX_BACKGROUND_WELLBORES
       : 0;
-    let backgroundCount = 0;
+    const sampleSeed = [
+      `z${wellboreZoomBucket(viewState.zoom)}`,
+      `status:${setKey(statusFilter as Set<string>)}`,
+      `operator:${setKey(operatorFilter)}`,
+      `formation:${setKey(formationFilter)}`,
+    ].join('|');
+    const candidates = effectiveWells.filter((w) => {
+      if (!w.trajectory || w.trajectory.path.length < 2) return false;
+      return dataLayers.laterals || priorityWellIds.has(w.id);
+    });
+    const selectedWells = stableSelectWellsForBudget(candidates, {
+      seed: sampleSeed,
+      budget: Math.min(MAX_TOTAL_WELLBORES, priorityWellIds.size + backgroundBudget),
+      priorityIds: priorityWellIds,
+    });
 
-    return effectiveWells
-      .map(w => {
-        if (!w.trajectory || w.trajectory.path.length < 2) return false;
-        const selected = selectedWellIds.has(w.id);
-        const groupLateral = groupLateralWellIds.has(w.id);
-        const priority = selected || groupLateral ? 0 : 1;
-        if (!dataLayers.laterals && !groupLateral) return false;
-        if (priority === 1) {
-          if (backgroundCount >= backgroundBudget) return false;
-          backgroundCount += 1;
-        }
-        return { well: w, priority, selected };
-      })
-      .filter((entry): entry is { well: Well; priority: number; selected: boolean } => Boolean(entry))
-      .sort((a, b) => a.priority - b.priority)
-      .slice(0, MAX_TOTAL_WELLBORES)
-      .map(({ well, selected }) => ({
+    return selectedWells.map((well) => ({
         id: well.id,
         path: simplifyWellborePath(
           well.trajectory!.path,
-          wellboreSimplificationTolerance(viewState.zoom, selected),
+          wellboreSimplificationTolerance(viewState.zoom, selectedWellIds.has(well.id)),
         ),
         color: getWellColor(well.id),
-        selected,
+        selected: selectedWellIds.has(well.id),
       }));
-  }, [effectiveWells, dataLayers.laterals, getWellColor, selectedWellIds, groupLateralWellIds, viewState.zoom]);
+  }, [
+    effectiveWells,
+    dataLayers.laterals,
+    getWellColor,
+    selectedWellIds,
+    groupLateralWellIds,
+    viewState.zoom,
+    statusFilter,
+    operatorFilter,
+    formationFilter,
+  ]);
 
   // Feed wellbore data: toggle ON shows all, toggle OFF shows group members of any selected well
   useEffect(() => {

@@ -166,8 +166,8 @@ export function AppShell({ workspace, children }: AppShellProps) {
           fxClass={workspace.fxClass}
         />
 
-        {/* Content area */}
-        <main className="flex-1 overflow-y-auto">
+        {/* relative z-0: subtree z-index stays below sticky PageHeader (z-50). */}
+        <main className="relative z-0 flex-1 overflow-y-auto">
           <div className="p-3 md:p-5 xl:p-8 max-w-[1920px] mx-auto w-full">
             <ViewTransition transitionKey={section}>
               {children}

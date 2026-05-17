@@ -5,6 +5,7 @@ import type {
   SpatialWellsResponse,
   SpatialLayer,
   SpatialDataSourceId,
+  SpatialRenderProfile,
 } from '../types';
 import { MOCK_WELLS } from '../constants';
 
@@ -17,6 +18,7 @@ export type DetailLevel = 'points' | 'summary' | 'full';
 export interface SpatialFetchOptions {
   includeLaterals?: boolean;
   detailLevel?: DetailLevel;
+  renderProfile?: SpatialRenderProfile;
   signal?: AbortSignal;
   zoom?: number;
 }
@@ -95,7 +97,7 @@ const MOCK_LAYERS: SpatialLayer[] = [
   { id: 'producing', label: 'Producing', description: 'Active producing wells', enabled_by_default: true },
   { id: 'duc', label: 'DUCs', description: 'Drilled but uncompleted wells', enabled_by_default: true },
   { id: 'permit', label: 'Permits', description: 'Permitted well locations', enabled_by_default: true },
-  { id: 'laterals', label: 'Laterals', description: 'Horizontal lateral paths', enabled_by_default: false },
+  { id: 'laterals', label: 'Laterals', description: 'Horizontal lateral paths', enabled_by_default: true },
 ];
 
 // ---------------------------------------------------------------------------
@@ -158,6 +160,7 @@ const liveSource: SpatialDataSource = {
         filters,
         limit,
         detail_level: detailLevel,
+        render_profile: options?.renderProfile,
         include_trajectory: detailLevel === 'full',
         zoom: options?.zoom,
       }),

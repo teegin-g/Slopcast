@@ -43,9 +43,9 @@ export const buildWellColorMatchExpression = (
 
 const clusterRadiusExpression = [
   'interpolate', ['linear'], ['zoom'],
-  5, ['interpolate', ['linear'], ['get', 'point_count'], 10, 20, 50, 30, 200, 40],
-  8, ['interpolate', ['linear'], ['get', 'point_count'], 10, 15, 50, 22, 200, 30],
-  11, ['interpolate', ['linear'], ['get', 'point_count'], 10, 12, 50, 18, 100, 22],
+  5, ['interpolate', ['linear'], ['get', 'point_count'], 10, 16, 50, 24, 200, 32],
+  8, ['interpolate', ['linear'], ['get', 'point_count'], 10, 12, 50, 18, 200, 24],
+  10, ['interpolate', ['linear'], ['get', 'point_count'], 10, 10, 50, 14, 100, 18],
 ];
 
 export function addWellSourceAndLayers(map: any, geoJson: unknown, colorMatchExpr: unknown, theme: WellLayerTheme) {
@@ -54,8 +54,8 @@ export function addWellSourceAndLayers(map: any, geoJson: unknown, colorMatchExp
       type: 'geojson',
       data: geoJson,
       cluster: true,
-      clusterRadius: 100,
-      clusterMaxZoom: 12,
+      clusterRadius: 72,
+      clusterMaxZoom: 10,
       promoteId: 'id',
     });
   }
@@ -69,10 +69,10 @@ export function addWellSourceAndLayers(map: any, geoJson: unknown, colorMatchExp
       paint: {
         'circle-radius': clusterRadiusExpression,
         'circle-color': theme.clusterColor,
-        'circle-opacity': 0.7,
+        'circle-opacity': 0.45,
         'circle-stroke-width': 2,
         'circle-stroke-color': theme.clusterColor,
-        'circle-stroke-opacity': 0.4,
+        'circle-stroke-opacity': 0.25,
       },
     });
   }
@@ -85,10 +85,13 @@ export function addWellSourceAndLayers(map: any, geoJson: unknown, colorMatchExp
       filter: ['has', 'point_count'],
       layout: {
         'text-field': ['get', 'point_count_abbreviated'],
-        'text-size': ['interpolate', ['linear'], ['zoom'], 5, 14, 8, 12, 11, 10],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 5, 12, 8, 10, 10, 9],
         'text-allow-overlap': true,
       },
-      paint: { 'text-color': theme.clusterTextColor },
+      paint: {
+        'text-color': theme.clusterTextColor,
+        'text-opacity': ['interpolate', ['linear'], ['zoom'], 5, 0.8, 10, 0.55],
+      },
     });
   }
 
