@@ -30,6 +30,15 @@ export interface SpatialWellsResponse {
   source: 'databricks' | 'mock';
 }
 
+export interface SpatialFeatureCollectionResponse {
+  type: 'FeatureCollection';
+  features: GeoJSON.Feature[];
+  total_count: number;
+  truncated: boolean;
+  source: 'databricks' | 'mock';
+  diagnostics: Record<string, unknown>;
+}
+
 export interface SpatialLayer {
   id: string;
   label: string;
