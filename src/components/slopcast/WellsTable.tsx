@@ -13,6 +13,7 @@ import type { Well } from '../../types';
 import { useTableFilters } from './hooks/useTableFilters';
 import FilterChips from './FilterChips';
 import { TableSkeleton, FadeIn } from './Skeleton';
+import { formatFeet } from '../../utils/formatters';
 
 export interface WellsTableProps {
   wells: Well[];
@@ -20,12 +21,6 @@ export interface WellsTableProps {
   onSelectWells: (ids: string[]) => void;
   onToggleWell: (id: string) => void;
   isLoading?: boolean;
-}
-
-const FEET_FORMATTER = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
-
-function formatFeet(value: number) {
-  return `${FEET_FORMATTER.format(value)} ft`;
 }
 
 const WellsTable: React.FC<WellsTableProps> = ({

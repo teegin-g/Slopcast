@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react';
+import { seededRandom } from '../utils/seededRandom';
+import { drawVignette } from '../utils/canvasPatterns';
 
 const COLORS = {
   skyTop: '#070b16',
@@ -93,16 +95,8 @@ type Branch = {
   phase: number;
 };
 
-function seededRandom(seed: number) {
-  let s = seed;
-  return () => {
-    s = (s * 48271) % 2147483647;
-    return s / 2147483647;
-  };
-}
-
 function generateBuildings(seed: number) {
-  const rand = seededRandom(seed);
+  const rand = seededRandom(seed, 48271);
   const items: Building[] = [];
   let cursor = -0.05;
 
@@ -123,7 +117,7 @@ function generateBuildings(seed: number) {
 }
 
 function generateLights(buildings: Building[], seed: number) {
-  const rand = seededRandom(seed);
+  const rand = seededRandom(seed, 48271);
   const dots: LightDot[] = [];
 
   for (const b of buildings) {
@@ -161,7 +155,7 @@ function generateLights(buildings: Building[], seed: number) {
 }
 
 function generateStreetLights(count: number, seed: number) {
-  const rand = seededRandom(seed);
+  const rand = seededRandom(seed, 48271);
   const lights: StreetLight[] = [];
 
   for (let i = 0; i < count; i += 1) {
@@ -181,7 +175,7 @@ function generateStreetLights(count: number, seed: number) {
 }
 
 function generateTraffic(count: number, seed: number) {
-  const rand = seededRandom(seed);
+  const rand = seededRandom(seed, 48271);
   const cars: TrafficCar[] = [];
 
   for (let i = 0; i < count; i += 1) {
@@ -199,7 +193,7 @@ function generateTraffic(count: number, seed: number) {
 }
 
 function generateDrizzle(count: number, seed: number) {
-  const rand = seededRandom(seed);
+  const rand = seededRandom(seed, 48271);
   const drops: Drizzle[] = [];
 
   for (let i = 0; i < count; i += 1) {
@@ -218,7 +212,7 @@ function generateDrizzle(count: number, seed: number) {
 }
 
 function generateSpires(count: number, seed: number) {
-  const rand = seededRandom(seed);
+  const rand = seededRandom(seed, 48271);
   const spires: Spire[] = [];
 
   for (let i = 0; i < count; i += 1) {
@@ -272,13 +266,16 @@ export default function StormDuskBackground() {
     let grainPattern: CanvasPattern | null = null;
     let scanPattern: CanvasPattern | null = null;
 
+    const motionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    let reduceMotion = motionQuery?.matches ?? false;
+
     function buildGrainPattern() {
       const pc = document.createElement('canvas');
       pc.width = 96;
       pc.height = 96;
       const pctx = pc.getContext('2d');
       if (!pctx) return null;
-      const rand = seededRandom(907);
+      const rand = seededRandom(907, 48271);
 
       pctx.fillStyle = '#000';
       pctx.fillRect(0, 0, 96, 96);
@@ -318,6 +315,7 @@ export default function StormDuskBackground() {
       canvas.height = H;
       grainPattern = null;
       scanPattern = null;
+      if (reduceMotion) frame(0);
     }
 
     function drawSky(time: number) {
@@ -719,12 +717,19 @@ export default function StormDuskBackground() {
         ctx.restore();
       }
 
-      const vignette = ctx.createRadialGradient(W * 0.5, H * 0.45, H * 0.12, W * 0.5, H * 0.52, H * 0.82);
-      vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
-      vignette.addColorStop(0.66, 'rgba(0, 0, 0, 0.22)');
-      vignette.addColorStop(1, COLORS.vignette);
-      ctx.fillStyle = vignette;
-      ctx.fillRect(0, 0, W, H);
+      drawVignette(ctx, W, H, {
+        cx0: W * 0.5,
+        cy0: H * 0.45,
+        r0: H * 0.12,
+        cx1: W * 0.5,
+        cy1: H * 0.52,
+        r1: H * 0.82,
+        stops: [
+          { offset: 0, color: 'rgba(0, 0, 0, 0)' },
+          { offset: 0.66, color: 'rgba(0, 0, 0, 0.22)' },
+          { offset: 1, color: COLORS.vignette },
+        ],
+      });
     }
 
     function frame(timestamp: number) {
@@ -740,32 +745,61 @@ export default function StormDuskBackground() {
       drawDrizzle(time);
       drawForegroundBranches(time);
       drawPost();
+      if (reduceMotion) return;
       rafRef.current = window.requestAnimationFrame(frame);
     }
 
     resize();
     window.addEventListener('resize', resize);
-    rafRef.current = window.requestAnimationFrame(frame);
+
+    const handleMotionChange = () => {
+      reduceMotion = motionQuery?.matches ?? false;
+      window.cancelAnimationFrame(rafRef.current);
+      if (reduceMotion) {
+        frame(0);
+      } else {
+        rafRef.current = window.requestAnimationFrame(frame);
+      }
+    };
+
+    if (motionQuery) {
+      if (motionQuery.addEventListener) motionQuery.addEventListener('change', handleMotionChange);
+      else motionQuery.addListener(handleMotionChange);
+    }
+
+    if (reduceMotion) {
+      frame(0);
+    } else {
+      rafRef.current = window.requestAnimationFrame(frame);
+    }
 
     return () => {
       window.cancelAnimationFrame(rafRef.current);
       window.removeEventListener('resize', resize);
+      if (motionQuery) {
+        if (motionQuery.removeEventListener) motionQuery.removeEventListener('change', handleMotionChange);
+        else motionQuery.removeListener(handleMotionChange);
+      }
     };
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
+    <div
+      className="stormdusk-bg-wrap"
       style={{
         position: 'fixed',
         inset: 0,
-        width: '100%',
-        height: '100%',
-        pointerEvents: 'none',
         zIndex: -1,
+        pointerEvents: 'none',
+        overflow: 'hidden',
       }}
-      aria-hidden="true"
-      tabIndex={-1}
-    />
+    >
+      <canvas
+        ref={canvasRef}
+        style={{ display: 'block', width: '100%', height: '100%' }}
+        aria-hidden="true"
+        tabIndex={-1}
+      />
+    </div>
   );
 }

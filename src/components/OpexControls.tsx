@@ -3,6 +3,8 @@ import { OpexAssumptions, OpexSegment } from '../types/economics';
 import { useTheme } from '../theme/ThemeProvider';
 import { InlineEditableValue } from './inline/InlineEditableValue';
 import { createLocalId } from '../utils/id';
+import { EditableItemTable } from './slopcast/economics/EditableItemTable';
+import { useControlsStyles } from './slopcast/economics/useControlsStyles';
 
 interface OpexControlsProps {
   opex: OpexAssumptions;
@@ -69,12 +71,7 @@ const OpexControls: React.FC<OpexControlsProps> = ({ opex, onChange }) => {
     onChange({ ...opex, segments: segments.filter(seg => seg.id !== id) });
   };
 
-  const headerClass = isClassic
-    ? 'bg-black/10 border-black/30'
-    : 'bg-theme-bg border-theme-border';
-
-  const inlineValueClass = isClassic ? 'text-[10px] font-black text-white' : 'text-[10px] font-mono text-theme-text';
-  const inlineInputClass = 'text-[10px] w-full';
+  const { inlineValueClass, inlineInputClass } = useControlsStyles(isClassic);
 
   return (
     <div className="space-y-3">
@@ -91,131 +88,102 @@ const OpexControls: React.FC<OpexControlsProps> = ({ opex, onChange }) => {
         </label>
       </div>
 
-      <div className={`border rounded-inner overflow-hidden ${isClassic ? 'border-black/30 bg-black/10' : 'border-theme-border bg-theme-bg'}`}>
-        <div className={`grid grid-cols-12 gap-0 text-[10px] font-bold text-theme-muted p-2 border-b ${headerClass}`}>
-          <div className="col-span-3">SEGMENT</div>
-          <div className="col-span-1 text-center">START</div>
-          <div className="col-span-1 text-center">END</div>
-          <div className="col-span-2 text-right">FIXED ($/W/MO)</div>
-          <div className="col-span-2 text-right">OIL ($/BBL)</div>
-          <div className="col-span-2 text-right">GAS ($/MCF)</div>
-          <div className="col-span-1 text-center"></div>
-        </div>
-
-        <div className="max-h-64 overflow-y-auto scrollbar-hide">
-          {segments.map(seg => (
-            <div key={seg.id} className="grid grid-cols-12 gap-0 border-b border-theme-border text-[10px] items-center hover:bg-theme-surface1/30 group transition-colors">
-              <div className="col-span-3 p-1">
-                <InlineEditableValue
-                  value={seg.label}
-                  onCommit={(v) => handleUpdateSegment(seg.id, { label: v })}
-                  type="text"
-                  className={isClassic ? 'text-[10px] text-white/80' : 'text-[10px] text-theme-muted'}
-                  inputClassName={inlineInputClass}
-                />
-              </div>
-
-              <div className="col-span-1 p-1">
-                <InlineEditableValue
-                  value={seg.startMonth}
-                  onCommit={(v) => handleUpdateSegment(seg.id, { startMonth: parseInt(v, 10) || 1 })}
-                  type="number"
-                  validate={(raw) => {
-                    const n = parseInt(raw, 10);
-                    if (isNaN(n) || n < 1) return 'Min 1';
-                    return null;
-                  }}
-                  className={`${inlineValueClass} text-center`}
-                  inputClassName={`${inlineInputClass} text-center`}
-                />
-              </div>
-
-              <div className="col-span-1 p-1">
-                <InlineEditableValue
-                  value={seg.endMonth}
-                  onCommit={(v) => handleUpdateSegment(seg.id, { endMonth: parseInt(v, 10) || seg.startMonth })}
-                  type="number"
-                  validate={(raw) => {
-                    const n = parseInt(raw, 10);
-                    if (isNaN(n) || n < 1) return 'Min 1';
-                    return null;
-                  }}
-                  className={`${inlineValueClass} text-center`}
-                  inputClassName={`${inlineInputClass} text-center`}
-                />
-              </div>
-
-              <div className="col-span-2 p-1">
-                <InlineEditableValue
-                  value={seg.fixedPerWellPerMonth}
-                  onCommit={(v) => handleUpdateSegment(seg.id, { fixedPerWellPerMonth: parseFloat(v) || 0 })}
-                  format={(v) => `$${Number(v).toLocaleString()}`}
-                  type="number"
-                  className={`${inlineValueClass} text-right`}
-                  inputClassName={`${inlineInputClass} text-right`}
-                />
-              </div>
-
-              <div className="col-span-2 p-1">
-                <InlineEditableValue
-                  value={seg.variableOilPerBbl}
-                  onCommit={(v) => handleUpdateSegment(seg.id, { variableOilPerBbl: parseFloat(v) || 0 })}
-                  format={(v) => Number(v).toFixed(2)}
-                  type="number"
-                  className={`${inlineValueClass} text-right`}
-                  inputClassName={`${inlineInputClass} text-right`}
-                />
-              </div>
-
-              <div className="col-span-2 p-1">
-                <InlineEditableValue
-                  value={seg.variableGasPerMcf}
-                  onCommit={(v) => handleUpdateSegment(seg.id, { variableGasPerMcf: parseFloat(v) || 0 })}
-                  format={(v) => Number(v).toFixed(2)}
-                  type="number"
-                  className={`${inlineValueClass} text-right`}
-                  inputClassName={`${inlineInputClass} text-right`}
-                />
-              </div>
-
-              <div className="col-span-1 text-center">
-                <button
-                  type="button"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    handleDeleteSegment(seg.id);
-                  }}
-                  className="text-theme-border hover:text-theme-danger size-4 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  &times;
-                </button>
-              </div>
+      <EditableItemTable
+        items={segments}
+        getKey={(seg) => seg.id}
+        columns={[
+          { label: 'SEGMENT', className: 'col-span-3' },
+          { label: 'START', className: 'col-span-1 text-center' },
+          { label: 'END', className: 'col-span-1 text-center' },
+          { label: 'FIXED ($/W/MO)', className: 'col-span-2 text-right' },
+          { label: 'OIL ($/BBL)', className: 'col-span-2 text-right' },
+          { label: 'GAS ($/MCF)', className: 'col-span-2 text-right' },
+          { label: '', className: 'col-span-1 text-center' },
+        ]}
+        onAdd={handleAddSegment}
+        addLabel="+ Add Segment"
+        onDelete={(seg) => handleDeleteSegment(seg.id)}
+        emptyState="No OPEX segments defined."
+        footerRight={
+          <>Fixed basis: <span className="text-theme-text font-mono font-medium">$/well/mo</span></>
+        }
+        renderCells={(seg) => (
+          <>
+            <div className="col-span-3 p-1">
+              <InlineEditableValue
+                value={seg.label}
+                onCommit={(v) => handleUpdateSegment(seg.id, { label: v })}
+                type="text"
+                className={isClassic ? 'text-[10px] text-white/80' : 'text-[10px] text-theme-muted'}
+                inputClassName={inlineInputClass}
+              />
             </div>
-          ))}
 
-          {segments.length === 0 && (
-            <div className="p-4 text-center text-theme-muted text-[10px] italic">
-              No OPEX segments defined.
+            <div className="col-span-1 p-1">
+              <InlineEditableValue
+                value={seg.startMonth}
+                onCommit={(v) => handleUpdateSegment(seg.id, { startMonth: parseInt(v, 10) || 1 })}
+                type="number"
+                validate={(raw) => {
+                  const n = parseInt(raw, 10);
+                  if (isNaN(n) || n < 1) return 'Min 1';
+                  return null;
+                }}
+                className={`${inlineValueClass} text-center`}
+                inputClassName={`${inlineInputClass} text-center`}
+              />
             </div>
-          )}
-        </div>
 
-        <div className={`p-2 flex justify-between items-center border-t ${headerClass}`}>
-          <button
-            type="button"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              handleAddSegment();
-            }}
-            className="text-[10px] text-theme-cyan hover:opacity-80 font-medium transition-colors"
-          >
-            + Add Segment
-          </button>
-          <div className="text-[10px] text-theme-muted">
-            Fixed basis: <span className="text-theme-text font-mono font-medium">$/well/mo</span>
-          </div>
-        </div>
-      </div>
+            <div className="col-span-1 p-1">
+              <InlineEditableValue
+                value={seg.endMonth}
+                onCommit={(v) => handleUpdateSegment(seg.id, { endMonth: parseInt(v, 10) || seg.startMonth })}
+                type="number"
+                validate={(raw) => {
+                  const n = parseInt(raw, 10);
+                  if (isNaN(n) || n < 1) return 'Min 1';
+                  return null;
+                }}
+                className={`${inlineValueClass} text-center`}
+                inputClassName={`${inlineInputClass} text-center`}
+              />
+            </div>
+
+            <div className="col-span-2 p-1">
+              <InlineEditableValue
+                value={seg.fixedPerWellPerMonth}
+                onCommit={(v) => handleUpdateSegment(seg.id, { fixedPerWellPerMonth: parseFloat(v) || 0 })}
+                format={(v) => `$${Number(v).toLocaleString()}`}
+                type="number"
+                className={`${inlineValueClass} text-right`}
+                inputClassName={`${inlineInputClass} text-right`}
+              />
+            </div>
+
+            <div className="col-span-2 p-1">
+              <InlineEditableValue
+                value={seg.variableOilPerBbl}
+                onCommit={(v) => handleUpdateSegment(seg.id, { variableOilPerBbl: parseFloat(v) || 0 })}
+                format={(v) => Number(v).toFixed(2)}
+                type="number"
+                className={`${inlineValueClass} text-right`}
+                inputClassName={`${inlineInputClass} text-right`}
+              />
+            </div>
+
+            <div className="col-span-2 p-1">
+              <InlineEditableValue
+                value={seg.variableGasPerMcf}
+                onCommit={(v) => handleUpdateSegment(seg.id, { variableGasPerMcf: parseFloat(v) || 0 })}
+                format={(v) => Number(v).toFixed(2)}
+                type="number"
+                className={`${inlineValueClass} text-right`}
+                inputClassName={`${inlineInputClass} text-right`}
+              />
+            </div>
+          </>
+        )}
+      />
     </div>
   );
 };

@@ -7,7 +7,6 @@ import type {
   ProjectUiState,
 } from '../types';
 import type { Json } from '../../supabase/types/database';
-import { getSupabaseClient } from './supabaseClient';
 import {
   parseGroupConfig,
   parsePricing,
@@ -17,6 +16,7 @@ import {
   parseScenarioScalars,
   parseSchedule,
 } from './projectContracts';
+import { requireSupabase, requireUserId } from './supabaseGuards';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -160,23 +160,6 @@ export interface RunEconomicsPayload {
   }>;
 }
 
-function requireSupabase() {
-  const supabase = getSupabaseClient();
-  if (!supabase) {
-    throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY.');
-  }
-  return supabase;
-}
-
-async function requireUserId() {
-  const supabase = requireSupabase();
-  const { data, error } = await supabase.auth.getUser();
-  if (error) throw error;
-  if (!data.user?.id) {
-    throw new Error('No authenticated Supabase user.');
-  }
-  return data.user.id;
-}
 
 export async function listProjects(): Promise<ProjectRecord[]> {
   await requireUserId();

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import type { Well, WellGroup } from '../../types';
+import { formatFeet } from '../../utils/formatters';
 
 type SortKey = 'name' | 'formation' | 'lateralLength' | 'status' | 'operator';
 type SortDir = 'asc' | 'desc';
@@ -11,12 +12,6 @@ export interface GroupWellsTableProps {
   title?: string;
   defaultSort?: { key: SortKey; dir: SortDir };
   dense?: boolean;
-}
-
-const feetFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
-
-function formatFeet(value: number) {
-  return `${feetFormatter.format(value)} ft`;
 }
 
 function normalize(value: string) {

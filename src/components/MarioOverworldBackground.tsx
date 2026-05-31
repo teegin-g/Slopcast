@@ -1,4 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { seededRandom } from '../utils/seededRandom';
+import { drawVignette } from '../utils/canvasPatterns';
+import { useCanvasBackground } from '../hooks/useCanvasBackground';
 
 const COLORS = {
   skyTop: '#8fd6ff',
@@ -50,16 +52,8 @@ type Sparkle = {
   alpha: number;
 };
 
-function seededRandom(seed: number) {
-  let s = seed;
-  return () => {
-    s = (s * 48271) % 2147483647;
-    return s / 2147483647;
-  };
-}
-
 function generateClouds(count: number) {
-  const rand = seededRandom(84);
+  const rand = seededRandom(84, 48271);
   const clouds: Cloud[] = [];
   for (let i = 0; i < count; i += 1) {
     clouds.push({
@@ -75,7 +69,7 @@ function generateClouds(count: number) {
 }
 
 function generateMotifs(count: number) {
-  const rand = seededRandom(1337);
+  const rand = seededRandom(1337, 48271);
   const motifs: Motif[] = [];
   for (let i = 0; i < count; i += 1) {
     const roll = rand();
@@ -94,7 +88,7 @@ function generateMotifs(count: number) {
 }
 
 function generateSparkles(count: number) {
-  const rand = seededRandom(451);
+  const rand = seededRandom(451, 48271);
   const sparkles: Sparkle[] = [];
   for (let i = 0; i < count; i += 1) {
     sparkles.push({
@@ -158,31 +152,45 @@ const HILL_LAYERS: HillLayer[] = [
 ];
 
 export default function MarioOverworldBackground() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const rafRef = useRef<number>(0);
+  // Mutable per-frame canvas state, mirrored from the shared hook's context so the existing
+  // draw helpers (which read W/H/DPR/ctx as closure vars) keep producing identical output.
+  // These nested function declarations are hoisted within the component, so the hook's draw
+  // callback below can reference them.
+  let ctx!: CanvasRenderingContext2D;
+  let W = 0;
+  let H = 0;
+  let DPR = 1;
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  const { canvasRef } = useCanvasBackground({
+    // Match Mario's original DPR formula exactly: Math.floor(innerSize * min(dpr, 2)).
+    resolveDpr: (d) => Math.min(d, 2),
+    roundSize: Math.floor,
+    init: ({ ctx: c }) => {
+      ctx = c;
+    },
+    onResize: (c) => {
+      ctx = c.ctx;
+      W = c.width;
+      H = c.height;
+      DPR = c.dpr;
+    },
+    draw: (frameTime, c) => {
+      ctx = c.ctx;
+      W = c.width;
+      H = c.height;
+      DPR = c.dpr;
+      const time = frameTime * 0.001;
+      ctx.clearRect(0, 0, W, H);
+      drawSky(time);
+      drawClouds(time);
+      drawHills(time);
+      drawMotifs(time);
+      drawSparkles(time);
+      drawVignetteLayer();
+    },
+  });
 
-    let W = 0;
-    let H = 0;
-    let DPR = 1;
-    const motionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-    let reduceMotion = motionQuery?.matches ?? false;
-
-    function resize() {
-      DPR = Math.min(window.devicePixelRatio || 1, 2);
-      W = Math.floor(window.innerWidth * DPR);
-      H = Math.floor(window.innerHeight * DPR);
-      canvas.width = W;
-      canvas.height = H;
-      if (reduceMotion) draw(0);
-    }
-
-    function ridgeY(nx: number, time: number, layer: HillLayer) {
+  function ridgeY(nx: number, time: number, layer: HillLayer) {
       const waveA = Math.sin(nx * Math.PI * layer.freqA + layer.phase + time * layer.speed) * layer.amp;
       const waveB = Math.sin(nx * Math.PI * layer.freqB + layer.phase * 0.7 - time * layer.speed * 0.5) * layer.amp * 0.46;
       return (layer.baseY + waveA + waveB) * H;
@@ -329,62 +337,22 @@ export default function MarioOverworldBackground() {
       }
     }
 
-    function drawVignette() {
-      const vg = ctx.createRadialGradient(W * 0.5, H * 0.38, W * 0.18, W * 0.5, H * 0.52, W * 0.85);
-      vg.addColorStop(0, 'rgba(8, 16, 28, 0)');
-      vg.addColorStop(0.55, 'rgba(10, 20, 36, 0.18)');
-      vg.addColorStop(0.84, 'rgba(10, 20, 36, 0.34)');
-      vg.addColorStop(1, COLORS.vignette);
-      ctx.fillStyle = vg;
-      ctx.fillRect(0, 0, W, H);
+    function drawVignetteLayer() {
+      drawVignette(ctx, W, H, {
+        cx0: W * 0.5,
+        cy0: H * 0.38,
+        r0: W * 0.18,
+        cx1: W * 0.5,
+        cy1: H * 0.52,
+        r1: W * 0.85,
+        stops: [
+          { offset: 0, color: 'rgba(8, 16, 28, 0)' },
+          { offset: 0.55, color: 'rgba(10, 20, 36, 0.18)' },
+          { offset: 0.84, color: 'rgba(10, 20, 36, 0.34)' },
+          { offset: 1, color: COLORS.vignette },
+        ],
+      });
     }
-
-    function draw(frameTime: number) {
-      const time = frameTime * 0.001;
-      ctx.clearRect(0, 0, W, H);
-      drawSky(time);
-      drawClouds(time);
-      drawHills(time);
-      drawMotifs(time);
-      drawSparkles(time);
-      drawVignette();
-      if (reduceMotion) return;
-      rafRef.current = requestAnimationFrame(draw);
-    }
-
-    resize();
-    window.addEventListener('resize', resize);
-
-    const handleMotionChange = () => {
-      reduceMotion = motionQuery?.matches ?? false;
-      cancelAnimationFrame(rafRef.current);
-      if (reduceMotion) {
-        draw(0);
-      } else {
-        rafRef.current = requestAnimationFrame(draw);
-      }
-    };
-
-    if (motionQuery) {
-      if (motionQuery.addEventListener) motionQuery.addEventListener('change', handleMotionChange);
-      else motionQuery.addListener(handleMotionChange);
-    }
-
-    if (reduceMotion) {
-      draw(0);
-    } else {
-      rafRef.current = requestAnimationFrame(draw);
-    }
-
-    return () => {
-      window.removeEventListener('resize', resize);
-      cancelAnimationFrame(rafRef.current);
-      if (motionQuery) {
-        if (motionQuery.removeEventListener) motionQuery.removeEventListener('change', handleMotionChange);
-        else motionQuery.removeListener(handleMotionChange);
-      }
-    };
-  }, []);
 
   return (
     <div

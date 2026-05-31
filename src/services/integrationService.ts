@@ -1,4 +1,5 @@
-import { getSupabaseClient } from './supabaseClient';
+import { unwrapJsonbContract } from './projectContracts';
+import { requireSupabase, requireUserId } from './supabaseGuards';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -37,43 +38,14 @@ export interface IntegrationJob {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function requireSupabase() {
-  const supabase = getSupabaseClient();
-  if (!supabase) {
-    throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY.');
-  }
-  return supabase;
-}
-
-async function requireUserId() {
-  const supabase = requireSupabase();
-  const { data, error } = await supabase.auth.getUser();
-  if (error) throw error;
-  if (!data.user?.id) {
-    throw new Error('No authenticated Supabase user.');
-  }
-  return data.user.id;
-}
-
-function unwrapContract<T>(value: unknown): T {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return (value ?? {}) as T;
-  }
-  const next = { ...(value as Record<string, unknown>) };
-  delete next.schema_version;
-  delete next.validated_at;
-  delete next.validator_name;
-  return next as T;
-}
-
 function mapRow(row: any): IntegrationConfig {
   return {
     id: row.id,
     ownerUserId: row.owner_user_id,
     name: row.name,
     connectionType: row.connection_type as ConnectionType,
-    connectionParams: unwrapContract<Record<string, unknown>>(row.config_jsonb),
-    fieldMappings: unwrapContract<Record<string, string>>(row.field_mappings_jsonb),
+    connectionParams: unwrapJsonbContract<Record<string, unknown>>(row.config_jsonb, null),
+    fieldMappings: unwrapJsonbContract<Record<string, string>>(row.field_mappings_jsonb, null),
     status: row.status as IntegrationStatus,
     lastSyncAt: row.last_sync_at ?? row.completed_at ?? null,
     createdAt: row.created_at,
@@ -82,7 +54,7 @@ function mapRow(row: any): IntegrationConfig {
 }
 
 function mapJobRow(row: any): IntegrationJob {
-  const rowCounts = unwrapContract<Record<string, unknown>>(row.row_counts_jsonb);
+  const rowCounts = unwrapJsonbContract<Record<string, unknown>>(row.row_counts_jsonb, null);
   return {
     id: row.id,
     configId: row.source_connection_id,

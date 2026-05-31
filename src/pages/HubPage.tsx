@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { useTheme } from '../theme/ThemeProvider';
+import { formatDateTime } from '../utils/formatters';
 
 interface AppModule {
   id: string;
@@ -42,20 +43,6 @@ const modules: AppModule[] = [
   },
 ];
 
-const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-});
-
-function formatDateTime(value?: string): string {
-  if (!value) return 'Not available';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Unknown';
-  return dateTimeFormatter.format(date);
-}
 
 const HubPage: React.FC = () => {
   const navigate = useNavigate();

@@ -1,30 +1,9 @@
 import React, { useState } from 'react';
 import EconomicsDriversPanel, { DriverFamilyId } from './EconomicsDriversPanel';
+import type { TopDriver, ShockResult } from '../../hooks/useDerivedMetrics';
+import type { ScenarioRanking } from '../../domain/workspace/selectors';
 
 type OpsTab = 'SELECTION_ACTIONS' | 'KEY_DRIVERS';
-
-interface DriverInsight {
-  id: DriverFamilyId;
-  label: string;
-  dominantDelta: number;
-  upShock?: { label: string; deltaNpv: number };
-  downShock?: { label: string; deltaNpv: number };
-}
-
-interface ShockSummary {
-  label: string;
-  deltaNpv: number;
-}
-
-interface ScenarioRanking {
-  id: string;
-  name: string;
-  npv10: number;
-  roi: number;
-  totalCapex: number;
-  payoutMonths: number;
-  wellCount: number;
-}
 
 export interface OperationsConsoleProps {
   isClassic: boolean;
@@ -47,9 +26,9 @@ export interface OperationsConsoleProps {
   actionMessage: string;
   validationWarnings: string[];
   stepGuidance: string;
-  topDrivers: DriverInsight[];
-  biggestPositive: ShockSummary | null;
-  biggestNegative: ShockSummary | null;
+  topDrivers: TopDriver[];
+  biggestPositive: ShockResult | null;
+  biggestNegative: ShockResult | null;
   breakevenOilPrice: number | null;
   payoutMonths: number;
   fastestPayoutScenarioName: string;

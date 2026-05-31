@@ -9,12 +9,17 @@ import type {
   TypeCurveParams,
 } from '../types';
 
-export const unwrapJsonbContract = <T>(value: unknown, label = 'jsonb contract'): T => {
+// Pass `label: null` to opt into lenient mode (non-object payloads are
+// returned as-is instead of throwing) — used by integrationService.
+export const unwrapJsonbContract = <T>(value: unknown, label: string | null = 'jsonb contract'): T => {
   if (value == null) {
     return {} as T;
   }
   if (typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error(`Invalid ${label}: expected object JSONB payload.`);
+    if (label !== null) {
+      throw new Error(`Invalid ${label}: expected object JSONB payload.`);
+    }
+    return value as T;
   }
   const next = { ...(value as Record<string, unknown>) };
   delete next.schema_version;

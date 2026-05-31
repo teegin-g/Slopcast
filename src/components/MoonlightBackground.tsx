@@ -14,6 +14,8 @@
  * Positioned as a fixed full-viewport layer behind all content (z-index: -1).
  */
 import { useEffect, useRef } from 'react';
+import { seededRandom } from '../utils/seededRandom';
+import { drawVignette } from '../utils/canvasPatterns';
 
 // ── Color palette (derived from league theme + reference image) ─────────
 const COLORS = {
@@ -46,8 +48,7 @@ const COLORS = {
 // ── Star data (pre-generated for determinism) ───────────────────────────
 function generateStars(count: number, seed: number) {
   const stars: { x: number; y: number; r: number; brightness: number; speed: number; color: string }[] = [];
-  let s = seed;
-  const rand = () => { s = (s * 16807 + 0) % 2147483647; return s / 2147483647; };
+  const rand = seededRandom(seed, 16807);
   const colors = [COLORS.starWhite, COLORS.starWarm, '#e0e8ff', '#ffd6ff', '#d4f0ff'];
   for (let i = 0; i < count; i++) {
     stars.push({
@@ -112,6 +113,15 @@ export default function MoonlightBackground() {
 
     const motionQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
     let reduceMotion = motionQuery?.matches ?? false;
+
+    // ── Film grain buffers (hoisted; reused every frame) ──────────────
+    // The grain noise re-randomizes per frame (animated), but the offscreen
+    // 64x64 canvas + ImageData are allocated once here instead of every frame.
+    const grainCanvas = document.createElement('canvas');
+    grainCanvas.width = 64;
+    grainCanvas.height = 64;
+    const grainCtx = grainCanvas.getContext('2d');
+    const grainImg = grainCtx?.createImageData(64, 64) ?? null;
 
     function resize() {
       const dpr = window.devicePixelRatio || 1;
@@ -378,20 +388,28 @@ export default function MoonlightBackground() {
       }
     }
 
-    function drawVignette() {
-      const grad = ctx!.createRadialGradient(W * 0.5, H * 0.38, W * 0.2, W * 0.5, H * 0.5, W * 0.85);
-      grad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-      grad.addColorStop(0.5, 'rgba(0, 0, 0, 0.15)');
-      grad.addColorStop(0.8, 'rgba(0, 0, 0, 0.45)');
-      grad.addColorStop(1.0, 'rgba(0, 0, 0, 0.70)');
-      ctx!.fillStyle = grad;
-      ctx!.fillRect(0, 0, W, H);
+    function drawVignetteLayer() {
+      drawVignette(ctx!, W, H, {
+        cx0: W * 0.5,
+        cy0: H * 0.38,
+        r0: W * 0.2,
+        cx1: W * 0.5,
+        cy1: H * 0.5,
+        r1: W * 0.85,
+        stops: [
+          { offset: 0, color: 'rgba(0, 0, 0, 0)' },
+          { offset: 0.5, color: 'rgba(0, 0, 0, 0.15)' },
+          { offset: 0.8, color: 'rgba(0, 0, 0, 0.45)' },
+          { offset: 1.0, color: 'rgba(0, 0, 0, 0.70)' },
+        ],
+      });
     }
 
     function drawGrain() {
+      if (!grainCtx || !grainImg) return;
       ctx!.globalAlpha = 0.04;
-      const imgData = ctx!.createImageData(64, 64);
-      const data = imgData.data;
+      // Re-randomize the noise each frame into the reused ImageData buffer.
+      const data = grainImg.data;
       for (let i = 0; i < data.length; i += 4) {
         const v = Math.random() * 255;
         data[i] = v;
@@ -399,18 +417,9 @@ export default function MoonlightBackground() {
         data[i + 2] = v;
         data[i + 3] = 30;
       }
-      // Tile the noise
-      const pattern = ctx!.createPattern(
-        (() => {
-          const c = document.createElement('canvas');
-          c.width = 64;
-          c.height = 64;
-          const cx2 = c.getContext('2d')!;
-          cx2.putImageData(imgData, 0, 0);
-          return c;
-        })(),
-        'repeat'
-      );
+      grainCtx.putImageData(grainImg, 0, 0);
+      // Tile the noise (pattern re-created from the reused offscreen canvas).
+      const pattern = ctx!.createPattern(grainCanvas, 'repeat');
       if (pattern) {
         ctx!.fillStyle = pattern;
         ctx!.fillRect(0, 0, W, H);
@@ -432,7 +441,7 @@ export default function MoonlightBackground() {
       drawMountains();
       drawMist(time);
       drawGrain();
-      drawVignette();
+      drawVignetteLayer();
 
       if (reduceMotion) return;
       rafRef.current = requestAnimationFrame(draw);

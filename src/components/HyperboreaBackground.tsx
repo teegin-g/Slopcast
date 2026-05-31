@@ -12,6 +12,8 @@
  * Positioned as a fixed full-viewport layer behind all content (z-index: -1).
  */
 import { useEffect, useRef } from 'react';
+import { seededRandom } from '../utils/seededRandom';
+import { getScanlinePattern as buildScanlinePattern, drawVignette } from '../utils/canvasPatterns';
 
 const TAU = Math.PI * 2;
 
@@ -47,12 +49,6 @@ const COLORS = {
   mammothBody: '#0f1725',
   mammothTusk: '#cbd5e1',
 };
-
-// ── Deterministic pseudo-random (for consistent layout) ─────────────
-function seededRandom(seed: number) {
-  let s = seed;
-  return () => { s = (s * 16807 + 0) % 2147483647; return s / 2147483647; };
-}
 
 // ── Falling Snow (two deterministic layers) ──────────────────────────────
 type SnowParticle = {
@@ -403,13 +399,7 @@ export default function HyperboreaBackground() {
 
     function getScanlinePattern() {
       if (!scanlinePattern) {
-        const pc = document.createElement('canvas');
-        pc.width = 4;
-        pc.height = 4;
-        const pctx = pc.getContext('2d')!;
-        pctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
-        pctx.fillRect(0, 0, 4, 2);
-        scanlinePattern = ctx!.createPattern(pc, 'repeat');
+        scanlinePattern = buildScanlinePattern(ctx!);
       }
       return scanlinePattern;
     }
@@ -951,12 +941,15 @@ export default function HyperboreaBackground() {
     }
 
     // ── Draw: Vignette ───────────────────────────────────────────────
-    function drawVignette() {
-      const vg = ctx!.createRadialGradient(W * 0.5, H * 0.5, W * 0.3, W * 0.5, H * 0.5, W * 0.8);
-      vg.addColorStop(0, 'rgba(0,0,0,0)');
-      vg.addColorStop(1, 'rgba(0,0,0,0.5)');
-      ctx!.fillStyle = vg;
-      ctx!.fillRect(0, 0, W, H);
+    function drawVignetteLayer() {
+      drawVignette(ctx!, W, H, {
+        r0: W * 0.3,
+        r1: W * 0.8,
+        stops: [
+          { offset: 0, color: 'rgba(0,0,0,0)' },
+          { offset: 1, color: 'rgba(0,0,0,0.5)' },
+        ],
+      });
     }
 
     // ── Main draw loop ───────────────────────────────────────────────
@@ -981,7 +974,7 @@ export default function HyperboreaBackground() {
       drawVillage(time, intensity);
       drawMammoths(time, dt);
       drawSnow(time, dt, intensity);
-      drawVignette();
+      drawVignetteLayer();
 
       const pat = getScanlinePattern();
       if (pat) {

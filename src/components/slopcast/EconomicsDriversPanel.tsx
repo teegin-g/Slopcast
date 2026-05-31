@@ -1,42 +1,16 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { AnimatePresence, LazyMotion, m, domAnimation } from 'motion/react';
 import WaterfallChart from './WaterfallChart';
+import type { TopDriver, ShockResult } from '../../hooks/useDerivedMetrics';
+import type { ScenarioRanking } from '../../domain/workspace/selectors';
 
 export type DriverFamilyId = 'oil' | 'capex' | 'eur' | 'rig';
 
-interface DriverShockSummary {
-  label: string;
-  deltaNpv: number;
-}
-
-interface DriverInsight {
-  id: DriverFamilyId;
-  label: string;
-  dominantDelta: number;
-  upShock?: DriverShockSummary;
-  downShock?: DriverShockSummary;
-}
-
-interface ShockSummary {
-  label: string;
-  deltaNpv: number;
-}
-
-interface ScenarioRanking {
-  id: string;
-  name: string;
-  npv10: number;
-  roi: number;
-  totalCapex: number;
-  payoutMonths: number;
-  wellCount: number;
-}
-
 export interface EconomicsDriversPanelProps {
   isClassic: boolean;
-  topDrivers: DriverInsight[];
-  biggestPositive: ShockSummary | null;
-  biggestNegative: ShockSummary | null;
+  topDrivers: TopDriver[];
+  biggestPositive: ShockResult | null;
+  biggestNegative: ShockResult | null;
   breakevenOilPrice: number | null;
   payoutMonths: number;
   fastestPayoutScenarioName: string;

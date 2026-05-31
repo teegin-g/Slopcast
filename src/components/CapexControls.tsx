@@ -5,6 +5,8 @@ import { InlineEditableValue } from './inline/InlineEditableValue';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useStableChartContainer } from './slopcast/hooks/useStableChartContainer';
 import { createLocalId } from '../utils/id';
+import { EditableItemTable } from './slopcast/economics/EditableItemTable';
+import { useControlsStyles } from './slopcast/economics/useControlsStyles';
 
 interface CapexControlsProps {
   capex: CapexAssumptions;
@@ -85,8 +87,7 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
     );
   }, [capex.items]);
 
-  const inlineValueClass = isClassic ? 'text-[10px] font-black text-white' : 'text-[10px] font-mono text-theme-text';
-  const inlineInputClass = 'text-[10px] w-full';
+  const { inlineValueClass, inlineInputClass } = useControlsStyles(isClassic);
 
   // --- PIE CHART SUMMARY VIEW ---
   if (!isEditing) {
@@ -182,119 +183,91 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
         </button>
       </div>
 
-      <div className={`border rounded-inner overflow-hidden ${isClassic ? 'border-black/30 bg-black/10' : 'border-theme-border bg-theme-bg'}`}>
-        <div className={`grid grid-cols-12 gap-0 text-[10px] font-bold text-theme-muted p-2 border-b ${isClassic ? 'bg-black/10 border-black/30' : 'bg-theme-bg border-theme-border'}`}>
-          <div className="col-span-3">ITEM</div>
-          <div className="col-span-2">CATEGORY</div>
-          <div className="col-span-2 text-right">COST</div>
-          <div className="col-span-2 text-center">UNIT</div>
-          <div className="col-span-2 text-right">OFFSET</div>
-          <div className="col-span-1 text-center"></div>
-        </div>
-
-        <div className="max-h-64 overflow-y-auto scrollbar-hide">
-          {capex.items.map(item => (
-            <div key={item.id} className="grid grid-cols-12 gap-0 border-b border-theme-border text-[10px] items-center hover:bg-theme-surface1/30 group transition-colors">
-              <div className="col-span-3 p-1">
-                <InlineEditableValue
-                  value={item.name}
-                  onCommit={(v) => handleUpdateItem(item.id, 'name', v)}
-                  type="text"
-                  className={isClassic ? 'text-[10px] text-white/80' : 'text-[10px] text-theme-muted'}
-                  inputClassName={inlineInputClass}
-                />
-              </div>
-
-              <div className="col-span-2 p-1">
-                <select
-                  value={item.category}
-                  onChange={e => handleUpdateItem(item.id, 'category', e.target.value)}
-                  className="w-full bg-transparent text-theme-muted text-[9px] outline-none cursor-pointer hover:text-theme-text appearance-none"
-                >
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-
-              <div className="col-span-2 p-1">
-                <InlineEditableValue
-                  value={item.value}
-                  onCommit={(v) => handleUpdateItem(item.id, 'value', parseFloat(v) || 0)}
-                  format={(v) => `$${Number(v).toLocaleString()}`}
-                  type="number"
-                  validate={(raw) => {
-                    const n = parseFloat(raw);
-                    if (isNaN(n) || n < 0) return 'Must be >= 0';
-                    return null;
-                  }}
-                  className={`${inlineValueClass} text-right`}
-                  inputClassName={`${inlineInputClass} text-right`}
-                />
-              </div>
-
-              <div className="col-span-2 p-1">
-                <select
-                  value={item.basis}
-                  onChange={e => handleUpdateItem(item.id, 'basis', e.target.value)}
-                  className="w-full bg-transparent text-theme-muted text-[9px] text-center outline-none cursor-pointer hover:text-theme-text appearance-none"
-                >
-                  {BASIS_OPTS.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
-                </select>
-              </div>
-
-              <div className="col-span-2 p-1">
-                <InlineEditableValue
-                  value={item.offsetDays}
-                  onCommit={(v) => handleUpdateItem(item.id, 'offsetDays', parseInt(v, 10) || 0)}
-                  format={(v) => `${v}d`}
-                  type="number"
-                  validate={(raw) => {
-                    const n = parseInt(raw, 10);
-                    if (isNaN(n) || n < 0) return 'Must be >= 0';
-                    return null;
-                  }}
-                  className={`${inlineValueClass} text-right`}
-                  inputClassName={`${inlineInputClass} text-right`}
-                />
-              </div>
-
-              <div className="col-span-1 text-center">
-                <button
-                  type="button"
-                  aria-label={`Delete ${item.name}`}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    handleDeleteItem(item.id);
-                  }}
-                  className="text-theme-border hover:text-theme-danger size-4 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  &times;
-                </button>
-              </div>
+      <EditableItemTable
+        items={capex.items}
+        getKey={(item) => item.id}
+        columns={[
+          { label: 'ITEM', className: 'col-span-3' },
+          { label: 'CATEGORY', className: 'col-span-2' },
+          { label: 'COST', className: 'col-span-2 text-right' },
+          { label: 'UNIT', className: 'col-span-2 text-center' },
+          { label: 'OFFSET', className: 'col-span-2 text-right' },
+          { label: '', className: 'col-span-1 text-center' },
+        ]}
+        onAdd={handleAddItem}
+        addLabel="+ Add Cost Item"
+        onDelete={(item) => handleDeleteItem(item.id)}
+        deleteAriaLabel={(item) => `Delete ${item.name}`}
+        emptyState="No cost items defined."
+        footerRight={
+          <>Total: <span className="text-theme-text font-mono font-medium">${(totalCost / 1e6).toFixed(2)}MM</span></>
+        }
+        renderCells={(item) => (
+          <>
+            <div className="col-span-3 p-1">
+              <InlineEditableValue
+                value={item.name}
+                onCommit={(v) => handleUpdateItem(item.id, 'name', v)}
+                type="text"
+                className={isClassic ? 'text-[10px] text-white/80' : 'text-[10px] text-theme-muted'}
+                inputClassName={inlineInputClass}
+              />
             </div>
-          ))}
-          {capex.items.length === 0 && (
-            <div className="p-4 text-center text-theme-muted text-[10px] italic">
-              No cost items defined.
-            </div>
-          )}
-        </div>
 
-        <div className={`p-2 flex justify-between items-center border-t ${isClassic ? 'bg-black/10 border-black/30' : 'bg-theme-bg border-theme-border'}`}>
-          <button
-            type="button"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              handleAddItem();
-            }}
-            className="text-[10px] text-theme-cyan hover:opacity-80 font-medium transition-colors"
-          >
-            + Add Cost Item
-          </button>
-          <div className="text-[10px] text-theme-muted">
-            Total: <span className="text-theme-text font-mono font-medium">${(totalCost / 1e6).toFixed(2)}MM</span>
-          </div>
-        </div>
-      </div>
+            <div className="col-span-2 p-1">
+              <select
+                value={item.category}
+                onChange={e => handleUpdateItem(item.id, 'category', e.target.value)}
+                className="w-full bg-transparent text-theme-muted text-[9px] outline-none cursor-pointer hover:text-theme-text appearance-none"
+              >
+                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+
+            <div className="col-span-2 p-1">
+              <InlineEditableValue
+                value={item.value}
+                onCommit={(v) => handleUpdateItem(item.id, 'value', parseFloat(v) || 0)}
+                format={(v) => `$${Number(v).toLocaleString()}`}
+                type="number"
+                validate={(raw) => {
+                  const n = parseFloat(raw);
+                  if (isNaN(n) || n < 0) return 'Must be >= 0';
+                  return null;
+                }}
+                className={`${inlineValueClass} text-right`}
+                inputClassName={`${inlineInputClass} text-right`}
+              />
+            </div>
+
+            <div className="col-span-2 p-1">
+              <select
+                value={item.basis}
+                onChange={e => handleUpdateItem(item.id, 'basis', e.target.value)}
+                className="w-full bg-transparent text-theme-muted text-[9px] text-center outline-none cursor-pointer hover:text-theme-text appearance-none"
+              >
+                {BASIS_OPTS.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
+              </select>
+            </div>
+
+            <div className="col-span-2 p-1">
+              <InlineEditableValue
+                value={item.offsetDays}
+                onCommit={(v) => handleUpdateItem(item.id, 'offsetDays', parseInt(v, 10) || 0)}
+                format={(v) => `${v}d`}
+                type="number"
+                validate={(raw) => {
+                  const n = parseInt(raw, 10);
+                  if (isNaN(n) || n < 0) return 'Must be >= 0';
+                  return null;
+                }}
+                className={`${inlineValueClass} text-right`}
+                inputClassName={`${inlineInputClass} text-right`}
+              />
+            </div>
+          </>
+        )}
+      />
     </div>
   );
 };

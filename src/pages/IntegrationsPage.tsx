@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../theme/ThemeProvider';
 import ConnectionForm from '../components/integrations/ConnectionForm';
 import SchemaMapper from '../components/integrations/SchemaMapper';
+import { formatDateTime } from '../utils/formatters';
 import type {
   IntegrationConfig,
   ConnectionType,
@@ -41,20 +42,6 @@ type WizardStep = 1 | 2 | 3;
 
 const WIZARD_STEPS = ['Connection', 'Field Mapping', 'Review & Save'];
 
-const DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-});
-
-function formatDate(value: string | null): string {
-  if (!value) return 'Never';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Unknown';
-  return DATE_FORMATTER.format(date);
-}
 
 function statusColor(status: IntegrationStatus, isClassic: boolean): string {
   switch (status) {
@@ -510,7 +497,7 @@ const IntegrationsPage: React.FC = () => {
                           </span>
                         </td>
                         <td className={`p-3 text-[10px] ${isClassic ? 'text-white/60' : 'text-theme-muted'}`}>
-                          {formatDate(config.lastSyncAt)}
+                          {formatDateTime(config.lastSyncAt, 'Never')}
                         </td>
                         <td className="p-3">
                           <div className="flex items-center gap-2">
