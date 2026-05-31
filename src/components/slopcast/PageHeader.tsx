@@ -169,7 +169,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                   isClassic ? 'rounded-full md:rounded-panel border border-black/30 shadow-card bg-theme-magenta text-white' : 'rounded-panel bg-theme-surface2 border border-theme-border text-theme-cyan'
                 }`}
               >
-                <ThemeGlyph themeId={themeId} className="h-6 w-6 shrink-0" />
+                <ThemeGlyph themeId={themeId} className="size-6 shrink-0" />
                 <span className="hidden md:flex min-w-0 flex-col items-start leading-none">
                   <span className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.12em]' : 'text-[10px] font-black uppercase tracking-[0.12em] text-theme-text'}>
                     {theme.label}
@@ -221,7 +221,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                               ? (active ? 'border-black/20 bg-black/10' : 'border-black/25 bg-black/25')
                               : (active ? 'border-theme-cyan/40 bg-theme-cyan/10 text-theme-cyan' : 'border-theme-border bg-theme-surface2/80 text-theme-muted')
                           }`}>
-                            <ThemeGlyph themeId={t.id} className="h-5 w-5" />
+                            <ThemeGlyph themeId={t.id} className="size-5" />
                           </span>
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-[11px] font-black uppercase tracking-[0.12em]">{t.label}</span>
@@ -259,6 +259,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
           <div className="flex items-center gap-2 w-full min-w-0 flex-nowrap">
             <div className={isClassic ? 'flex items-center gap-1.5 min-w-0 flex-nowrap' : 'flex items-center gap-1 p-1 rounded-panel border theme-transition bg-theme-bg border-theme-border min-w-0 flex-nowrap'}>
               <button
+                type="button"
                 onClick={onNavigateHub}
                 className={
                   isClassic
@@ -269,6 +270,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                 HUB
               </button>
               <button
+                type="button"
                 onClick={() => onSetViewMode('DASHBOARD')}
                 className={
                   isClassic
@@ -287,6 +289,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                 DESIGN
               </button>
               <button
+                type="button"
                 onClick={() => onSetViewMode('ANALYSIS')}
                 className={
                   isClassic

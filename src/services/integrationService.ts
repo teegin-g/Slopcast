@@ -114,7 +114,7 @@ export async function listIntegrations(): Promise<IntegrationConfig[]> {
   return (data || []).map(mapRow);
 }
 
-export async function getIntegration(id: string): Promise<IntegrationConfig | null> {
+async function getIntegration(id: string): Promise<IntegrationConfig | null> {
   await requireUserId();
   const supabase = requireSupabase();
 
@@ -211,7 +211,7 @@ export async function deleteIntegration(id: string): Promise<void> {
 // Integration Jobs
 // ---------------------------------------------------------------------------
 
-export async function listJobs(configId: string): Promise<IntegrationJob[]> {
+async function listJobs(configId: string): Promise<IntegrationJob[]> {
   await requireUserId();
   const supabase = requireSupabase();
 
@@ -226,7 +226,7 @@ export async function listJobs(configId: string): Promise<IntegrationJob[]> {
   return (data || []).map(mapJobRow);
 }
 
-export async function createJob(configId: string): Promise<IntegrationJob> {
+async function createJob(configId: string): Promise<IntegrationJob> {
   await requireUserId();
   const supabase = requireSupabase();
 

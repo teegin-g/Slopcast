@@ -1,5 +1,5 @@
 import React from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, LazyMotion, domAnimation, m } from 'motion/react';
 import { SPRING } from '../../../theme/motion';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { overlayPanelClass } from '../../../theme/themes';
@@ -35,9 +35,10 @@ export const MapWellTooltip: React.FC<MapWellTooltipProps> = ({
   const group = well ? findGroup(well.id, groups) : undefined;
 
   return (
-    <AnimatePresence>
+    <LazyMotion features={domAnimation}>
+      <AnimatePresence>
       {well && position && (
-        <motion.div
+        <m.div
           className={`absolute z-30 pointer-events-none ${panelClass} px-3 py-2 shadow-lg min-w-[180px] max-w-[260px]`}
           style={{ left: position.x + 14, top: position.y - 10 }}
           initial={{ opacity: 0, scale: 0.95, y: 4 }}
@@ -86,7 +87,7 @@ export const MapWellTooltip: React.FC<MapWellTooltipProps> = ({
             {group ? (
               <>
                 <span
-                  className="w-2 h-2 rounded-full flex-shrink-0"
+                  className="size-2 rounded-full flex-shrink-0"
                   style={{ backgroundColor: group.color }}
                 />
                 <span
@@ -107,8 +108,9 @@ export const MapWellTooltip: React.FC<MapWellTooltipProps> = ({
               </span>
             )}
           </div>
-        </motion.div>
+        </m.div>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </LazyMotion>
   );
 };

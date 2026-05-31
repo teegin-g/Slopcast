@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 
 /**
  * Decide whether to render the full 3D Permian scene or fall back to the 2D
@@ -51,15 +51,5 @@ function detectTier(): PermianTier {
 }
 
 export function useDeviceTier({ force }: TierOptions = {}): PermianTier {
-  const [tier, setTier] = useState<PermianTier>(() => force ?? 'full-3d');
-
-  useEffect(() => {
-    if (force) {
-      setTier(force);
-      return;
-    }
-    setTier(detectTier());
-  }, [force]);
-
-  return tier;
+  return useMemo(() => force ?? detectTier(), [force]);
 }

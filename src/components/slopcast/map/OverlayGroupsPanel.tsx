@@ -45,6 +45,7 @@ export const OverlayGroupsPanel: React.FC<OverlayGroupsPanelProps> = ({
       {/* Collapse toggle */}
       <button
         type="button"
+        aria-label={collapsed ? 'Expand groups panel' : 'Collapse groups panel'}
         onClick={() => setCollapsed(!collapsed)}
         className={`absolute -right-3 top-4 z-30 w-6 h-6 rounded-full flex items-center justify-center text-xs ${
           isClassic

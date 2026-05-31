@@ -280,7 +280,12 @@ export async function saveProject(payload: SaveProjectPayload): Promise<SaveProj
   }, {});
 
   const allExternalKeys = Array.from(
-    new Set(payload.groups.flatMap((group) => group.wellExternalKeys).filter(Boolean))
+    payload.groups.reduce<Set<string>>((acc, group) => {
+      for (const key of group.wellExternalKeys) {
+        if (key) acc.add(key);
+      }
+      return acc;
+    }, new Set())
   );
 
   const wellIdByExternal = new Map<string, string>();
@@ -376,7 +381,7 @@ export async function runEconomics(projectId: string, payload: RunEconomicsPaylo
   return data;
 }
 
-export async function listRuns(projectId: string): Promise<EconomicsRunRecord[]> {
+async function listRuns(projectId: string): Promise<EconomicsRunRecord[]> {
   await requireUserId();
   const supabase = requireSupabase();
 
@@ -411,7 +416,7 @@ export interface ProjectMember {
   role: 'owner' | 'editor' | 'viewer';
 }
 
-export async function inviteToProject(
+async function inviteToProject(
   projectId: string,
   email: string,
   role: 'editor' | 'viewer'
@@ -443,7 +448,7 @@ export async function inviteToProject(
   };
 }
 
-export async function acceptInvite(inviteId: string): Promise<void> {
+async function acceptInvite(inviteId: string): Promise<void> {
   await requireUserId();
   const supabase = requireSupabase();
 
@@ -477,7 +482,7 @@ export async function acceptInvite(inviteId: string): Promise<void> {
   if (memberErr) throw memberErr;
 }
 
-export async function listProjectMembers(projectId: string): Promise<ProjectMember[]> {
+async function listProjectMembers(projectId: string): Promise<ProjectMember[]> {
   await requireUserId();
   const supabase = requireSupabase();
 
@@ -496,7 +501,7 @@ export async function listProjectMembers(projectId: string): Promise<ProjectMemb
   }));
 }
 
-export async function removeProjectMember(projectId: string, userId: string): Promise<void> {
+async function removeProjectMember(projectId: string, userId: string): Promise<void> {
   await requireUserId();
   const supabase = requireSupabase();
 
@@ -509,7 +514,7 @@ export async function removeProjectMember(projectId: string, userId: string): Pr
   if (error) throw error;
 }
 
-export async function updateMemberRole(
+async function updateMemberRole(
   projectId: string,
   userId: string,
   role: 'editor' | 'viewer'
@@ -541,7 +546,7 @@ export interface AuditLogEntry {
   createdAt: string;
 }
 
-export async function logProjectAction(
+async function logProjectAction(
   projectId: string,
   action: string,
   entityType: string,
@@ -565,7 +570,7 @@ export async function logProjectAction(
   }
 }
 
-export async function listAuditLog(projectId: string, limit = 50): Promise<AuditLogEntry[]> {
+async function listAuditLog(projectId: string, limit = 50): Promise<AuditLogEntry[]> {
   await requireUserId();
   const supabase = requireSupabase();
 
@@ -605,7 +610,7 @@ export interface ProjectComment {
   updatedAt: string;
 }
 
-export async function listComments(
+async function listComments(
   projectId: string,
   entityType: string,
   entityId: string
@@ -635,7 +640,7 @@ export async function listComments(
   }));
 }
 
-export async function addComment(
+async function addComment(
   projectId: string,
   entityType: 'well' | 'group' | 'scenario',
   entityId: string,
@@ -671,7 +676,7 @@ export async function addComment(
   };
 }
 
-export async function deleteComment(commentId: string): Promise<void> {
+async function deleteComment(commentId: string): Promise<void> {
   await requireUserId();
   const supabase = requireSupabase();
 
@@ -683,7 +688,7 @@ export async function deleteComment(commentId: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function getCommentCount(
+async function getCommentCount(
   projectId: string,
   entityType: string,
   entityId: string

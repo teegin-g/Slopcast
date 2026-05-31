@@ -1,5 +1,7 @@
 
-import { Well, TypeCurveParams, CapexAssumptions, CommodityPricingAssumptions, MonthlyCashFlow, DealMetrics, WellGroup, Scenario, SensitivityVariable, SensitivityMatrixResult, ScheduleParams, OpexAssumptions, OwnershipAssumptions, JvAgreement, TaxAssumptions, DebtAssumptions, ReserveCategory, DEFAULT_RESERVE_RISK_FACTORS, ForecastSegment, CutoffKind, EconomicsCalculationInput } from '../types';
+import { Well, WellGroup } from '../types/wells';
+import { TypeCurveParams, CapexAssumptions, CommodityPricingAssumptions, MonthlyCashFlow, DealMetrics, OpexAssumptions, OwnershipAssumptions, JvAgreement, TaxAssumptions, DebtAssumptions, ReserveCategory, DEFAULT_RESERVE_RISK_FACTORS, ForecastSegment, CutoffKind, EconomicsCalculationInput } from '../types/economics';
+import { Scenario, SensitivityVariable, SensitivityMatrixResult, ScheduleParams } from '../types/scenarios';
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
@@ -10,7 +12,7 @@ const econCache = new Map<string, { flow: MonthlyCashFlow[], metrics: DealMetric
 
 const stableNormalize = (value: unknown): unknown => {
   if (value instanceof Set) {
-    return [...value].sort();
+    return Array.from(value).sort();
   }
   if (Array.isArray(value)) {
     return value.map(stableNormalize);
@@ -108,7 +110,7 @@ const cachedCalculateEconomics = (
 };
 
 const getOpexSegmentForAgeMonth = (opex: OpexAssumptions, ageMonth: number) => {
-  const segments = [...(opex.segments || [])].sort((a, b) => a.startMonth - b.startMonth);
+  const segments = (opex.segments || []).slice().sort((a, b) => a.startMonth - b.startMonth);
   return segments.find(seg => ageMonth >= seg.startMonth && ageMonth <= seg.endMonth) || null;
 };
 
@@ -287,7 +289,7 @@ export const calculateEconomics = (
   }
 
   // --- 1. Rank Wells ---
-  const sortedWells = [...selectedWells].sort((a, b) => b.lateralLength - a.lateralLength);
+  const sortedWells = selectedWells.slice().sort((a, b) => b.lateralLength - a.lateralLength);
 
   // --- 2. Schedule Wells ---
   // Determine Drill/Stim days

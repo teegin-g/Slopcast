@@ -93,18 +93,19 @@ const capacityLabels: Record<CapacityMode, string> = {
 const colors = ['#7dd3fc', '#86efac', '#f9a8d4', '#fdba74', '#c4b5fd', '#fca5a5'];
 const GRID_THEME_CLASS = 'ag-theme-quartz workbook-grid-theme';
 
-const fmtCurrency = (value: number) =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(value);
+const currencyFormat = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+});
+const compactFormat = new Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  maximumFractionDigits: 1,
+});
 
-const fmtCompact = (value: number) =>
-  new Intl.NumberFormat('en-US', {
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  }).format(value);
+const fmtCurrency = (value: number) => currencyFormat.format(value);
+
+const fmtCompact = (value: number) => compactFormat.format(value);
 
 const cloneRequest = (request: ScheduleRunRequest) => structuredClone(request);
 const toNumber = (value: unknown) => {
@@ -425,6 +426,7 @@ const App = () => {
         width: 96,
         cellRenderer: (params: { node: { rowIndex: number | null } }) => (
           <button
+            type="button"
             className="grid-action-button"
             onClick={() =>
               updateInventory((rows) =>
@@ -550,6 +552,7 @@ const App = () => {
         width: 96,
         cellRenderer: (params: { node: { rowIndex: number | null } }) => (
           <button
+            type="button"
             className="grid-action-button"
             onClick={() =>
               updateManualYear((rows) =>
@@ -613,6 +616,7 @@ const App = () => {
         width: 96,
         cellRenderer: (params: { node: { rowIndex: number | null } }) => (
           <button
+            type="button"
             className="grid-action-button"
             onClick={() =>
               updateManualRig((rows) =>
@@ -681,6 +685,7 @@ const App = () => {
         width: 96,
         cellRenderer: (params: { node: { rowIndex: number | null } }) => (
           <button
+            type="button"
             className="grid-action-button"
             onClick={() =>
               updateForced((rows) =>
@@ -788,17 +793,17 @@ const App = () => {
   const sectionActions = {
     INVENTORY: (
       <div className="toolbar-actions">
-        <button className="toolbar-button" onClick={addInventoryRow}>
+        <button type="button" className="toolbar-button" onClick={addInventoryRow}>
           Add Bucket
         </button>
-        <button className="toolbar-button secondary" onClick={() => replaceRequest(initialState.request, initialState.fixtureId)}>
+        <button type="button" className="toolbar-button secondary" onClick={() => replaceRequest(initialState.request, initialState.fixtureId)}>
           Reset Fixture
         </button>
       </div>
     ),
     CONSTRAINTS: (
       <div className="toolbar-actions">
-        <button className="toolbar-button secondary" onClick={() => syncYears(Math.max(1, workspace.request.scenario.years))}>
+        <button type="button" className="toolbar-button secondary" onClick={() => syncYears(Math.max(1, workspace.request.scenario.years))}>
           Re-sync Horizon
         </button>
       </div>
@@ -806,6 +811,7 @@ const App = () => {
     OVERRIDES: (
       <div className="toolbar-actions">
         <button
+          type="button"
           className="toolbar-button"
           onClick={() => {
             if (activeOverrideSection === 'ANNUAL') addAnnualOverrideRow();
@@ -816,6 +822,7 @@ const App = () => {
           Add {stringToTitle(activeOverrideSection)}
         </button>
         <button
+          type="button"
           className="toolbar-button secondary"
           onClick={() =>
             setWorkspace((current) => ({
@@ -833,7 +840,7 @@ const App = () => {
     ),
     RESULTS: (
       <div className="toolbar-actions">
-        <button className="toolbar-button secondary" onClick={() => setIsUtilityDrawerOpen(true)}>
+        <button type="button" className="toolbar-button secondary" onClick={() => setIsUtilityDrawerOpen(true)}>
           Open Utilities
         </button>
       </div>
@@ -1002,6 +1009,7 @@ const App = () => {
           {OVERRIDE_SECTIONS.map((section) => (
             <button
               key={section.id}
+              type="button"
               data-testid={`override-tab-${section.id}`}
               className={activeOverrideSection === section.id ? 'subtab active' : 'subtab'}
               onClick={() => setActiveOverrideSection(section.id)}
@@ -1123,8 +1131,8 @@ const App = () => {
               <div className="timeline-rig-label">{rigId}</div>
               <div className="timeline-lane">
                 {result.events
-                  .filter((event) => event.rigId === rigId)
-                  .map((event) => {
+                  .flatMap((event) => {
+                    if (event.rigId !== rigId) return [];
                     const start =
                       (new Date(`${event.spudDate}T00:00:00Z`).getTime() -
                         new Date(`${workspace.request.scenario.rigStartDate}T00:00:00Z`).getTime()) /
@@ -1134,7 +1142,7 @@ const App = () => {
                         new Date(`${workspace.request.scenario.rigStartDate}T00:00:00Z`).getTime()) /
                       (24 * 60 * 60 * 1000);
 
-                    return (
+                    return [(
                       <div
                         key={event.id}
                         className={`timeline-event ${event.locked ? 'locked' : ''}`}
@@ -1148,7 +1156,7 @@ const App = () => {
                         <span>{event.bucketName}</span>
                         <small>{event.source}</small>
                       </div>
-                    );
+                    )];
                   })}
               </div>
             </div>
@@ -1213,6 +1221,7 @@ const App = () => {
 
           <div className="topbar-button-row">
             <button
+              type="button"
               aria-label="Open utility drawer"
               className="toolbar-button secondary"
               onClick={() => setIsUtilityDrawerOpen(true)}
@@ -1220,6 +1229,7 @@ const App = () => {
               Utilities
             </button>
             <button
+              type="button"
               aria-label="Reset workbook"
               className="toolbar-button secondary"
               onClick={() => replaceRequest(initialState.request, initialState.fixtureId)}
@@ -1254,6 +1264,7 @@ const App = () => {
               {WORKBOOK_SECTIONS.map((section) => (
                 <button
                   key={section.id}
+                  type="button"
                   data-testid={`section-tab-${section.id}`}
                   className={activeSection === section.id ? 'section-tab active' : 'section-tab'}
                   onClick={() => setActiveSection(section.id)}
@@ -1306,33 +1317,40 @@ const App = () => {
       </div>
 
       {isUtilityDrawerOpen ? (
-        <div className="utility-overlay" onClick={() => setIsUtilityDrawerOpen(false)}>
-          <aside
+        <div
+          className="utility-overlay"
+          role="none"
+          onClick={() => setIsUtilityDrawerOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-label="Utilities"
             className="utility-drawer"
             data-testid="utility-drawer"
             onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
           >
             <div className="drawer-header">
               <div>
                 <span className="pill-label">Utilities</span>
                 <h3>JSON import / export</h3>
               </div>
-              <button className="toolbar-button secondary" onClick={() => setIsUtilityDrawerOpen(false)}>
+              <button type="button" className="toolbar-button secondary" onClick={() => setIsUtilityDrawerOpen(false)}>
                 Close
               </button>
             </div>
 
             <div className="drawer-button-row">
-              <button className="toolbar-button secondary" onClick={() => setJsonDraft(JSON.stringify(workspace.request, null, 2))}>
+              <button type="button" className="toolbar-button secondary" onClick={() => setJsonDraft(JSON.stringify(workspace.request, null, 2))}>
                 Sync from state
               </button>
-              <button aria-label="Load JSON draft" className="toolbar-button" onClick={applyJsonDraft}>
+              <button type="button" aria-label="Load JSON draft" className="toolbar-button" onClick={applyJsonDraft}>
                 Load JSON
               </button>
-              <button className="toolbar-button secondary" onClick={downloadJson}>
+              <button type="button" className="toolbar-button secondary" onClick={downloadJson}>
                 Download JSON
               </button>
-              <button className="toolbar-button secondary" onClick={() => fileInputRef.current?.click()}>
+              <button type="button" className="toolbar-button secondary" onClick={() => fileInputRef.current?.click()}>
                 Upload file
               </button>
               <input
@@ -1340,6 +1358,7 @@ const App = () => {
                 hidden
                 type="file"
                 accept="application/json"
+                aria-label="Upload JSON file"
                 onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (file) void importFile(file);
@@ -1351,6 +1370,7 @@ const App = () => {
 
             <textarea
               data-testid="json-draft"
+              aria-label="JSON draft"
               className="drawer-textarea"
               value={jsonDraft}
               onChange={(event) => {
@@ -1359,7 +1379,7 @@ const App = () => {
               }}
               spellCheck={false}
             />
-          </aside>
+          </div>
         </div>
       ) : null}
     </div>

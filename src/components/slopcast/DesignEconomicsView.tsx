@@ -1,6 +1,8 @@
 import React from 'react';
 import { ThemeId } from '../../theme/themes';
-import { DealMetrics, MonthlyCashFlow, Scenario, Well, WellGroup } from '../../types';
+import { DealMetrics, MonthlyCashFlow } from '../../types/economics';
+import { Scenario } from '../../types/scenarios';
+import { Well, WellGroup } from '../../types/wells';
 import OperationsConsole, { OperationsConsoleProps } from './OperationsConsole';
 import EconomicsGroupBar from './EconomicsGroupBar';
 import CapexModule from './economics/CapexModule';
@@ -152,6 +154,15 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
     }
   })();
 
+  const moduleSwitcherJsx = React.useMemo(
+    () => <EconomicsModuleTabs module={economicsModule} onChange={onSetEconomicsModule} variant="compact" />,
+    [economicsModule, onSetEconomicsModule],
+  );
+  const groupPulseJsx = React.useMemo(
+    () => <GroupPulse metrics={selectedGroupMetrics} />,
+    [selectedGroupMetrics],
+  );
+
   return (
     <div className="space-y-4">
       <div className={`lg:sticky lg:top-0 lg:z-20 space-y-2 border p-2.5 theme-transition ${
@@ -175,8 +186,8 @@ const DesignEconomicsView: React.FC<DesignEconomicsViewProps> = ({
           activeGroupId={activeGroupId}
           onActivateGroup={onActivateGroup}
           onCloneActiveGroup={() => onCloneGroup(activeGroupId)}
-          moduleSwitcher={<EconomicsModuleTabs module={economicsModule} onChange={onSetEconomicsModule} variant="compact" />}
-          groupPulse={<GroupPulse metrics={selectedGroupMetrics} />}
+          moduleSwitcher={moduleSwitcherJsx}
+          groupPulse={groupPulseJsx}
         />
 
         <div className="flex justify-end">

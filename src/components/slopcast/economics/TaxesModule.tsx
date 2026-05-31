@@ -1,7 +1,7 @@
 import React from 'react';
 import { Area, AreaChart, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts';
 import TaxControls from '../../TaxControls';
-import { DEFAULT_TAX_ASSUMPTIONS } from '../../../types';
+import { DEFAULT_TAX_ASSUMPTIONS } from '../../../types/economics';
 import { currencyMm, summarizeTaxes } from './derived';
 import { AssumptionTable, InsightBanner, MetricTile, ModulePanel, StableChart } from './EconomicsPrimitives';
 import type { EconomicsModuleProps } from './types';

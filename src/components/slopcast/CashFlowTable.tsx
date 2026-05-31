@@ -24,9 +24,11 @@ export interface CashFlowTableProps {
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+const intlNumberFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+
 /** Format a number with commas */
 function formatNumber(value: number): string {
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value);
+  return intlNumberFormat.format(value);
 }
 
 /** Accounting cell renderer -- applies red text for negatives */
@@ -286,12 +288,13 @@ const CashFlowTable: React.FC<CashFlowTableProps> = ({ flow, pricing, isLoading 
                 {headerGroup.headers.map(header => (
                   <th
                     key={header.id}
-                    className="py-2 px-2 text-left text-xs font-black uppercase tracking-[0.24em] text-theme-cyan heading-font"
+                    className="p-2 text-left text-xs font-black uppercase tracking-[0.24em] text-theme-cyan heading-font"
                     style={{ width: header.getSize() }}
                   >
-                    {header.isPlaceholder ? null : (
-                      <div
-                        className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}
+                    {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                      <button
+                        type="button"
+                        className="cursor-pointer select-none bg-transparent border-0 p-0 text-inherit font-inherit w-full text-left"
                         onClick={header.column.getToggleSortingHandler()}
                       >
                         {flexRender(header.column.columnDef.header, header.getContext())}
@@ -299,7 +302,9 @@ const CashFlowTable: React.FC<CashFlowTableProps> = ({ flow, pricing, isLoading 
                           asc: ' \u25B2',
                           desc: ' \u25BC',
                         }[header.column.getIsSorted() as string] ?? ''}
-                      </div>
+                      </button>
+                    ) : (
+                      <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
                     )}
                   </th>
                 ))}

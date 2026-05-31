@@ -16,7 +16,7 @@ const cloneOwnership = (source = DEFAULT_OWNERSHIP, idSeed = 'default') => ({
   agreements: source.agreements.map((agreement, index) => ({ ...agreement, id: `${agreement.id}-${idSeed}-${index}` })),
 });
 
-export const createWorkspaceGroup = (
+const createWorkspaceGroup = (
   groups: WellGroup[],
   id: string,
   name = `Group ${groups.length + 1}`,

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { CommodityPricingAssumptions, DealMetrics, Scenario, Well, WellGroup } from '../types';
+import type { CommodityPricingAssumptions, DealMetrics } from '../types/economics';
+import type { Scenario } from '../types/scenarios';
+import type { Well, WellGroup } from '../types/wells';
 import { cachedCalculateEconomics } from '../utils/economics';
 import { DEFAULT_COMMODITY_PRICING, MOCK_WELLS } from '../constants';
 
@@ -150,7 +152,7 @@ export const useDerivedMetrics = (
         .sort((a, b) => b.magnitude - a.magnitude)
         .slice(0, 3);
 
-      const orderedShocks = [...shocks].sort((a, b) => b.deltaNpv - a.deltaNpv);
+      const orderedShocks = shocks.slice().sort((a, b) => b.deltaNpv - a.deltaNpv);
       const biggestPositive = orderedShocks[0] || null;
       const biggestNegative = orderedShocks[orderedShocks.length - 1] || null;
 

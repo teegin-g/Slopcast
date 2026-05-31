@@ -111,6 +111,7 @@ const CompactRunBar: React.FC<{
           {/* Primary action row */}
           <div className={isClassic ? 'p-3 flex items-center gap-2 flex-wrap' : 'p-3 flex items-center gap-2 flex-wrap'}>
             <button
+              type="button"
               onClick={onSaveSnapshot}
               className="px-4 py-2 rounded-inner text-xs font-black uppercase tracking-[0.14em] transition-all shrink-0 bg-theme-magenta text-theme-bg hover:shadow-glow-magenta"
             >
@@ -118,7 +119,7 @@ const CompactRunBar: React.FC<{
             </button>
 
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <span className="inline-block w-1.5 h-1.5 rounded-full bg-theme-cyan animate-pulse shrink-0" />
+              <span className="inline-block size-1.5 rounded-full bg-theme-cyan animate-pulse shrink-0" />
               <span data-testid="economics-run-status" className="text-xs text-theme-muted truncate">
                 {statusText}
               </span>
@@ -129,6 +130,7 @@ const CompactRunBar: React.FC<{
 
             <div className="relative shrink-0">
               <button
+                type="button"
                 onClick={() => setShowOverflow(prev => !prev)}
                 className="px-2 py-1.5 rounded-inner border border-theme-border bg-theme-bg text-theme-muted hover:text-theme-text text-xs font-bold transition-colors"
                 aria-label="More actions"
@@ -142,6 +144,7 @@ const CompactRunBar: React.FC<{
                     { label: 'Export PDF', action: onExportPdf },
                   ].map((item) => (
                     <button
+                      type="button"
                       key={item.label}
                       onClick={() => { item.action(); setShowOverflow(false); }}
                       className="w-full text-left px-3 py-1.5 rounded-inner text-xs font-bold uppercase tracking-[0.1em] transition-colors text-theme-text hover:bg-theme-surface2"
@@ -259,7 +262,7 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
           : 'rounded-panel border shadow-card p-4 md:p-6 relative overflow-hidden theme-transition bg-theme-surface1 border-theme-border'
       }
     >
-      {!isClassic && <div className="absolute -top-10 -right-10 w-48 h-48 rounded-full blur-[80px] bg-theme-magenta/20" />}
+      {!isClassic && <div className="absolute -top-10 -right-10 size-48 rounded-full blur-[80px] bg-theme-magenta/20" />}
 
       <div className="relative z-10 space-y-4">
         <div className="flex flex-wrap justify-between items-center gap-3">
@@ -276,12 +279,14 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
 
           <div className={isClassic ? 'flex items-center gap-2 px-4 pt-4' : 'flex items-center gap-2 p-1 rounded-inner border bg-theme-bg/70 border-theme-border'}>
             <button
+              type="button"
               onClick={() => onOpsTabChange('SELECTION_ACTIONS')}
               className={`px-3 py-1.5 rounded-inner text-xs font-black uppercase tracking-[0.16em] transition-all border ${buttonTone(isClassic, opsTab === 'SELECTION_ACTIONS')}`}
             >
               {showSelectionActions ? 'Selection' : 'Run Panel'}
             </button>
             <button
+              type="button"
               onClick={() => onOpsTabChange('KEY_DRIVERS')}
               className={`px-3 py-1.5 rounded-inner text-xs font-black uppercase tracking-[0.16em] transition-all border ${buttonTone(isClassic, opsTab === 'KEY_DRIVERS')}`}
             >
@@ -314,6 +319,7 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
               {showSelectionActions && (
                 <div className="grid grid-cols-2 gap-2">
                   <button
+                    type="button"
                     onClick={onAssign}
                     disabled={!canAssign}
                     className={`px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.12em] transition-all ${
@@ -325,6 +331,7 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
                     Assign
                   </button>
                   <button
+                    type="button"
                     onClick={onCreateGroup}
                     disabled={!canAssign}
                     className={`px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.12em] transition-all ${
@@ -336,12 +343,14 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
                     Create Group
                   </button>
                   <button
+                    type="button"
                     onClick={onSelectAll}
                     className="px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.12em] transition-all bg-theme-surface2 text-theme-text border border-theme-border hover:border-theme-cyan"
                   >
                     Select All
                   </button>
                   <button
+                    type="button"
                     onClick={onClear}
                     disabled={!canClear}
                     className={`px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.12em] transition-all border ${
@@ -357,6 +366,7 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
 
               <div className="space-y-2">
                 <button
+                  type="button"
                   onClick={onSaveSnapshot}
                   className="w-full px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.14em] transition-all bg-theme-magenta text-theme-bg hover:shadow-glow-magenta"
                 >
@@ -364,6 +374,7 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => setShowSecondaryActions(prev => !prev)}
                   className="w-full px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.14em] transition-all border border-theme-border bg-theme-bg text-theme-muted hover:text-theme-text"
                 >
@@ -373,6 +384,7 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
                 {showSecondaryActions && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <button
+                      type="button"
                       onClick={onExportCsv}
                       disabled={!canUseSecondaryActions}
                       className={`px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.12em] transition-all border ${
@@ -384,6 +396,7 @@ const OperationsConsole: React.FC<OperationsConsoleProps> = ({
                       Export CSV
                     </button>
                     <button
+                      type="button"
                       onClick={onExportPdf}
                       disabled={!canUseSecondaryActions}
                       className={`px-3 py-2 rounded-inner text-xs font-black uppercase tracking-[0.12em] transition-all border ${

@@ -156,7 +156,11 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
   const [fallbackActive, setFallbackActive] = useState(false);
   const [diagnostics, setDiagnostics] = useState<ViewportDataDiagnostics>(EMPTY_DIAGNOSTICS);
 
-  const cacheRef = useRef(new Map<string, { wells: Well[]; totalCount: number; truncated: boolean; source: 'databricks' | 'mock' }>());
+  const cacheRef = useRef<Map<string, { wells: Well[]; totalCount: number; truncated: boolean; source: 'databricks' | 'mock' }>>(
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- lazy init below
+    null!
+  );
+  if (!cacheRef.current) cacheRef.current = new Map();
   const abortRef = useRef<AbortController | null>(null);
   const trajectoryAbortRef = useRef<AbortController | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -352,9 +356,10 @@ export function useViewportData(options: UseViewportDataOptions): UseViewportDat
     // Initial fetch
     fetchWells();
 
+    const timer = timerRef;
     return () => {
       map.off('moveend', handleMoveEnd);
-      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timer.current) clearTimeout(timer.current);
       trajectoryAbortRef.current?.abort();
     };
   }, [map, isLoaded, enabled, fetchWells, debounceMs]);

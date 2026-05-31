@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { Well, WellGroup } from '../../../types';
 import { useTheme } from '../../../theme/ThemeProvider';
 import { overlayPanelClass } from '../../../theme/themes';
@@ -50,15 +50,8 @@ export const OverlayLegend: React.FC<OverlayLegendProps> = ({
   const { theme } = useTheme();
   const mp = theme.mapPalette;
 
-  // Default collapsed on mobile/mid, expanded on desktop/wide
-  const [expanded, setExpanded] = useState(
-    viewportLayout === 'desktop' || viewportLayout === 'wide',
-  );
-
-  // Sync default state when layout changes
-  useEffect(() => {
-    setExpanded(viewportLayout === 'desktop' || viewportLayout === 'wide');
-  }, [viewportLayout]);
+  const isWideLayout = viewportLayout === 'desktop' || viewportLayout === 'wide';
+  const [expanded, setExpanded] = useState(isWideLayout);
 
   const panelClass = isClassic
     ? 'sc-panel theme-transition'
@@ -147,7 +140,7 @@ export const OverlayLegend: React.FC<OverlayLegendProps> = ({
           {groupCounts.map(g => (
             <div key={g.id} className="flex items-center gap-2">
               <span
-                className="w-2.5 h-2.5 rounded-full shrink-0"
+                className="size-2.5 rounded-full shrink-0"
                 style={{ backgroundColor: g.color }}
               />
               <span className={`text-[10px] font-semibold truncate flex-1 ${labelClass}`}>
@@ -162,7 +155,7 @@ export const OverlayLegend: React.FC<OverlayLegendProps> = ({
           {/* Unassigned */}
           <div className="flex items-center gap-2">
             <span
-              className="w-2.5 h-2.5 rounded-full shrink-0"
+              className="size-2.5 rounded-full shrink-0"
               style={{ backgroundColor: mp.unassignedFill }}
             />
             <span className={`text-[10px] font-semibold truncate flex-1 ${labelClass}`}>

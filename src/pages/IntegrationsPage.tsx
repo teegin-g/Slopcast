@@ -39,17 +39,21 @@ const PLACEHOLDER_SOURCE_FIELDS = [
 
 type WizardStep = 1 | 2 | 3;
 
+const WIZARD_STEPS = ['Connection', 'Field Mapping', 'Review & Save'];
+
+const DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+
 function formatDate(value: string | null): string {
   if (!value) return 'Never';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'Unknown';
-  return new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(date);
+  return DATE_FORMATTER.format(date);
 }
 
 function statusColor(status: IntegrationStatus, isClassic: boolean): string {
@@ -101,7 +105,7 @@ const IntegrationsPage: React.FC = () => {
   // Wizard draft
   const [draftName, setDraftName] = useState('');
   const [draftConnectionType, setDraftConnectionType] = useState<ConnectionType>('supabase');
-  const [draftConnectionParams, setDraftConnectionParams] = useState<Record<string, unknown>>({});
+  const draftConnectionParamsRef = React.useRef<Record<string, unknown>>({});
   const [draftMappings, setDraftMappings] = useState<Record<string, string>>({});
 
   const fetchIntegrations = useCallback(async () => {
@@ -125,7 +129,7 @@ const IntegrationsPage: React.FC = () => {
     setEditingConfig(undefined);
     setDraftName('');
     setDraftConnectionType('supabase');
-    setDraftConnectionParams({});
+    draftConnectionParamsRef.current = {};
     setDraftMappings({});
     setWizardStep(1);
     setWizardOpen(true);
@@ -135,7 +139,7 @@ const IntegrationsPage: React.FC = () => {
     setEditingConfig(config);
     setDraftName(config.name);
     setDraftConnectionType(config.connectionType);
-    setDraftConnectionParams(config.connectionParams);
+    draftConnectionParamsRef.current = config.connectionParams;
     setDraftMappings(config.fieldMappings);
     setWizardStep(1);
     setWizardOpen(true);
@@ -153,7 +157,7 @@ const IntegrationsPage: React.FC = () => {
   }) => {
     setDraftName(payload.name);
     setDraftConnectionType(payload.connectionType);
-    setDraftConnectionParams(payload.connectionParams);
+    draftConnectionParamsRef.current = payload.connectionParams;
     setWizardStep(2);
   };
 
@@ -163,7 +167,7 @@ const IntegrationsPage: React.FC = () => {
         await updateIntegration(editingConfig.id, {
           name: draftName,
           connectionType: draftConnectionType,
-          connectionParams: draftConnectionParams,
+          connectionParams: draftConnectionParamsRef.current,
           fieldMappings: draftMappings,
           status: 'active',
         });
@@ -171,7 +175,7 @@ const IntegrationsPage: React.FC = () => {
         await createIntegration({
           name: draftName,
           connectionType: draftConnectionType,
-          connectionParams: draftConnectionParams,
+          connectionParams: draftConnectionParamsRef.current,
           fieldMappings: draftMappings,
           status: 'active',
         });
@@ -192,8 +196,6 @@ const IntegrationsPage: React.FC = () => {
     }
   };
 
-  // Step indicator
-  const steps = ['Connection', 'Field Mapping', 'Review & Save'];
 
   const panelCls = isClassic
     ? 'rounded-panel border sc-panel'
@@ -220,6 +222,7 @@ const IntegrationsPage: React.FC = () => {
       >
         <div className="flex items-center gap-3 md:gap-4">
           <button
+            type="button"
             onClick={() => navigate('/hub')}
             className={
               isClassic
@@ -241,6 +244,7 @@ const IntegrationsPage: React.FC = () => {
 
         {!wizardOpen && (
           <button
+            type="button"
             onClick={openNewWizard}
             className={
               isClassic
@@ -268,7 +272,7 @@ const IntegrationsPage: React.FC = () => {
           <div className={`${panelCls} p-5 md:p-6 space-y-5`}>
             {/* Step indicator */}
             <div className="flex items-center gap-2 mb-4">
-              {steps.map((label, i) => {
+              {WIZARD_STEPS.map((label, i) => {
                 const stepNum = (i + 1) as WizardStep;
                 const isActive = wizardStep === stepNum;
                 const isComplete = wizardStep > stepNum;
@@ -331,6 +335,7 @@ const IntegrationsPage: React.FC = () => {
                 />
                 <div className="flex items-center justify-between pt-2">
                   <button
+                    type="button"
                     onClick={() => setWizardStep(1)}
                     className={
                       isClassic
@@ -341,6 +346,7 @@ const IntegrationsPage: React.FC = () => {
                     Back
                   </button>
                   <button
+                    type="button"
                     onClick={() => setWizardStep(3)}
                     className={
                       isClassic
@@ -348,7 +354,7 @@ const IntegrationsPage: React.FC = () => {
                         : 'px-4 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.2em] bg-theme-cyan text-theme-bg shadow-glow-cyan hover:brightness-105'
                     }
                   >
-                    Continue
+                    Next Step
                   </button>
                 </div>
               </div>
@@ -411,6 +417,7 @@ const IntegrationsPage: React.FC = () => {
 
                 <div className="flex items-center justify-between pt-2">
                   <button
+                    type="button"
                     onClick={() => setWizardStep(2)}
                     className={
                       isClassic
@@ -422,6 +429,7 @@ const IntegrationsPage: React.FC = () => {
                   </button>
                   <div className="flex items-center gap-3">
                     <button
+                      type="button"
                       onClick={closeWizard}
                       className={
                         isClassic
@@ -432,6 +440,7 @@ const IntegrationsPage: React.FC = () => {
                       Cancel
                     </button>
                     <button
+                      type="button"
                       onClick={handleFinalSave}
                       className={
                         isClassic
@@ -459,7 +468,7 @@ const IntegrationsPage: React.FC = () => {
 
             {loading ? (
               <div className={`text-center py-8 ${isClassic ? 'text-white/50' : 'text-theme-muted'}`}>
-                <p className="text-[11px] uppercase tracking-[0.14em] font-black">Loading...</p>
+                <p className="text-[11px] uppercase tracking-[0.14em] font-black">Loading…</p>
               </div>
             ) : integrations.length === 0 ? (
               <div className={`text-center py-8 ${isClassic ? 'text-white/50' : 'text-theme-muted'}`}>
@@ -489,23 +498,24 @@ const IntegrationsPage: React.FC = () => {
                         key={config.id}
                         className={`border-b ${isClassic ? 'border-black/15 hover:bg-black/10' : 'border-theme-border/50 hover:bg-theme-bg/50'}`}
                       >
-                        <td className={`px-3 py-3 text-[11px] ${isClassic ? 'text-white' : 'text-theme-text'}`}>
+                        <td className={`p-3 text-[11px] ${isClassic ? 'text-white' : 'text-theme-text'}`}>
                           {config.name}
                         </td>
-                        <td className={`px-3 py-3 text-[11px] ${isClassic ? 'text-white/80' : 'text-theme-muted'}`}>
+                        <td className={`p-3 text-[11px] ${isClassic ? 'text-white/80' : 'text-theme-muted'}`}>
                           {connectionTypeLabel(config.connectionType)}
                         </td>
-                        <td className="px-3 py-3">
+                        <td className="p-3">
                           <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-[0.14em] ${statusColor(config.status, isClassic)}`}>
                             {config.status}
                           </span>
                         </td>
-                        <td className={`px-3 py-3 text-[10px] ${isClassic ? 'text-white/60' : 'text-theme-muted'}`}>
+                        <td className={`p-3 text-[10px] ${isClassic ? 'text-white/60' : 'text-theme-muted'}`}>
                           {formatDate(config.lastSyncAt)}
                         </td>
-                        <td className="px-3 py-3">
+                        <td className="p-3">
                           <div className="flex items-center gap-2">
                             <button
+                              type="button"
                               onClick={() => openEditWizard(config)}
                               className={`text-[9px] font-black uppercase tracking-[0.14em] px-2 py-1 rounded ${
                                 isClassic
@@ -516,6 +526,7 @@ const IntegrationsPage: React.FC = () => {
                               Edit
                             </button>
                             <button
+                              type="button"
                               onClick={() => handleDelete(config.id)}
                               className={`text-[9px] font-black uppercase tracking-[0.14em] px-2 py-1 rounded ${
                                 isClassic

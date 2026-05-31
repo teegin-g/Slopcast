@@ -1,5 +1,5 @@
 import React from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, LazyMotion, domAnimation, m } from 'motion/react';
 
 export interface FilterChip {
   id: string;
@@ -16,10 +16,11 @@ const FilterChips: React.FC<FilterChipsProps> = ({ filters, onRemove }) => {
   if (filters.length === 0) return null;
 
   return (
+    <LazyMotion features={domAnimation}>
     <div className="flex flex-wrap gap-1.5 px-4 py-2">
       <AnimatePresence mode="popLayout">
         {filters.map(filter => (
-          <motion.span
+          <m.span
             key={filter.id}
             layout
             initial={{ opacity: 0, scale: 0.8 }}
@@ -37,10 +38,11 @@ const FilterChips: React.FC<FilterChipsProps> = ({ filters, onRemove }) => {
             >
               x
             </button>
-          </motion.span>
+          </m.span>
         ))}
       </AnimatePresence>
     </div>
+    </LazyMotion>
   );
 };
 

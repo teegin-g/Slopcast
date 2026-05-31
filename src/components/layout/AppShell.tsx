@@ -46,6 +46,11 @@ export function AppShell({ workspace, children }: AppShellProps) {
   const { section, setSection } = useSidebarNav();
   const viewport = useViewportLayout();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [prevSection, setPrevSection] = useState(section);
+  if (prevSection !== section) {
+    setPrevSection(section);
+    setMobileDrawerOpen(false);
+  }
 
   // Sidebar collapse: auto-collapse on mid viewport, manual toggle on desktop
   const [collapsed, setCollapsed] = useState(() => {
@@ -84,10 +89,6 @@ export function AppShell({ workspace, children }: AppShellProps) {
     }
   }, [section]); // eslint-disable-line react-hooks/exhaustive-deps -- intentionally only sync on section change
 
-  // Close mobile drawer on section change
-  useEffect(() => {
-    setMobileDrawerOpen(false);
-  }, [section]);
 
   const sidebarProps = {
     collapsed,

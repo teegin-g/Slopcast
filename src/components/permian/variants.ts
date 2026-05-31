@@ -67,7 +67,7 @@ export interface PermianPalette {
   vignetteDarkness: number;
 }
 
-export const DUSK_PALETTE: PermianPalette = {
+const DUSK_PALETTE: PermianPalette = {
   skyTop: '#0A1F18',
   skyMid: '#162F3D',
   skyLow: '#2A4A5A',
@@ -124,7 +124,7 @@ export const DUSK_PALETTE: PermianPalette = {
   vignetteDarkness: 0.38,
 };
 
-export const NOON_PALETTE: PermianPalette = {
+const NOON_PALETTE: PermianPalette = {
   skyTop: '#1A5A7A',
   skyMid: '#2A8AAA',
   skyLow: '#48B0B8',

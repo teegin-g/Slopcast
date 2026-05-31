@@ -2,9 +2,9 @@ import type { Well } from '../../../types';
 
 export const WELL_SOURCE_ID = 'wells-source';
 export const WELL_CLUSTER_LAYER_ID = 'wells-clusters';
-export const WELL_CLUSTER_COUNT_LAYER_ID = 'wells-cluster-count';
-export const WELL_LABEL_LAYER_ID = 'wells-labels';
-export const WELL_GLOW_LAYER_ID = 'wells-glow';
+const WELL_CLUSTER_COUNT_LAYER_ID = 'wells-cluster-count';
+const WELL_LABEL_LAYER_ID = 'wells-labels';
+const WELL_GLOW_LAYER_ID = 'wells-glow';
 export const WELL_STATUS_LAYER_IDS = ['wells-producing', 'wells-duc', 'wells-permit'] as const;
 
 export type WellStatusLayerId = typeof WELL_STATUS_LAYER_IDS[number];
@@ -33,7 +33,7 @@ export const buildWellColorExpression = (fallbackColor: string) => {
   return ['coalesce', ['get', 'groupColor'], fallbackColor];
 };
 
-export const buildWellColorMatchExpression = (
+const buildWellColorMatchExpression = (
   _wells: Well[],
   _getWellColor: (wellId: string) => string,
   fallbackColor: string,
@@ -122,7 +122,7 @@ export function addWellSourceAndLayers(map: any, geoJson: unknown, colorMatchExp
   }
 }
 
-export function addWellStatusLayers(map: any, colorMatchExpr: unknown, theme: WellLayerTheme) {
+function addWellStatusLayers(map: any, colorMatchExpr: unknown, theme: WellLayerTheme) {
   const defaultRadius = ['interpolate', ['linear'], ['zoom'], 6, 3, 10, 6, 14, 10];
   const permitRadius = ['interpolate', ['linear'], ['zoom'], 6, 2, 10, 4, 14, 7];
   const selectedState = ['boolean', ['feature-state', 'selected'], false];

@@ -201,6 +201,7 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
           {/* Reset */}
           {hasActiveFilters && (
             <button
+              type="button"
               onClick={onResetFilters}
               className={`text-[10px] font-black uppercase tracking-widest shrink-0 ${
                 isClassic ? 'text-white/70 hover:text-white' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
@@ -213,6 +214,7 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
           <div className={`w-px h-4 ${mapOverlayDividerClass(isClassic)}`} />
 
           <button
+            type="button"
             onClick={onSelectAll}
             data-testid="wells-selection-actions-select-filtered"
             className={`text-[10px] font-black uppercase tracking-widest shrink-0 ${
@@ -223,6 +225,7 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
           </button>
           {selectedCount > 0 && (
             <button
+              type="button"
               onClick={onClearSelection}
               data-testid="wells-selection-actions-clear"
               className={`text-[10px] font-black uppercase tracking-widest shrink-0 ${

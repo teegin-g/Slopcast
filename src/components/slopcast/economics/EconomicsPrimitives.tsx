@@ -1,39 +1,7 @@
 import React from 'react';
 import { useStableChartContainer } from '../hooks/useStableChartContainer';
 import type { EconomicsAccent } from './types';
-
-const accentText: Record<EconomicsAccent, string> = {
-  cyan: 'text-theme-cyan',
-  green: 'text-emerald-300',
-  amber: 'text-amber-300',
-  red: 'text-red-300',
-  mint: 'text-teal-300',
-  violet: 'text-violet-300',
-};
-
-const accentBorder: Record<EconomicsAccent, string> = {
-  cyan: 'border-theme-cyan/45',
-  green: 'border-emerald-400/45',
-  amber: 'border-amber-400/45',
-  red: 'border-red-400/45',
-  mint: 'border-teal-400/45',
-  violet: 'border-violet-400/45',
-};
-
-const accentBg: Record<EconomicsAccent, string> = {
-  cyan: 'bg-theme-cyan/10',
-  green: 'bg-emerald-400/10',
-  amber: 'bg-amber-400/10',
-  red: 'bg-red-400/10',
-  mint: 'bg-teal-400/10',
-  violet: 'bg-violet-400/10',
-};
-
-export const accentClass = (accent: EconomicsAccent) => ({
-  text: accentText[accent],
-  border: accentBorder[accent],
-  bg: accentBg[accent],
-});
+import { accentClass } from './accentUtils';
 
 export const ModulePanel: React.FC<{
   title?: string;
@@ -104,14 +72,14 @@ export const AssumptionTable: React.FC<{
       </div>
       {rows.length > 0 ? (
         <div className="divide-y divide-theme-border/35">
-          {rows.map((row, rowIndex) => (
+          {rows.map((row) => (
             <div
-              key={rowIndex}
+              key={String(row[0])}
               className="grid text-[11px] text-theme-muted hover:bg-theme-surface1/45 transition-colors"
               style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }}
             >
               {row.map((cell, cellIndex) => (
-                <div key={cellIndex} className={cellIndex === 0 ? `px-3 py-2 font-semibold ${tone.text}` : 'px-3 py-2 tabular-nums'}>
+                <div key={columns[cellIndex]} className={cellIndex === 0 ? `px-3 py-2 font-semibold ${tone.text}` : 'px-3 py-2 tabular-nums'}>
                   {cell}
                 </div>
               ))}

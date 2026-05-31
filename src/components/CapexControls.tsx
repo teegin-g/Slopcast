@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { CapexAssumptions, CapexItem, CostBasis, CapexCategory } from '../types';
+import type { CapexAssumptions, CapexItem, CostBasis, CapexCategory } from '../types/economics';
 import { useTheme } from '../theme/ThemeProvider';
 import { InlineEditableValue } from './inline/InlineEditableValue';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -74,13 +74,15 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
       const cost = item.basis === 'PER_FOOT' ? item.value * STANDARD_LATERAL : item.value;
       byCategory[item.category] = (byCategory[item.category] || 0) + cost;
     });
-    return Object.entries(byCategory)
-      .filter(([, v]) => v > 0)
-      .map(([category, value]) => ({
-        name: category,
-        value,
-        color: CATEGORY_COLORS[category as CapexCategory] || '#6b7280',
-      }));
+    return Object.entries(byCategory).reduce<{ name: string; value: number; color: string }[]>(
+      (acc, [category, value]) => {
+        if (value > 0) {
+          acc.push({ name: category, value, color: CATEGORY_COLORS[category as CapexCategory] || '#6b7280' });
+        }
+        return acc;
+      },
+      []
+    );
   }, [capex.items]);
 
   const inlineValueClass = isClassic ? 'text-[10px] font-black text-white' : 'text-[10px] font-mono text-theme-text';
@@ -90,16 +92,14 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
   if (!isEditing) {
     return (
       <div className="space-y-3">
-        <div
-          className="cursor-pointer group"
+        <button
+          type="button"
+          className="cursor-pointer group w-full text-left"
           onClick={() => setIsEditing(true)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={e => e.key === 'Enter' && setIsEditing(true)}
         >
           {categoryData.length > 0 ? (
             <div className="flex items-center gap-4">
-              <div className="w-28 h-28 shrink-0" ref={capexChart.containerRef}>
+              <div className="size-28 shrink-0" ref={capexChart.containerRef}>
                 {capexChart.ready ? (
                   <ResponsiveContainer width={capexChart.width} height={capexChart.height}>
                     <PieChart>
@@ -114,8 +114,8 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
                         strokeWidth={1}
                         stroke={isClassic ? 'rgba(0,0,0,0.3)' : 'var(--theme-border)'}
                       >
-                        {categoryData.map((entry, i) => (
-                          <Cell key={i} fill={entry.color} />
+                        {categoryData.map((entry) => (
+                          <Cell key={entry.name} fill={entry.color} />
                         ))}
                       </Pie>
                       <Tooltip
@@ -140,7 +140,7 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
                 </div>
                 {categoryData.map(d => (
                   <div key={d.name} className="flex items-center gap-2 text-[9px]">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                    <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
                     <span className={`uppercase tracking-wider font-bold ${isClassic ? 'text-white/70' : 'text-theme-muted'}`}>
                       {d.name}
                     </span>
@@ -159,7 +159,7 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
           <p className={`text-[9px] text-center mt-2 transition-opacity ${isClassic ? 'text-white/40 group-hover:text-white/70' : 'text-theme-muted/50 group-hover:text-theme-muted'}`}>
             Click to edit details
           </p>
-        </div>
+        </button>
       </div>
     );
   }
@@ -170,6 +170,7 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
       <div className="flex justify-between items-center mb-2">
         <h4 className="text-xs font-bold text-theme-text">Line Items</h4>
         <button
+          type="button"
           onClick={() => setIsEditing(false)}
           className={`px-3 py-1 rounded-inner text-[9px] font-black uppercase tracking-[0.12em] border transition-all ${
             isClassic
@@ -177,7 +178,7 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
               : 'bg-theme-bg text-theme-cyan border-theme-border hover:border-theme-cyan'
           }`}
         >
-          Done
+          Close editor
         </button>
       </div>
 
@@ -258,11 +259,13 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
 
               <div className="col-span-1 text-center">
                 <button
+                  type="button"
+                  aria-label={`Delete ${item.name}`}
                   onMouseDown={(e) => {
                     e.preventDefault();
                     handleDeleteItem(item.id);
                   }}
-                  className="text-theme-border hover:text-theme-danger w-4 h-4 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="text-theme-border hover:text-theme-danger size-4 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   &times;
                 </button>
@@ -278,6 +281,7 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
 
         <div className={`p-2 flex justify-between items-center border-t ${isClassic ? 'bg-black/10 border-black/30' : 'bg-theme-bg border-theme-border'}`}>
           <button
+            type="button"
             onMouseDown={(e) => {
               e.preventDefault();
               handleAddItem();

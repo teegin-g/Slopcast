@@ -42,17 +42,19 @@ const modules: AppModule[] = [
   },
 ];
 
+const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+
 function formatDateTime(value?: string): string {
   if (!value) return 'Not available';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'Unknown';
-  return new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(date);
+  return dateTimeFormatter.format(date);
 }
 
 const HubPage: React.FC = () => {
@@ -125,6 +127,7 @@ const HubPage: React.FC = () => {
 
         <div className="flex items-center gap-2 md:gap-3">
           <button
+            type="button"
             onClick={isAuthenticated ? openSlopcast : openSignIn}
             className={
               isClassic
@@ -138,6 +141,7 @@ const HubPage: React.FC = () => {
           <div className={`flex items-center rounded-full p-1 border theme-transition ${isClassic ? 'bg-black/25 border-black/30' : 'bg-theme-bg border-theme-border'}`}>
             {themes.map(t => (
               <button
+                type="button"
                 key={t.id}
                 onClick={() => setThemeId(t.id)}
                 className={
@@ -177,6 +181,7 @@ const HubPage: React.FC = () => {
 
                 <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
                   <button
+                    type="button"
                     onClick={openSlopcast}
                     className={
                       isClassic
@@ -187,6 +192,7 @@ const HubPage: React.FC = () => {
                     {isAuthenticated ? 'Open Slopcast' : 'Sign In To Access'}
                   </button>
                   <button
+                    type="button"
                     onClick={refreshSession}
                     className={
                       isClassic
@@ -252,6 +258,7 @@ const HubPage: React.FC = () => {
                       </div>
 
                       <button
+                        type="button"
                         disabled={!isAvailable}
                         onClick={isAvailable ? openSlopcast : undefined}
                         className={`w-full rounded-inner px-3 py-2 text-[10px] uppercase tracking-[0.2em] font-black transition-all ${
@@ -313,6 +320,7 @@ const HubPage: React.FC = () => {
               </h3>
               <div className="grid grid-cols-1 gap-3">
                 <button
+                  type="button"
                   onClick={isAuthenticated ? openSlopcast : openSignIn}
                   className={
                     isClassic
@@ -324,6 +332,7 @@ const HubPage: React.FC = () => {
                 </button>
                 {isAuthenticated ? (
                   <button
+                    type="button"
                     onClick={handleSignOut}
                     className={
                       isClassic
@@ -335,6 +344,7 @@ const HubPage: React.FC = () => {
                   </button>
                 ) : (
                   <button
+                    type="button"
                     onClick={refreshSession}
                     className={
                       isClassic

@@ -1,6 +1,6 @@
 import React from 'react';
 import { ECONOMICS_MODULES, EconomicsModule } from './types';
-import { accentClass } from './EconomicsPrimitives';
+import { accentClass } from './accentUtils';
 
 interface EconomicsModuleTabsProps {
   module: EconomicsModule;

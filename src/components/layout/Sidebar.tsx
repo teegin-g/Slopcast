@@ -59,6 +59,7 @@ export function Sidebar({
           </span>
         )}
         <button
+          type="button"
           onClick={onToggleCollapse}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           className={`p-1 rounded-inner theme-transition focus-visible:outline-2 focus-visible:outline-theme-cyan focus-visible:outline-offset-[-2px] ${

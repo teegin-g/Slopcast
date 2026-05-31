@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { SensitivityMatrixResult, SensitivityVariable } from '../types';
+import { SensitivityMatrixResult, SensitivityVariable } from '../types/scenarios';
 import { useTheme } from '../theme/ThemeProvider';
 
 interface SensitivityMatrixProps {
@@ -51,7 +51,7 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
       success: read('--success', [16, 185, 129]),
       danger: read('--danger', [239, 68, 68]),
     };
-  }, [theme.id]);
+  }, []);
 
   const getColor = (val: number) => {
       if (val === 0) return 'rgba(255,255,255,0.05)';
@@ -112,23 +112,23 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
                   <table className="border-collapse">
                       <thead>
                           <tr>
-                              <th className="p-2"></th>
-                              {xLabels.map((x, i) => (
-                                  <th key={i} className="p-2 text-[10px] font-mono font-black border-b text-white" style={{ borderColor: 'rgb(var(--border) / 0.45)' }}>
+                              <th className="p-2" aria-label={`${formatAxisLabel(yVar)} axis`}></th>
+                              {xLabels.map((x) => (
+                                  <th key={String(x)} className="p-2 text-[10px] font-mono font-black border-b text-white" style={{ borderColor: 'rgb(var(--border) / 0.45)' }}>
                                       {formatValue(xVar, x)}
                                   </th>
                               ))}
                           </tr>
                       </thead>
                       <tbody>
-                          {data.map((row, rowIdx) => (
-                              <tr key={rowIdx}>
+                          {data.map((row) => (
+                              <tr key={row[0].yValue}>
                                   <th className="p-2 text-[10px] font-mono font-black border-r text-right text-white" style={{ borderColor: 'rgb(var(--border) / 0.45)' }}>
-                                      {formatValue(yVar, yLabels[rowIdx])}
+                                      {formatValue(yVar, row[0].yValue)}
                                   </th>
-                                  {row.map((cell, colIdx) => (
-                                      <td 
-                                          key={colIdx} 
+                                  {row.map((cell) => (
+                                      <td
+                                          key={`${cell.xValue}-${cell.yValue}`}
                                           className="p-3 text-[11px] font-mono text-center border transition-all cursor-default hover:brightness-110 hover:relative hover:z-10"
                                           style={{ backgroundColor: getColor(cell.npv), borderColor: 'rgb(var(--border) / 0.25)' }}
                                       >
@@ -158,23 +158,23 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
                 <table className="border-collapse">
                     <thead>
                         <tr>
-                            <th className="p-2"></th>
-                            {xLabels.map((x, i) => (
-                                <th key={i} className="p-2 text-[10px] font-mono font-medium border-b transition-all text-theme-cyan border-theme-border">
+                            <th className="p-2" aria-label={`${formatAxisLabel(yVar)} axis`}></th>
+                            {xLabels.map((x) => (
+                                <th key={String(x)} className="p-2 text-[10px] font-mono font-medium border-b transition-all text-theme-cyan border-theme-border">
                                     {formatValue(xVar, x)}
                                 </th>
                             ))}
                         </tr>
                     </thead>
                     <tbody>
-                        {data.map((row, rowIdx) => (
-                            <tr key={rowIdx}>
+                        {data.map((row) => (
+                            <tr key={row[0].yValue}>
                                 <th className="p-2 text-[10px] font-mono font-medium border-r text-right transition-all text-theme-cyan border-theme-border">
-                                    {formatValue(yVar, yLabels[rowIdx])}
+                                    {formatValue(yVar, row[0].yValue)}
                                 </th>
-                                {row.map((cell, colIdx) => (
-                                    <td 
-                                        key={colIdx} 
+                                {row.map((cell) => (
+                                    <td
+                                        key={`${cell.xValue}-${cell.yValue}`}
                                         className="p-3 text-[11px] font-mono text-center border transition-all cursor-default border-theme-border/20 hover:brightness-110 hover:relative hover:z-10"
                                         style={{ backgroundColor: getColor(cell.npv) }}
                                     >

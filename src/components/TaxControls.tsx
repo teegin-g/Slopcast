@@ -1,5 +1,5 @@
 import React from 'react';
-import { TaxAssumptions, TAX_PRESETS, DEFAULT_TAX_ASSUMPTIONS } from '../types';
+import { TaxAssumptions, TAX_PRESETS, DEFAULT_TAX_ASSUMPTIONS } from '../types/economics';
 
 interface TaxControlsProps {
   isClassic: boolean;
@@ -49,8 +49,9 @@ const TaxControls: React.FC<TaxControlsProps> = ({ isClassic, tax, onChange }) =
     <div className="space-y-4">
       {/* State Preset Dropdown */}
       <div>
-        <label className={labelClass}>State Preset</label>
+        <label htmlFor="tax-state-preset" className={labelClass}>State Preset</label>
         <select
+          id="tax-state-preset"
           value={activePreset}
           onChange={handlePresetChange}
           className={selectClass}
@@ -65,8 +66,9 @@ const TaxControls: React.FC<TaxControlsProps> = ({ isClassic, tax, onChange }) =
       {/* Editable Tax Fields */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className={labelClass}>Severance Tax %</label>
+          <label htmlFor="tax-severance" className={labelClass}>Severance Tax %</label>
           <input
+            id="tax-severance"
             type="number"
             step="0.1"
             value={tax.severanceTaxPct}
@@ -75,8 +77,9 @@ const TaxControls: React.FC<TaxControlsProps> = ({ isClassic, tax, onChange }) =
           />
         </div>
         <div>
-          <label className={labelClass}>Ad Valorem %</label>
+          <label htmlFor="tax-advalorem" className={labelClass}>Ad Valorem %</label>
           <input
+            id="tax-advalorem"
             type="number"
             step="0.1"
             value={tax.adValoremTaxPct}
@@ -85,8 +88,9 @@ const TaxControls: React.FC<TaxControlsProps> = ({ isClassic, tax, onChange }) =
           />
         </div>
         <div>
-          <label className={labelClass}>Federal Tax Rate %</label>
+          <label htmlFor="tax-federal" className={labelClass}>Federal Tax Rate %</label>
           <input
+            id="tax-federal"
             type="number"
             step="0.1"
             value={tax.federalTaxRate}
@@ -95,8 +99,9 @@ const TaxControls: React.FC<TaxControlsProps> = ({ isClassic, tax, onChange }) =
           />
         </div>
         <div>
-          <label className={labelClass}>Depletion Allowance %</label>
+          <label htmlFor="tax-depletion" className={labelClass}>Depletion Allowance %</label>
           <input
+            id="tax-depletion"
             type="number"
             step="0.1"
             value={tax.depletionAllowancePct}
@@ -105,8 +110,9 @@ const TaxControls: React.FC<TaxControlsProps> = ({ isClassic, tax, onChange }) =
           />
         </div>
         <div>
-          <label className={labelClass}>State Tax Rate %</label>
+          <label htmlFor="tax-state" className={labelClass}>State Tax Rate %</label>
           <input
+            id="tax-state"
             type="number"
             step="0.1"
             value={tax.stateTaxRate}

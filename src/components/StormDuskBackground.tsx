@@ -765,6 +765,7 @@ export default function StormDuskBackground() {
         zIndex: -1,
       }}
       aria-hidden="true"
+      tabIndex={-1}
     />
   );
 }

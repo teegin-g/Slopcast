@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { LazyMotion, m, domAnimation } from 'motion/react';
 import { KbdBadge } from './KbdBadge';
 
 export type DesignWorkspace = 'WELLS' | 'ECONOMICS';
@@ -51,6 +51,7 @@ const DesignWorkspaceTabs: React.FC<DesignWorkspaceTabsProps> = ({
   };
 
   return (
+    <LazyMotion features={domAnimation}>
     <div
       data-testid="design-workspace-tabs"
       className={`border ${compact ? 'p-1' : 'p-1.5'} theme-transition ${
@@ -61,12 +62,13 @@ const DesignWorkspaceTabs: React.FC<DesignWorkspaceTabsProps> = ({
         {(['WELLS', 'ECONOMICS'] as const).map((target) => (
           <button
             key={target}
+            type="button"
             data-testid={`design-workspace-${target.toLowerCase()}`}
             onClick={() => onChange(target)}
             className={`relative focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${buttonClass(target)}`}
           >
             {workspace === target && (
-              <motion.div
+              <m.div
                 layoutId="designWorkspaceActiveTab"
                 className={`absolute inset-0 rounded-full ${
                   isClassic
@@ -95,6 +97,7 @@ const DesignWorkspaceTabs: React.FC<DesignWorkspaceTabsProps> = ({
         ))}
       </div>
     </div>
+    </LazyMotion>
   );
 };
 

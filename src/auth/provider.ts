@@ -7,7 +7,7 @@ export interface AuthAdapter {
   getSession: () => AuthSession | null;
 }
 
-export const AUTH_STORAGE_KEY = 'slopcast-auth-session';
+const AUTH_STORAGE_KEY = 'slopcast-auth-session';
 
 export function readStoredSession(): AuthSession | null {
   try {

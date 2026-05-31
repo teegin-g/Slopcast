@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { useMapboxMap } from '../../hooks/useMapboxMap';
 import { useTheme } from '../../theme/ThemeProvider';
 import { overlayPanelClass, type MapboxOverrides } from '../../theme/themes';
@@ -51,7 +51,7 @@ const MAX_BACKGROUND_WELLBORES = 250;
 const MAX_TOTAL_WELLBORES = 320;
 
 function setKey(values: Set<string>): string {
-  return [...values].sort().join(',');
+  return Array.from(values).sort().join(',');
 }
 
 function wellboreSimplificationTolerance(zoom: number, selected: boolean): number {
@@ -218,7 +218,11 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   );
   const [sourceSetDataCount, setSourceSetDataCount] = useState(0);
   const lastSourceSetDataMs = useRef(0);
-  const previousFeatureStateRef = useRef(new Map<string, { selected: boolean; dimmed: boolean; visible: boolean }>());
+  const previousFeatureStateRef = useRef<Map<string, { selected: boolean; dimmed: boolean; visible: boolean }>>(
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- lazy init below
+    null!
+  );
+  if (!previousFeatureStateRef.current) previousFeatureStateRef.current = new Map();
   const hoverRafRef = useRef<number | null>(null);
 
   // Hover tooltip state
@@ -310,10 +314,12 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     return wells;
   }, [viewportWells, spatialSource, wells]);
 
+  const onWellsLoadedEvent = useEffectEvent((wells: typeof effectiveWells) => onWellsLoaded?.(wells));
+
   // Notify parent when effective wells change
   useEffect(() => {
-    onWellsLoaded?.(effectiveWells);
-  }, [effectiveWells, onWellsLoaded]);
+    onWellsLoadedEvent(effectiveWells);
+  }, [effectiveWells]);
 
   // Derive full Well objects for tooltip/popup from effectiveWells
   const hoveredWell = useMemo(
@@ -534,8 +540,9 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   }, [map, isLoaded, onToggleWell, mapLayerEpoch]);
 
   useEffect(() => {
+    const rafRef = hoverRafRef;
     return () => {
-      if (hoverRafRef.current !== null) cancelAnimationFrame(hoverRafRef.current);
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
   }, []);
 

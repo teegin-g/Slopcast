@@ -1,5 +1,5 @@
 import React from 'react';
-import { JvAgreement, OwnershipAssumptions } from '../types';
+import { JvAgreement, OwnershipAssumptions } from '../types/economics';
 import { useTheme } from '../theme/ThemeProvider';
 import { InlineEditableValue } from './inline/InlineEditableValue';
 import { createLocalId } from '../utils/id';
@@ -10,6 +10,13 @@ interface OwnershipControlsProps {
 }
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+
+const pctValidate = (raw: string): string | null => {
+  const n = parseFloat(raw);
+  if (isNaN(n)) return 'Must be a number';
+  if (n < 0 || n > 100) return '0-100%';
+  return null;
+};
 const pctToDec = (pct: number) => clamp01((Number.isFinite(pct) ? pct : 0) / 100);
 const decToPct = (dec: number) => (clamp01(dec) * 100);
 
@@ -46,13 +53,6 @@ const OwnershipControls: React.FC<OwnershipControlsProps> = ({ ownership, onChan
     updateOwnership({ agreements: (ownership.agreements || []).filter(a => a.id !== id) });
   };
 
-  const pctValidate = (raw: string): string | null => {
-    const n = parseFloat(raw);
-    if (isNaN(n)) return 'Must be a number';
-    if (n < 0 || n > 100) return '0-100%';
-    return null;
-  };
-
   const labelClass = isClassic
     ? 'text-[9px] font-black uppercase tracking-[0.2em] mb-2 block text-theme-warning'
     : 'text-[9px] font-black uppercase tracking-[0.2em] mb-2 block text-theme-muted';
@@ -67,8 +67,9 @@ const OwnershipControls: React.FC<OwnershipControlsProps> = ({ ownership, onChan
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className={labelClass}>Base NRI (%)</label>
+          <label htmlFor="ownership-base-nri" className={labelClass}>Base NRI (%)</label>
           <InlineEditableValue
+            id="ownership-base-nri"
             value={decToPct(ownership.baseNri).toFixed(1)}
             onCommit={(v) => updateOwnership({ baseNri: pctToDec(parseFloat(v) || 0) })}
             format={(v) => `${Number(v).toFixed(1)}%`}
@@ -80,8 +81,9 @@ const OwnershipControls: React.FC<OwnershipControlsProps> = ({ ownership, onChan
           />
         </div>
         <div>
-          <label className={labelClass}>Base Cost Interest (%)</label>
+          <label htmlFor="ownership-base-cost-interest" className={labelClass}>Base Cost Interest (%)</label>
           <InlineEditableValue
+            id="ownership-base-cost-interest"
             value={decToPct(ownership.baseCostInterest).toFixed(1)}
             onCommit={(v) => updateOwnership({ baseCostInterest: pctToDec(parseFloat(v) || 0) })}
             format={(v) => `${Number(v).toFixed(1)}%`}
@@ -194,11 +196,13 @@ const OwnershipControls: React.FC<OwnershipControlsProps> = ({ ownership, onChan
 
               <div className="col-span-1 text-center">
                 <button
+                  type="button"
                   onMouseDown={(e) => {
                     e.preventDefault();
                     deleteAgreement(a.id);
                   }}
-                  className="text-theme-border hover:text-theme-danger w-4 h-4 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Delete agreement"
+                  className="text-theme-border hover:text-theme-danger size-4 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   &times;
                 </button>
@@ -215,6 +219,7 @@ const OwnershipControls: React.FC<OwnershipControlsProps> = ({ ownership, onChan
 
         <div className={`p-2 flex justify-between items-center border-t ${headerClass}`}>
           <button
+            type="button"
             onMouseDown={(e) => {
               e.preventDefault();
               addAgreement();

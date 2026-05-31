@@ -160,15 +160,15 @@ const WaterfallChart: React.FC<WaterfallChartProps> = ({ isClassic, baseNpv, dri
 
               {/* Invisible spacer series */}
               <Bar dataKey="invisible" stackId="waterfall" fill="transparent" isAnimationActive={false}>
-                {data.map((entry, index) => (
-                  <Cell key={`spacer-${index}`} fill="transparent" />
+                {data.map((entry) => (
+                  <Cell key={`spacer-${entry.name}`} fill="transparent" />
                 ))}
               </Bar>
 
               {/* Visible value series */}
               <Bar dataKey="value" stackId="waterfall" radius={[3, 3, 0, 0]}>
-                {data.map((entry, index) => (
-                  <Cell key={`val-${index}`} fill={fillForType(entry.type)} />
+                {data.map((entry) => (
+                  <Cell key={`val-${entry.name}`} fill={fillForType(entry.type)} />
                 ))}
               </Bar>
             </BarChart>

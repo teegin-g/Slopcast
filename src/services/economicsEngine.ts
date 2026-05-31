@@ -1,5 +1,5 @@
+import { Well, WellGroup } from '../types/wells';
 import {
-  Well,
   TypeCurveParams,
   CapexAssumptions,
   CommodityPricingAssumptions,
@@ -7,11 +7,8 @@ import {
   OwnershipAssumptions,
   MonthlyCashFlow,
   DealMetrics,
-  WellGroup,
-  ScheduleParams,
-  SensitivityVariable,
-  SensitivityMatrixResult,
-} from '../types';
+} from '../types/economics';
+import { ScheduleParams, SensitivityVariable, SensitivityMatrixResult } from '../types/scenarios';
 import * as tsCalc from '../utils/economics';
 
 // ---------------------------------------------------------------------------
@@ -146,13 +143,12 @@ const engines: Record<EngineId, EconomicsEngine> = {
   python: pyEngine,
 };
 
-export { getEngineId as getStoredEngineId, setEngineId as setStoredEngineId } from './storage/workspacePreferences';
 import { getEngineId } from './storage/workspacePreferences';
 
-export function getEngine(id?: EngineId): EconomicsEngine {
+function getEngine(id?: EngineId): EconomicsEngine {
   return engines[id ?? getEngineId()];
 }
 
-export function getAllEngines(): EconomicsEngine[] {
+function getAllEngines(): EconomicsEngine[] {
   return Object.values(engines);
 }

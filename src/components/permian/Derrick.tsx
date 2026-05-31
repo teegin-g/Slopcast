@@ -94,7 +94,7 @@ export function Derrick({ worldX, groundY, aspect, palette, frozen = false }: De
     const bracesG = new THREE.BufferGeometry();
     bracesG.setAttribute('position', new THREE.BufferAttribute(new Float32Array(braces), 3));
     return { legsGeom: legsG, bracesGeom: bracesG };
-  }, [aspect, rigH, rigW, baseLegHalf, topLegHalf]);
+  }, [rigH, rigW, baseLegHalf, topLegHalf]);
 
   // Cables for the traveling-block rig (two cables from crown block down to
   // block). Rebuilt each frame as the block moves.

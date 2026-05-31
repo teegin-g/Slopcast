@@ -1,7 +1,7 @@
 import { DEFAULT_COMMODITY_PRICING } from '../../constants';
 import type { Scenario, ScheduleParams } from '../../types';
 
-export const DEFAULT_SCHEDULE: ScheduleParams = {
+const DEFAULT_SCHEDULE: ScheduleParams = {
   annualRigs: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
   drillDurationDays: 18,
   stimDurationDays: 12,

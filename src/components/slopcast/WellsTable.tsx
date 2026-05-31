@@ -22,8 +22,10 @@ export interface WellsTableProps {
   isLoading?: boolean;
 }
 
+const FEET_FORMATTER = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+
 function formatFeet(value: number) {
-  return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value)} ft`;
+  return `${FEET_FORMATTER.format(value)} ft`;
 }
 
 const WellsTable: React.FC<WellsTableProps> = ({
@@ -68,6 +70,7 @@ const WellsTable: React.FC<WellsTableProps> = ({
       header: ({ table }) => (
         <input
           type="checkbox"
+          aria-label="Select all rows"
           checked={table.getIsAllRowsSelected()}
           onChange={table.getToggleAllRowsSelectedHandler()}
         />
@@ -75,6 +78,7 @@ const WellsTable: React.FC<WellsTableProps> = ({
       cell: ({ row }) => (
         <input
           type="checkbox"
+          aria-label={`Select row ${row.id}`}
           checked={row.getIsSelected()}
           onChange={row.getToggleSelectedHandler()}
         />
@@ -168,6 +172,7 @@ const WellsTable: React.FC<WellsTableProps> = ({
         <div className="px-4 py-2 border-b border-theme-border/60 flex flex-col md:flex-row gap-2">
         <input
           type="text"
+          aria-label="Search wells"
           value={globalFilter ?? ''}
           onChange={e => setGlobalFilter(e.target.value)}
           placeholder="Search wells..."
@@ -214,12 +219,14 @@ const WellsTable: React.FC<WellsTableProps> = ({
                   {headerGroup.headers.map(header => (
                     <th
                       key={header.id}
-                      className="py-2 px-2 text-left text-xs font-black uppercase tracking-[0.24em] text-theme-cyan heading-font relative"
+                      className="p-2 text-left text-xs font-black uppercase tracking-[0.24em] text-theme-cyan heading-font relative"
                       style={{ width: header.getSize() }}
                     >
-                      {header.isPlaceholder ? null : (
-                        <div
-                          className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}
+                      {header.isPlaceholder ? null : header.column.getCanSort() ? (
+                        <button
+                          type="button"
+                          aria-label={`Sort by ${String(header.column.columnDef.header)}`}
+                          className="cursor-pointer select-none bg-transparent border-0 p-0 text-inherit font-inherit w-full text-left"
                           onClick={header.column.getToggleSortingHandler()}
                         >
                           {flexRender(header.column.columnDef.header, header.getContext())}
@@ -227,11 +234,16 @@ const WellsTable: React.FC<WellsTableProps> = ({
                             asc: ' \u25B2',
                             desc: ' \u25BC',
                           }[header.column.getIsSorted() as string] ?? ''}
-                        </div>
+                        </button>
+                      ) : (
+                        <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
                       )}
                       {/* Resize handle */}
                       {header.column.getCanResize() && (
                         <div
+                          role="separator"
+                          aria-label="Resize column"
+                          tabIndex={0}
                           onMouseDown={header.getResizeHandler()}
                           onTouchStart={header.getResizeHandler()}
                           className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-theme-border/30 hover:bg-theme-cyan/50"

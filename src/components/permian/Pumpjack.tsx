@@ -46,7 +46,7 @@ function useDynamicBar(thickness: number) {
   return { ref, update };
 }
 
-export function Pumpjack({ slot, aspect, palette, frozen = false }: PumpjackProps) {
+function Pumpjack({ slot, aspect, palette, frozen = false }: PumpjackProps) {
   const groupRef = useRef<THREE.Group>(null);
   const rockRef = useRef<THREE.Group>(null);
   const crankRef = useRef<THREE.Group>(null);
@@ -207,8 +207,8 @@ export function Pumpjacks({
 }) {
   return (
     <group>
-      {PUMPJACK_SLOTS.map((slot, i) => (
-        <Pumpjack key={i} slot={slot} aspect={aspect} palette={palette} frozen={frozen} />
+      {PUMPJACK_SLOTS.map((slot) => (
+        <Pumpjack key={`pumpjack-${slot.xNorm}-${slot.phase}`} slot={slot} aspect={aspect} palette={palette} frozen={frozen} />
       ))}
     </group>
   );

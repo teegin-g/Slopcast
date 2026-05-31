@@ -17,16 +17,16 @@ import type { EngineId } from '../economicsEngine';
 
 // ─── Key constants ───────────────────────────────────────────────────────────
 
-export const DESIGN_WORKSPACE_KEY = 'slopcast-design-workspace';
+const DESIGN_WORKSPACE_KEY = 'slopcast-design-workspace';
 export const ECONOMICS_RESULTS_TAB_KEY = 'slopcast-econ-results-tab';
 export const ECONOMICS_MODULE_KEY = 'slopcast-econ-module';
-export const ECONOMICS_FOCUS_MODE_KEY = 'slopcast-econ-focus-mode';
-export const FX_QUERY_KEY = 'fx';
-export const FX_STORAGE_KEY_PREFIX = 'slopcast-fx-';
-export const ANALYSIS_OPEN_SECTION_KEY = 'slopcast-analysis-open-section';
-export const SIDEBAR_COLLAPSED_KEY = 'slopcast-sidebar-collapsed';
-export const ENGINE_ID_KEY = 'slopcast_engine_id';
-export const ONBOARDING_KEY = 'slopcast-onboarding-done';
+const ECONOMICS_FOCUS_MODE_KEY = 'slopcast-econ-focus-mode';
+const FX_QUERY_KEY = 'fx';
+const FX_STORAGE_KEY_PREFIX = 'slopcast-fx-';
+const ANALYSIS_OPEN_SECTION_KEY = 'slopcast-analysis-open-section';
+const SIDEBAR_COLLAPSED_KEY = 'slopcast-sidebar-collapsed';
+const ENGINE_ID_KEY = 'slopcast_engine_id';
+const ONBOARDING_KEY = 'slopcast-onboarding-done';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -69,7 +69,7 @@ export function setDesignWorkspace(value: DesignWorkspace): void {
 // ─── Economics results tab ───────────────────────────────────────────────────
 // Migration: SUMMARY/CHARTS/DRIVERS → OVERVIEW (legacy tab names removed)
 
-export function getEconomicsResultsTab(): EconomicsResultsTab {
+function getEconomicsResultsTab(): EconomicsResultsTab {
   const raw = safeGet(ECONOMICS_RESULTS_TAB_KEY);
   if (raw === 'OVERVIEW' || raw === 'CASH_FLOW' || raw === 'RESERVES') return raw;
   // Migrate legacy tab names
@@ -80,7 +80,7 @@ export function getEconomicsResultsTab(): EconomicsResultsTab {
   return 'OVERVIEW';
 }
 
-export function setEconomicsResultsTab(value: EconomicsResultsTab): void {
+function setEconomicsResultsTab(value: EconomicsResultsTab): void {
   safeSet(ECONOMICS_RESULTS_TAB_KEY, value);
 }
 
@@ -147,7 +147,7 @@ export function clearFxMode(themeId: string): void {
 
 // ─── Analysis open section ───────────────────────────────────────────────────
 
-export function getAnalysisOpenSection(): AnalysisOpenSection | null {
+function getAnalysisOpenSection(): AnalysisOpenSection | null {
   const raw = safeGet(ANALYSIS_OPEN_SECTION_KEY);
   if (raw === 'PRICING' || raw === 'SCHEDULE' || raw === 'SCALARS') return raw;
   return null;
@@ -177,16 +177,16 @@ export function getEngineId(): EngineId {
   return stored === 'python' ? 'python' : 'typescript';
 }
 
-export function setEngineId(id: EngineId): void {
+function setEngineId(id: EngineId): void {
   safeSet(ENGINE_ID_KEY, id);
 }
 
 // ─── Onboarding ──────────────────────────────────────────────────────────────
 
-export function getOnboardingDone(): boolean {
+function getOnboardingDone(): boolean {
   return safeGet(ONBOARDING_KEY) === '1';
 }
 
-export function setOnboardingDone(): void {
+function setOnboardingDone(): void {
   safeSet(ONBOARDING_KEY, '1');
 }

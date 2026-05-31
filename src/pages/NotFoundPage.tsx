@@ -18,6 +18,7 @@ const NotFoundPage: React.FC = () => {
           This page does not exist in the Slopcast hub yet.
         </p>
         <button
+          type="button"
           onClick={() => navigate('/hub')}
           className={
             isClassic

@@ -128,6 +128,7 @@ const SchemaMapper: React.FC<SchemaMapperProps> = ({
           </span>
 
           <button
+            type="button"
             onClick={handleAutoMatch}
             disabled={sourceFields.length === 0}
             className={
@@ -140,6 +141,7 @@ const SchemaMapper: React.FC<SchemaMapperProps> = ({
           </button>
 
           <button
+            type="button"
             onClick={handleClearAll}
             className={
               isClassic

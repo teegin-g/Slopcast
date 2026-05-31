@@ -73,7 +73,7 @@ interface GridShortcutHandlers {
   onEscape?: () => void;
 }
 
-export function useGridKeyboardShortcuts(handlers: GridShortcutHandlers) {
+function useGridKeyboardShortcuts(handlers: GridShortcutHandlers) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const grid = handlers.gridRef.current;

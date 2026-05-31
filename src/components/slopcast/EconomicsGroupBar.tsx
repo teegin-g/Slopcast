@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Well, WellGroup } from '../../types';
+import { Well, WellGroup } from '../../types/wells';
 import { currencyMm } from './economics/derived';
 import { useToast } from './Toast';
 
@@ -28,14 +28,29 @@ export interface EconomicsGroupBarProps {
   groupPulse?: React.ReactNode;
 }
 
+const EMPTY_WELLS: Well[] = [];
+const EMPTY_RANKINGS: GroupMetrics[] = [];
+
+const formatMillions = (value: number) => `$${(value / 1e6).toFixed(1)}M`;
+const formatPayout = (months: number) => (months > 0 ? `${months}mo` : '—');
+const groupHealth = (group: WellGroup) => {
+  const checks = [
+    group.wellIds.size > 0,
+    group.capex.items.length > 0,
+    group.typeCurve.qi > 0,
+  ];
+  const done = checks.filter(Boolean).length;
+  return { done, total: checks.length };
+};
+
 const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
   isClassic,
   groups,
-  wells = [],
+  wells = EMPTY_WELLS,
   activeGroupId,
   onActivateGroup,
   onCloneActiveGroup,
-  scenarioRankings = [],
+  scenarioRankings = EMPTY_RANKINGS,
   focusMode = false,
   onToggleFocusMode,
   moduleSwitcher,
@@ -118,7 +133,7 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
       ? groups.filter(g => g.name.toLowerCase().includes(needle))
       : groups;
 
-    const sorted = [...base].sort((a, b) => {
+    const sorted = base.slice().sort((a, b) => {
       if (sortKey === 'NAME') return a.name.localeCompare(b.name);
 
       const aMetrics = metricsById.get(a.id);
@@ -142,19 +157,6 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
 
     return sorted;
   }, [groups, metricsById, search, sortKey]);
-
-  const formatMillions = (value: number) => `$${(value / 1e6).toFixed(1)}M`;
-  const formatPayout = (months: number) => (months > 0 ? `${months}mo` : '—');
-
-  const groupHealth = (group: WellGroup) => {
-    const checks = [
-      group.wellIds.size > 0,
-      group.capex.items.length > 0,
-      group.typeCurve.qi > 0,
-    ];
-    const done = checks.filter(Boolean).length;
-    return { done, total: checks.length };
-  };
 
   const activeMetrics = activeGroup ? metricsById.get(activeGroup.id) : undefined;
   const activeHealth = activeGroup ? groupHealth(activeGroup) : { done: 0, total: 3 };
@@ -245,7 +247,7 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
                   }
                 >
                   <span className="flex items-center gap-2 truncate">
-                    <span className="w-2.5 h-2.5 rounded-full border border-theme-border/30 shrink-0" style={{ backgroundColor: activeGroup?.color || '#4F8BFF', boxShadow: `0 0 0 2px ${(activeGroup?.color || '#4F8BFF')}33` }} />
+                    <span className="size-2.5 rounded-full border border-theme-border/30 shrink-0" style={{ backgroundColor: activeGroup?.color || '#4F8BFF', boxShadow: `0 0 0 2px ${(activeGroup?.color || '#4F8BFF')}33` }} />
                     <span className="truncate">{activeGroup?.name || 'No group'}</span>
                   </span>
                   <span className="text-theme-muted">▾</span>
@@ -255,6 +257,7 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
                 {isOpen && (
                   <div
                     role="listbox"
+                    tabIndex={0}
                     data-testid="economics-group-menu"
                     onKeyDown={handleMenuKeyDown}
                     className={
@@ -340,7 +343,7 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
                           >
                             <div className="flex items-center justify-between gap-3">
                               <div className="min-w-0 flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full border border-theme-border/30 shrink-0" style={{ backgroundColor: group.color }} />
+                                <span className="size-2.5 rounded-full border border-theme-border/30 shrink-0" style={{ backgroundColor: group.color }} />
                                 <span className="truncate text-xs font-black uppercase tracking-[0.08em]">
                                   {group.name}
                                 </span>
@@ -444,7 +447,7 @@ const EconomicsGroupBar: React.FC<EconomicsGroupBarProps> = ({
             }`}>
               <span className="flex min-w-0 items-center gap-1.5">
                 <span
-                  className="w-2 h-2 rounded-full shrink-0"
+                  className="size-2 rounded-full shrink-0"
                   style={{ backgroundColor: activeGroup.color || '#4F8BFF' }}
                 />
                 <span className={`text-[10px] font-black uppercase tracking-[0.08em] truncate ${

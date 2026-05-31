@@ -31,10 +31,10 @@
     "seed:supabase:wells": "node scripts/seed-wells.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --project app",
-    "test:watch": "vitest --project app"
+    "test:watch": "vitest --project app",
+    "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
-    "@google/genai": "^1.38.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.0",
     "@react-three/postprocessing": "^3.0.4",
@@ -70,9 +70,8 @@
     "@types/three": "^0.170.0",
     "@vitest/browser-playwright": "^4.1.2",
     "jsdom": "^28.1.0",
-    "pixelmatch": "^7.1.0",
     "playwright": "^1.58.2",
-    "pngjs": "^7.0.0",
+    "react-doctor": "^0.2.14",
     "storybook": "^10.3.3",
     "vitest": "^4.0.18"
   }

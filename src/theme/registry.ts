@@ -33,7 +33,7 @@ export function getUiThemeCases(themes: readonly ThemeDefinition[] = THEMES): Ui
 }
 
 export function getFxThemeIds(themes: readonly ThemeDefinition[] = THEMES): ThemeId[] {
-  return themes.filter(theme => theme.fxTheme).map(theme => theme.id);
+  return themes.flatMap(theme => theme.fxTheme ? [theme.id] : []);
 }
 
 export function overlayPanelClass(style: ThemeFeatures['panelStyle']): string {

@@ -65,6 +65,7 @@ const AuthPage: React.FC = () => {
             <div className={`flex items-center rounded-full p-1 border theme-transition ${isClassic ? 'bg-black/25 border-black/30' : 'bg-theme-bg border-theme-border'}`}>
               {themes.map(t => (
                 <button
+                  type="button"
                   key={t.id}
                   onClick={() => setThemeId(t.id)}
                   className={
@@ -125,6 +126,7 @@ const AuthPage: React.FC = () => {
 
               <div className="mt-5 flex flex-col sm:flex-row gap-3">
                 <button
+                  type="button"
                   onClick={handleBypassSignIn}
                   disabled={pending}
                   className={
@@ -133,9 +135,10 @@ const AuthPage: React.FC = () => {
                       : 'rounded-inner px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] bg-theme-cyan text-theme-bg shadow-glow-cyan disabled:opacity-70'
                   }
                 >
-                  {pending ? 'Signing In...' : 'Sign In As Demo User'}
+                  {pending ? 'Signing In…' : 'Sign In As Demo User'}
                 </button>
                 <button
+                  type="button"
                   disabled
                   className={
                     isClassic
@@ -158,13 +161,13 @@ const AuthPage: React.FC = () => {
               Route Guard Preview
             </h3>
             <div className="space-y-3">
-              <div className="rounded-inner border px-3 py-3 text-xs bg-theme-bg border-theme-border/70 text-theme-muted">
+              <div className="rounded-inner border p-3 text-xs bg-theme-bg border-theme-border/70 text-theme-muted">
                 Protected destination: <span className="text-theme-text font-semibold">{redirectTarget}</span>
               </div>
-              <div className="rounded-inner border px-3 py-3 text-xs bg-theme-bg border-theme-border/70 text-theme-muted">
+              <div className="rounded-inner border p-3 text-xs bg-theme-bg border-theme-border/70 text-theme-muted">
                 Provider mode: <span className="text-theme-text font-semibold">dev-bypass</span>
               </div>
-              <div className="rounded-inner border px-3 py-3 text-xs bg-theme-bg border-theme-border/70 text-theme-muted">
+              <div className="rounded-inner border p-3 text-xs bg-theme-bg border-theme-border/70 text-theme-muted">
                 Supabase-ready adapter exists and can be wired by setting <span className="text-theme-text font-semibold">VITE_AUTH_PROVIDER=supabase</span>.
               </div>
             </div>

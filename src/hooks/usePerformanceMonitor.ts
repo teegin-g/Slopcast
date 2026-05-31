@@ -60,9 +60,11 @@ export function usePerformanceMonitor(enabled: boolean): PerformanceData {
   const [entries, setEntries] = useState<PerformanceEntry[]>([]);
   const [slowRenders, setSlowRenders] = useState<PerformanceEntry[]>([]);
 
-  const entriesBuffer = useRef(new RingBuffer<PerformanceEntry>(MAX_ENTRIES));
+  const entriesBuffer = useRef<RingBuffer<PerformanceEntry>>(null as unknown as RingBuffer<PerformanceEntry>);
+  if (entriesBuffer.current === null) entriesBuffer.current = new RingBuffer<PerformanceEntry>(MAX_ENTRIES);
   const rafIdRef = useRef<number | null>(null);
-  const lastFrameTimeRef = useRef<number>(performance.now());
+  const lastFrameTimeRef = useRef<number>(null as unknown as number);
+  if (lastFrameTimeRef.current === null) lastFrameTimeRef.current = performance.now();
   const frameCountRef = useRef(0);
   const fpsIntervalRef = useRef<number | null>(null);
 
@@ -182,7 +184,7 @@ export function usePerformanceMonitor(enabled: boolean): PerformanceData {
  * @param componentName - Name of the component being measured
  * @param startTime - performance.now() timestamp from before render
  */
-export function markRender(componentName: string, startTime: number): void {
+function markRender(componentName: string, startTime: number): void {
   const endTime = performance.now();
   const duration = endTime - startTime;
 
@@ -215,10 +217,10 @@ export function markRender(componentName: string, startTime: number): void {
  *
  * @param componentName - Name to identify this component in performance data
  */
-export function useRenderTime(componentName: string): void {
-  const renderStartRef = useRef<number>(performance.now());
+function useRenderTime(componentName: string): void {
+  const renderStartRef = useRef<number>(null as unknown as number);
 
-  // Capture start time before render
+  // Capture start time before render (always update, the ref pattern here is intentional)
   renderStartRef.current = performance.now();
 
   useEffect(() => {

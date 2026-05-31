@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback, useEffectEvent } from 'react';
 import * as d3 from 'd3';
-import { Well, WellGroup } from '../types';
+import { Well, WellGroup } from '../types/wells';
 import { ThemeId, getTheme } from '../theme/themes';
 
 interface ActiveFilter {
@@ -26,6 +26,7 @@ interface MapVisualizerProps {
 
 const PERMIAN_CENTER = { lat: 31.9, lng: -102.3 };
 const MAPBOX_TOKEN = typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_MAPBOX_TOKEN : '';
+const EMPTY_ACTIVE_FILTERS: ActiveFilter[] = [];
 
 const USA_BOUNDS = { minLat: 24.0, maxLat: 50.0, minLng: -125.0, maxLng: -66.0 };
 
@@ -89,7 +90,7 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
   onSelectWells,
   themeId,
   uiBottomInsetPx = 0,
-  activeFilters = [],
+  activeFilters = EMPTY_ACTIVE_FILTERS,
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -104,7 +105,7 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
   const [showGrid, setShowGrid] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [heatmapMetric, setHeatmapMetric] = useState<HeatmapMetric>('density');
-  const [useMapbox, setUseMapbox] = useState(!!MAPBOX_TOKEN);
+  const [useMapbox, setUseMapbox] = useState(() => !!MAPBOX_TOKEN);
   const [mapboxLoaded, setMapboxLoaded] = useState(false);
   const [isSatellite, setIsSatellite] = useState(false);
   const [formationFilter, setFormationFilter] = useState<string | null>(null);
@@ -133,6 +134,10 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
 
   const isDimmedWell = useCallback((wellId: string) => dimmedWellIds.has(wellId), [dimmedWellIds]);
   const isVisibleWell = useCallback((wellId: string) => visibleWellIds.has(wellId), [visibleWellIds]);
+
+  // Effect Events: always read latest prop values without being reactive deps
+  const onToggleWellEvent = useEffectEvent(onToggleWell);
+  const onSelectWellsEvent = useEffectEvent(onSelectWells);
 
   // Resize handler
   useEffect(() => {
@@ -249,7 +254,7 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
   const handleFormationSelect = useCallback((formation: string | null) => {
     setFormationFilter(formation);
     if (formation) {
-      const matching = wells.filter(w => w.formation === formation).map(w => w.id);
+      const matching = wells.flatMap(w => w.formation === formation ? [w.id] : []);
       if (matching.length > 0) onSelectWells(matching);
     }
   }, [wells, onSelectWells]);
@@ -341,10 +346,10 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
         if (isDimmedWell(d.id)) return 0.12;
         return selectedWellIds.has(d.id) ? 1 : 0.6;
       })
-      .attr('filter', d => (selectedWellIds.has(d.id) && !isDimmedWell(d.id) && themeMeta.features.glowEffects) ? 'url(#neon-glow)' : 'none')
+      .attr('filter', d => (selectedWellIds.has(d.id) && !isDimmedWell(d.id) && getTheme(themeId).features.glowEffects) ? 'url(#neon-glow)' : 'none')
       .attr('cursor', d => isDimmedWell(d.id) ? 'default' : 'pointer')
       .on('click', (event, d) => {
-        if (!event.defaultPrevented && isVisibleWell(d.id)) onToggleWell(d.id);
+        if (!event.defaultPrevented && isVisibleWell(d.id)) onToggleWellEvent(d.id);
       })
       .on('mouseover', function (_event, d) {
         if (isDimmedWell(d.id)) return;
@@ -371,11 +376,11 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
         .on('end', () => {
           const pts = lassoPointsRef.current;
           if (pts.length > 2) {
-            const selected = wells.filter(w => {
-              if (!isVisibleWell(w.id)) return false;
-              return d3.polygonContains(pts, [xScale(w.lng), yScale(w.lat)]);
-            }).map(w => w.id);
-            if (selected.length > 0) onSelectWells(selected);
+            const selected = wells.flatMap(w => {
+              if (!isVisibleWell(w.id)) return [];
+              return d3.polygonContains(pts, [xScale(w.lng), yScale(w.lat)]) ? [w.id] : [];
+            });
+            if (selected.length > 0) onSelectWellsEvent(selected);
           }
           setLassoPoints([]);
           lassoPointsRef.current = [];
@@ -400,12 +405,12 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
             const [x2, y2] = rectEnd || rectStart;
             const minX = Math.min(x1, x2), maxX = Math.max(x1, x2);
             const minY = Math.min(y1, y2), maxY = Math.max(y1, y2);
-            const selected = wells.filter(w => {
-              if (!isVisibleWell(w.id)) return false;
+            const selected = wells.flatMap(w => {
+              if (!isVisibleWell(w.id)) return [];
               const wx = xScale(w.lng), wy = yScale(w.lat);
-              return wx >= minX && wx <= maxX && wy >= minY && wy <= maxY;
-            }).map(w => w.id);
-            if (selected.length > 0) onSelectWells(selected);
+              return (wx >= minX && wx <= maxX && wy >= minY && wy <= maxY) ? [w.id] : [];
+            });
+            if (selected.length > 0) onSelectWellsEvent(selected);
           }
           setRectStart(null);
           setRectEnd(null);
@@ -415,7 +420,12 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
     }
 
     svg.style('cursor', isSelecting ? 'crosshair' : 'default');
-  }, [wells, selectedWellIds, visibleWellIds, dimmedWellIds, groups, dimensions, selectionTool, isSelecting, onToggleWell, onSelectWells, themeId, showGrid, showHeatmap, heatmapMetric, formationFilter, useMapbox, mapboxLoaded]);
+
+    return () => {
+      svg.on('.drag', null);
+      svg.selectAll('.map-content').remove();
+    };
+  }, [wells, selectedWellIds, visibleWellIds, dimmedWellIds, groups, dimensions, selectionTool, isSelecting, themeId, showGrid, showHeatmap, heatmapMetric, formationFilter, useMapbox, mapboxLoaded, getWellColor, isDimmedWell, isVisibleWell, mp]);
 
   const toolBtnClass = (active: boolean) => isClassic
     ? `px-2 py-1 text-[9px] font-black uppercase tracking-wide rounded-md border transition-colors ${active ? 'bg-theme-magenta text-white border-black/40' : 'bg-black/25 text-white/80 border-black/30 hover:bg-black/35'}`
@@ -471,10 +481,10 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
       <div className="absolute top-4 right-4 z-20 space-y-2">
         {/* Selection tools */}
         <div className="flex gap-1">
-          <button onClick={() => { setSelectionTool('lasso'); setIsSelecting(!isSelecting || selectionTool !== 'lasso'); }} className={toolBtnClass(isSelecting && selectionTool === 'lasso')}>
+          <button type="button" onClick={() => { setSelectionTool('lasso'); setIsSelecting(!isSelecting || selectionTool !== 'lasso'); }} className={toolBtnClass(isSelecting && selectionTool === 'lasso')}>
             Lasso
           </button>
-          <button onClick={() => { setSelectionTool('rectangle'); setIsSelecting(!isSelecting || selectionTool !== 'rectangle'); }} className={toolBtnClass(isSelecting && selectionTool === 'rectangle')}>
+          <button type="button" onClick={() => { setSelectionTool('rectangle'); setIsSelecting(!isSelecting || selectionTool !== 'rectangle'); }} className={toolBtnClass(isSelecting && selectionTool === 'rectangle')}>
             Rect
           </button>
         </div>
@@ -493,8 +503,8 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
 
         {/* Toggle buttons */}
         <div className="flex flex-col gap-1">
-          <button onClick={() => setShowGrid(!showGrid)} className={toolBtnClass(showGrid)}>Grid</button>
-          <button onClick={() => setShowHeatmap(!showHeatmap)} className={toolBtnClass(showHeatmap)}>Heat</button>
+          <button type="button" onClick={() => setShowGrid(!showGrid)} className={toolBtnClass(showGrid)}>Grid</button>
+          <button type="button" onClick={() => setShowHeatmap(!showHeatmap)} className={toolBtnClass(showHeatmap)}>Heat</button>
           {showHeatmap && (
             <select
               value={heatmapMetric}
@@ -509,7 +519,7 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
             </select>
           )}
           {useMapbox && mapboxLoaded && (
-            <button onClick={() => setIsSatellite(!isSatellite)} className={toolBtnClass(isSatellite)}>
+            <button type="button" onClick={() => setIsSatellite(!isSatellite)} className={toolBtnClass(isSatellite)}>
               {isSatellite ? 'Dark' : 'Sat'}
             </button>
           )}

@@ -1,5 +1,6 @@
 
-import { Well, TypeCurveParams, CapexAssumptions, CapexItem, CommodityPricingAssumptions, OpexAssumptions, OwnershipAssumptions, ForecastSegment } from './types';
+import { Well } from './types/wells';
+import { TypeCurveParams, CapexAssumptions, CapexItem, CommodityPricingAssumptions, OpexAssumptions, OwnershipAssumptions, ForecastSegment } from './types/economics';
 
 // Generate some mock wells in a basin-like cluster
 const generateWells = (count: number): Well[] => {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ForecastSegment, CutoffKind } from '../types';
+import { ForecastSegment, CutoffKind } from '../types/economics';
 import { useTheme } from '../theme/ThemeProvider';
 import { InlineEditableValue } from './inline/InlineEditableValue';
 import { createLocalId } from '../utils/id';
@@ -92,13 +92,14 @@ const DeclineSegmentTable: React.FC<DeclineSegmentTableProps> = ({ segments, gor
                     inputClassName={`${inlineInputClass} text-right`}
                   />
                 ) : (
-                  <span
-                    className={`text-[9px] italic cursor-pointer text-right block ${isClassic ? 'text-white/40' : 'text-theme-muted/60'}`}
+                  <button
+                    type="button"
+                    className={`text-[9px] italic cursor-pointer text-right block bg-transparent border-0 p-0 w-full ${isClassic ? 'text-white/40' : 'text-theme-muted/60'}`}
                     onClick={() => handleUpdateSegment(seg.id, 'qi', 200)}
                     title="Click to set explicit qi (inherits from previous segment end rate)"
                   >
                     inherit
-                  </span>
+                  </button>
                 )}
               </div>
 
@@ -177,6 +178,7 @@ const DeclineSegmentTable: React.FC<DeclineSegmentTableProps> = ({ segments, gor
 
               <div className="col-span-1 text-center">
                 <button
+                  type="button"
                   onMouseDown={(e) => {
                     e.preventDefault();
                     handleDeleteSegment(seg.id);
@@ -195,6 +197,7 @@ const DeclineSegmentTable: React.FC<DeclineSegmentTableProps> = ({ segments, gor
         {/* Footer */}
         <div className={`p-2 flex justify-between items-center border-t ${isClassic ? 'bg-black/10 border-black/30' : 'bg-theme-bg border-theme-border'}`}>
           <button
+            type="button"
             onMouseDown={(e) => {
               e.preventDefault();
               handleAddSegment();
@@ -211,7 +214,7 @@ const DeclineSegmentTable: React.FC<DeclineSegmentTableProps> = ({ segments, gor
 
       {/* GOR field below table */}
       <div className="flex items-center justify-between">
-        <label className={`text-[9px] font-black uppercase tracking-[0.2em] ${isClassic ? 'text-theme-warning' : 'text-theme-muted'}`}>
+        <label htmlFor="dst-gor" className={`text-[9px] font-black uppercase tracking-[0.2em] ${isClassic ? 'text-theme-warning' : 'text-theme-muted'}`}>
           GOR (MCF/BBL)
         </label>
         <InlineEditableValue

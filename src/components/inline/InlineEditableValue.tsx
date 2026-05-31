@@ -9,6 +9,7 @@ export interface InlineEditableValueProps {
   type?: 'text' | 'number';
   className?: string;
   inputClassName?: string;
+  id?: string;
 }
 
 export const InlineEditableValue: FC<InlineEditableValueProps> = ({
@@ -20,6 +21,7 @@ export const InlineEditableValue: FC<InlineEditableValueProps> = ({
   type = 'text',
   className = '',
   inputClassName = '',
+  id,
 }) => {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String(value));
@@ -66,15 +68,15 @@ export const InlineEditableValue: FC<InlineEditableValueProps> = ({
 
   if (!editing) {
     return (
-      <span
+      <button
+        type="button"
+        id={id}
         onClick={() => setEditing(true)}
-        onFocus={() => setEditing(true)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setEditing(true); } }}
         className={`cursor-pointer hover:bg-theme-surface2/50 rounded px-1 -mx-1 transition-colors ${className}`}
-        tabIndex={0}
-        role="button"
       >
         {format ? format(value) : String(value)}
-      </span>
+      </button>
     );
   }
 
@@ -82,8 +84,10 @@ export const InlineEditableValue: FC<InlineEditableValueProps> = ({
     <span className="relative inline-block">
       <input
         ref={inputRef}
+        id={id}
         type={type}
         value={draft}
+        aria-label="Edit value"
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={handleKeyDown}

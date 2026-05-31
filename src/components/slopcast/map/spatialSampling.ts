@@ -10,7 +10,7 @@ export function wellboreZoomBucket(zoom: number): number {
   return Math.floor(zoom);
 }
 
-export function stableHash(value: string): number {
+function stableHash(value: string): number {
   let hash = 2166136261;
   for (let i = 0; i < value.length; i += 1) {
     hash ^= value.charCodeAt(i);
@@ -28,11 +28,11 @@ export function stableSelectWellsForBudget(wells: Well[], options: StableSelecti
     .sort((a, b) => a.id.localeCompare(b.id));
   const remainingBudget = Math.max(0, budget - priority.length);
   const background = wells
-    .filter((well) => !options.priorityIds.has(well.id))
-    .map((well) => ({
-      well,
-      score: stableHash(`${options.seed}|${well.id}`),
-    }))
+    .flatMap((well) =>
+      options.priorityIds.has(well.id)
+        ? []
+        : [{ well, score: stableHash(`${options.seed}|${well.id}`) }],
+    )
     .sort((a, b) => a.score - b.score || a.well.id.localeCompare(b.well.id))
     .slice(0, remainingBudget)
     .map((entry) => entry.well);

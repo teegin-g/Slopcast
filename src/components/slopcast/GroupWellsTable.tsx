@@ -13,8 +13,10 @@ export interface GroupWellsTableProps {
   dense?: boolean;
 }
 
+const feetFormatter = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+
 function formatFeet(value: number) {
-  return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value)} ft`;
+  return `${feetFormatter.format(value)} ft`;
 }
 
 function normalize(value: string) {
@@ -126,6 +128,7 @@ const GroupWellsTable: React.FC<GroupWellsTableProps> = ({
                   Search
                 </div>
                 <input
+                  aria-label="Filter wells"
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   placeholder="Name, formation, operator, status…"

@@ -66,6 +66,7 @@ export function SidebarNav({
 
         return (
           <button
+            type="button"
             key={id}
             onClick={() => onSetSection(id)}
             title={collapsed ? label : undefined}

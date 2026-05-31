@@ -75,6 +75,7 @@ export const WellsFiltersPanel: React.FC<WellsFiltersPanelProps> = ({
         </div>
         {hasActiveFilters && (
           <button
+            type="button"
             onClick={onResetFilters}
             className={`text-[10px] font-black uppercase tracking-widest ${isClassic ? 'text-white/70 hover:text-white' : 'text-theme-muted hover:text-theme-text'} transition-colors`}
           >

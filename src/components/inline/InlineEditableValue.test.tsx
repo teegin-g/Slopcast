@@ -24,9 +24,9 @@ describe('InlineEditableValue', () => {
     expect(input.value).toBe('850');
   });
 
-  it('onFocus enters edit mode (Tab navigation)', () => {
+  it('keyboard activation (Enter) enters edit mode', () => {
     render(<InlineEditableValue value={100} onCommit={vi.fn()} />);
-    fireEvent.focus(screen.getByText('100'));
+    fireEvent.keyDown(screen.getByText('100'), { key: 'Enter' });
     expect(screen.getByRole('textbox')).toBeTruthy();
   });
 

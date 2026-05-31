@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { OpexAssumptions, OpexSegment } from '../types';
+import { OpexAssumptions, OpexSegment } from '../types/economics';
 import { useTheme } from '../theme/ThemeProvider';
 import { InlineEditableValue } from './inline/InlineEditableValue';
 import { createLocalId } from '../utils/id';
@@ -180,11 +180,12 @@ const OpexControls: React.FC<OpexControlsProps> = ({ opex, onChange }) => {
 
               <div className="col-span-1 text-center">
                 <button
+                  type="button"
                   onMouseDown={(e) => {
                     e.preventDefault();
                     handleDeleteSegment(seg.id);
                   }}
-                  className="text-theme-border hover:text-theme-danger w-4 h-4 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="text-theme-border hover:text-theme-danger size-4 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   &times;
                 </button>
@@ -201,6 +202,7 @@ const OpexControls: React.FC<OpexControlsProps> = ({ opex, onChange }) => {
 
         <div className={`p-2 flex justify-between items-center border-t ${headerClass}`}>
           <button
+            type="button"
             onMouseDown={(e) => {
               e.preventDefault();
               handleAddSegment();

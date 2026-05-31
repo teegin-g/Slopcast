@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import GroupList from '../GroupList';
 import MapVisualizer from '../MapVisualizer';
 import { ThemeMeta, ThemeId } from '../../theme/themes';
-import { Well, WellGroup } from '../../types';
+import { Well, WellGroup } from '../../types/wells';
 import GroupWellsTable from './GroupWellsTable';
 import { WellsFiltersPanel } from './map/WellsFiltersPanel';
 
@@ -108,6 +108,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
       >
         <div className="grid grid-cols-2 gap-2">
           <button
+            type="button"
             data-testid="wells-mobile-tab-groups"
             onClick={() => onSetMobilePanel('GROUPS')}
             className={
@@ -125,6 +126,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
             Groups
           </button>
           <button
+            type="button"
             data-testid="wells-mobile-tab-map"
             onClick={() => onSetMobilePanel('MAP')}
             className={
@@ -191,11 +193,12 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
             <div className={`w-full shrink-0 min-h-[360px] ${mapHeightClass} ${isMobileMap ? 'mb-24' : ''} sc-panel theme-transition`}>
               <div className="sc-panelTitlebar sc-titlebar--neutral px-4 py-3 flex justify-between items-center">
                 <h2 className="text-[11px] font-black uppercase tracking-[0.25em] text-white flex items-center gap-3">
-                  <span className="w-2 h-2 rounded-full bg-white/70"></span>
+                  <span className="size-2 rounded-full bg-white/70"></span>
                   BASIN VISUALIZER
                 </h2>
                 <div className="flex items-center gap-3">
                   <button
+                    type="button"
                     onClick={onSelectAll}
                     data-testid="wells-select-filtered"
                     className="text-[10px] font-black uppercase tracking-[0.2em] text-white/90 hover:text-white transition-colors"
@@ -203,6 +206,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                     {selectFilteredLabel.toUpperCase()}
                   </button>
                   <button
+                    type="button"
                     onClick={onClearSelection}
                     disabled={selectedWellCount === 0}
                     className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${
@@ -235,11 +239,12 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
               <div className="absolute inset-0 bg-gradient-to-t from-theme-bg via-transparent to-transparent pointer-events-none"></div>
               <div className="flex justify-between items-center px-4 py-3 relative z-10 bg-black/10 backdrop-blur-sm border-b border-white/5">
                 <h2 className="text-[11px] font-bold uppercase tracking-[0.3em] flex items-center gap-2 theme-transition text-theme-cyan">
-                  <span className="w-2 h-2 rounded-full animate-pulse bg-theme-cyan"></span>
+                  <span className="size-2 rounded-full animate-pulse bg-theme-cyan"></span>
                   Basin Visualizer
                 </h2>
                 <div className="flex items-center gap-2">
                   <button
+                    type="button"
                     onClick={onSelectAll}
                     data-testid="wells-select-filtered"
                     className="text-[10px] font-bold tracking-[0.1em] theme-transition hover:scale-105 text-theme-lavender"
@@ -247,6 +252,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                     {selectFilteredLabel.toUpperCase()}
                   </button>
                   <button
+                    type="button"
                     onClick={onClearSelection}
                     disabled={selectedWellCount === 0}
                     className={`px-2 py-1 rounded-inner border text-[9px] font-black uppercase tracking-[0.14em] transition-colors ${
@@ -283,6 +289,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
               </h3>
               <div className="grid grid-cols-2 gap-2">
                 <button
+                  type="button"
                   onClick={onAssignWells}
                   disabled={selectedWellCount === 0}
                   className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
@@ -292,6 +299,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                   Assign to active group
                 </button>
                 <button
+                  type="button"
                   onClick={onCreateGroupFromSelection}
                   disabled={selectedWellCount === 0}
                   className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
@@ -301,6 +309,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                   Create group from selection
                 </button>
                 <button
+                  type="button"
                   onClick={onSelectAll}
                   data-testid="wells-selection-actions-select-filtered"
                   className="px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all bg-theme-surface2 text-theme-text border border-theme-border hover:border-theme-cyan"
@@ -308,6 +317,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                   {selectFilteredLabel}
                 </button>
                 <button
+                  type="button"
                   onClick={onClearSelection}
                   disabled={selectedWellCount === 0}
                   data-testid="wells-selection-actions-clear"
@@ -358,6 +368,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
 
               <div className="grid grid-cols-2 gap-2">
                 <button
+                  type="button"
                   onClick={onAssignWells}
                   disabled={selectedWellCount === 0}
                   className={
@@ -373,6 +384,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                   Assign…
                 </button>
                 <button
+                  type="button"
                   onClick={onClearSelection}
                   disabled={selectedWellCount === 0}
                   data-testid="wells-mobile-clear"
@@ -393,6 +405,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
               {mobileTrayExpanded && (
                 <div className="grid grid-cols-2 gap-2">
                   <button
+                    type="button"
                     onClick={onCreateGroupFromSelection}
                     disabled={selectedWellCount === 0}
                     className={
@@ -408,6 +421,7 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
                     Create group…
                   </button>
                   <button
+                    type="button"
                     onClick={onSelectAll}
                   data-testid="wells-mobile-select-filtered"
                     className={

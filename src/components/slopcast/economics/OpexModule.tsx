@@ -17,9 +17,9 @@ const OpexModule: React.FC<EconomicsModuleProps> = ({
     value: estimateSegmentAnnualizedCost(segment, wellCount),
     color: ['#f59e0b', '#22d3ee', '#34d399', '#a78bfa'][index % 4],
   }));
-  const impact = summary.flow
-    .filter((_, index) => index % 12 === 0)
-    .map((row) => ({ year: `${Math.floor(row.month / 12)}Y`, opex: row.opex }));
+  const impact = summary.flow.flatMap((row, index) =>
+    index % 12 === 0 ? [{ year: `${Math.floor(row.month / 12)}Y`, opex: row.opex }] : []
+  );
 
   return (
     <div className="space-y-4">
@@ -40,7 +40,7 @@ const OpexModule: React.FC<EconomicsModuleProps> = ({
               <MetricTile label="Total LOE" value={currencyMm(summary.totalOpex)} detail={`${currency(summary.loePerBoe)} / bbl`} accent="amber" compact />
               {structure.map((row) => (
                 <div key={row.name} className="flex items-center gap-2 text-xs">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: row.color }} />
+                  <span className="size-2.5 rounded-full" style={{ backgroundColor: row.color }} />
                   <span className="text-theme-muted truncate">{row.name}</span>
                   <span className="ml-auto font-semibold text-theme-text tabular-nums">{currencyMm(row.value)}</span>
                 </div>

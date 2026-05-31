@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DEFAULT_CAPEX, DEFAULT_COMMODITY_PRICING, DEFAULT_OPEX, DEFAULT_OWNERSHIP, DEFAULT_TYPE_CURVE, GROUP_COLORS, MOCK_WELLS } from '../constants';
-import { Scenario, SpatialDataSourceId, Well, WellGroup } from '../types';
+import type { Scenario } from '../types/scenarios';
+import type { SpatialDataSourceId } from '../types/spatial';
+import type { Well, WellGroup } from '../types/wells';
 import { DesignStep, StepStatus, WorkflowStep } from '../components/slopcast/WorkflowStepper';
 import type { OperationsConsoleProps } from '../components/slopcast/OperationsConsole';
 import { useProjectPersistence } from '../components/slopcast/hooks/useProjectPersistence';
@@ -53,7 +55,9 @@ export type { ViewMode, OpsTab, FxMode, ControlsSection, AnalysisOpenSection, Pa
 
 // ─── Constants ──────────────────────────────────────────────────────
 
-export const FX_QUERY_KEY = 'fx';
+const FX_QUERY_KEY = 'fx';
+
+const ORDERED_STEPS: DesignStep[] = ['SETUP', 'SELECT', 'REVIEW'];
 
 // ─── Hook ───────────────────────────────────────────────────────────
 
@@ -118,18 +122,19 @@ export function useSlopcastWorkspace() {
 
   const [savedDeals, setSavedDeals] = useState<DealRecord[]>([]);
 
-  const handleSelectDeal = useCallback((dealId: string) => {
+  const handleSelectDeal = useCallback((_dealId: string) => {
     setPageMode('workspace');
-  }, []);
+  }, [setPageMode]);
 
   const handleCreateDeal = useCallback(() => {
     setPageMode('workspace');
-  }, []);
+  }, [setPageMode]);
 
   // --- Wells & spatial source ---
   const [wells, setWells] = useState<Well[]>(MOCK_WELLS);
-  const [spatialSourceId, setSpatialSourceId] = useState<SpatialDataSourceId>(getStoredSpatialSourceId());
-  const prevWellIdsRef = useRef<Set<string>>(new Set(MOCK_WELLS.map(w => w.id)));
+  const [spatialSourceId, setSpatialSourceId] = useState<SpatialDataSourceId>(() => getStoredSpatialSourceId());
+  const prevWellIdsRef = useRef<Set<string>>(null as unknown as Set<string>);
+  if (prevWellIdsRef.current === null) prevWellIdsRef.current = new Set(MOCK_WELLS.map(w => w.id));
 
   const handleSourceChange = useCallback((id: SpatialDataSourceId) => {
     setSpatialSourceId(id);
@@ -321,9 +326,11 @@ export function useSlopcastWorkspace() {
   }, [aggregateFlow, aggregateMetrics]);
 
   const fastestPayoutScenarioName = useMemo(() => {
-    const fastest = scenarioRankings
-      .filter(row => row.payoutMonths > 0)
-      .sort((a, b) => a.payoutMonths - b.payoutMonths)[0];
+    const positive = scenarioRankings.filter(row => row.payoutMonths > 0);
+    const fastest = positive.reduce<typeof positive[0] | undefined>(
+      (best, cur) => !best || cur.payoutMonths < best.payoutMonths ? cur : best,
+      undefined,
+    );
     return fastest?.name || '-';
   }, [scenarioRankings]);
 
@@ -412,14 +419,13 @@ export function useSlopcastWorkspace() {
       ? 'SELECT'
       : 'REVIEW';
 
-  const orderedSteps: DesignStep[] = ['SETUP', 'SELECT', 'REVIEW'];
   const stepStatusMap: Record<DesignStep, StepStatus> = {
     SETUP: setupComplete ? 'COMPLETE' : (activeStep === 'SETUP' ? 'ACTIVE' : 'NOT_STARTED'),
     SELECT: selectionComplete ? 'COMPLETE' : (activeStep === 'SELECT' ? 'ACTIVE' : 'NOT_STARTED'),
     RUN: 'NOT_STARTED',
     REVIEW: reviewReady ? (activeStep === 'REVIEW' ? 'ACTIVE' : 'COMPLETE') : 'NOT_STARTED',
   };
-  const workflowSteps: WorkflowStep[] = orderedSteps.map(step => ({
+  const workflowSteps: WorkflowStep[] = ORDERED_STEPS.map(step => ({
     id: step,
     label: step === 'SETUP' ? 'Setup' : step === 'SELECT' ? 'Select Wells' : 'Review',
     status: stepStatusMap[step],
@@ -449,7 +455,7 @@ export function useSlopcastWorkspace() {
     if (hasCapexItems) return;
     setControlsOpenSection('CAPEX');
     if (viewportLayout === 'mobile') setEconomicsMobilePanel('SETUP');
-  }, [designWorkspace, hasCapexItems, viewMode, viewportLayout]);
+  }, [designWorkspace, hasCapexItems, viewMode, viewportLayout, setControlsOpenSection, setEconomicsMobilePanel]);
 
   const operationsProps = useMemo(() => ({
     isClassic,
@@ -480,7 +486,7 @@ export function useSlopcastWorkspace() {
     fastestPayoutScenarioName,
     scenarioRankings,
   }), [
-    isClassic, opsTab, selectedVisibleCount, filteredWells.length,
+    isClassic, opsTab, setOpsTab, selectedVisibleCount, filteredWells.length,
     activeGroup.name, handleAssignWellsToActive, handleCreateGroupFromSelection,
     handleSelectAll, handleClearSelection, handleSaveSnapshot, handleExportCsv,
     handleExportPdf, canUseSecondaryActions, lastSnapshotAt, actionMessage,

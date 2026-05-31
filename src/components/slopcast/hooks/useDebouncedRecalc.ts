@@ -29,8 +29,10 @@ export function useDebouncedRecalc(
 
   useEffect(() => {
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      if (settleRef.current) clearTimeout(settleRef.current);
+      const timer = timerRef.current;
+      const settle = settleRef.current;
+      if (timer) clearTimeout(timer);
+      if (settle) clearTimeout(settle);
     };
   }, []);
 

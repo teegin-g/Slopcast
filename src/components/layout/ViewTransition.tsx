@@ -1,5 +1,5 @@
 import React from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, LazyMotion, m, domAnimation } from 'motion/react';
 import { SPRING } from '../../theme/motion';
 
 interface ViewTransitionProps {
@@ -16,17 +16,19 @@ interface ViewTransitionProps {
  */
 export function ViewTransition({ transitionKey, children, className }: ViewTransitionProps) {
   return (
-    <AnimatePresence mode="popLayout">
-      <motion.div
-        key={transitionKey}
-        initial={{ opacity: 0, x: 20, scale: 0.98 }}
-        animate={{ opacity: 1, x: 0, scale: 1 }}
-        exit={{ opacity: 0, x: -20, scale: 0.98 }}
-        transition={SPRING.entrance}
-        className={className}
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    <LazyMotion features={domAnimation}>
+      <AnimatePresence mode="popLayout">
+        <m.div
+          key={transitionKey}
+          initial={{ opacity: 0, x: 20, scale: 0.98 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          exit={{ opacity: 0, x: -20, scale: 0.98 }}
+          transition={SPRING.entrance}
+          className={className}
+        >
+          {children}
+        </m.div>
+      </AnimatePresence>
+    </LazyMotion>
   );
 }

@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import React, { createContext, use, useState, useCallback, useMemo } from 'react';
+import { AnimatePresence, LazyMotion, m, domAnimation } from 'motion/react';
 import { SPRING } from '../../theme/motion';
 import { createLocalId } from '../../utils/id';
 
@@ -21,7 +21,7 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 export const useToast = () => {
-  const ctx = useContext(ToastContext);
+  const ctx = use(ToastContext);
   if (!ctx) throw new Error('useToast must be used within ToastProvider');
   return ctx;
 };
@@ -47,7 +47,7 @@ const ToastItem: React.FC<{ toast: Toast; onDismiss: () => void }> = ({ toast, o
   }, [toast.duration, onDismiss]);
 
   return (
-    <motion.div
+    <m.div
       layout
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -59,14 +59,15 @@ const ToastItem: React.FC<{ toast: Toast; onDismiss: () => void }> = ({ toast, o
       <p className="text-xs text-theme-text flex-1">{toast.message}</p>
       {toast.action && (
         <button
+          type="button"
           onClick={toast.action.onClick}
           className="text-xs font-bold text-theme-cyan hover:text-theme-text transition-colors shrink-0"
         >
           {toast.action.label}
         </button>
       )}
-      <button onClick={onDismiss} className="text-theme-muted hover:text-theme-text text-xs ml-1 shrink-0 focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none rounded-sm">✕</button>
-    </motion.div>
+      <button type="button" onClick={onDismiss} aria-label="Dismiss notification" className="text-theme-muted hover:text-theme-text text-xs ml-1 shrink-0 focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none rounded-sm">✕</button>
+    </m.div>
   );
 };
 
@@ -82,17 +83,21 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  const contextValue = useMemo(() => ({ addToast, removeToast }), [addToast, removeToast]);
+
   return (
-    <ToastContext.Provider value={{ addToast, removeToast }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col-reverse gap-2 pointer-events-none">
-        <AnimatePresence mode="popLayout">
-          {toasts.map(toast => (
-            <div key={toast.id} className="pointer-events-auto">
-              <ToastItem toast={toast} onDismiss={() => removeToast(toast.id)} />
-            </div>
-          ))}
-        </AnimatePresence>
+        <LazyMotion features={domAnimation}>
+          <AnimatePresence mode="popLayout">
+            {toasts.map(toast => (
+              <div key={toast.id} className="pointer-events-auto">
+                <ToastItem toast={toast} onDismiss={() => removeToast(toast.id)} />
+              </div>
+            ))}
+          </AnimatePresence>
+        </LazyMotion>
       </div>
     </ToastContext.Provider>
   );

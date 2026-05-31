@@ -21,7 +21,7 @@ export const ECONOMICS_MODULES: EconomicsModuleMeta[] = [
   { id: 'CAPEX', label: 'CAPEX & Investment', shortLabel: 'CAPEX', eyebrow: 'Capital investment and payout', accent: 'violet' },
 ];
 
-export const getEconomicsModuleMeta = (module: EconomicsModule) =>
+const getEconomicsModuleMeta = (module: EconomicsModule) =>
   ECONOMICS_MODULES.find((item) => item.id === module) ?? ECONOMICS_MODULES[0];
 
 export interface EconomicsModuleProps {
