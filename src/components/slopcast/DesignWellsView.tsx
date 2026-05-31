@@ -5,6 +5,7 @@ import { ThemeMeta, ThemeId } from '../../theme/themes';
 import { Well, WellGroup } from '../../types/wells';
 import GroupWellsTable from './GroupWellsTable';
 import { WellsFiltersPanel } from './map/WellsFiltersPanel';
+import WellSelectionActions from './WellSelectionActions';
 
 export type WellsMobilePanel = 'GROUPS' | 'MAP';
 
@@ -283,52 +284,15 @@ const DesignWellsView: React.FC<DesignWellsViewProps> = ({
           )}
 
           {!isMobileMap && (
-            <div className={isClassic ? 'sc-panel theme-transition' : 'rounded-panel border shadow-card p-4 theme-transition bg-theme-surface1 border-theme-border'}>
-              <h3 className={isClassic ? 'text-[10px] font-black uppercase tracking-[0.2em] text-white mb-3' : 'text-[10px] font-black uppercase tracking-[0.2em] text-theme-cyan mb-3'}>
-                Selection Actions
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={onAssignWells}
-                  disabled={selectedWellCount === 0}
-                  className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
-                    selectedWellCount > 0 ? 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan' : 'bg-theme-surface2 text-theme-muted cursor-not-allowed'
-                  }`}
-                >
-                  Assign to active group
-                </button>
-                <button
-                  type="button"
-                  onClick={onCreateGroupFromSelection}
-                  disabled={selectedWellCount === 0}
-                  className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all ${
-                    selectedWellCount > 0 ? 'bg-theme-cyan text-theme-bg hover:shadow-glow-cyan' : 'bg-theme-surface2 text-theme-muted cursor-not-allowed'
-                  }`}
-                >
-                  Create group from selection
-                </button>
-                <button
-                  type="button"
-                  onClick={onSelectAll}
-                  data-testid="wells-selection-actions-select-filtered"
-                  className="px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all bg-theme-surface2 text-theme-text border border-theme-border hover:border-theme-cyan"
-                >
-                  {selectFilteredLabel}
-                </button>
-                <button
-                  type="button"
-                  onClick={onClearSelection}
-                  disabled={selectedWellCount === 0}
-                  data-testid="wells-selection-actions-clear"
-                  className={`px-3 py-2 rounded-inner text-[10px] font-black uppercase tracking-[0.12em] transition-all border ${
-                    selectedWellCount > 0 ? 'bg-theme-surface2 text-theme-text border-theme-border hover:border-theme-cyan' : 'bg-theme-surface2 text-theme-muted border-theme-border cursor-not-allowed'
-                  }`}
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
+            <WellSelectionActions
+              isClassic={isClassic}
+              selectedWellCount={selectedWellCount}
+              selectFilteredLabel={selectFilteredLabel}
+              onAssignWells={onAssignWells}
+              onCreateGroupFromSelection={onCreateGroupFromSelection}
+              onSelectAll={onSelectAll}
+              onClearSelection={onClearSelection}
+            />
           )}
         </section>
       </div>

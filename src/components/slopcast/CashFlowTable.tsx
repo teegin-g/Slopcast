@@ -15,6 +15,7 @@ import { buildAnnualRollups, formatAccounting, type AnnualCashFlowRow } from '..
 import { useTableFilters } from './hooks/useTableFilters';
 import FilterChips from './FilterChips';
 import { TableSkeleton, FadeIn } from './Skeleton';
+import { SortableHeader, tableRowClass } from './table';
 
 export interface CashFlowTableProps {
   flow: MonthlyCashFlow[];
@@ -291,21 +292,7 @@ const CashFlowTable: React.FC<CashFlowTableProps> = ({ flow, pricing, isLoading 
                     className="p-2 text-left text-xs font-black uppercase tracking-[0.24em] text-theme-cyan heading-font"
                     style={{ width: header.getSize() }}
                   >
-                    {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                      <button
-                        type="button"
-                        className="cursor-pointer select-none bg-transparent border-0 p-0 text-inherit font-inherit w-full text-left"
-                        onClick={header.column.getToggleSortingHandler()}
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {{
-                          asc: ' \u25B2',
-                          desc: ' \u25BC',
-                        }[header.column.getIsSorted() as string] ?? ''}
-                      </button>
-                    ) : (
-                      <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
-                    )}
+                    <SortableHeader header={header} ariaLabel={false} />
                   </th>
                 ))}
               </tr>
@@ -317,11 +304,11 @@ const CashFlowTable: React.FC<CashFlowTableProps> = ({ flow, pricing, isLoading 
               return (
                 <tr
                   key={row.id}
-                  className={`border-t border-theme-border/50 ${
+                  className={tableRowClass(
                     isAnnual
                       ? 'font-semibold bg-theme-surface2/20 hover:bg-theme-surface2/40'
-                      : 'hover:bg-theme-surface2/20'
-                  }`}
+                      : 'hover:bg-theme-surface2/20',
+                  )}
                 >
                   {row.getVisibleCells().map(cell => (
                     <td

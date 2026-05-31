@@ -14,6 +14,7 @@ import { useTableFilters } from './hooks/useTableFilters';
 import FilterChips from './FilterChips';
 import { TableSkeleton, FadeIn } from './Skeleton';
 import { formatFeet } from '../../utils/formatters';
+import { SortableHeader, ResizeHandle, tableRowClass } from './table';
 
 export interface WellsTableProps {
   wells: Well[];
@@ -217,33 +218,8 @@ const WellsTable: React.FC<WellsTableProps> = ({
                       className="p-2 text-left text-xs font-black uppercase tracking-[0.24em] text-theme-cyan heading-font relative"
                       style={{ width: header.getSize() }}
                     >
-                      {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                        <button
-                          type="button"
-                          aria-label={`Sort by ${String(header.column.columnDef.header)}`}
-                          className="cursor-pointer select-none bg-transparent border-0 p-0 text-inherit font-inherit w-full text-left"
-                          onClick={header.column.getToggleSortingHandler()}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {{
-                            asc: ' \u25B2',
-                            desc: ' \u25BC',
-                          }[header.column.getIsSorted() as string] ?? ''}
-                        </button>
-                      ) : (
-                        <span>{flexRender(header.column.columnDef.header, header.getContext())}</span>
-                      )}
-                      {/* Resize handle */}
-                      {header.column.getCanResize() && (
-                        <div
-                          role="separator"
-                          aria-label="Resize column"
-                          tabIndex={0}
-                          onMouseDown={header.getResizeHandler()}
-                          onTouchStart={header.getResizeHandler()}
-                          className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-theme-border/30 hover:bg-theme-cyan/50"
-                        />
-                      )}
+                      <SortableHeader header={header} />
+                      <ResizeHandle header={header} />
                     </th>
                   ))}
                 </tr>
@@ -253,9 +229,10 @@ const WellsTable: React.FC<WellsTableProps> = ({
               {table.getRowModel().rows.map(row => (
                 <tr
                   key={row.id}
-                  className={`border-t border-theme-border/50 hover:bg-theme-surface2/30 ${
-                    row.getIsSelected() ? 'bg-theme-cyan/10' : ''
-                  }`}
+                  className={tableRowClass(
+                    'hover:bg-theme-surface2/30',
+                    row.getIsSelected() && 'bg-theme-cyan/10',
+                  )}
                 >
                   {row.getVisibleCells().map(cell => (
                     <td

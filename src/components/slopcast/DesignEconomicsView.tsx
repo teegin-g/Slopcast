@@ -3,6 +3,7 @@ import { ThemeId } from '../../theme/themes';
 import { DealMetrics, MonthlyCashFlow } from '../../types/economics';
 import { Scenario } from '../../types/scenarios';
 import { Well, WellGroup } from '../../types/wells';
+import KpiTile from './KpiTile';
 import OperationsConsole, { OperationsConsoleProps } from './OperationsConsole';
 import EconomicsGroupBar from './EconomicsGroupBar';
 import CapexModule from './economics/CapexModule';
@@ -61,13 +62,7 @@ const BottomKpiStrip: React.FC<{
       <p className="px-1 pb-2 text-[9px] font-black uppercase tracking-[0.12em] text-theme-muted">Portfolio</p>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
         {items.map((item) => (
-          <div key={item.label} className="rounded-inner border border-theme-border bg-theme-bg px-3 py-2 min-h-[58px]">
-            <p className="text-[9px] font-black uppercase tracking-[0.16em] text-theme-muted">{item.label}</p>
-            <div className="mt-1 flex items-end justify-between gap-2">
-              <p className="text-sm lg:text-base font-black text-theme-text tabular-nums">{item.value}</p>
-              <p className="text-[9px] font-semibold text-theme-cyan whitespace-nowrap">{item.delta}</p>
-            </div>
-          </div>
+          <KpiTile key={item.label} {...item} minHeight />
         ))}
       </div>
     </div>
@@ -88,10 +83,13 @@ const GroupPulse: React.FC<{
   return (
     <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
       {items.map((item) => (
-        <div key={item.label} className="rounded-inner border border-theme-border bg-theme-bg/75 px-3 py-2">
-          <p className="text-[9px] font-black uppercase tracking-[0.1em] text-theme-muted">{item.label}</p>
-          <p className="mt-1 text-sm font-black text-theme-text tabular-nums">{item.value}</p>
-        </div>
+        <KpiTile
+          key={item.label}
+          {...item}
+          bgClass="bg-theme-bg/75"
+          valueSizeClass="text-sm"
+          labelTrackingClass="tracking-[0.1em]"
+        />
       ))}
     </div>
   );

@@ -16,6 +16,12 @@ import {
   hexToRgb,
 } from '../../utils/mapUtils';
 import { compileShader, linkProgram } from '../../utils/webglUtils';
+import {
+  saveGlState,
+  restoreGlState,
+  createReducedMotionListener,
+  type ReducedMotionListener,
+} from './map/glUtils';
 
 // ── Shader sources ──────────────────────────────────────────────────────
 const VERTEX_SOURCE = `
@@ -191,8 +197,7 @@ export class MapWellboreLayer {
   private totalAllocatedVerts = 0;
   private mapRef: mapboxgl.Map | null = null;
   private reducedMotion = false;
-  private _motionQuery: MediaQueryList | null = null;
-  private _handleMotionChange: (() => void) | null = null;
+  private _motionListener: ReducedMotionListener | null = null;
   private diagnosticsListener: ((diagnostics: WellboreRenderDiagnostics) => void) | null = null;
 
   // Attribute locations
@@ -222,9 +227,7 @@ export class MapWellboreLayer {
 
   constructor() {
     if (typeof window !== 'undefined') {
-      this.reducedMotion = window.matchMedia(
-        '(prefers-reduced-motion: reduce)',
-      ).matches;
+      this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
   }
 
@@ -337,14 +340,10 @@ export class MapWellboreLayer {
     this.emitDiagnostics();
 
     // Listen for runtime reduced-motion changes
-    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const handleMotionChange = () => {
-      this.reducedMotion = motionQuery.matches;
+    this._motionListener = createReducedMotionListener((matches) => {
+      this.reducedMotion = matches;
       if (this.mapRef) this.mapRef.triggerRepaint();
-    };
-    motionQuery.addEventListener('change', handleMotionChange);
-    this._motionQuery = motionQuery;
-    this._handleMotionChange = handleMotionChange;
+    });
   }
 
   render(gl: WebGLRenderingContext, matrix: number[]): void {
@@ -352,15 +351,7 @@ export class MapWellboreLayer {
     const frameStartedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
     // ── Save Mapbox WebGL state ──────────────────────────────────────
-    const prevProgram = gl.getParameter(gl.CURRENT_PROGRAM);
-    const prevArrayBuffer = gl.getParameter(gl.ARRAY_BUFFER_BINDING);
-    const prevBlend = gl.isEnabled(gl.BLEND);
-    const prevBlendSrcRgb = gl.getParameter(gl.BLEND_SRC_RGB);
-    const prevBlendDstRgb = gl.getParameter(gl.BLEND_DST_RGB);
-    const prevBlendSrcAlpha = gl.getParameter(gl.BLEND_SRC_ALPHA);
-    const prevBlendDstAlpha = gl.getParameter(gl.BLEND_DST_ALPHA);
-    const prevDepthTest = gl.isEnabled(gl.DEPTH_TEST);
-    const prevCullFace = gl.isEnabled(gl.CULL_FACE);
+    const savedState = saveGlState(gl);
 
     // Track which vertex attrib arrays we enable so we can disable them
     const enabledAttribs: number[] = [];
@@ -419,42 +410,20 @@ export class MapWellboreLayer {
       this.emitDiagnostics();
     } finally {
       // ── Restore Mapbox WebGL state ─────────────────────────────────
-      for (const attr of enabledAttribs) {
-        gl.disableVertexAttribArray(attr);
-      }
-      gl.useProgram(prevProgram);
-      gl.bindBuffer(gl.ARRAY_BUFFER, prevArrayBuffer);
-      if (prevBlend) {
-        gl.enable(gl.BLEND);
-        gl.blendFuncSeparate(
-          prevBlendSrcRgb,
-          prevBlendDstRgb,
-          prevBlendSrcAlpha,
-          prevBlendDstAlpha,
-        );
-      } else {
-        gl.disable(gl.BLEND);
-      }
-      if (prevDepthTest) gl.enable(gl.DEPTH_TEST);
-      else gl.disable(gl.DEPTH_TEST);
-      if (prevCullFace) gl.enable(gl.CULL_FACE);
-      else gl.disable(gl.CULL_FACE);
+      restoreGlState(gl, savedState, enabledAttribs);
     }
   }
 
   onRemove(_map: mapboxgl.Map, gl: WebGLRenderingContext): void {
     this.cancelBatch();
     this.resetUploadState();
-    if (this._motionQuery && this._handleMotionChange) {
-      this._motionQuery.removeEventListener('change', this._handleMotionChange);
-    }
+    this._motionListener?.dispose();
     if (this.program) gl.deleteProgram(this.program);
     if (this.vertexBuffer) gl.deleteBuffer(this.vertexBuffer);
     this.program = null;
     this.vertexBuffer = null;
     this.mapRef = null;
-    this._motionQuery = null;
-    this._handleMotionChange = null;
+    this._motionListener = null;
     this.emitDiagnostics();
   }
 
