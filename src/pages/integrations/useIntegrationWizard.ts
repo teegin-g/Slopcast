@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import type {
   IntegrationConfig,
   ConnectionType,
-} from '../../services/integrationService';
+} from '../../types';
 
 export type WizardStep = 1 | 2 | 3;
 

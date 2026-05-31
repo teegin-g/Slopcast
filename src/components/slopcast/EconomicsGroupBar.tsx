@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Well, WellGroup } from '../../types/wells';
+import type { Well, WellGroup } from '../../types';
 import { currencyMm } from './economics/derived';
 import { useToast } from './Toast';
 

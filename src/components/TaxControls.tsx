@@ -1,5 +1,6 @@
 import React from 'react';
-import { TaxAssumptions, TAX_PRESETS } from '../types/economics';
+import type { TaxAssumptions } from '../types';
+import { TAX_PRESETS } from '../constants';
 import { useTheme } from '../theme/ThemeProvider';
 import { InlineEditableValue } from './inline/InlineEditableValue';
 import { useControlsStyles } from './slopcast/economics/useControlsStyles';

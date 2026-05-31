@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import type { WellGroup, Well } from '../../types/wells';
-import type { Scenario } from '../../types/scenarios';
+import type { WellGroup, Well } from '../../types';
+import type { Scenario } from '../../types';
 import { calculateEconomics } from '../../utils/economics';
 
 export interface ScenarioResultMetrics {

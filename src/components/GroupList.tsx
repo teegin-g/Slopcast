@@ -1,5 +1,5 @@
 import React from 'react';
-import { WellGroup } from '../types/wells';
+import type { WellGroup } from '../types';
 import { useTheme } from '../theme/ThemeProvider';
 
 interface GroupListProps {

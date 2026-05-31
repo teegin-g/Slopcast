@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { ConnectionType, IntegrationConfig } from '../../services/integrationService';
+import type { ConnectionType, IntegrationConfig } from '../../types';
 import { useTheme } from '../../theme/ThemeProvider';
 
 interface ConnectionFormProps {

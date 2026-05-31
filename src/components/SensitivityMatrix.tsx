@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { SensitivityMatrixResult, SensitivityVariable } from '../types/scenarios';
+import type { SensitivityMatrixResult, SensitivityVariable } from '../types';
 import { useTheme } from '../theme/ThemeProvider';
 
 interface SensitivityMatrixProps {

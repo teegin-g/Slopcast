@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import type { CapexAssumptions, CapexItem, CostBasis, CapexCategory } from '../types/economics';
+import type { CapexAssumptions, CapexItem, CostBasis, CapexCategory } from '../types';
 import { useTheme } from '../theme/ThemeProvider';
 import { InlineEditableValue } from './inline/InlineEditableValue';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';

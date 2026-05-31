@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Well } from '../../types/wells';
+import type { Well } from '../../types';
 
 export type HeatmapMetric = 'density' | 'eur_ft' | 'npv';
 

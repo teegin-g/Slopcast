@@ -1,7 +1,7 @@
 import type {
   ConnectionType,
   IntegrationStatus,
-} from '../../services/integrationService';
+} from '../../types';
 
 export function statusColor(status: IntegrationStatus, isClassic: boolean): string {
   switch (status) {

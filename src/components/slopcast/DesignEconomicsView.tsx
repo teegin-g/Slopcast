@@ -1,8 +1,8 @@
 import React from 'react';
 import { ThemeId } from '../../theme/themes';
-import { DealMetrics, MonthlyCashFlow } from '../../types/economics';
-import { Scenario } from '../../types/scenarios';
-import { Well, WellGroup } from '../../types/wells';
+import type { DealMetrics, MonthlyCashFlow } from '../../types';
+import type { Scenario } from '../../types';
+import type { Well, WellGroup } from '../../types';
 import KpiTile from './KpiTile';
 import OperationsConsole, { OperationsConsoleProps } from './OperationsConsole';
 import EconomicsGroupBar from './EconomicsGroupBar';

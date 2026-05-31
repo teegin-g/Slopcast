@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import type { CommodityPricingAssumptions, DealMetrics } from '../types/economics';
-import type { Scenario } from '../types/scenarios';
-import type { Well, WellGroup } from '../types/wells';
+import type { CommodityPricingAssumptions, DealMetrics } from '../types';
+import type { Scenario } from '../types';
+import type { Well, WellGroup } from '../types';
 import { cachedCalculateEconomics } from '../utils/economics';
 import { DEFAULT_COMMODITY_PRICING } from '../constants';
 

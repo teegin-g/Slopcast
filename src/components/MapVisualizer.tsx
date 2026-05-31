@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { Well, WellGroup } from '../types/wells';
+import type { Well, WellGroup } from '../types';
 import { ThemeId, getTheme } from '../theme/themes';
 import { useMapboxGL } from './mapVisualizer/useMapboxGL';
 import { useMapboxHeatmap } from './mapVisualizer/useMapboxHeatmap';

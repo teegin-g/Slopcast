@@ -1,5 +1,5 @@
 import React from 'react';
-import { JvAgreement, OwnershipAssumptions } from '../types/economics';
+import type { JvAgreement, OwnershipAssumptions } from '../types';
 import { useTheme } from '../theme/ThemeProvider';
 import { InlineEditableValue } from './inline/InlineEditableValue';
 import { createLocalId } from '../utils/id';

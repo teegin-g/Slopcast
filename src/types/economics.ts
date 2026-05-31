@@ -1,3 +1,5 @@
+import type { RigScheduleFields } from './scenarios';
+
 export type CutoffKind = 'rate' | 'cum' | 'time_days' | 'decline' | 'default';
 
 export interface ForecastSegment {
@@ -32,11 +34,10 @@ export interface CapexItem {
   offsetDays: number; // Days from Rig Start
 }
 
-export interface CapexAssumptions {
+// Shared rig-schedule fields — see RigScheduleFields in types/scenarios.ts.
+// The composed object shape is identical to before; only the declaration is DRY'd.
+export interface CapexAssumptions extends RigScheduleFields {
   rigCount: number; // Legacy/Default for Groups
-  drillDurationDays: number;
-  stimDurationDays: number;
-  rigStartDate: string; // ISO date string
   items: CapexItem[];
 }
 
@@ -87,12 +88,7 @@ export interface ReserveClassification {
   riskFactor: number; // PDP=1.0, PUD=0.85, Probable=0.50, Possible=0.15
 }
 
-export const DEFAULT_RESERVE_RISK_FACTORS: Record<ReserveCategory, number> = {
-  PDP: 1.0,
-  PUD: 0.85,
-  PROBABLE: 0.50,
-  POSSIBLE: 0.15,
-};
+// DEFAULT_RESERVE_RISK_FACTORS has moved to src/constants.ts
 
 export interface TaxAssumptions {
   severanceTaxPct: number;       // % of gross revenue (TX ~4.6% oil, 7.5% gas)
@@ -102,14 +98,7 @@ export interface TaxAssumptions {
   stateTaxRate: number;          // % (0% for TX, varies by state)
 }
 
-export const TAX_PRESETS: Record<string, TaxAssumptions> = {
-  Texas: { severanceTaxPct: 4.6, adValoremTaxPct: 1.5, federalTaxRate: 21, depletionAllowancePct: 15, stateTaxRate: 0 },
-  'New Mexico': { severanceTaxPct: 3.75, adValoremTaxPct: 1.0, federalTaxRate: 21, depletionAllowancePct: 15, stateTaxRate: 4.8 },
-  Oklahoma: { severanceTaxPct: 5.0, adValoremTaxPct: 1.0, federalTaxRate: 21, depletionAllowancePct: 15, stateTaxRate: 4.0 },
-  Colorado: { severanceTaxPct: 5.0, adValoremTaxPct: 1.0, federalTaxRate: 21, depletionAllowancePct: 15, stateTaxRate: 4.4 },
-};
-
-export const DEFAULT_TAX_ASSUMPTIONS: TaxAssumptions = TAX_PRESETS.Texas;
+// TAX_PRESETS and DEFAULT_TAX_ASSUMPTIONS have moved to src/constants.ts
 
 export interface DebtAssumptions {
   enabled: boolean;
@@ -121,15 +110,7 @@ export interface DebtAssumptions {
   cashSweepPct: number;          // % of excess cash flow to debt paydown
 }
 
-export const DEFAULT_DEBT_ASSUMPTIONS: DebtAssumptions = {
-  enabled: false,
-  revolverSize: 50_000_000,
-  revolverRate: 8.0,
-  termLoanAmount: 0,
-  termLoanRate: 7.0,
-  termLoanAmortMonths: 60,
-  cashSweepPct: 50,
-};
+// DEFAULT_DEBT_ASSUMPTIONS has moved to src/constants.ts
 
 export interface MonthlyCashFlow {
   month: number;

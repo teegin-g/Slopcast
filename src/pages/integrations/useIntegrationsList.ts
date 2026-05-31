@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { IntegrationConfig } from '../../services/integrationService';
+import type { IntegrationConfig } from '../../types';
 import {
   listIntegrations,
   createIntegration,

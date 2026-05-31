@@ -1,7 +1,8 @@
 
-import { Well, WellGroup } from '../types/wells';
-import { TypeCurveParams, CapexAssumptions, CommodityPricingAssumptions, MonthlyCashFlow, DealMetrics, OpexAssumptions, OwnershipAssumptions, JvAgreement, TaxAssumptions, DebtAssumptions, ReserveCategory, DEFAULT_RESERVE_RISK_FACTORS, ForecastSegment, CutoffKind, EconomicsCalculationInput } from '../types/economics';
-import { Scenario, SensitivityVariable, SensitivityMatrixResult, ScheduleParams } from '../types/scenarios';
+import type { Well, WellGroup } from '../types';
+import type { TypeCurveParams, CapexAssumptions, CommodityPricingAssumptions, MonthlyCashFlow, DealMetrics, OpexAssumptions, OwnershipAssumptions, JvAgreement, TaxAssumptions, DebtAssumptions, ReserveCategory, ForecastSegment, CutoffKind, EconomicsCalculationInput } from '../types';
+import type { Scenario, SensitivityVariable, SensitivityMatrixResult, ScheduleParams } from '../types';
+import { DEFAULT_RESERVE_RISK_FACTORS } from '../constants';
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 

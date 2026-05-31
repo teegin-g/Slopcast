@@ -1,7 +1,7 @@
 import React from 'react';
 import ConnectionForm from './ConnectionForm';
 import SchemaMapper from './SchemaMapper';
-import type { IntegrationConfig, ConnectionType } from '../../services/integrationService';
+import type { IntegrationConfig, ConnectionType } from '../../types';
 import { connectionTypeLabel } from '../../pages/integrations/integrationFormatting';
 import type {
   WizardStep,

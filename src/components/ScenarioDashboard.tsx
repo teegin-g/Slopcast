@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import type { WellGroup, Well } from '../types/wells';
-import type { Scenario, SensitivityVariable, ScheduleParams } from '../types/scenarios';
+import type { WellGroup, Well } from '../types';
+import type { Scenario, SensitivityVariable, ScheduleParams } from '../types';
 import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 import SensitivityMatrix from './SensitivityMatrix';
 import { generateSensitivityMatrix } from '../utils/economics';

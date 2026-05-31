@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useEffectEvent } from 'react';
 import * as d3 from 'd3';
-import { Well, WellGroup } from '../../types/wells';
+import type { Well, WellGroup } from '../../types';
 import { ThemeId, getTheme, MapPalette } from '../../theme/themes';
 import type { HeatmapMetric } from './useMapboxHeatmap';
 

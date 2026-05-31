@@ -1,38 +1,22 @@
 import { unwrapJsonbContract } from './projectContracts';
 import { requireSupabase, requireUserId } from './supabaseGuards';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+// Types have moved to src/types/integrations.ts — re-export for backwards compat.
+export type {
+  ConnectionType,
+  IntegrationStatus,
+  JobStatus,
+  IntegrationConfig,
+  IntegrationJob,
+} from '../types/integrations';
 
-export type ConnectionType = 'supabase' | 'postgres' | 'sqlserver' | 'csv';
-export type IntegrationStatus = 'draft' | 'active' | 'paused' | 'error';
-export type JobStatus = 'pending' | 'running' | 'completed' | 'failed';
-
-export interface IntegrationConfig {
-  id: string;
-  ownerUserId: string;
-  name: string;
-  connectionType: ConnectionType;
-  connectionParams: Record<string, unknown>;
-  fieldMappings: Record<string, string>;
-  status: IntegrationStatus;
-  lastSyncAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface IntegrationJob {
-  id: string;
-  configId: string;
-  status: JobStatus;
-  recordsProcessed: number;
-  recordsFailed: number;
-  errorLog: unknown[] | null;
-  startedAt: string | null;
-  completedAt: string | null;
-  createdAt: string;
-}
+import type {
+  ConnectionType,
+  IntegrationStatus,
+  IntegrationConfig,
+  IntegrationJob,
+  JobStatus,
+} from '../types/integrations';
 
 // ---------------------------------------------------------------------------
 // Helpers

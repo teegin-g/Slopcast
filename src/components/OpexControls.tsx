@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { OpexAssumptions, OpexSegment } from '../types/economics';
+import type { OpexAssumptions, OpexSegment } from '../types';
 import { useTheme } from '../theme/ThemeProvider';
 import { InlineEditableValue } from './inline/InlineEditableValue';
 import { createLocalId } from '../utils/id';

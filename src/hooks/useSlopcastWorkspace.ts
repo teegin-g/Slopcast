@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DEFAULT_CAPEX, DEFAULT_COMMODITY_PRICING, DEFAULT_OPEX, DEFAULT_OWNERSHIP, DEFAULT_TYPE_CURVE, GROUP_COLORS, MOCK_WELLS } from '../constants';
-import type { Scenario } from '../types/scenarios';
-import type { SpatialDataSourceId } from '../types/spatial';
-import type { Well, WellGroup } from '../types/wells';
+import type { Scenario } from '../types';
+import type { SpatialDataSourceId } from '../types';
+import type { Well, WellGroup } from '../types';
 import { DesignStep, StepStatus, WorkflowStep } from '../components/slopcast/WorkflowStepper';
 import type { OperationsConsoleProps } from '../components/slopcast/OperationsConsole';
 import { useProjectPersistence } from '../components/slopcast/hooks/useProjectPersistence';

@@ -1,5 +1,5 @@
 import React from 'react';
-import type { IntegrationConfig } from '../../services/integrationService';
+import type { IntegrationConfig } from '../../types';
 import { formatDateTime } from '../../utils/formatters';
 import { statusColor, connectionTypeLabel } from '../../pages/integrations/integrationFormatting';
 

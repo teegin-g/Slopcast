@@ -1,5 +1,6 @@
-import { DEFAULT_TAX_ASSUMPTIONS, TaxAssumptions } from '../../../types/economics';
+import { DEFAULT_TAX_ASSUMPTIONS } from '../../../constants';
 import type {
+  TaxAssumptions,
   CapexCategory,
   CommodityPricingAssumptions,
   DealMetrics,

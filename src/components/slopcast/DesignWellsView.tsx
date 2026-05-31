@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import GroupList from '../GroupList';
 import MapVisualizer from '../MapVisualizer';
 import { ThemeMeta, ThemeId } from '../../theme/themes';
-import { Well, WellGroup } from '../../types/wells';
+import type { Well, WellGroup } from '../../types';
 import GroupWellsTable from './GroupWellsTable';
 import { WellsFiltersPanel } from './map/WellsFiltersPanel';
 import WellSelectionActions from './WellSelectionActions';

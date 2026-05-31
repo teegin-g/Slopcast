@@ -1,5 +1,5 @@
 import React from 'react';
-import { ForecastSegment, CutoffKind } from '../types/economics';
+import type { ForecastSegment, CutoffKind } from '../types';
 import { useTheme } from '../theme/ThemeProvider';
 import { InlineEditableValue } from './inline/InlineEditableValue';
 import { createLocalId } from '../utils/id';

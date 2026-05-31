@@ -1,5 +1,5 @@
-import { Well, WellGroup } from '../types/wells';
-import {
+import type { Well, WellGroup } from '../types';
+import type {
   TypeCurveParams,
   CapexAssumptions,
   CommodityPricingAssumptions,
@@ -7,8 +7,8 @@ import {
   OwnershipAssumptions,
   MonthlyCashFlow,
   DealMetrics,
-} from '../types/economics';
-import { ScheduleParams, SensitivityVariable, SensitivityMatrixResult } from '../types/scenarios';
+} from '../types';
+import type { ScheduleParams, SensitivityVariable, SensitivityMatrixResult } from '../types';
 import * as tsCalc from '../utils/economics';
 
 // ---------------------------------------------------------------------------
