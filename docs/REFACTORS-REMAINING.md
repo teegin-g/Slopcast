@@ -14,21 +14,27 @@
 ## Still open — deliberately deferred (visual-risk or user-preference)
 
 ### R2-13 + R5-13 — Full leaf-`isClassic` migration into theme primitives
-- **What:** Introduce `<ThemePanel>` / `<ThemeButton>` and push the remaining
-  inline `isClassic` branches (EconomicsGroupBar ~28, IntegrationsPage ~50,
-  HubPage ~35, MapCommandCenter ~23, AuthPage ~17, …) into them.
-- **Why still deferred:** This is the catalog's hardest-to-verify item. Keeping
-  all 8 themes — especially **Classic** — pixel-identical through a cross-cutting
-  primitive abstraction across hundreds of branch sites cannot be confirmed by
-  typecheck/unit/storybook/audit; it needs per-view, per-theme screenshot diffing.
-  An automated agent can't see rendered output across every theme, so this is the
-  one place a regression could slip past the gates — directly against the
-  "no visual regressions" requirement.
-- **Suggested approach:** One component family per PR. Build `<ThemePanel>`/
-  `<ThemeButton>` first and prove byte-identical class output on ONE component
-  (the wave-4 GroupList/SensitivityMatrix collapses show the technique). After
-  each migration, screenshot the view in **every** theme and diff against `main`.
-  Groundwork done: R3-02 moved TaxControls/SchemaMapper/ConnectionForm to
+- **What:** Push the remaining inline `isClassic` branches (EconomicsGroupBar
+  ~28, IntegrationsPage ~50, HubPage ~35, MapCommandCenter ~23, AuthPage ~17, …)
+  into shared `<ThemePanel>` / `<ThemeButton>`.
+- **DONE so far:** `<ThemePanel>` and `<ThemeButton>` now exist
+  (`src/components/theme/`). The byte-identical-output call sites were migrated
+  (HubPage: 4 panels + 2 buttons; AuthPage: 1 button) and verified
+  visually-identical.
+- **KEY FINDING (why the rest is blocked on a design decision, not effort):**
+  A careful pass over the leaf components (EconomicsGroupBar, OperationsConsole,
+  DesignWellsView, MapCommandCenter, IntegrationsPage/Wizard/Table) migrated
+  **zero** further sites under a strict byte-identical constraint — because their
+  panel/button styles genuinely **diverge**: e.g. `text-xs` vs `text-[10px]`,
+  extra `backdrop-blur-sm`, `border-2`, `sc-btn*` utilities, `bg-theme-surface1`
+  (no opacity suffix), a dynamic `overlayPanelClass()`, and parent-prepended
+  `border` that the primitive would double. Folding these into the primitives
+  **changes their rendered appearance**.
+- **So the remaining work is a DESIGN call, not mechanical:** decide, per
+  divergence, whether to normalize toward the primitive (a deliberate visual
+  change) or keep it bespoke. That belongs to the theme-system owner. Once those
+  calls are made, migrate one component per PR and screenshot every theme vs
+  `main`. Groundwork done: R3-02 moved TaxControls/SchemaMapper/ConnectionForm to
   `useTheme()`-derived `isClassic`; `<ScenarioCard>` exists.
 
 ### R1-05 / R1-08 — Port remaining backgrounds to `useCanvasBackground` / extend FX
