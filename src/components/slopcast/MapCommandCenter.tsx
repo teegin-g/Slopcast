@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { useMapboxMap } from '../../hooks/useMapboxMap';
 import { useTheme } from '../../theme/ThemeProvider';
-import { overlayPanelClass, type MapboxOverrides } from '../../theme/themes';
+import { overlayPanelClass } from '../../theme/themes';
 import type { Well, WellGroup, SpatialLayerFilter, SpatialDataSourceId } from '../../types';
+import { useMapTheme, applyMapThemeOverrides } from './map/useMapTheme';
+import { useMapInit } from './map/useMapInit';
 import { simplifyWellborePath, type WellboreData, type WellboreRenderDiagnostics } from './MapWellboreLayer';
 import { useViewportData } from '../../hooks/useViewportData';
 import { OverlayGroupsPanel } from './map/OverlayGroupsPanel';
@@ -99,33 +101,6 @@ interface MapCommandCenterProps {
   onWellsLoaded?: (wells: Well[]) => void;
 }
 
-function applyMapThemeOverrides(map: any, overrides: MapboxOverrides | undefined) {
-  if (!map || !overrides) return;
-  try {
-    if (map.getLayer('background')) {
-      map.setPaintProperty('background', 'background-color', overrides.bgColor);
-    }
-    ['water', 'water-shadow'].forEach(id => {
-      if (map.getLayer(id)) map.setPaintProperty(id, 'fill-color', overrides.waterColor);
-    });
-    const style = map.getStyle();
-    if (style?.layers) {
-      for (const layer of style.layers) {
-        if ((layer.id === 'land' || layer.id.startsWith('landuse') || layer.id.startsWith('landcover')) && layer.type === 'fill') {
-          map.setPaintProperty(layer.id, 'fill-color', overrides.landColor);
-        }
-        if (layer.type === 'symbol' && layer.id.includes('label')) {
-          map.setPaintProperty(layer.id, 'text-color', overrides.labelColor);
-        }
-        if ((layer.id.includes('road') || layer.id.includes('bridge') || layer.id.includes('tunnel')) && layer.type === 'line') {
-          map.setPaintProperty(layer.id, 'line-opacity', overrides.roadOpacity);
-        }
-      }
-    }
-  } catch (e) {
-    console.warn('[MapCommandCenter] Failed to apply theme overrides:', e);
-  }
-}
 
 export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   isClassic,
@@ -166,28 +141,8 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   const mp = theme.mapPalette;
   const { map, isLoaded, mapContainerRef, viewState, selectionTrail, wellboreLayer } = useMapboxMap();
 
-  // Detect map canvas presence as a fallback for isLoaded (handles StrictMode race)
-  const [canvasDetected, setCanvasDetected] = useState(false);
-  useEffect(() => {
-    if (isLoaded || canvasDetected) return;
-    const container = mapContainerRef.current;
-    if (!container) return;
-    const observer = new MutationObserver(() => {
-      if (container.querySelector('canvas.mapboxgl-canvas')) {
-        setCanvasDetected(true);
-        observer.disconnect();
-      }
-    });
-    // Check immediately
-    if (container.querySelector('canvas.mapboxgl-canvas')) {
-      setCanvasDetected(true);
-      return;
-    }
-    observer.observe(container, { childList: true, subtree: true });
-    return () => observer.disconnect();
-  }, [isLoaded, canvasDetected, mapContainerRef]);
-
-  const mapReady = isLoaded || canvasDetected;
+  // Canvas detection + nav/scale controls
+  const { mapReady } = useMapInit({ map, isLoaded, mapContainerRef });
   const ensureTerrain = useCallback((targetMap: any) => {
     try {
       if (!targetMap.getSource('mapbox-dem')) {
@@ -345,10 +300,8 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     return mp.unassignedFill;
   }, [groups, mp.unassignedFill]);
 
-  // Set selection trail color from theme lasso stroke
-  useEffect(() => {
-    selectionTrail?.setColor(mp.lassoStroke);
-  }, [selectionTrail, mp.lassoStroke]);
+  // Theme overrides: lasso trail colour + Mapbox tile-style paint overrides
+  useMapTheme({ map, isLoaded, selectionTrail, mp, satelliteActive: layers.satellite });
 
   const activeWellboreData = useMemo<WellboreData[]>(() => {
     if (viewState.zoom < SELECTED_WELLBORE_MIN_ZOOM) return [];
@@ -541,37 +494,6 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
   }, []);
-
-  // Apply theme map overrides when theme changes or map loads
-  useEffect(() => {
-    if (!map || !isLoaded || layers.satellite) return;
-    applyMapThemeOverrides(map, mp.mapboxOverrides);
-  }, [map, isLoaded, mp.mapboxOverrides, layers.satellite]);
-
-  // Add Mapbox navigation + scale controls
-  useEffect(() => {
-    if (!map || !isLoaded) return;
-    let navControl: any = null;
-    let scaleControl: any = null;
-    (async () => {
-      try {
-        const mapboxgl = await import('mapbox-gl');
-        const mbgl = (mapboxgl as any).default ?? mapboxgl;
-        navControl = new mbgl.NavigationControl({ showCompass: false });
-        scaleControl = new mbgl.ScaleControl({ maxWidth: 120, unit: 'imperial' });
-        map.addControl(navControl, 'bottom-right');
-        map.addControl(scaleControl, 'bottom-left');
-      } catch {
-        // mapbox-gl may not be available in test environments
-      }
-    })();
-    return () => {
-      try {
-        if (navControl) map.removeControl(navControl);
-        if (scaleControl) map.removeControl(scaleControl);
-      } catch { /* cleanup best-effort */ }
-    };
-  }, [map, isLoaded]);
 
   // Toggle satellite style
   useEffect(() => {
