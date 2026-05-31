@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { useTheme } from '../theme/ThemeProvider';
+import ThemeButton from '../components/theme/ThemeButton';
 
 const AuthPage: React.FC = () => {
   const { status, signIn } = useAuth();
@@ -125,18 +126,17 @@ const AuthPage: React.FC = () => {
               </div>
 
               <div className="mt-5 flex flex-col sm:flex-row gap-3">
-                <button
+                <ThemeButton
                   type="button"
+                  variant="primary"
+                  px="4"
+                  py="3"
                   onClick={handleBypassSignIn}
                   disabled={pending}
-                  className={
-                    isClassic
-                      ? 'rounded-inner px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] bg-theme-cyan text-white border border-theme-magenta/60 shadow-card disabled:opacity-70'
-                      : 'rounded-inner px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] bg-theme-cyan text-theme-bg shadow-glow-cyan disabled:opacity-70'
-                  }
+                  className="disabled:opacity-70"
                 >
                   {pending ? 'Signing In…' : 'Sign In As Demo User'}
-                </button>
+                </ThemeButton>
                 <button
                   type="button"
                   disabled
