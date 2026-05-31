@@ -1,5 +1,11 @@
 import type { ThemeDefinition, ThemeTokenDefinition, ThemeTokenMap, ThemeVariant } from './types';
 
+// Runtime-overridable token boundary (R1-10):
+// Only the tokens listed here are written to CSS custom properties at runtime
+// by applyTokenOverrides — i.e. they can be live-switched per theme/variant.
+// Semantic colors that live ONLY in static theme.css (--text, --muted,
+// --success, --warning, --danger, --violet) are intentionally NOT in this map
+// and therefore cannot be runtime-overridden; change them in theme.css instead.
 const TOKEN_VAR_NAMES: Record<string, Record<string, string>> = {
   color: {
     bgDeep: '--bg-deep',

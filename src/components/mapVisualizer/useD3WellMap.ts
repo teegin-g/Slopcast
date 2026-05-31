@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState, useEffectEvent } from 'react';
-import * as d3 from 'd3';
+import { select, pointer } from 'd3-selection';
+import { extent, range } from 'd3-array';
+import { scaleLinear } from 'd3-scale';
+import { drag as d3Drag } from 'd3-drag';
+import { polygonContains } from 'd3-polygon';
 import type { Well, WellGroup } from '../../types';
 import { ThemeId, getTheme, MapPalette } from '../../theme/themes';
 import type { HeatmapMetric } from './useMapboxHeatmap';
@@ -89,7 +93,7 @@ export function useD3WellMap(params: UseD3WellMapParams): UseD3WellMapResult {
   useEffect(() => {
     if (!svgRef.current || dimensions.width === 0) return;
 
-    const svg = d3.select(svgRef.current);
+    const svg = select(svgRef.current);
     svg.selectAll('.map-content').remove();
 
     const mapG = svg.append('g').classed('map-content', true);
@@ -97,17 +101,17 @@ export function useD3WellMap(params: UseD3WellMapParams): UseD3WellMapResult {
     const height = dimensions.height;
     const padding = 40;
 
-    const xExtent = d3.extent(wells, d => d.lng) as [number, number];
-    const yExtent = d3.extent(wells, d => d.lat) as [number, number];
-    const xScale = d3.scaleLinear().domain(xExtent).range([padding, width - padding]);
-    const yScale = d3.scaleLinear().domain(yExtent).range([height - padding, padding]);
+    const xExtent = extent(wells, d => d.lng) as [number, number];
+    const yExtent = extent(wells, d => d.lat) as [number, number];
+    const xScale = scaleLinear().domain(xExtent).range([padding, width - padding]);
+    const yScale = scaleLinear().domain(yExtent).range([height - padding, padding]);
 
     // Regular grid
     if (!useMapbox || !mapboxLoaded) {
-      mapG.selectAll('.grid-v').data(d3.range(0, width, 100)).enter().append('line')
+      mapG.selectAll('.grid-v').data(range(0, width, 100)).enter().append('line')
         .attr('x1', d => d).attr('x2', d => d).attr('y1', 0).attr('y2', height)
         .attr('stroke', mp.gridColor).attr('stroke-width', 1).attr('opacity', mp.gridOpacity);
-      mapG.selectAll('.grid-h').data(d3.range(0, height, 100)).enter().append('line')
+      mapG.selectAll('.grid-h').data(range(0, height, 100)).enter().append('line')
         .attr('x1', 0).attr('x2', width).attr('y1', d => d).attr('y2', d => d)
         .attr('stroke', mp.gridColor).attr('stroke-width', 1).attr('opacity', mp.gridOpacity);
     }
@@ -179,22 +183,22 @@ export function useD3WellMap(params: UseD3WellMapParams): UseD3WellMapResult {
       })
       .on('mouseover', function (_event, d) {
         if (isDimmedWell(d.id)) return;
-        d3.select(this).attr('r', 8).attr('fill-opacity', 1);
+        select(this).attr('r', 8).attr('fill-opacity', 1);
       })
       .on('mouseout', function (_event, d) {
         if (isDimmedWell(d.id)) return;
-        d3.select(this).attr('r', 5).attr('fill-opacity', selectedWellIds.has(d.id) ? 1 : 0.6);
+        select(this).attr('r', 5).attr('fill-opacity', selectedWellIds.has(d.id) ? 1 : 0.6);
       });
 
     // Selection tools
     svg.on('.drag', null);
 
     if (selectionTool === 'lasso') {
-      const drag = d3.drag<SVGSVGElement, unknown>()
+      const drag = d3Drag<SVGSVGElement, unknown>()
         .filter((event) => isSelecting || event.shiftKey)
         .on('start', () => { setLassoPoints([]); lassoPointsRef.current = []; })
         .on('drag', (event) => {
-          const [x, y] = d3.pointer(event, svgRef.current);
+          const [x, y] = pointer(event, svgRef.current);
           const pt: [number, number] = [x, y];
           setLassoPoints(prev => [...prev, pt]);
           lassoPointsRef.current.push(pt);
@@ -204,7 +208,7 @@ export function useD3WellMap(params: UseD3WellMapParams): UseD3WellMapResult {
           if (pts.length > 2) {
             const selected = wells.flatMap(w => {
               if (!isVisibleWell(w.id)) return [];
-              return d3.polygonContains(pts, [xScale(w.lng), yScale(w.lat)]) ? [w.id] : [];
+              return polygonContains(pts, [xScale(w.lng), yScale(w.lat)]) ? [w.id] : [];
             });
             if (selected.length > 0) onSelectWellsEvent(selected);
           }
@@ -214,15 +218,15 @@ export function useD3WellMap(params: UseD3WellMapParams): UseD3WellMapResult {
         });
       svg.call(drag);
     } else if (selectionTool === 'rectangle') {
-      const drag = d3.drag<SVGSVGElement, unknown>()
+      const drag = d3Drag<SVGSVGElement, unknown>()
         .filter((event) => isSelecting || event.shiftKey)
         .on('start', (event) => {
-          const [x, y] = d3.pointer(event, svgRef.current);
+          const [x, y] = pointer(event, svgRef.current);
           setRectStart([x, y]);
           setRectEnd([x, y]);
         })
         .on('drag', (event) => {
-          const [x, y] = d3.pointer(event, svgRef.current);
+          const [x, y] = pointer(event, svgRef.current);
           setRectEnd([x, y]);
         })
         .on('end', () => {
