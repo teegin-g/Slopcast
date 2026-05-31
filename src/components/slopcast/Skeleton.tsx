@@ -57,18 +57,6 @@ const Skeleton: React.FC<SkeletonProps> = ({
   );
 };
 
-/** KPI Grid skeleton matching the hero + 4-tile layout */
-const KpiGridSkeleton: React.FC = () => (
-  <div className="space-y-4">
-    <Skeleton className="rounded-panel h-40" />
-    <div className="grid grid-cols-2 xl:grid-cols-5 gap-3">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Skeleton key={i} className="rounded-inner h-20" />
-      ))}
-    </div>
-  </div>
-);
-
 /** Table skeleton with header + rows */
 export const TableSkeleton: React.FC<{ rows?: number; cols?: number }> = ({ rows = 6, cols = 5 }) => (
   <div className="rounded-panel border border-theme-border overflow-hidden">
@@ -83,46 +71,6 @@ export const TableSkeleton: React.FC<{ rows?: number; cols?: number }> = ({ rows
           {Array.from({ length: cols }).map((_, col) => (
             <Skeleton key={col} className="h-3" width={`${50 + ((row + col * 11) % 45)}%`} />
           ))}
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-/** Chart area skeleton */
-const ChartSkeleton: React.FC<{ height?: string }> = ({ height = 'h-64' }) => (
-  <LazyMotion features={domAnimation}>
-    <div className={`rounded-panel border border-theme-border p-4 ${height} flex items-end gap-1`}>
-      {Array.from({ length: 12 }).map((_, i) => (
-        <m.div
-          key={i}
-          className="flex-1 bg-theme-surface2/40 rounded-t"
-          style={{ height: `${24 + ((i * 23) % 62)}%` }}
-          variants={shimmerVariants}
-          initial="initial"
-          animate="animate"
-          transition={{ duration: 0.8, repeat: Infinity, repeatType: 'reverse', delay: i * 0.05 }}
-        />
-      ))}
-    </div>
-  </LazyMotion>
-);
-
-/** Group comparison strip skeleton */
-const GroupComparisonSkeleton: React.FC = () => (
-  <div className="rounded-panel border shadow-card bg-theme-surface1/70 border-theme-border">
-    <div className="px-4 py-2 border-b border-theme-border/60">
-      <Skeleton className="h-3" width="40%" />
-    </div>
-    <div className="p-3 space-y-1.5">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="rounded-inner border border-theme-border/50 px-3 py-2">
-          <div className="flex items-center gap-2 mb-1.5">
-            <Skeleton className="size-5 rounded-full" />
-            <Skeleton className="size-3 rounded-full" />
-            <Skeleton className="h-3 flex-1" width="60%" />
-          </div>
-          <Skeleton className="h-1.5 rounded-full" />
         </div>
       ))}
     </div>

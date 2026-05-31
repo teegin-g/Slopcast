@@ -1,12 +1,10 @@
 import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import debugLoggerPlugin from './vite-plugin-debug-logger';
 
-export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, '.', '');
-    const geminiApiKey = process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || '';
+export default defineConfig(() => {
     return {
       server: {
         port: 3000,
@@ -30,10 +28,6 @@ export default defineConfig(({ mode }) => {
         },
       },
       plugins: [tailwindcss(), react(), debugLoggerPlugin()],
-      define: {
-        'process.env.API_KEY': JSON.stringify(geminiApiKey),
-        'process.env.GEMINI_API_KEY': JSON.stringify(geminiApiKey)
-      },
       resolve: {
         alias: {
           '@': path.resolve(__dirname, 'src'),

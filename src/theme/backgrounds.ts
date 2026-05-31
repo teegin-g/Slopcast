@@ -8,12 +8,3 @@ export const StormDuskBackground = React.lazy(() => import('../components/StormD
 export const HyperboreaBackground = React.lazy(() => import('../components/HyperboreaBackground'));
 export const PermianBackground = React.lazy(() => import('../components/PermianBackground'));
 
-const THEME_BACKGROUNDS = {
-  synthwave: SynthwaveBackground,
-  league: MoonlightBackground,
-  tropical: TropicalBackground,
-  mario: MarioOverworldBackground,
-  stormwatch: StormDuskBackground,
-  hyperborea: HyperboreaBackground,
-  permian: PermianBackground,
-} as const;

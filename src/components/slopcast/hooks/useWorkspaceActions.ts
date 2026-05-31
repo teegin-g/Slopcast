@@ -35,7 +35,6 @@ interface WorkspaceActionsArgs {
   onSwitchToEconomics: () => void;
   onSelectAll: () => void;
   onClearSelection: () => void;
-  onShowHelp: () => void;
 }
 
 export function useWorkspaceActions({
@@ -56,7 +55,6 @@ export function useWorkspaceActions({
   onSwitchToEconomics,
   onSelectAll,
   onClearSelection,
-  onShowHelp,
 }: WorkspaceActionsArgs) {
   const handleSaveSnapshot = useCallback(async () => {
     setSnapshotHistory(prev => [
@@ -157,7 +155,6 @@ export function useWorkspaceActions({
     onExportCsv: handleExportCsv,
     onSelectAll,
     onClearSelection,
-    onShowHelp,
   });
 
   return {

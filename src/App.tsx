@@ -38,7 +38,6 @@ const App: React.FC = () => {
             </ProtectedRoute>
           )}
         />
-        <Route path="/home" element={<Navigate to="/hub" replace />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>

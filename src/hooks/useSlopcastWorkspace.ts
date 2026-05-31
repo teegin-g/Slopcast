@@ -13,7 +13,6 @@ import {
   type ControlsSection,
   type FxMode,
   type OpsTab,
-  type PageMode,
   type ViewMode,
 } from '../components/slopcast/hooks/useWorkspaceUiState';
 import { useWorkspaceActions } from '../components/slopcast/hooks/useWorkspaceActions';
@@ -49,9 +48,8 @@ import {
   clearFxMode,
   setAnalysisOpenSection as storeAnalysisOpenSection,
 } from '../services/storage/workspacePreferences';
-import type { DealRecord } from '../types';
 
-export type { ViewMode, OpsTab, FxMode, ControlsSection, AnalysisOpenSection, PageMode };
+export type { ViewMode, OpsTab, FxMode, ControlsSection, AnalysisOpenSection };
 
 // ─── Constants ──────────────────────────────────────────────────────
 
@@ -99,8 +97,6 @@ export function useSlopcastWorkspace() {
 
   // --- View state ---
   const {
-    pageMode,
-    setPageMode,
     viewMode,
     setViewMode,
     designWorkspace,
@@ -119,16 +115,6 @@ export function useSlopcastWorkspace() {
     setControlsOpenSection,
     viewportLayout,
   } = useWorkspaceUiState();
-
-  const [savedDeals, setSavedDeals] = useState<DealRecord[]>([]);
-
-  const handleSelectDeal = useCallback((_dealId: string) => {
-    setPageMode('workspace');
-  }, [setPageMode]);
-
-  const handleCreateDeal = useCallback(() => {
-    setPageMode('workspace');
-  }, [setPageMode]);
 
   // --- Wells & spatial source ---
   const [wells, setWells] = useState<Well[]>(MOCK_WELLS);
@@ -179,7 +165,6 @@ export function useSlopcastWorkspace() {
   const [activeScenarioId, setActiveScenarioId] = useState<string>('s-base');
   const [lastSnapshotAt, setLastSnapshotAt] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState('');
-  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [showSharePanel, setShowSharePanel] = useState(false);
   const [snapshotHistory, setSnapshotHistory] = useState<Array<{ npv: number; capex: number; eur: number; payout: number; timestamp: number }>>([]);
   const [showAfterTax, setShowAfterTax] = useState(false);
@@ -377,7 +362,6 @@ export function useSlopcastWorkspace() {
     onSwitchToEconomics: useCallback(() => setDesignWorkspace('ECONOMICS'), [setDesignWorkspace]),
     onSelectAll: handleSelectAll,
     onClearSelection: handleClearSelection,
-    onShowHelp: useCallback(() => setShowShortcutsHelp(prev => !prev), []),
   });
 
   // --- Effects ---
@@ -502,10 +486,6 @@ export function useSlopcastWorkspace() {
     isClassic, themeId, theme, themes, setThemeId, colorMode, setColorMode, effectiveMode,
     fxClass, atmosphereClass, headerAtmosphereClass, BackgroundComponent, atmosphericOverlays, pageOverlayClasses,
 
-    // Page mode
-    pageMode, setPageMode, savedDeals,
-    handleSelectDeal, handleCreateDeal,
-
     // View state
     viewMode, setViewMode,
     designWorkspace, setDesignWorkspace,
@@ -553,7 +533,6 @@ export function useSlopcastWorkspace() {
 
     // UI state
     opsTab, setOpsTab,
-    showShortcutsHelp, setShowShortcutsHelp,
     showSharePanel, setShowSharePanel,
     actionMessage, lastSnapshotAt,
     validationWarnings,

@@ -33,14 +33,6 @@ export const buildWellColorExpression = (fallbackColor: string) => {
   return ['coalesce', ['get', 'groupColor'], fallbackColor];
 };
 
-const buildWellColorMatchExpression = (
-  _wells: Well[],
-  _getWellColor: (wellId: string) => string,
-  fallbackColor: string,
-) => {
-  return buildWellColorExpression(fallbackColor);
-};
-
 const clusterRadiusExpression = [
   'interpolate', ['linear'], ['zoom'],
   5, ['interpolate', ['linear'], ['get', 'point_count'], 10, 16, 50, 24, 200, 32],
