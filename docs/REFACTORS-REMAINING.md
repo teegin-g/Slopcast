@@ -1,77 +1,51 @@
-# Slopcast Refactors — Remaining (deferred) items
+# Slopcast Refactors — Remaining items
 
-> Companion to `REFACTORS.md`. As of branch `refactors/2026-05-31/catalog-cleanup`,
-> ~58 of the 79 catalog items are implemented, committed, and verified green
-> (typecheck · 230 unit · 13 rig-scheduler · 54 storybook · both prod builds ·
-> ui:audit · visual spot-checks in Slate + Classic). The items below were
-> **deliberately deferred** because they are high-effort, high-regression-risk,
-> or blocked on prerequisites. Each is safe to do later as a focused, separately
-> reviewed change. Do NOT batch these blindly.
+> Companion to `REFACTORS.md`. On branch `refactors/2026-05-31/catalog-cleanup`,
+> the large majority of the 79 catalog items are implemented, committed, and
+> verified green: **strict** typecheck · 231 unit · 13 rig-scheduler · 54
+> storybook · both prod builds · ui:audit · visual spot-checks (Slate + Classic).
+>
+> Since the first cut, these previously-deferred items were also completed:
+> **R5-06** (tsconfig `strict: true` — all 222 errors fixed, type-only, no
+> behavior change), **R3-11** (AppShell prop bag), **R4-11** (TS↔Python parity
+> backstop — engines agree bit-for-bit), **R5-14** (named d3 imports), and the
+> type-system hygiene (R5-02/03/04/05, with R5-03 done shape-safe).
 
-## Tier 1 — High regression risk (hard to verify with current gates)
+## Still open — deliberately deferred (visual-risk or user-preference)
 
 ### R2-13 + R5-13 — Full leaf-`isClassic` migration into theme primitives
-- **What:** Introduce `<ThemePanel>` / `<ThemeButton>` (R5-13) and push the
-  remaining inline `isClassic` branches (EconomicsGroupBar ~28, IntegrationsPage
-  ~50, HubPage ~35, MapCommandCenter ~23, AuthPage ~17, …) into them (R2-13).
-- **Why deferred:** Keeping all themes — especially **Classic** — pixel-identical
-  through this migration is exactly what the automated gates (typecheck/unit/
-  storybook/audit) cannot fully confirm. Only per-view, per-theme screenshot
-  diffing catches a regression here, across hundreds of branch sites.
-- **Suggested approach:** One component family per PR. After each, screenshot the
-  affected view in **every** theme (esp. Classic) and diff against `main`. The
-  partial groundwork is done: R3-02 already moved TaxControls/SchemaMapper/
-  ConnectionForm to `useTheme()`-derived `isClassic`, and `<ScenarioCard>` exists.
-
-### R3-11 — Narrow the AppShell 18-field prop bag
-- **What:** Split `AppShell`'s single `workspace` prop (18 fields drilled to
-  PageHeader/Sidebar) into `layout`/`nav` sub-objects or a `WorkspaceContext`.
-- **Why deferred:** Re-shaping the central layout contract ripples across the
-  whole shell; medium risk, broad surface.
-- **Suggested approach:** Prefer a `WorkspaceContext` so consumers pull what they
-  need; migrate consumers incrementally; verify the shell renders in 2+ themes.
-
-## Tier 2 — High effort (volume), moderate risk
-
-### R5-06 — Enable `tsconfig` `strict: true`
-- **What:** Turn on strict; fix the resulting errors.
-- **Status:** `tsc --noEmit --strict` currently reports **222 errors**.
-- **Why deferred:** Multi-hour grind. Most fixes are mechanical (param types,
-  null guards) but a careless null-guard/`!` can change runtime behavior. Also
-  needs `@types/d3` (currently `import * as d3`/named imports are untyped) and
-  react-dom type resolution.
-- **Suggested approach:** Enable one strict sub-flag at a time
-  (`noImplicitAny` → `strictNullChecks` → full `strict`), fixing per-domain in
-  small PRs. Add `@types/d3` first to clear a large error cluster. Run the full
-  test suite after each batch — strict fixes must not change behavior.
-
-## Tier 3 — Blocked on prerequisites
-
-### R4-11 — TS↔Python economics parity test
-- **Why deferred:** Needs the Python backend (`backend/economics.py` / the
-  `/api/economics/*` routes) run once to generate golden outputs for the shared
-  fixture. The dev-only engine toggle (R4-01) is already wired, so the Python
-  path is reachable.
-- **Suggested approach:** Write a small script that runs `backend/economics.py`
-  on `dual-parity-rich.json`, check the Python-derived goldens into the repo,
-  then have the vitest parity test assert TS matches within rel-error < 1e-6 on
-  NPV10/IRR/EUR/payout/after-tax/levered. Keep it backend-free at CI time.
-
-## Tier 4 — Low value / intentional / visual-safety
+- **What:** Introduce `<ThemePanel>` / `<ThemeButton>` and push the remaining
+  inline `isClassic` branches (EconomicsGroupBar ~28, IntegrationsPage ~50,
+  HubPage ~35, MapCommandCenter ~23, AuthPage ~17, …) into them.
+- **Why still deferred:** This is the catalog's hardest-to-verify item. Keeping
+  all 8 themes — especially **Classic** — pixel-identical through a cross-cutting
+  primitive abstraction across hundreds of branch sites cannot be confirmed by
+  typecheck/unit/storybook/audit; it needs per-view, per-theme screenshot diffing.
+  An automated agent can't see rendered output across every theme, so this is the
+  one place a regression could slip past the gates — directly against the
+  "no visual regressions" requirement.
+- **Suggested approach:** One component family per PR. Build `<ThemePanel>`/
+  `<ThemeButton>` first and prove byte-identical class output on ONE component
+  (the wave-4 GroupList/SensitivityMatrix collapses show the technique). After
+  each migration, screenshot the view in **every** theme and diff against `main`.
+  Groundwork done: R3-02 moved TaxControls/SchemaMapper/ConnectionForm to
+  `useTheme()`-derived `isClassic`; `<ScenarioCard>` exists.
 
 ### R1-05 / R1-08 — Port remaining backgrounds to `useCanvasBackground` / extend FX
-- **Status:** `useCanvasBackground` exists and Mario is ported (R1-01). Tropical/
-  Moonlight/Hyperborea/OilRig were left on their bespoke lifecycles.
-- **Why deferred:** Each has effect-scoped mutable state (clouds/birds/grain
-  buffers/dt accumulation) that the generic hook would reset; converting risks a
-  visible animation change that's hard to verify pixel-for-pixel. R1-08 (FX
-  intensity) is a no-op for backgrounds with no existing FX-driven draw code.
-- **Suggested approach:** Per-background, only if you can A/B the animation
-  visually; otherwise leave — the duplication is contained.
+- **Status:** `useCanvasBackground` exists; Mario is ported (R1-01). Tropical/
+  Moonlight/Hyperborea/OilRig left on bespoke lifecycles.
+- **Why still deferred:** Each has effect-scoped mutable state (clouds/birds/grain
+  buffers/dt accumulation) the generic hook would reset; converting risks a
+  visible animation change that can't be verified pixel-for-pixel. R1-08 is a
+  no-op for backgrounds with no existing FX-driven draw code.
+- **Suggested approach:** Per-background, only with side-by-side animation A/B;
+  otherwise leave — the duplication is contained.
 
 ### R6-09 / R6-17 / R6-18 — fixtures / playground / snapshot-script reorg
-- **Why deferred:** `playground/` notebooks and `fixtures/` may be intentional
-  dev assets; `scripts/ui-snapshots.mjs` is also currently broken (stale
+- **Why still deferred:** `playground/` notebooks (DCA Sandbox, sensitivity_demo,
+  type_curve_analysis) and `fixtures/` look like intentional dev assets; moving
+  them is a workspace-organization preference best confirmed first, not a code
+  fix. Note `scripts/ui-snapshots.mjs` is currently broken anyway (stale
   `getByTitle('Slate')` selector — themes moved into a PageHeader dropdown), so
   R6-18's dedup should follow a fix of that selector.
 
@@ -80,3 +54,11 @@
 - **R2-01** MapCommandCenter: extracted `useMapTheme` + `useMapInit`;
   `useMapLayers` left inline (3 effects share `mapLayerEpoch` /
   `previousFeatureStateRef` / `hoverRafRef`). `useMapSelection` already exists.
+- **R2-08** WellSelectionActions: desktop slot extracted; map-header + mobile-tray
+  slots left (structurally distinct DOM/testids).
+
+## Known pre-existing issue (out of catalog scope)
+- `scripts/ui-snapshots.mjs` (`npm run ui:shots`) is broken: it waits on
+  `getByTitle('Slate')`, but themes now live behind the PageHeader theme
+  dropdown (`theme-dropdown-toggle` → `theme-option-*`). Update the selector to
+  open the dropdown first before this snapshot tooling works again.
