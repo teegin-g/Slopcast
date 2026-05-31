@@ -15,7 +15,7 @@ const SECTION_MILE_LAT = 0.01449;
 const SECTION_MILE_LNG = 0.01709; // adjusted for ~32°N latitude
 
 export interface UseD3WellMapParams {
-  svgRef: React.RefObject<SVGSVGElement>;
+  svgRef: React.RefObject<SVGSVGElement | null>;
   wells: Well[];
   selectedWellIds: Set<string>;
   visibleWellIds: Set<string>;

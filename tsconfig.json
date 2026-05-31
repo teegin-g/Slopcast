@@ -20,7 +20,8 @@
     "allowJs": true,
     "jsx": "react-jsx",
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "strict": true
   },
   "include": ["src", "supabase", ".storybook", "e2e", "playwright.config.ts"]
 }

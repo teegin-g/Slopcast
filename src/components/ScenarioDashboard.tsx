@@ -388,7 +388,7 @@ const ScenarioDashboard: React.FC<ScenarioDashboardProps> = ({ groups, wells, sc
                                     <YAxis stroke={chartPalette.text} fontSize={9} tickFormatter={(v) => `$${(v/1e6).toFixed(0)}M`} axisLine={false} tickLine={false} />
                                     <Tooltip
                                       contentStyle={{ backgroundColor: chartPalette.surface, borderRadius: '12px', borderColor: chartPalette.border, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)' }}
-                                      formatter={(val: number) => [`$${(val/1e6).toFixed(2)}MM`, '']}
+                                      formatter={(val: number | undefined) => [`$${((val ?? 0)/1e6).toFixed(2)}MM`, '']}
                                     />
                                     <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '20px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.1em' }} iconType="circle" />
                                     {scenarios.map(s => <Line key={s.id} type="monotone" dataKey={s.id} name={s.name} stroke={s.color} strokeWidth={4} dot={false} animationDuration={2000} />)}

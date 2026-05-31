@@ -46,7 +46,7 @@ const TaxesModule: React.FC<EconomicsModuleProps> = ({
                 <CartesianGrid stroke="rgb(var(--border) / 0.35)" strokeDasharray="4 4" vertical={false} />
                 <XAxis dataKey="month" tickFormatter={(value) => (value % 24 === 0 ? `${value / 12}Y` : '')} tick={{ fontSize: 10, fill: 'rgb(var(--muted))' }} axisLine={false} tickLine={false} />
                 <YAxis tickFormatter={(value) => `$${(Number(value) / 1e6).toFixed(0)}M`} tick={{ fontSize: 10, fill: 'rgb(var(--muted))' }} axisLine={false} tickLine={false} />
-                <Tooltip formatter={(value: number) => currencyMm(value)} contentStyle={{ background: 'rgb(var(--surface-1))', border: '1px solid rgb(var(--border))', borderRadius: 8 }} />
+                <Tooltip formatter={(value: number | undefined) => currencyMm(value ?? 0)} contentStyle={{ background: 'rgb(var(--surface-1))', border: '1px solid rgb(var(--border))', borderRadius: 8 }} />
                 <Area dataKey="cumulativeAfterTax" stroke="#f87171" fill="#ef444433" strokeWidth={3} />
               </AreaChart>
             )}

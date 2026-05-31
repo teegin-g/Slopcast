@@ -42,8 +42,8 @@ describe('economics dual-parity fixture', () => {
       input.scalars,
       input.scheduleOverride ?? undefined,
     );
-    const taxed = applyTaxLayer(base.flow, base.metrics, input.taxAssumptions ?? undefined);
-    const levered = applyDebtLayer(taxed.flow, taxed.metrics, input.debtAssumptions ?? undefined);
+    const taxed = applyTaxLayer(base.flow, base.metrics, input.taxAssumptions!);
+    const levered = applyDebtLayer(taxed.flow, taxed.metrics, input.debtAssumptions!);
     const metrics = applyReservesRisk(levered.metrics, input.reserveCategory ?? undefined);
 
     const metricKeys: Array<keyof DealMetrics> = [

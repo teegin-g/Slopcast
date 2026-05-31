@@ -38,7 +38,7 @@ const OwnershipModule: React.FC<EconomicsModuleProps> = ({
                 <Pie data={split} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={58} outerRadius={86} stroke="rgb(var(--border))" strokeWidth={1}>
                   {split.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
                 </Pie>
-                <Tooltip formatter={(value: number) => percent(value * 100)} contentStyle={{ background: 'rgb(var(--surface-1))', border: '1px solid rgb(var(--border))', borderRadius: 8 }} />
+                <Tooltip formatter={(value: number | undefined) => percent((value ?? 0) * 100)} contentStyle={{ background: 'rgb(var(--surface-1))', border: '1px solid rgb(var(--border))', borderRadius: 8 }} />
               </PieChart>
             )}
           </StableChart>

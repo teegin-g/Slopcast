@@ -32,7 +32,7 @@ const OpexModule: React.FC<EconomicsModuleProps> = ({
                   <Pie data={structure} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={46} outerRadius={74} strokeWidth={1} stroke="rgb(var(--border))">
                     {structure.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
                   </Pie>
-                  <Tooltip formatter={(value: number) => currencyMm(value)} contentStyle={{ background: 'rgb(var(--surface-1))', border: '1px solid rgb(var(--border))', borderRadius: 8 }} />
+                  <Tooltip formatter={(value: number | undefined) => currencyMm(value ?? 0)} contentStyle={{ background: 'rgb(var(--surface-1))', border: '1px solid rgb(var(--border))', borderRadius: 8 }} />
                 </PieChart>
               )}
             </StableChart>
@@ -56,7 +56,7 @@ const OpexModule: React.FC<EconomicsModuleProps> = ({
                 <CartesianGrid stroke="rgb(var(--border) / 0.35)" strokeDasharray="4 4" vertical={false} />
                 <XAxis dataKey="year" tick={{ fontSize: 10, fill: 'rgb(var(--muted))' }} axisLine={false} tickLine={false} />
                 <YAxis tickFormatter={(value) => `$${(Number(value) / 1000).toFixed(0)}k`} tick={{ fontSize: 10, fill: 'rgb(var(--muted))' }} axisLine={false} tickLine={false} />
-                <Tooltip formatter={(value: number) => currencyMm(value)} contentStyle={{ background: 'rgb(var(--surface-1))', border: '1px solid rgb(var(--border))', borderRadius: 8 }} />
+                <Tooltip formatter={(value: number | undefined) => currencyMm(value ?? 0)} contentStyle={{ background: 'rgb(var(--surface-1))', border: '1px solid rgb(var(--border))', borderRadius: 8 }} />
                 <Bar dataKey="opex" fill="#f59e0b" radius={[4, 4, 0, 0]} />
               </BarChart>
             )}

@@ -254,11 +254,16 @@ export default function StormDuskBackground() {
   const rafRef = useRef<number>(0);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const canvasEl = canvasRef.current;
+    if (!canvasEl) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const baseCtx = canvasEl.getContext('2d');
+    if (!baseCtx) return;
+
+    // Non-null aliases so the nested (hoisted) draw functions capture
+    // narrowed types under strict mode without per-call assertions.
+    const canvas = canvasEl;
+    const ctx = baseCtx;
 
     let W = 0;
     let H = 0;

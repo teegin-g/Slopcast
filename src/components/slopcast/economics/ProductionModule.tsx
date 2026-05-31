@@ -88,7 +88,7 @@ const ProductionModule: React.FC<EconomicsModuleProps> = ({
                 <YAxis tickFormatter={(value) => `${Math.round(Number(value) / 1000)}k`} tick={{ fontSize: 10, fill: 'rgb(var(--muted))' }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{ background: 'rgb(var(--surface-1))', border: '1px solid rgb(var(--border))', borderRadius: 8, color: 'rgb(var(--text))' }}
-                  formatter={(value: number, name: string) => [Math.round(value).toLocaleString(), name === 'oilProduction' ? 'Oil bbl/mo' : 'Gas mcf/mo']}
+                  formatter={(value: number | undefined, name: string | undefined) => [Math.round(value ?? 0).toLocaleString(), (name ?? '') === 'oilProduction' ? 'Oil bbl/mo' : 'Gas mcf/mo']}
                 />
                 <Legend wrapperStyle={{ fontSize: 10 }} />
                 <Line type="monotone" dataKey="oilProduction" name="Oil" stroke="#22d3ee" strokeWidth={3} dot={false} activeDot={{ r: 4 }} />

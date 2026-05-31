@@ -150,9 +150,9 @@ const WaterfallChart: React.FC<WaterfallChartProps> = ({ isClassic, baseNpv, dri
                   fontSize: '11px',
                   boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
                 }}
-                formatter={(value: number, name: string) => {
+                formatter={(value: number | undefined, name: string | undefined) => {
                   if (name === 'invisible') return [null, null];
-                  return [formatMm(value), 'NPV Impact'];
+                  return [formatMm(value ?? 0), 'NPV Impact'];
                 }}
                 labelStyle={{ fontWeight: 700, marginBottom: 4 }}
                 cursor={{ fill: 'rgba(255,255,255,0.04)' }}

@@ -120,7 +120,7 @@ const CapexControls: React.FC<CapexControlsProps> = ({ capex, onChange }) => {
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(value: number) => `$${(value / 1e6).toFixed(2)}MM`}
+                        formatter={(value: number | undefined) => `$${((value ?? 0) / 1e6).toFixed(2)}MM`}
                         contentStyle={{
                           background: 'var(--theme-bg)',
                           border: '1px solid var(--theme-border)',

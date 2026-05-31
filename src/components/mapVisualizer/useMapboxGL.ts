@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 const PERMIAN_CENTER = { lat: 31.9, lng: -102.3 };
 
 export interface UseMapboxGLResult {
-  mapboxContainerRef: React.RefObject<HTMLDivElement>;
+  mapboxContainerRef: React.RefObject<HTMLDivElement | null>;
   mapRef: React.MutableRefObject<any>;
   useMapbox: boolean;
   setUseMapbox: React.Dispatch<React.SetStateAction<boolean>>;
