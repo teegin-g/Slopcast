@@ -35,47 +35,83 @@ vi.mock('./ViewTransition', () => ({
 
 import React from 'react';
 
-type MockWorkspace = React.ComponentProps<typeof AppShell>['workspace'];
-const mockWorkspaceFn = <T extends (...args: any[]) => unknown>() => vi.fn() as unknown as T;
+type AppShellPropsType = React.ComponentProps<typeof AppShell>;
+const mockFn = <T extends (...args: any[]) => unknown>() => vi.fn() as unknown as T;
 
-// Minimal workspace mock
-function createMockWorkspace(overrides: Partial<MockWorkspace> = {}): MockWorkspace {
+/** Flat representation of all fields for easy override in tests */
+interface FlatMockFields {
+  // atmosphere
+  isClassic?: boolean;
+  BackgroundComponent?: React.ComponentType | null;
+  atmosphereClass?: string;
+  fxClass?: string;
+  atmosphericOverlays?: string[];
+  headerAtmosphereClass?: string;
+  // viewState
+  viewMode?: 'DASHBOARD' | 'ANALYSIS';
+  setViewMode?: (mode: 'DASHBOARD' | 'ANALYSIS') => void;
+  designWorkspace?: 'WELLS' | 'ECONOMICS';
+  setDesignWorkspace?: (ws: 'WELLS' | 'ECONOMICS') => void;
+  economicsNeedsAttention?: boolean;
+  wellsNeedsAttention?: boolean;
+  // groups
+  processedGroups?: WellGroup[];
+  activeGroupId?: string | null;
+  setActiveGroupId?: (id: string) => void;
+  // themeState
+  themeId?: string;
+  setThemeId?: (id: string) => void;
+  themes?: AppShellPropsType['themeState']['themes'];
+  theme?: AppShellPropsType['themeState']['theme'];
+  // navigate
+  navigate?: (path: string) => void;
+}
+
+function createMockProps(overrides: FlatMockFields = {}): Omit<AppShellPropsType, 'children'> {
+  const f = { ...overrides };
   return {
-    isClassic: false,
-    BackgroundComponent: null,
-    atmosphereClass: '',
-    fxClass: '',
-    viewMode: 'DASHBOARD',
-    setViewMode: mockWorkspaceFn<MockWorkspace['setViewMode']>(),
-    designWorkspace: 'WELLS',
-    setDesignWorkspace: mockWorkspaceFn<MockWorkspace['setDesignWorkspace']>(),
-    processedGroups: [] as WellGroup[],
-    activeGroupId: null,
-    setActiveGroupId: mockWorkspaceFn<MockWorkspace['setActiveGroupId']>(),
-    economicsNeedsAttention: false,
-    wellsNeedsAttention: false,
-    themeId: 'slate',
-    setThemeId: mockWorkspaceFn<MockWorkspace['setThemeId']>(),
-    themes: [],
-    theme: { id: 'slate', name: 'Slate' } as any,
-    navigate: mockWorkspaceFn<MockWorkspace['navigate']>(),
-    atmosphericOverlays: [],
-    headerAtmosphereClass: '',
-    ...overrides,
+    atmosphere: {
+      isClassic: f.isClassic ?? false,
+      BackgroundComponent: f.BackgroundComponent ?? null,
+      atmosphereClass: f.atmosphereClass ?? '',
+      fxClass: f.fxClass ?? '',
+      atmosphericOverlays: f.atmosphericOverlays ?? [],
+      headerAtmosphereClass: f.headerAtmosphereClass ?? '',
+    },
+    viewState: {
+      viewMode: f.viewMode ?? 'DASHBOARD',
+      setViewMode: f.setViewMode ?? mockFn<(mode: 'DASHBOARD' | 'ANALYSIS') => void>(),
+      designWorkspace: f.designWorkspace ?? 'WELLS',
+      setDesignWorkspace: f.setDesignWorkspace ?? mockFn<(ws: 'WELLS' | 'ECONOMICS') => void>(),
+      economicsNeedsAttention: f.economicsNeedsAttention ?? false,
+      wellsNeedsAttention: f.wellsNeedsAttention ?? false,
+    },
+    groups: {
+      processedGroups: f.processedGroups ?? ([] as WellGroup[]),
+      activeGroupId: f.activeGroupId ?? null,
+      setActiveGroupId: f.setActiveGroupId ?? mockFn<(id: string) => void>(),
+    },
+    themeState: {
+      themeId: f.themeId ?? 'slate',
+      setThemeId: f.setThemeId ?? mockFn<(id: string) => void>(),
+      themes: f.themes ?? [],
+      theme: f.theme ?? ({ id: 'slate', name: 'Slate' } as any),
+    },
+    navigate: f.navigate ?? mockFn<(path: string) => void>(),
   };
 }
 
 function renderAppShell(
-  workspaceOverrides: Partial<ReturnType<typeof createMockWorkspace>> = {},
+  overrides: FlatMockFields = {},
   viewport: 'mobile' | 'mid' | 'desktop' | 'wide' = 'desktop',
   children: React.ReactNode = <div data-testid="content-area">Content Here</div>,
 ) {
   mockViewport.mockReturnValue(viewport);
-  const workspace = createMockWorkspace(workspaceOverrides);
+  const props = createMockProps(overrides);
   return render(
     <ThemeProvider>
       <MemoryRouter initialEntries={['/?section=wells']}>
-        <AppShell workspace={workspace}>
+        <AppShell {...props}>
           {children}
         </AppShell>
       </MemoryRouter>
