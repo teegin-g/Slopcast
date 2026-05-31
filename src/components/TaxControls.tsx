@@ -1,26 +1,29 @@
 import React from 'react';
-import { TaxAssumptions, TAX_PRESETS, DEFAULT_TAX_ASSUMPTIONS } from '../types/economics';
+import { TaxAssumptions, TAX_PRESETS } from '../types/economics';
+import { useTheme } from '../theme/ThemeProvider';
+import { InlineEditableValue } from './inline/InlineEditableValue';
+import { useControlsStyles } from './slopcast/economics/useControlsStyles';
 
 interface TaxControlsProps {
-  isClassic: boolean;
   tax: TaxAssumptions;
   onChange: (tax: TaxAssumptions) => void;
 }
 
 const PRESET_NAMES = Object.keys(TAX_PRESETS);
 
-const TaxControls: React.FC<TaxControlsProps> = ({ isClassic, tax, onChange }) => {
+const TaxControls: React.FC<TaxControlsProps> = ({ tax, onChange }) => {
+  const { theme } = useTheme();
+  const isClassic = theme.features.isClassicTheme;
+
   const labelClass = isClassic
     ? 'text-[9px] font-black block mb-2 uppercase tracking-[0.2em] text-theme-warning'
     : 'text-[9px] font-black block mb-2 uppercase tracking-[0.2em] text-theme-muted';
 
-  const inputClass = isClassic
-    ? 'w-full rounded-inner px-2 py-1 text-[10px] font-black sc-inputNavy'
-    : 'w-full bg-theme-bg border border-theme-border rounded-inner px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition';
-
   const selectClass = isClassic
     ? 'w-full rounded-inner px-2 py-1 text-[10px] font-black sc-inputNavy'
     : 'w-full bg-theme-bg border border-theme-border rounded-inner px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition';
+
+  const { inlineValueClass, inlineInputClass } = useControlsStyles(isClassic);
 
   const handlePresetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const name = e.target.value;
@@ -67,57 +70,87 @@ const TaxControls: React.FC<TaxControlsProps> = ({ isClassic, tax, onChange }) =
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label htmlFor="tax-severance" className={labelClass}>Severance Tax %</label>
-          <input
+          <InlineEditableValue
             id="tax-severance"
-            type="number"
-            step="0.1"
             value={tax.severanceTaxPct}
-            onChange={e => handleFieldChange('severanceTaxPct', e.target.value)}
-            className={inputClass}
+            onCommit={(v) => handleFieldChange('severanceTaxPct', v)}
+            format={(v) => `${Number(v).toFixed(2)}%`}
+            type="number"
+            validate={(raw) => {
+              const n = parseFloat(raw);
+              if (isNaN(n) || n < 0) return 'Must be >= 0';
+              return null;
+            }}
+            className={`${inlineValueClass}`}
+            inputClassName={`${inlineInputClass} w-full`}
           />
         </div>
         <div>
           <label htmlFor="tax-advalorem" className={labelClass}>Ad Valorem %</label>
-          <input
+          <InlineEditableValue
             id="tax-advalorem"
-            type="number"
-            step="0.1"
             value={tax.adValoremTaxPct}
-            onChange={e => handleFieldChange('adValoremTaxPct', e.target.value)}
-            className={inputClass}
+            onCommit={(v) => handleFieldChange('adValoremTaxPct', v)}
+            format={(v) => `${Number(v).toFixed(2)}%`}
+            type="number"
+            validate={(raw) => {
+              const n = parseFloat(raw);
+              if (isNaN(n) || n < 0) return 'Must be >= 0';
+              return null;
+            }}
+            className={`${inlineValueClass}`}
+            inputClassName={`${inlineInputClass} w-full`}
           />
         </div>
         <div>
           <label htmlFor="tax-federal" className={labelClass}>Federal Tax Rate %</label>
-          <input
+          <InlineEditableValue
             id="tax-federal"
-            type="number"
-            step="0.1"
             value={tax.federalTaxRate}
-            onChange={e => handleFieldChange('federalTaxRate', e.target.value)}
-            className={inputClass}
+            onCommit={(v) => handleFieldChange('federalTaxRate', v)}
+            format={(v) => `${Number(v).toFixed(2)}%`}
+            type="number"
+            validate={(raw) => {
+              const n = parseFloat(raw);
+              if (isNaN(n) || n < 0) return 'Must be >= 0';
+              return null;
+            }}
+            className={`${inlineValueClass}`}
+            inputClassName={`${inlineInputClass} w-full`}
           />
         </div>
         <div>
           <label htmlFor="tax-depletion" className={labelClass}>Depletion Allowance %</label>
-          <input
+          <InlineEditableValue
             id="tax-depletion"
-            type="number"
-            step="0.1"
             value={tax.depletionAllowancePct}
-            onChange={e => handleFieldChange('depletionAllowancePct', e.target.value)}
-            className={inputClass}
+            onCommit={(v) => handleFieldChange('depletionAllowancePct', v)}
+            format={(v) => `${Number(v).toFixed(2)}%`}
+            type="number"
+            validate={(raw) => {
+              const n = parseFloat(raw);
+              if (isNaN(n) || n < 0) return 'Must be >= 0';
+              return null;
+            }}
+            className={`${inlineValueClass}`}
+            inputClassName={`${inlineInputClass} w-full`}
           />
         </div>
         <div>
           <label htmlFor="tax-state" className={labelClass}>State Tax Rate %</label>
-          <input
+          <InlineEditableValue
             id="tax-state"
-            type="number"
-            step="0.1"
             value={tax.stateTaxRate}
-            onChange={e => handleFieldChange('stateTaxRate', e.target.value)}
-            className={inputClass}
+            onCommit={(v) => handleFieldChange('stateTaxRate', v)}
+            format={(v) => `${Number(v).toFixed(2)}%`}
+            type="number"
+            validate={(raw) => {
+              const n = parseFloat(raw);
+              if (isNaN(n) || n < 0) return 'Must be >= 0';
+              return null;
+            }}
+            className={`${inlineValueClass}`}
+            inputClassName={`${inlineInputClass} w-full`}
           />
         </div>
       </div>

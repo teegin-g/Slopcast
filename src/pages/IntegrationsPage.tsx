@@ -304,7 +304,6 @@ const IntegrationsPage: React.FC = () => {
             {/* Step content */}
             {wizardStep === 1 && (
               <ConnectionForm
-                isClassic={isClassic}
                 config={editingConfig}
                 onSave={handleConnectionSave}
                 onCancel={closeWizard}
@@ -314,7 +313,6 @@ const IntegrationsPage: React.FC = () => {
             {wizardStep === 2 && (
               <div className="space-y-4">
                 <SchemaMapper
-                  isClassic={isClassic}
                   slopcastFields={[]}
                   sourceFields={PLACEHOLDER_SOURCE_FIELDS}
                   mappings={draftMappings}

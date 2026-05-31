@@ -31,7 +31,6 @@ const TaxesModule: React.FC<EconomicsModuleProps> = ({
 
         <ModulePanel accent="red" title="Tax Assumptions" bodyClassName="p-4">
           <TaxControls
-            isClassic={isClassic}
             tax={tax}
             onChange={(next) => {
               onUpdateGroup({ ...activeGroup, taxAssumptions: next });

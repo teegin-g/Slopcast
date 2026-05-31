@@ -1,7 +1,7 @@
 import React from 'react';
+import { useTheme } from '../../theme/ThemeProvider';
 
 interface SchemaMapperProps {
-  isClassic: boolean;
   slopcastFields: string[];
   sourceFields: string[];
   mappings: Record<string, string>;
@@ -47,12 +47,13 @@ function fuzzyScore(a: string, b: string): number {
 }
 
 const SchemaMapper: React.FC<SchemaMapperProps> = ({
-  isClassic,
   slopcastFields,
   sourceFields,
   mappings,
   onUpdateMappings,
 }) => {
+  const { theme } = useTheme();
+  const isClassic = theme.features.isClassicTheme;
   const fields = slopcastFields.length > 0 ? slopcastFields : STANDARD_SLOPCAST_FIELDS;
 
   const handleMapField = (slopcastField: string, sourceField: string) => {

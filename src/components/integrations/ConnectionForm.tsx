@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { ConnectionType, IntegrationConfig } from '../../services/integrationService';
+import { useTheme } from '../../theme/ThemeProvider';
 
 interface ConnectionFormProps {
-  isClassic: boolean;
   config?: IntegrationConfig;
   onSave: (payload: { name: string; connectionType: ConnectionType; connectionParams: Record<string, unknown> }) => void;
   onCancel: () => void;
@@ -15,7 +15,9 @@ const CONNECTION_TYPES: { value: ConnectionType; label: string }[] = [
   { value: 'csv', label: 'CSV Upload' },
 ];
 
-const ConnectionForm: React.FC<ConnectionFormProps> = ({ isClassic, config, onSave, onCancel }) => {
+const ConnectionForm: React.FC<ConnectionFormProps> = ({ config, onSave, onCancel }) => {
+  const { theme } = useTheme();
+  const isClassic = theme.features.isClassicTheme;
   const [name, setName] = useState(config?.name ?? '');
   const [connectionType, setConnectionType] = useState<ConnectionType>(config?.connectionType ?? 'supabase');
   const [params, setParams] = useState<Record<string, string>>({});
