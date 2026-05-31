@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { DebugOverlay } from './DebugOverlay';
-import { usePerformanceMonitor } from '@/hooks/usePerformanceMonitor';
-import { detectOverlapsAsync } from '@/utils/overlapDetector';
-import { useViewportLayout } from '@/components/slopcast/hooks/useViewportLayout';
-import { debugLog } from '@/utils/debugLogger';
-import type { OverlapViolation } from '@/utils/overlapDetector';
+import { usePerformanceMonitor } from '../../hooks/usePerformanceMonitor';
+import { detectOverlapsAsync } from '../../utils/overlapDetector';
+import { useViewportLayout } from '../slopcast/hooks/useViewportLayout';
+import { debugLog } from '../../utils/debugLogger';
+import type { OverlapViolation } from '../../utils/overlapDetector';
 
 const OVERLAP_SCAN_INTERVAL = 3000; // ms
 

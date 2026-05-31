@@ -178,7 +178,7 @@ export function getEngineId(): EngineId {
   return stored === 'python' ? 'python' : 'typescript';
 }
 
-function setEngineId(id: EngineId): void {
+export function setEngineId(id: EngineId): void {
   safeSet(ENGINE_ID_KEY, id);
 }
 

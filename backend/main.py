@@ -47,6 +47,10 @@ def create_app() -> FastAPI:
     def health(request: Request) -> dict:
         return {"ok": True, "spatial_db": request.app.state.spatial_db.health()}
 
+    # DEV-COMPARISON: /api/economics/* and /api/sensitivity/* are reachable only via the
+    # dev-only engine toggle in DebugOverlay (R4-01). The Python engine is the retained
+    # reference implementation — kept intentionally for parity comparison against the
+    # authoritative TypeScript engine. Do not delete these routes.
     @app.post("/api/economics/calculate", response_model=EconomicsResponse)
     def economics_calculate(req: CalculateEconomicsRequest) -> EconomicsResponse:
         scalars = req.scalars or Scalars()
@@ -82,6 +86,8 @@ def create_app() -> FastAPI:
             y_steps=req.ySteps,
         )
 
+    # ALWAYS-LIVE: /api/spatial/* is polled by the app's connection-status check
+    # regardless of which economics engine is active.
     app.include_router(create_spatial_router())
 
     return app

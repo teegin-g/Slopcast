@@ -145,10 +145,10 @@ const engines: Record<EngineId, EconomicsEngine> = {
 
 import { getEngineId } from './storage/workspacePreferences';
 
-function getEngine(id?: EngineId): EconomicsEngine {
+export function getEngine(id?: EngineId): EconomicsEngine {
   return engines[id ?? getEngineId()];
 }
 
-function getAllEngines(): EconomicsEngine[] {
+export function getAllEngines(): EconomicsEngine[] {
   return Object.values(engines);
 }

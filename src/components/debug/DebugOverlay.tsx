@@ -39,6 +39,8 @@
 
 import React, { useState, useEffect, useRef, useCallback, useReducer } from 'react';
 import { createPortal } from 'react-dom';
+import { getEngine, getAllEngines, ECONOMICS_ENGINE_VERSION, type EngineId } from '../../services/economicsEngine';
+import { setEngineId, getEngineId } from '../../services/storage/workspacePreferences';
 
 // ============================================================================
 // Types
@@ -219,7 +221,17 @@ export function DebugOverlay({ overlaps, performance, viewport, visible, onClose
     overlaps: false,
     performance: false,
     viewport: false,
+    engine: false,
   });
+
+  // DEV-ONLY: engine toggle state — reads current persisted preference
+  const [activeEngineId, setActiveEngineId] = useState<EngineId>(() => getEngineId());
+  const allEngines = getAllEngines();
+
+  const handleEngineSwitch = useCallback((id: EngineId) => {
+    setEngineId(id);
+    setActiveEngineId(id);
+  }, []);
   const [dragState, dispatchDrag] = useReducer(dragReducer, INITIAL_DRAG_STATE);
   const { dragging, position } = dragState;
   const panelRef = useRef<HTMLDivElement>(null);
@@ -415,6 +427,57 @@ export function DebugOverlay({ overlaps, performance, viewport, visible, onClose
               </div>
             )}
           </div>
+
+          {/* Economics Engine Section — DEV-ONLY toggle (import.meta.env.DEV) */}
+          {import.meta.env.DEV && (
+            <div>
+              <button
+                type="button"
+                style={sectionHeaderStyle}
+                onClick={() => toggleSection('engine')}
+              >
+                <span>ECONOMICS ENGINE</span>
+                <span>{collapsed.engine ? '▼' : '▲'}</span>
+              </button>
+              {!collapsed.engine && (
+                <div style={sectionContentStyle}>
+                  <div style={itemStyle}>
+                    <span style={labelStyle}>Version:</span>
+                    <span style={valueStyle}>{ECONOMICS_ENGINE_VERSION}</span>
+                  </div>
+                  <div style={itemStyle}>
+                    <span style={labelStyle}>Active:</span>
+                    <span style={{ ...valueStyle, color: activeEngineId === 'python' ? '#ff9900' : '#00ff00' }}>
+                      {getEngine(activeEngineId).label}
+                    </span>
+                  </div>
+                  <div style={{ ...itemStyle, display: 'flex', gap: '6px', paddingTop: '6px', flexWrap: 'wrap' }}>
+                    {allEngines.map((eng) => (
+                      <button
+                        key={eng.id}
+                        type="button"
+                        onClick={() => handleEngineSwitch(eng.id)}
+                        style={{
+                          background: activeEngineId === eng.id ? 'rgba(0, 255, 0, 0.2)' : 'none',
+                          border: `1px solid ${activeEngineId === eng.id ? '#00ff00' : 'rgba(0, 255, 0, 0.4)'}`,
+                          color: activeEngineId === eng.id ? '#00ff00' : '#009900',
+                          cursor: 'pointer',
+                          fontSize: '11px',
+                          padding: '2px 8px',
+                          borderRadius: '2px',
+                        }}
+                      >
+                        {eng.id}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ ...itemStyle, color: '#666', fontSize: '11px', paddingTop: '4px' }}>
+                    Re-run economics to apply change.
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
