@@ -27,6 +27,7 @@ const ANALYSIS_OPEN_SECTION_KEY = 'slopcast-analysis-open-section';
 const SIDEBAR_COLLAPSED_KEY = 'slopcast-sidebar-collapsed';
 const ENGINE_ID_KEY = 'slopcast_engine_id';
 const ONBOARDING_KEY = 'slopcast-onboarding-done';
+const WELL_FILTER_KEY_PREFIX = 'slopcast_filter_';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -189,4 +190,25 @@ function getOnboardingDone(): boolean {
 
 function setOnboardingDone(): void {
   safeSet(ONBOARDING_KEY, '1');
+}
+
+// ─── Well filter sets ────────────────────────────────────────────────────────
+// Stored as JSON arrays (string[]). Empty array / missing = no filter (show all).
+
+export function getWellFilter(key: string): string[] {
+  const raw = safeGet(`${WELL_FILTER_KEY_PREFIX}${key}`);
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed as string[];
+  } catch { /* ignore corrupt data */ }
+  return [];
+}
+
+export function setWellFilter(key: string, values: string[]): void {
+  if (values.length === 0) {
+    safeRemove(`${WELL_FILTER_KEY_PREFIX}${key}`);
+  } else {
+    safeSet(`${WELL_FILTER_KEY_PREFIX}${key}`, JSON.stringify(values));
+  }
 }

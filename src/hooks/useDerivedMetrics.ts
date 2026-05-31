@@ -3,7 +3,7 @@ import type { CommodityPricingAssumptions, DealMetrics } from '../types/economic
 import type { Scenario } from '../types/scenarios';
 import type { Well, WellGroup } from '../types/wells';
 import { cachedCalculateEconomics } from '../utils/economics';
-import { DEFAULT_COMMODITY_PRICING, MOCK_WELLS } from '../constants';
+import { DEFAULT_COMMODITY_PRICING } from '../constants';
 
 type DriverModifier = {
   oilPriceDelta?: number;
@@ -79,6 +79,7 @@ export const useDerivedMetrics = (
   processedGroups: WellGroup[],
   scenarios: Scenario[],
   aggregateWellCount: number,
+  wells: Well[],
 ) => {
   const [keyDriverInsights, setKeyDriverInsights] = useState<KeyDriverInsights>(EMPTY_INSIGHTS);
   const [breakevenOilPrice, setBreakevenOilPrice] = useState<number | null>(null);
@@ -99,7 +100,7 @@ export const useDerivedMetrics = (
 
       const evaluateNpv = (modifier: DriverModifier = {}) => {
         return processedGroups.reduce((sum, group) => {
-          const groupWells = MOCK_WELLS.filter(w => group.wellIds.has(w.id));
+          const groupWells = wells.filter(w => group.wellIds.has(w.id));
           const pricing = {
             ...basePricing,
             oilPrice: Math.max(0, basePricing.oilPrice + (modifier.oilPriceDelta ?? 0)),
@@ -164,7 +165,7 @@ export const useDerivedMetrics = (
       } else {
         const evaluateAtOil = (oilPrice: number) => {
           return processedGroups.reduce((sum, group) => {
-            const groupWells = MOCK_WELLS.filter(w => group.wellIds.has(w.id));
+            const groupWells = wells.filter(w => group.wellIds.has(w.id));
             const { metrics } = cachedCalculateEconomics(
               groupWells, group.typeCurve, group.capex,
               { ...basePricing, oilPrice }, group.opex, group.ownership,
@@ -216,7 +217,7 @@ export const useDerivedMetrics = (
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [processedGroups, scenarios, aggregateWellCount]);
+  }, [processedGroups, scenarios, aggregateWellCount, wells]);
 
   return { keyDriverInsights, breakevenOilPrice, isComputing };
 };

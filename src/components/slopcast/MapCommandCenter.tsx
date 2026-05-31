@@ -65,11 +65,7 @@ function wellboreSimplificationTolerance(zoom: number, selected: boolean): numbe
 
 interface MapCommandCenterProps {
   isClassic: boolean;
-  theme: any;
-  themeId: string;
   viewportLayout: 'mobile' | 'mid' | 'desktop' | 'wide';
-  mobilePanel: WellsMobilePanel;
-  onSetMobilePanel: (panel: WellsMobilePanel) => void;
   groups: WellGroup[];
   activeGroupId: string;
   selectedWellCount: number;

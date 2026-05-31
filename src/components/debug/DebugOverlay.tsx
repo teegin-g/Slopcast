@@ -70,6 +70,10 @@ interface DebugOverlayProps {
     isMobile: boolean;
     devicePixelRatio: number;
   };
+  /** Controlled visibility — owned by DebugProvider. */
+  visible: boolean;
+  /** Called when the user clicks the close button. */
+  onClose: () => void;
 }
 
 interface Position {
@@ -210,8 +214,7 @@ const INITIAL_DRAG_STATE: DragState = {
 // Component
 // ============================================================================
 
-export function DebugOverlay({ overlaps, performance, viewport }: DebugOverlayProps) {
-  const [visible, setVisible] = useState(false);
+export function DebugOverlay({ overlaps, performance, viewport, visible, onClose }: DebugOverlayProps) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
     overlaps: false,
     performance: false,
@@ -220,19 +223,6 @@ export function DebugOverlay({ overlaps, performance, viewport }: DebugOverlayPr
   const [dragState, dispatchDrag] = useReducer(dragReducer, INITIAL_DRAG_STATE);
   const { dragging, position } = dragState;
   const panelRef = useRef<HTMLDivElement>(null);
-
-  // Toggle visibility with Ctrl+Shift+D
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
-        e.preventDefault();
-        setVisible(prev => !prev);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
 
   // Handle dragging
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -299,7 +289,7 @@ export function DebugOverlay({ overlaps, performance, viewport }: DebugOverlayPr
           <button
             type="button"
             style={buttonStyle}
-            onClick={() => setVisible(false)}
+            onClick={onClose}
             title="Close (Ctrl+Shift+D)"
           >
             ✕

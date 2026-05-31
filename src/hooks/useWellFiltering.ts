@@ -1,28 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { getWellFilter, setWellFilter } from '../services/storage/workspacePreferences';
 import type { Well } from '../types';
 
-// ─── localStorage persistence ──────────────────────────────────────
-
-const STORAGE_PREFIX = 'slopcast_filter_';
+// ─── localStorage persistence (via workspacePreferences facade) ────
 
 function loadFilter(key: string): Set<string> {
-  try {
-    const stored = localStorage.getItem(STORAGE_PREFIX + key);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed)) return new Set(parsed);
-    }
-  } catch { /* ignore corrupt data */ }
-  return new Set(); // empty = "all" (no filtering)
+  return new Set(getWellFilter(key));
 }
 
 function saveFilter(key: string, values: Set<string>): void {
-  if (values.size === 0) {
-    localStorage.removeItem(STORAGE_PREFIX + key);
-  } else {
-    localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify([...values]));
-  }
+  setWellFilter(key, [...values]);
 }
 
 // ─── Hook ──────────────────────────────────────────────────────────

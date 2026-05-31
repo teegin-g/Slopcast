@@ -98,11 +98,7 @@ const SlopcastPage: React.FC = () => {
                 <Suspense fallback={null}>
                   <MapCommandCenter
                     isClassic={ws.isClassic}
-                    theme={ws.theme}
-                    themeId={ws.themeId}
                     viewportLayout={ws.viewportLayout}
-                    mobilePanel={ws.wellsMobilePanel}
-                    onSetMobilePanel={ws.setWellsMobilePanel}
                     groups={ws.processedGroups}
                     activeGroupId={ws.activeGroupId}
                     selectedWellCount={ws.selectedVisibleCount}

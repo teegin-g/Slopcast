@@ -80,6 +80,8 @@ export function DebugProvider() {
       overlaps={overlaps}
       performance={perfData}
       viewport={viewport}
+      visible={enabled}
+      onClose={() => setEnabled(false)}
     />
   );
 }

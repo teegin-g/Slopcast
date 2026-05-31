@@ -342,6 +342,7 @@ export function useSlopcastWorkspace() {
     processedGroups,
     scenarios,
     aggregateMetrics.wellCount,
+    wells,
   );
 
   const { handleSaveSnapshot, handleExportCsv, handleExportPdf } = useWorkspaceActions({

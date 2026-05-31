@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ConnectionType, IntegrationConfig } from '../../services/integrationService';
 
 interface ConnectionFormProps {
@@ -21,9 +21,12 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ isClassic, config, onSa
   const [params, setParams] = useState<Record<string, string>>({});
   const [testStatus, setTestStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  const [prevConfig, setPrevConfig] = useState(config);
-  if (prevConfig !== config) {
-    setPrevConfig(config);
+  // Sync form state when the incoming config reference changes (e.g. user switches
+  // to editing a different connection). useEffect runs after render so it never
+  // calls setState mid-render, which was the StrictMode violation.
+  useEffect(() => {
+    setName(config?.name ?? '');
+    setConnectionType(config?.connectionType ?? 'supabase');
     if (config?.connectionParams) {
       const flat: Record<string, string> = {};
       for (const [k, v] of Object.entries(config.connectionParams)) {
@@ -33,7 +36,7 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ isClassic, config, onSa
     } else {
       setParams({});
     }
-  }
+  }, [config]);
 
   const updateParam = (key: string, value: string) => {
     setParams(prev => ({ ...prev, [key]: value }));
