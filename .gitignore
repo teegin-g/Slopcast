@@ -49,3 +49,25 @@ output/playwright/**/*.png
 .worktrees/
 .agents/state/*
 !.agents/state/.gitkeep
+
+# Repo-hygiene de-clutter (Epic E) — untracked, kept on disk
+output/
+metadata.json
+branch-comparison/
+problem hue/
+ui-review/
+vibe-slop-stopper/
+critique-reports/
+tropical-background-v2.html
+Untitled.ipynb
+.virtual_documents/
+IMG_1156.JPG
+Sun.jpeg
+
+# Local UI screenshot scratch
+screenshots/
+playwright-screens/
+.playwright-mcp/
+/baseline-*.png
+/after-*.png
+/after5-*.png

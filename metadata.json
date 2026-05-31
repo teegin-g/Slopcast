@@ -1,8 +1,0 @@
-{
-  "name": "Slopcast",
-  "description": "Electric Night Ride - Advanced O&G deal intelligence and visual forecasting engine.",
-  "requestFramePermissions": [
-    "camera",
-    "microphone"
-  ]
-}
