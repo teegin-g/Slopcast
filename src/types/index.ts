@@ -5,3 +5,4 @@ export * from './deals';
 export * from './persistence';
 export * from './integrations';
 export * from './spatial';
+export * from './setup';
