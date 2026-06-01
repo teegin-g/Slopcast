@@ -363,4 +363,3 @@ export async function runEconomics(projectId: string, payload: RunEconomicsPaylo
   if (error) throw error;
   return data;
 }
-

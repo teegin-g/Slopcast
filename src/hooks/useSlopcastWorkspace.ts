@@ -28,9 +28,9 @@ import { createLocalId } from '../utils/id';
 import {
   appendWorkspaceGroup,
   assignWellsToActiveGroup,
-  clearGroupAssignments,
   cloneWorkspaceGroup,
   createGroupFromSelection,
+  reconcileGroupAssignmentsForWells,
   updateWorkspaceGroup,
 } from '../domain/workspace/groupState';
 import {
@@ -139,7 +139,7 @@ export function useSlopcastWorkspace() {
         if (prevIds.has(id)) { hasOverlap = true; break; }
       }
       if (!hasOverlap) {
-        setGroups(clearGroupAssignments);
+        setGroups((prevGroups) => reconcileGroupAssignmentsForWells(prevGroups, prevIds, newIds));
       }
     }
     prevWellIdsRef.current = newIds;

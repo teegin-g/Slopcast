@@ -176,4 +176,3 @@ export function usePerformanceMonitor(enabled: boolean): PerformanceData {
 
   return { fps, entries, slowRenders };
 }
-

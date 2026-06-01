@@ -19,6 +19,7 @@ if [ -d "$VENV_DIR" ]; then
   source "$VENV_DIR/bin/activate"
 fi
 
+load_env_file "$BACKEND_ENV_ROOT/.env"
 load_env_file "$BACKEND_ENV_ROOT/.env.local"
 load_env_file "$BACKEND_ENV_ROOT/.env.backend.local"
 

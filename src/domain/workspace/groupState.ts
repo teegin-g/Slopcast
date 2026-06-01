@@ -97,3 +97,23 @@ export const createGroupFromSelection = (
 
 export const clearGroupAssignments = (groups: WellGroup[]): WellGroup[] =>
   groups.map((group) => ({ ...group, wellIds: new Set<string>() }));
+
+export const reconcileGroupAssignmentsForWells = (
+  groups: WellGroup[],
+  previousWellIds: Set<string>,
+  nextWellIds: Set<string>,
+): WellGroup[] => {
+  const [onlyGroup] = groups;
+  const wasDefaultCatchAll =
+    groups.length === 1 &&
+    onlyGroup &&
+    previousWellIds.size > 0 &&
+    onlyGroup.wellIds.size === previousWellIds.size &&
+    [...previousWellIds].every((id) => onlyGroup.wellIds.has(id));
+
+  if (wasDefaultCatchAll) {
+    return [{ ...onlyGroup, wellIds: new Set(nextWellIds) }];
+  }
+
+  return clearGroupAssignments(groups);
+};

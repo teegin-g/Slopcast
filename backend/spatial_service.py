@@ -37,9 +37,10 @@ from .spatial_models import (
 
 _BACKEND_DIR = os.path.dirname(__file__)
 _PROJECT_ROOT = os.path.dirname(_BACKEND_DIR)
-load_dotenv(os.path.join(_BACKEND_DIR, ".env"))
+load_dotenv(os.path.join(_PROJECT_ROOT, ".env"))
 load_dotenv(os.path.join(_PROJECT_ROOT, ".env.local"), override=True)
 load_dotenv(os.path.join(_PROJECT_ROOT, ".env.backend.local"), override=True)
+load_dotenv(os.path.join(_BACKEND_DIR, ".env"))
 
 logger = logging.getLogger(__name__)
 

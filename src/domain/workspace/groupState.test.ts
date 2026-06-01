@@ -7,6 +7,7 @@ import {
   clearGroupAssignments,
   cloneWorkspaceGroup,
   createGroupFromSelection,
+  reconcileGroupAssignmentsForWells,
   updateWorkspaceGroup,
 } from './groupState';
 
@@ -62,6 +63,26 @@ describe('workspace group state reducers', () => {
 
   it('clears stale well assignments', () => {
     const next = clearGroupAssignments([makeGroup('g-1', ['a']), makeGroup('g-2', ['b'])]);
+    expect(next.every((group) => group.wellIds.size === 0)).toBe(true);
+  });
+
+  it('reassigns the default catch-all group when a new well dataset replaces seed wells', () => {
+    const next = reconcileGroupAssignmentsForWells(
+      [makeGroup('g-1', ['mock-1', 'mock-2'])],
+      new Set(['mock-1', 'mock-2']),
+      new Set(['live-1', 'live-2', 'live-3']),
+    );
+
+    expect([...next[0].wellIds].sort()).toEqual(['live-1', 'live-2', 'live-3']);
+  });
+
+  it('clears custom assignments when a new well dataset is incompatible', () => {
+    const next = reconcileGroupAssignmentsForWells(
+      [makeGroup('g-1', ['mock-1']), makeGroup('g-2', ['mock-2'])],
+      new Set(['mock-1', 'mock-2']),
+      new Set(['live-1', 'live-2']),
+    );
+
     expect(next.every((group) => group.wellIds.size === 0)).toBe(true);
   });
 });

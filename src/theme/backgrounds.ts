@@ -7,4 +7,3 @@ export const MarioOverworldBackground = React.lazy(() => import('../components/M
 export const StormDuskBackground = React.lazy(() => import('../components/StormDuskBackground'));
 export const HyperboreaBackground = React.lazy(() => import('../components/HyperboreaBackground'));
 export const PermianBackground = React.lazy(() => import('../components/PermianBackground'));
-

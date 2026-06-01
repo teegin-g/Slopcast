@@ -141,8 +141,8 @@ if ! command -v npm >/dev/null 2>&1; then
   exit 1
 fi
 
-if [[ -z "${GEMINI_API_KEY:-}" && ! -f ".env.local" ]]; then
-  echo "Warning: GEMINI_API_KEY not set and .env.local not found."
+if [[ -z "${GEMINI_API_KEY:-}" && ! -f ".env" && ! -f ".env.local" ]]; then
+  echo "Warning: GEMINI_API_KEY not set and no .env file found."
   echo "AI analysis will be disabled until a key is configured."
 fi
 
@@ -175,6 +175,7 @@ export PORT PYTHON_API_PORT
 kill_listeners_on_port "$PYTHON_API_PORT"
 kill_listeners_on_port "$PORT"
 
+load_env_file "$ROOT_DIR/.env"
 load_env_file "$ROOT_DIR/.env.local"
 load_env_file "$ROOT_DIR/.env.backend.local"
 
