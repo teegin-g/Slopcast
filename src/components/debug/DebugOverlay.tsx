@@ -324,8 +324,8 @@ export function DebugOverlay({ overlaps, performance, viewport, visible, onClose
                 {overlaps.length === 0 ? (
                   <div style={{ color: '#666' }}>No overlaps detected</div>
                 ) : (
-                  overlaps.slice(0, 10).map((overlap) => (
-                    <div key={`${overlap.elementA.selector}-${overlap.elementB.selector}`} style={itemStyle}>
+                  overlaps.slice(0, 10).map((overlap, idx) => (
+                    <div key={`${overlap.elementA.selector}-${overlap.elementB.selector}-${idx}`} style={itemStyle}>
                       <div>
                         <span style={labelStyle}>A:</span>
                         <span style={valueStyle}>{overlap.elementA.selector}</span>
@@ -503,8 +503,8 @@ function OverlapHighlights({ overlaps }: OverlapHighlightsProps) {
 
   return (
     <>
-      {overlaps.map((overlap) => (
-        <div key={`${overlap.elementA.selector}-${overlap.elementB.selector}`}>
+      {overlaps.map((overlap, idx) => (
+        <div key={`${overlap.elementA.selector}-${overlap.elementB.selector}-${idx}`}>
           <div style={buildHighlightStyle(overlap.elementA.rect)} />
           <div style={buildHighlightStyle(overlap.elementB.rect)} />
         </div>
