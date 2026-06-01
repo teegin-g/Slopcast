@@ -111,6 +111,6 @@ export function overlayPanelClass(style: ThemeFeatures['panelStyle']): string {
     case 'solid':
       return 'bg-[var(--surface-1)] border border-[var(--border)]';
     case 'outline':
-      return 'bg-[var(--surface-1)]/20 border border-[var(--border)]/60';
+      return 'bg-[var(--surface-1)]/45 border border-[var(--border)]/70';
   }
 }

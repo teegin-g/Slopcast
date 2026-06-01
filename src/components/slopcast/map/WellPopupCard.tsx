@@ -2,8 +2,9 @@ import React from 'react';
 import { AnimatePresence, LazyMotion, domAnimation, m } from 'motion/react';
 import { SPRING } from '../../../theme/motion';
 import { useTheme } from '../../../theme/ThemeProvider';
+import { overlayPanelClass } from '../../../theme/themes';
 import type { Well, WellGroup } from '../../../types';
-import { mapOverlayControlClass, mapOverlayDividerClass, mapOverlayPanelClass } from './mapOverlayChrome';
+import { mapOverlayControlClass, mapOverlayDividerClass } from './mapOverlayChrome';
 
 interface WellPopupCardProps {
   well: Well | null;
@@ -37,9 +38,11 @@ export const WellPopupCard: React.FC<WellPopupCardProps> = ({
   isClassic,
   onClose,
 }) => {
-  const { themeId } = useTheme();
+  const { theme } = useTheme();
 
-  const panelClass = mapOverlayPanelClass(isClassic, themeId, 'card');
+  const panelClass = isClassic
+    ? 'sc-panel theme-transition'
+    : `rounded-panel ${overlayPanelClass(theme.features.panelStyle)} theme-transition`;
 
   const group = well ? findGroup(well.id, groups) : undefined;
 

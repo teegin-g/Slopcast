@@ -1,12 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { Well } from '../../../types';
 import { useTheme } from '../../../theme/ThemeProvider';
-import type { ThemeId } from '../../../theme/themes';
+import { overlayPanelClass } from '../../../theme/themes';
 import {
   mapOverlayControlClass,
   mapOverlayDividerClass,
   mapOverlayMenuClass,
-  mapOverlayPanelClass,
 } from './mapOverlayChrome';
 
 interface OverlayFiltersBarProps {
@@ -37,7 +36,6 @@ interface FilterDropdownProps {
   options: string[];
   onToggle: (value: string) => void;
   isClassic: boolean;
-  themeId: ThemeId;
   selectClass: string;
   testId: string;
 }
@@ -48,7 +46,6 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
   options,
   onToggle,
   isClassic,
-  themeId,
   selectClass,
   testId,
 }) => {
@@ -84,7 +81,7 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
       </button>
       {open && (
         <div
-          className={`absolute top-full left-0 mt-1 min-w-[140px] max-h-48 overflow-y-auto z-30 ${mapOverlayMenuClass(isClassic, themeId)}`}
+          className={`absolute top-full left-0 mt-1 min-w-[140px] max-h-48 overflow-y-auto z-30 ${mapOverlayMenuClass(isClassic)}`}
         >
           {options.map(opt => (
             <label
@@ -132,9 +129,11 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
   onClearSelection,
 }) => {
   const hasActiveFilters = operatorFilter.size > 0 || formationFilter.size > 0 || statusFilter.size > 0;
-  const { themeId } = useTheme();
+  const { theme } = useTheme();
 
-  const panelClass = mapOverlayPanelClass(isClassic, themeId, 'bar');
+  const panelClass = isClassic
+    ? 'sc-panel theme-transition'
+    : `rounded-panel ${overlayPanelClass(theme.features.panelStyle)} shadow-card theme-transition`;
 
   const selectClass = isClassic
     ? 'rounded-inner px-2 py-1 text-[10px] font-black sc-inputNavy focus-ring'
@@ -171,9 +170,7 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
               selected={operatorFilter}
               options={operatorOptions}
               onToggle={onToggleOperator}
-              isClassic={isClassic}
-              themeId={themeId}
-              selectClass={selectClass}
+              isClassic={isClassic}              selectClass={selectClass}
               testId="wells-filter-operator"
             />
             <FilterDropdown
@@ -181,9 +178,7 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
               selected={formationFilter}
               options={formationOptions}
               onToggle={onToggleFormation}
-              isClassic={isClassic}
-              themeId={themeId}
-              selectClass={selectClass}
+              isClassic={isClassic}              selectClass={selectClass}
               testId="wells-filter-formation"
             />
             <FilterDropdown
@@ -191,9 +186,7 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
               selected={statusFilter}
               options={statusOptions}
               onToggle={onToggleStatus}
-              isClassic={isClassic}
-              themeId={themeId}
-              selectClass={selectClass}
+              isClassic={isClassic}              selectClass={selectClass}
               testId="wells-filter-status"
             />
           </div>

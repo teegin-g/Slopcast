@@ -1,23 +1,3 @@
-import type { ThemeId } from '../../../theme/themes';
-
-export type MapOverlayTone = 'bar' | 'card' | 'rail';
-
-function themeTone(themeId: ThemeId): string {
-  if (themeId === 'slate') return 'slate';
-  if (themeId === 'tropical') return 'tropical';
-  if (themeId === 'permian') return 'permian';
-  if (themeId === 'synthwave') return 'synthwave';
-  if (themeId === 'stormwatch') return 'stormwatch';
-  if (themeId === 'hyperborea') return 'hyperborea';
-  if (themeId === 'league') return 'league';
-  return 'default';
-}
-
-export function mapOverlayPanelClass(isClassic: boolean, themeId: ThemeId, tone: MapOverlayTone): string {
-  if (isClassic) return 'sc-panel theme-transition';
-  return `map-overlay-panel map-overlay-panel--${tone} map-overlay-panel--${themeTone(themeId)} theme-transition`;
-}
-
 export function mapOverlayControlClass(isClassic: boolean, active = false): string {
   if (isClassic) {
     return active
@@ -27,9 +7,9 @@ export function mapOverlayControlClass(isClassic: boolean, active = false): stri
   return `map-overlay-control ${active ? 'is-active' : ''}`;
 }
 
-export function mapOverlayMenuClass(isClassic: boolean, themeId: ThemeId): string {
+export function mapOverlayMenuClass(isClassic: boolean): string {
   if (isClassic) return 'rounded-inner bg-[#1a1a2e] border border-white/20 shadow-lg';
-  return `map-overlay-menu map-overlay-panel--${themeTone(themeId)}`;
+  return 'map-overlay-menu';
 }
 
 export function mapOverlayDividerClass(isClassic: boolean): string {

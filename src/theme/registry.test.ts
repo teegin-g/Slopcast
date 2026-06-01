@@ -155,6 +155,6 @@ describe('theme registry', () => {
   it('returns the existing overlay panel class names', () => {
     expect(overlayPanelClass('glass')).toBe('backdrop-blur-sm bg-[var(--surface-1)]/80 border border-[var(--border)]');
     expect(overlayPanelClass('solid')).toBe('bg-[var(--surface-1)] border border-[var(--border)]');
-    expect(overlayPanelClass('outline')).toBe('bg-[var(--surface-1)]/20 border border-[var(--border)]/60');
+    expect(overlayPanelClass('outline')).toBe('bg-[var(--surface-1)]/45 border border-[var(--border)]/70');
   });
 });
