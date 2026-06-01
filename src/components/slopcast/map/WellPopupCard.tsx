@@ -1,5 +1,5 @@
 import React from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, LazyMotion, domAnimation, m } from 'motion/react';
 import { SPRING } from '../../../theme/motion';
 import { useTheme } from '../../../theme/ThemeProvider';
 import type { Well, WellGroup } from '../../../types';
@@ -52,9 +52,10 @@ export const WellPopupCard: React.FC<WellPopupCardProps> = ({
   }`;
 
   return (
-    <AnimatePresence>
+    <LazyMotion features={domAnimation}>
+      <AnimatePresence>
       {well && position && (
-        <motion.div
+        <m.div
           className={`absolute z-40 pointer-events-auto ${panelClass} shadow-xl`}
           style={{
             left: position.x - CARD_WIDTH / 2,
@@ -135,7 +136,7 @@ export const WellPopupCard: React.FC<WellPopupCardProps> = ({
             {group ? (
               <>
                 <span
-                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                  className="size-2.5 rounded-full flex-shrink-0"
                   style={{ backgroundColor: group.color }}
                 />
                 <span
@@ -156,8 +157,9 @@ export const WellPopupCard: React.FC<WellPopupCardProps> = ({
               </span>
             )}
           </div>
-        </motion.div>
+        </m.div>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </LazyMotion>
   );
 };

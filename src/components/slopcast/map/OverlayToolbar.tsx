@@ -179,16 +179,15 @@ const SourceBadge: React.FC<{
   onToggle: () => void;
 }> = ({ isClassic, selectedSourceId, renderedSource, fallbackActive, onToggle }) => {
   const prevSource = useRef(renderedSource);
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [flash, setFlash] = useState(false);
 
-  useEffect(() => {
-    if (prevSource.current !== renderedSource) {
-      setFlash(true);
-      const t = setTimeout(() => setFlash(false), 600);
-      prevSource.current = renderedSource;
-      return () => clearTimeout(t);
-    }
-  }, [renderedSource]);
+  if (prevSource.current !== renderedSource) {
+    prevSource.current = renderedSource;
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    flashTimerRef.current = setTimeout(() => setFlash(false), 600);
+    if (!flash) setFlash(true);
+  }
 
   const isLive = renderedSource === 'databricks' && !fallbackActive;
 

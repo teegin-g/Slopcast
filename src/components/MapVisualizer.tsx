@@ -1,15 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import * as d3 from 'd3';
-import { Well, WellGroup } from '../types';
+import type { Well, WellGroup } from '../types';
 import { ThemeId, getTheme } from '../theme/themes';
+import { useMapboxGL } from './mapVisualizer/useMapboxGL';
+import { useMapboxHeatmap } from './mapVisualizer/useMapboxHeatmap';
+import { useD3WellMap } from './mapVisualizer/useD3WellMap';
 
 interface ActiveFilter {
   label: string;
   value: string;
 }
-
-type SelectionTool = 'lasso' | 'rectangle' | 'formation';
-type HeatmapMetric = 'density' | 'eur_ft' | 'npv';
 
 interface MapVisualizerProps {
   wells: Well[];
@@ -26,6 +25,7 @@ interface MapVisualizerProps {
 
 const PERMIAN_CENTER = { lat: 31.9, lng: -102.3 };
 const MAPBOX_TOKEN = typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_MAPBOX_TOKEN : '';
+const EMPTY_ACTIVE_FILTERS: ActiveFilter[] = [];
 
 const USA_BOUNDS = { minLat: 24.0, maxLat: 50.0, minLng: -125.0, maxLng: -66.0 };
 
@@ -75,10 +75,6 @@ function buildOfflineUsFallbackMap(width: number, height: number, accentHex = '#
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-// Section grid: 1 mile ≈ 0.01449° lat at ~32°N
-const SECTION_MILE_LAT = 0.01449;
-const SECTION_MILE_LNG = 0.01709; // adjusted for ~32°N latitude
-
 const MapVisualizer: React.FC<MapVisualizerProps> = ({
   wells,
   selectedWellIds,
@@ -89,30 +85,35 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
   onSelectWells,
   themeId,
   uiBottomInsetPx = 0,
-  activeFilters = [],
+  activeFilters = EMPTY_ACTIVE_FILTERS,
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapboxContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const [selectionTool, setSelectionTool] = useState<SelectionTool>('lasso');
-  const [isSelecting, setIsSelecting] = useState(false);
-  const [lassoPoints, setLassoPoints] = useState<[number, number][]>([]);
-  const [rectStart, setRectStart] = useState<[number, number] | null>(null);
-  const [rectEnd, setRectEnd] = useState<[number, number] | null>(null);
   const [showGrid, setShowGrid] = useState(false);
-  const [showHeatmap, setShowHeatmap] = useState(false);
-  const [heatmapMetric, setHeatmapMetric] = useState<HeatmapMetric>('density');
-  const [useMapbox, setUseMapbox] = useState(!!MAPBOX_TOKEN);
-  const [mapboxLoaded, setMapboxLoaded] = useState(false);
-  const [isSatellite, setIsSatellite] = useState(false);
   const [formationFilter, setFormationFilter] = useState<string | null>(null);
 
-  const lassoPointsRef = useRef<[number, number][]>([]);
   const themeMeta = getTheme(themeId);
   const isClassic = themeMeta.features.isClassicTheme;
   const mp = themeMeta.mapPalette;
+
+  // Mapbox GL map: init / satellite toggle / instance ref
+  const {
+    mapboxContainerRef,
+    mapRef,
+    useMapbox,
+    mapboxLoaded,
+    isSatellite,
+    setIsSatellite,
+  } = useMapboxGL(MAPBOX_TOKEN);
+
+  // Mapbox GL heatmap layer + visibility/metric state
+  const {
+    showHeatmap,
+    setShowHeatmap,
+    heatmapMetric,
+    setHeatmapMetric,
+  } = useMapboxHeatmap(mapRef, mapboxLoaded, wells);
 
   const fallbackBasemapUrl = useMemo(() => {
     return buildOfflineUsFallbackMap(dimensions.width, dimensions.height, mp.glowColor);
@@ -149,273 +150,46 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Initialize Mapbox GL if token available
-  useEffect(() => {
-    if (!useMapbox || !mapboxContainerRef.current || mapRef.current) return;
-
-    let cancelled = false;
-    (async () => {
-      try {
-        const mapboxgl = await import('mapbox-gl');
-        // @ts-ignore - Vite handles CSS imports at runtime
-        await import('mapbox-gl/dist/mapbox-gl.css');
-        if (cancelled) return;
-
-        (mapboxgl as any).default.accessToken = MAPBOX_TOKEN;
-        const map = new (mapboxgl as any).default.Map({
-          container: mapboxContainerRef.current!,
-          style: 'mapbox://styles/mapbox/dark-v11',
-          center: [PERMIAN_CENTER.lng, PERMIAN_CENTER.lat],
-          zoom: 8,
-          attributionControl: false,
-        });
-
-        map.on('load', () => {
-          if (cancelled) return;
-          mapRef.current = map;
-          setMapboxLoaded(true);
-        });
-      } catch {
-        setUseMapbox(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-        setMapboxLoaded(false);
-      }
-    };
-  }, [useMapbox]);
-
-  // Toggle satellite style
-  useEffect(() => {
-    if (!mapRef.current || !mapboxLoaded) return;
-    const style = isSatellite
-      ? 'mapbox://styles/mapbox/satellite-streets-v12'
-      : 'mapbox://styles/mapbox/dark-v11';
-    mapRef.current.setStyle(style);
-  }, [isSatellite, mapboxLoaded]);
-
-  // Heatmap layer on Mapbox
-  useEffect(() => {
-    if (!mapRef.current || !mapboxLoaded) return;
-    const map = mapRef.current;
-
-    // Remove existing heatmap
-    if (map.getLayer('well-heatmap')) map.removeLayer('well-heatmap');
-    if (map.getSource('well-heatmap-source')) map.removeSource('well-heatmap-source');
-
-    if (!showHeatmap) return;
-
-    const features = wells.map(w => ({
-      type: 'Feature' as const,
-      geometry: { type: 'Point' as const, coordinates: [w.lng, w.lat] },
-      properties: {
-        weight: heatmapMetric === 'density' ? 1 : heatmapMetric === 'eur_ft' ? w.lateralLength / 10000 : 1,
-      },
-    }));
-
-    map.addSource('well-heatmap-source', {
-      type: 'geojson',
-      data: { type: 'FeatureCollection', features },
-    });
-
-    map.addLayer({
-      id: 'well-heatmap',
-      type: 'heatmap',
-      source: 'well-heatmap-source',
-      paint: {
-        'heatmap-weight': ['get', 'weight'],
-        'heatmap-intensity': 1,
-        'heatmap-radius': 30,
-        'heatmap-opacity': 0.6,
-        'heatmap-color': [
-          'interpolate', ['linear'], ['heatmap-density'],
-          0, 'rgba(0,0,0,0)',
-          0.2, 'rgba(0,0,255,0.3)',
-          0.4, 'rgba(0,128,0,0.5)',
-          0.6, 'rgba(255,255,0,0.6)',
-          0.8, 'rgba(255,128,0,0.7)',
-          1, 'rgba(255,0,0,0.8)',
-        ],
-      },
-    });
-  }, [showHeatmap, heatmapMetric, wells, mapboxLoaded]);
+  // D3 well-map rendering + lasso/rectangle selection state
+  const {
+    selectionTool,
+    setSelectionTool,
+    isSelecting,
+    setIsSelecting,
+    lassoPoints,
+    rectStart,
+    rectEnd,
+  } = useD3WellMap({
+    svgRef,
+    wells,
+    selectedWellIds,
+    visibleWellIds,
+    dimmedWellIds,
+    groups,
+    dimensions,
+    themeId,
+    showGrid,
+    showHeatmap,
+    heatmapMetric,
+    formationFilter,
+    useMapbox,
+    mapboxLoaded,
+    getWellColor,
+    isDimmedWell,
+    isVisibleWell,
+    mp,
+    onToggleWell,
+    onSelectWells,
+  });
 
   // Formation filter handler
   const handleFormationSelect = useCallback((formation: string | null) => {
     setFormationFilter(formation);
     if (formation) {
-      const matching = wells.filter(w => w.formation === formation).map(w => w.id);
+      const matching = wells.flatMap(w => w.formation === formation ? [w.id] : []);
       if (matching.length > 0) onSelectWells(matching);
     }
   }, [wells, onSelectWells]);
-
-  // Main D3 rendering
-  useEffect(() => {
-    if (!svgRef.current || dimensions.width === 0) return;
-
-    const svg = d3.select(svgRef.current);
-    svg.selectAll('.map-content').remove();
-
-    const mapG = svg.append('g').classed('map-content', true);
-    const width = dimensions.width;
-    const height = dimensions.height;
-    const padding = 40;
-
-    const xExtent = d3.extent(wells, d => d.lng) as [number, number];
-    const yExtent = d3.extent(wells, d => d.lat) as [number, number];
-    const xScale = d3.scaleLinear().domain(xExtent).range([padding, width - padding]);
-    const yScale = d3.scaleLinear().domain(yExtent).range([height - padding, padding]);
-
-    // Regular grid
-    if (!useMapbox || !mapboxLoaded) {
-      mapG.selectAll('.grid-v').data(d3.range(0, width, 100)).enter().append('line')
-        .attr('x1', d => d).attr('x2', d => d).attr('y1', 0).attr('y2', height)
-        .attr('stroke', mp.gridColor).attr('stroke-width', 1).attr('opacity', mp.gridOpacity);
-      mapG.selectAll('.grid-h').data(d3.range(0, height, 100)).enter().append('line')
-        .attr('x1', 0).attr('x2', width).attr('y1', d => d).attr('y2', d => d)
-        .attr('stroke', mp.gridColor).attr('stroke-width', 1).attr('opacity', mp.gridOpacity);
-    }
-
-    // Section grid overlay (1-mile grid)
-    if (showGrid) {
-      const [minLng, maxLng] = xExtent;
-      const [minLat, maxLat] = yExtent;
-      const gridLines: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
-
-      // Vertical lines (longitude)
-      const startLng = Math.floor(minLng / SECTION_MILE_LNG) * SECTION_MILE_LNG;
-      for (let lng = startLng; lng <= maxLng + SECTION_MILE_LNG; lng += SECTION_MILE_LNG) {
-        gridLines.push({ x1: xScale(lng), y1: yScale(minLat), x2: xScale(lng), y2: yScale(maxLat) });
-      }
-      // Horizontal lines (latitude)
-      const startLat = Math.floor(minLat / SECTION_MILE_LAT) * SECTION_MILE_LAT;
-      for (let lat = startLat; lat <= maxLat + SECTION_MILE_LAT; lat += SECTION_MILE_LAT) {
-        gridLines.push({ x1: xScale(minLng), y1: yScale(lat), x2: xScale(maxLng), y2: yScale(lat) });
-      }
-
-      mapG.selectAll('.section-grid').data(gridLines).enter().append('line')
-        .classed('section-grid', true)
-        .attr('x1', d => d.x1).attr('y1', d => d.y1)
-        .attr('x2', d => d.x2).attr('y2', d => d.y2)
-        .attr('stroke', mp.gridColor).attr('stroke-width', 0.5).attr('opacity', 0.3)
-        .attr('stroke-dasharray', '3,3');
-    }
-
-    // Heatmap overlay for non-Mapbox mode
-    if (showHeatmap && (!useMapbox || !mapboxLoaded)) {
-      wells.forEach(w => {
-        const x = xScale(w.lng);
-        const y = yScale(w.lat);
-        mapG.append('circle')
-          .attr('cx', x).attr('cy', y).attr('r', 25)
-          .attr('fill', mp.glowColor).attr('fill-opacity', 0.08)
-          .attr('pointer-events', 'none');
-      });
-    }
-
-    // Laterals
-    mapG.selectAll('line.lateral').data(wells).enter().append('line')
-      .classed('lateral', true)
-      .attr('x1', d => xScale(d.lng)).attr('y1', d => yScale(d.lat))
-      .attr('x2', d => xScale(d.lng) + (d.lateralLength / 1000) * 4).attr('y2', d => yScale(d.lat) + 5)
-      .attr('stroke', d => getWellColor(d.id)).attr('stroke-width', 2)
-      .attr('opacity', d => isDimmedWell(d.id) ? 0.08 : 0.4)
-      .attr('pointer-events', 'none');
-
-    // Wells
-    mapG.selectAll('circle.well').data(wells).enter().append('circle')
-      .classed('well', true)
-      .attr('cx', d => xScale(d.lng)).attr('cy', d => yScale(d.lat)).attr('r', 5)
-      .attr('fill', d => {
-        if (formationFilter && d.formation === formationFilter) return mp.glowColor;
-        return getWellColor(d.id);
-      })
-      .attr('stroke', d => (selectedWellIds.has(d.id) && !isDimmedWell(d.id)) ? mp.selectedStroke : 'none')
-      .attr('stroke-width', d => (selectedWellIds.has(d.id) && !isDimmedWell(d.id)) ? 3 : 0)
-      .attr('fill-opacity', d => {
-        if (isDimmedWell(d.id)) return 0.12;
-        return selectedWellIds.has(d.id) ? 1 : 0.6;
-      })
-      .attr('filter', d => (selectedWellIds.has(d.id) && !isDimmedWell(d.id) && themeMeta.features.glowEffects) ? 'url(#neon-glow)' : 'none')
-      .attr('cursor', d => isDimmedWell(d.id) ? 'default' : 'pointer')
-      .on('click', (event, d) => {
-        if (!event.defaultPrevented && isVisibleWell(d.id)) onToggleWell(d.id);
-      })
-      .on('mouseover', function (_event, d) {
-        if (isDimmedWell(d.id)) return;
-        d3.select(this).attr('r', 8).attr('fill-opacity', 1);
-      })
-      .on('mouseout', function (_event, d) {
-        if (isDimmedWell(d.id)) return;
-        d3.select(this).attr('r', 5).attr('fill-opacity', selectedWellIds.has(d.id) ? 1 : 0.6);
-      });
-
-    // Selection tools
-    svg.on('.drag', null);
-
-    if (selectionTool === 'lasso') {
-      const drag = d3.drag<SVGSVGElement, unknown>()
-        .filter((event) => isSelecting || event.shiftKey)
-        .on('start', () => { setLassoPoints([]); lassoPointsRef.current = []; })
-        .on('drag', (event) => {
-          const [x, y] = d3.pointer(event, svgRef.current);
-          const pt: [number, number] = [x, y];
-          setLassoPoints(prev => [...prev, pt]);
-          lassoPointsRef.current.push(pt);
-        })
-        .on('end', () => {
-          const pts = lassoPointsRef.current;
-          if (pts.length > 2) {
-            const selected = wells.filter(w => {
-              if (!isVisibleWell(w.id)) return false;
-              return d3.polygonContains(pts, [xScale(w.lng), yScale(w.lat)]);
-            }).map(w => w.id);
-            if (selected.length > 0) onSelectWells(selected);
-          }
-          setLassoPoints([]);
-          lassoPointsRef.current = [];
-          if (isSelecting) setIsSelecting(false);
-        });
-      svg.call(drag);
-    } else if (selectionTool === 'rectangle') {
-      const drag = d3.drag<SVGSVGElement, unknown>()
-        .filter((event) => isSelecting || event.shiftKey)
-        .on('start', (event) => {
-          const [x, y] = d3.pointer(event, svgRef.current);
-          setRectStart([x, y]);
-          setRectEnd([x, y]);
-        })
-        .on('drag', (event) => {
-          const [x, y] = d3.pointer(event, svgRef.current);
-          setRectEnd([x, y]);
-        })
-        .on('end', () => {
-          if (rectStart && rectEnd) {
-            const [x1, y1] = rectStart;
-            const [x2, y2] = rectEnd || rectStart;
-            const minX = Math.min(x1, x2), maxX = Math.max(x1, x2);
-            const minY = Math.min(y1, y2), maxY = Math.max(y1, y2);
-            const selected = wells.filter(w => {
-              if (!isVisibleWell(w.id)) return false;
-              const wx = xScale(w.lng), wy = yScale(w.lat);
-              return wx >= minX && wx <= maxX && wy >= minY && wy <= maxY;
-            }).map(w => w.id);
-            if (selected.length > 0) onSelectWells(selected);
-          }
-          setRectStart(null);
-          setRectEnd(null);
-          if (isSelecting) setIsSelecting(false);
-        });
-      svg.call(drag);
-    }
-
-    svg.style('cursor', isSelecting ? 'crosshair' : 'default');
-  }, [wells, selectedWellIds, visibleWellIds, dimmedWellIds, groups, dimensions, selectionTool, isSelecting, onToggleWell, onSelectWells, themeId, showGrid, showHeatmap, heatmapMetric, formationFilter, useMapbox, mapboxLoaded]);
 
   const toolBtnClass = (active: boolean) => isClassic
     ? `px-2 py-1 text-[9px] font-black uppercase tracking-wide rounded-md border transition-colors ${active ? 'bg-theme-magenta text-white border-black/40' : 'bg-black/25 text-white/80 border-black/30 hover:bg-black/35'}`
@@ -471,10 +245,10 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
       <div className="absolute top-4 right-4 z-20 space-y-2">
         {/* Selection tools */}
         <div className="flex gap-1">
-          <button onClick={() => { setSelectionTool('lasso'); setIsSelecting(!isSelecting || selectionTool !== 'lasso'); }} className={toolBtnClass(isSelecting && selectionTool === 'lasso')}>
+          <button type="button" onClick={() => { setSelectionTool('lasso'); setIsSelecting(!isSelecting || selectionTool !== 'lasso'); }} className={toolBtnClass(isSelecting && selectionTool === 'lasso')}>
             Lasso
           </button>
-          <button onClick={() => { setSelectionTool('rectangle'); setIsSelecting(!isSelecting || selectionTool !== 'rectangle'); }} className={toolBtnClass(isSelecting && selectionTool === 'rectangle')}>
+          <button type="button" onClick={() => { setSelectionTool('rectangle'); setIsSelecting(!isSelecting || selectionTool !== 'rectangle'); }} className={toolBtnClass(isSelecting && selectionTool === 'rectangle')}>
             Rect
           </button>
         </div>
@@ -493,12 +267,12 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
 
         {/* Toggle buttons */}
         <div className="flex flex-col gap-1">
-          <button onClick={() => setShowGrid(!showGrid)} className={toolBtnClass(showGrid)}>Grid</button>
-          <button onClick={() => setShowHeatmap(!showHeatmap)} className={toolBtnClass(showHeatmap)}>Heat</button>
+          <button type="button" onClick={() => setShowGrid(!showGrid)} className={toolBtnClass(showGrid)}>Grid</button>
+          <button type="button" onClick={() => setShowHeatmap(!showHeatmap)} className={toolBtnClass(showHeatmap)}>Heat</button>
           {showHeatmap && (
             <select
               value={heatmapMetric}
-              onChange={e => setHeatmapMetric(e.target.value as HeatmapMetric)}
+              onChange={e => setHeatmapMetric(e.target.value as typeof heatmapMetric)}
               className={`text-[8px] font-bold uppercase rounded px-1 py-0.5 ${
                 isClassic ? 'sc-selectNavy' : 'bg-theme-surface2 text-theme-muted border border-theme-border'
               }`}
@@ -509,7 +283,7 @@ const MapVisualizer: React.FC<MapVisualizerProps> = ({
             </select>
           )}
           {useMapbox && mapboxLoaded && (
-            <button onClick={() => setIsSatellite(!isSatellite)} className={toolBtnClass(isSatellite)}>
+            <button type="button" onClick={() => setIsSatellite(!isSatellite)} className={toolBtnClass(isSatellite)}>
               {isSatellite ? 'Dark' : 'Sat'}
             </button>
           )}

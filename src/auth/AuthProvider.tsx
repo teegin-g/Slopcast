@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, use, useCallback, useEffect, useMemo, useState } from 'react';
 import { DevBypassAdapter } from './adapters/devBypassAdapter';
 import { SupabaseAdapter } from './adapters/supabaseAdapter';
 import { AuthAdapter } from './provider';
@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 export function useAuth(): AuthContextValue {
-  const context = useContext(AuthContext);
+  const context = use(AuthContext);
   if (!context) throw new Error('useAuth must be used within <AuthProvider>');
   return context;
 }

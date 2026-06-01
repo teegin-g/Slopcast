@@ -21,7 +21,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
             Authenticating
           </p>
           <p className={isClassic ? 'text-white/85 text-sm' : 'text-theme-muted text-sm'}>
-            Verifying access...
+            Verifying access…
           </p>
         </div>
       </div>

@@ -107,3 +107,28 @@ def test_invalid_detail_level_rejected():
         },
     )
     assert resp.status_code == 422
+
+
+def test_spatial_wells_accepts_render_profile():
+    resp = client.post(
+        "/api/spatial/wells",
+        json={
+            "bounds": {"sw_lat": 31.0, "sw_lng": -103.0, "ne_lat": 33.0, "ne_lng": -101.0},
+            "detail_level": "summary",
+            "render_profile": "sampled",
+            "limit": 40,
+        },
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["source"] == "mock"
+    assert len(data["wells"]) < 40
+
+
+def test_vector_tile_scaffold_endpoint():
+    resp = client.get("/api/spatial/tiles/10/205/410.mvt?render_profile=sampled")
+
+    assert resp.status_code == 200
+    assert resp.headers["content-type"] == "application/vnd.mapbox-vector-tile"
+    assert resp.headers["x-slopcast-mvt"] == "scaffold"
+    assert resp.content == b""

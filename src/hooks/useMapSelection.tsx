@@ -144,9 +144,10 @@ export function useMapSelection({
             const bbox: [[number, number], [number, number]] = [[minX, minY], [maxX, maxY]];
             try {
               const features = map.queryRenderedFeatures(bbox, { layers });
-              const ids = features
-                .map((f: any) => f.properties?.id)
-                .filter(Boolean) as string[];
+              const ids: string[] = features.flatMap((f: any) => {
+                const id = f.properties?.id as string | undefined;
+                return id ? [id] : [];
+              });
               const unique = [...new Set(ids)];
               if (unique.length > 0) onSelectWellsRef.current(unique);
             } catch {

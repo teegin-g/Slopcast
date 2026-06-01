@@ -60,12 +60,14 @@ export function useStableChartContainer(deps: DependencyList = []): StableChartR
     readSize();
     const id = window.requestAnimationFrame(readSize);
     return () => window.cancelAnimationFrame(id);
+    // oxlint-disable-next-line react/exhaustive-deps -- intentional: deps is a caller-supplied list, not a static array
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
+  }, deps); // eslint-disable-line
 
   useEffect(() => {
+    const observer = observerRef.current;
     return () => {
-      if (observerRef.current) observerRef.current.disconnect();
+      if (observer) observer.disconnect();
     };
   }, []);
 

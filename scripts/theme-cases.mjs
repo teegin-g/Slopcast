@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 
-export async function loadUiThemeCases() {
+async function loadUiThemeCases() {
   const metadata = await loadThemeSnapshotMetadata();
   return metadata.themes;
 }

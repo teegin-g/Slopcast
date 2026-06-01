@@ -7,7 +7,6 @@ import type {
   ProjectUiState,
 } from '../types';
 import type { Json } from '../../supabase/types/database';
-import { getSupabaseClient } from './supabaseClient';
 import {
   parseGroupConfig,
   parsePricing,
@@ -17,6 +16,7 @@ import {
   parseScenarioScalars,
   parseSchedule,
 } from './projectContracts';
+import { requireSupabase, requireUserId } from './supabaseGuards';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -160,23 +160,6 @@ export interface RunEconomicsPayload {
   }>;
 }
 
-function requireSupabase() {
-  const supabase = getSupabaseClient();
-  if (!supabase) {
-    throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY.');
-  }
-  return supabase;
-}
-
-async function requireUserId() {
-  const supabase = requireSupabase();
-  const { data, error } = await supabase.auth.getUser();
-  if (error) throw error;
-  if (!data.user?.id) {
-    throw new Error('No authenticated Supabase user.');
-  }
-  return data.user.id;
-}
 
 export async function listProjects(): Promise<ProjectRecord[]> {
   await requireUserId();
@@ -280,7 +263,12 @@ export async function saveProject(payload: SaveProjectPayload): Promise<SaveProj
   }, {});
 
   const allExternalKeys = Array.from(
-    new Set(payload.groups.flatMap((group) => group.wellExternalKeys).filter(Boolean))
+    payload.groups.reduce<Set<string>>((acc, group) => {
+      for (const key of group.wellExternalKeys) {
+        if (key) acc.add(key);
+      }
+      return acc;
+    }, new Set())
   );
 
   const wellIdByExternal = new Map<string, string>();
@@ -374,330 +362,4 @@ export async function runEconomics(projectId: string, payload: RunEconomicsPaylo
 
   if (error) throw error;
   return data;
-}
-
-export async function listRuns(projectId: string): Promise<EconomicsRunRecord[]> {
-  await requireUserId();
-  const supabase = requireSupabase();
-
-  const { data, error } = await supabase
-    .from('economics_runs')
-    .select('id, project_id, project_version_id, triggered_by, input_hash, run_kind, engine_version, portfolio_metrics, warnings, created_at')
-    .eq('project_id', projectId)
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-
-  return (data || []).map(mapEconomicsRunRow);
-}
-
-// ---------------------------------------------------------------------------
-// Collaboration: Project Invites
-// ---------------------------------------------------------------------------
-
-export interface ProjectInvite {
-  id: string;
-  projectId: string;
-  invitedEmail: string;
-  role: 'editor' | 'viewer';
-  status: 'pending' | 'accepted' | 'declined';
-  invitedBy: string;
-  createdAt: string;
-}
-
-export interface ProjectMember {
-  userId: string;
-  email: string;
-  role: 'owner' | 'editor' | 'viewer';
-}
-
-export async function inviteToProject(
-  projectId: string,
-  email: string,
-  role: 'editor' | 'viewer'
-): Promise<ProjectInvite> {
-  const userId = await requireUserId();
-  const supabase = requireSupabase();
-
-  const { data, error } = await supabase
-    .from('project_invites')
-    .insert({
-      project_id: projectId,
-      invited_email: email.toLowerCase().trim(),
-      role,
-      invited_by: userId,
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-
-  return {
-    id: data.id,
-    projectId: data.project_id,
-    invitedEmail: data.invited_email,
-    role: data.role as 'editor' | 'viewer',
-    status: data.status as 'pending' | 'accepted' | 'declined',
-    invitedBy: data.invited_by,
-    createdAt: data.created_at,
-  };
-}
-
-export async function acceptInvite(inviteId: string): Promise<void> {
-  await requireUserId();
-  const supabase = requireSupabase();
-
-  // Get invite details
-  const { data: invite, error: getErr } = await supabase
-    .from('project_invites')
-    .select('*')
-    .eq('id', inviteId)
-    .single();
-
-  if (getErr) throw getErr;
-
-  // Update invite status
-  const { error: updateErr } = await supabase
-    .from('project_invites')
-    .update({ status: 'accepted' })
-    .eq('id', inviteId);
-
-  if (updateErr) throw updateErr;
-
-  // Add to project_members
-  const userId = await requireUserId();
-  const { error: memberErr } = await supabase
-    .from('project_members')
-    .upsert({
-      project_id: invite.project_id,
-      user_id: userId,
-      role: invite.role,
-    });
-
-  if (memberErr) throw memberErr;
-}
-
-export async function listProjectMembers(projectId: string): Promise<ProjectMember[]> {
-  await requireUserId();
-  const supabase = requireSupabase();
-
-  const { data, error } = await supabase
-    .from('project_members')
-    .select('user_id, role')
-    .eq('project_id', projectId);
-
-  if (error) throw error;
-
-  // Fetch emails for member user IDs
-  return (data || []).map((row: any) => ({
-    userId: row.user_id,
-    email: row.user_id, // In production, would join with auth.users
-    role: normalizeRole(row.role),
-  }));
-}
-
-export async function removeProjectMember(projectId: string, userId: string): Promise<void> {
-  await requireUserId();
-  const supabase = requireSupabase();
-
-  const { error } = await supabase
-    .from('project_members')
-    .delete()
-    .eq('project_id', projectId)
-    .eq('user_id', userId);
-
-  if (error) throw error;
-}
-
-export async function updateMemberRole(
-  projectId: string,
-  userId: string,
-  role: 'editor' | 'viewer'
-): Promise<void> {
-  await requireUserId();
-  const supabase = requireSupabase();
-
-  const { error } = await supabase
-    .from('project_members')
-    .update({ role })
-    .eq('project_id', projectId)
-    .eq('user_id', userId);
-
-  if (error) throw error;
-}
-
-// ---------------------------------------------------------------------------
-// Collaboration: Audit Log
-// ---------------------------------------------------------------------------
-
-export interface AuditLogEntry {
-  id: string;
-  projectId: string;
-  userId: string;
-  action: string;
-  entityType: string;
-  entityId?: string;
-  payload: Record<string, unknown>;
-  createdAt: string;
-}
-
-export async function logProjectAction(
-  projectId: string,
-  action: string,
-  entityType: string,
-  entityId?: string,
-  payload?: Record<string, unknown>
-): Promise<void> {
-  const userId = await requireUserId();
-  const supabase = requireSupabase();
-
-  const { error } = await supabase.from('project_audit_events').insert({
-    project_id: projectId,
-    actor_user_id: userId,
-    event_type: action,
-    entity_type: entityType,
-    entity_id: entityId ?? null,
-    payload_jsonb: toJson(payload ?? {}),
-  });
-
-  if (error) {
-    console.warn('Failed to log audit action:', error.message);
-  }
-}
-
-export async function listAuditLog(projectId: string, limit = 50): Promise<AuditLogEntry[]> {
-  await requireUserId();
-  const supabase = requireSupabase();
-
-  const { data, error } = await supabase
-    .from('project_audit_events')
-    .select('*')
-    .eq('project_id', projectId)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
-  if (error) throw error;
-
-  return (data || []).map((row: any) => ({
-    id: row.id,
-    projectId: row.project_id,
-    userId: row.actor_user_id,
-    action: row.event_type,
-    entityType: row.entity_type,
-    entityId: row.entity_id,
-    payload: (row.payload_jsonb || {}) as Record<string, unknown>,
-    createdAt: row.created_at,
-  }));
-}
-
-// ---------------------------------------------------------------------------
-// Collaboration: Comments
-// ---------------------------------------------------------------------------
-
-export interface ProjectComment {
-  id: string;
-  projectId: string;
-  userId: string;
-  entityType: 'well' | 'group' | 'scenario';
-  entityId: string;
-  body: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export async function listComments(
-  projectId: string,
-  entityType: string,
-  entityId: string
-): Promise<ProjectComment[]> {
-  await requireUserId();
-  const supabase = requireSupabase();
-
-  const { data, error } = await supabase
-    .from('project_comments')
-    .select('*')
-    .eq('project_id', projectId)
-    .eq('entity_type', entityType)
-    .eq('entity_id', entityId)
-    .order('created_at', { ascending: true });
-
-  if (error) throw error;
-
-  return (data || []).map((row: any) => ({
-    id: row.id,
-    projectId: row.project_id,
-    userId: row.author_user_id,
-    entityType: row.entity_type as 'well' | 'group' | 'scenario',
-    entityId: row.entity_id,
-    body: row.body,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  }));
-}
-
-export async function addComment(
-  projectId: string,
-  entityType: 'well' | 'group' | 'scenario',
-  entityId: string,
-  body: string
-): Promise<ProjectComment> {
-  const userId = await requireUserId();
-  const supabase = requireSupabase();
-
-  const { data, error } = await supabase
-    .from('project_comments')
-    .insert({
-      project_id: projectId,
-      user_id: userId,
-      author_user_id: userId,
-      entity_type: entityType,
-      entity_id: entityId,
-      body,
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-
-  return {
-    id: data.id,
-    projectId: data.project_id,
-    userId: data.author_user_id,
-    entityType: data.entity_type as 'well' | 'group' | 'scenario',
-    entityId: data.entity_id,
-    body: data.body,
-    createdAt: data.created_at,
-    updatedAt: data.updated_at,
-  };
-}
-
-export async function deleteComment(commentId: string): Promise<void> {
-  await requireUserId();
-  const supabase = requireSupabase();
-
-  const { error } = await supabase
-    .from('project_comments')
-    .delete()
-    .eq('id', commentId);
-
-  if (error) throw error;
-}
-
-export async function getCommentCount(
-  projectId: string,
-  entityType: string,
-  entityId: string
-): Promise<number> {
-  await requireUserId();
-  const supabase = requireSupabase();
-
-  const { count, error } = await supabase
-    .from('project_comments')
-    .select('*', { count: 'exact', head: true })
-    .eq('project_id', projectId)
-    .eq('entity_type', entityType)
-    .eq('entity_id', entityId);
-
-  if (error) throw error;
-  return count ?? 0;
 }

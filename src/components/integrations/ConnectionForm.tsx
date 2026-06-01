@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import type { ConnectionType, IntegrationConfig } from '../../services/integrationService';
+import type { ConnectionType, IntegrationConfig } from '../../types';
+import { useTheme } from '../../theme/ThemeProvider';
 
 interface ConnectionFormProps {
-  isClassic: boolean;
   config?: IntegrationConfig;
   onSave: (payload: { name: string; connectionType: ConnectionType; connectionParams: Record<string, unknown> }) => void;
   onCancel: () => void;
@@ -15,13 +15,20 @@ const CONNECTION_TYPES: { value: ConnectionType; label: string }[] = [
   { value: 'csv', label: 'CSV Upload' },
 ];
 
-const ConnectionForm: React.FC<ConnectionFormProps> = ({ isClassic, config, onSave, onCancel }) => {
+const ConnectionForm: React.FC<ConnectionFormProps> = ({ config, onSave, onCancel }) => {
+  const { theme } = useTheme();
+  const isClassic = theme.features.isClassicTheme;
   const [name, setName] = useState(config?.name ?? '');
   const [connectionType, setConnectionType] = useState<ConnectionType>(config?.connectionType ?? 'supabase');
   const [params, setParams] = useState<Record<string, string>>({});
   const [testStatus, setTestStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
+  // Sync form state when the incoming config reference changes (e.g. user switches
+  // to editing a different connection). useEffect runs after render so it never
+  // calls setState mid-render, which was the StrictMode violation.
   useEffect(() => {
+    setName(config?.name ?? '');
+    setConnectionType(config?.connectionType ?? 'supabase');
     if (config?.connectionParams) {
       const flat: Record<string, string> = {};
       for (const [k, v] of Object.entries(config.connectionParams)) {
@@ -66,14 +73,15 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ isClassic, config, onSa
     ? 'w-full rounded-inner px-3 py-2 text-[11px] bg-black/20 border border-black/25 text-white outline-none focus:border-theme-cyan appearance-none'
     : 'w-full rounded-inner px-3 py-2 text-[11px] bg-theme-bg border border-theme-border text-theme-text outline-none focus:border-theme-cyan appearance-none';
 
-  const renderDynamicFields = () => {
+  const dynamicFields = () => {
     switch (connectionType) {
       case 'supabase':
         return (
           <>
             <div className="space-y-1">
-              <label className={labelCls}>Project URL</label>
+              <label className={labelCls} htmlFor="cf-projectUrl">Project URL</label>
               <input
+                id="cf-projectUrl"
                 className={inputCls}
                 placeholder="https://your-project.supabase.co"
                 value={params.projectUrl ?? ''}
@@ -81,8 +89,9 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ isClassic, config, onSa
               />
             </div>
             <div className="space-y-1">
-              <label className={labelCls}>Anon Key</label>
+              <label className={labelCls} htmlFor="cf-anonKey">Anon Key</label>
               <input
+                id="cf-anonKey"
                 className={inputCls}
                 placeholder="eyJhbGciOiJIUzI1NiIs..."
                 value={params.anonKey ?? ''}
@@ -96,8 +105,9 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ isClassic, config, onSa
           <>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className={labelCls}>Host</label>
+                <label className={labelCls} htmlFor="cf-pg-host">Host</label>
                 <input
+                  id="cf-pg-host"
                   className={inputCls}
                   placeholder="localhost"
                   value={params.host ?? ''}
@@ -105,8 +115,9 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ isClassic, config, onSa
                 />
               </div>
               <div className="space-y-1">
-                <label className={labelCls}>Port</label>
+                <label className={labelCls} htmlFor="cf-pg-port">Port</label>
                 <input
+                  id="cf-pg-port"
                   className={inputCls}
                   placeholder="5432"
                   value={params.port ?? ''}
@@ -115,8 +126,9 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ isClassic, config, onSa
               </div>
             </div>
             <div className="space-y-1">
-              <label className={labelCls}>Database</label>
+              <label className={labelCls} htmlFor="cf-pg-database">Database</label>
               <input
+                id="cf-pg-database"
                 className={inputCls}
                 placeholder="my_database"
                 value={params.database ?? ''}
@@ -125,8 +137,9 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ isClassic, config, onSa
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className={labelCls}>Username</label>
+                <label className={labelCls} htmlFor="cf-pg-username">Username</label>
                 <input
+                  id="cf-pg-username"
                   className={inputCls}
                   placeholder="postgres"
                   value={params.username ?? ''}
@@ -134,8 +147,9 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ isClassic, config, onSa
                 />
               </div>
               <div className="space-y-1">
-                <label className={labelCls}>Password</label>
+                <label className={labelCls} htmlFor="cf-pg-password">Password</label>
                 <input
+                  id="cf-pg-password"
                   type="password"
                   className={inputCls}
                   placeholder="********"
@@ -150,8 +164,9 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ isClassic, config, onSa
         return (
           <>
             <div className="space-y-1">
-              <label className={labelCls}>Server</label>
+              <label className={labelCls} htmlFor="cf-ss-server">Server</label>
               <input
+                id="cf-ss-server"
                 className={inputCls}
                 placeholder="myserver.database.windows.net"
                 value={params.server ?? ''}
@@ -159,8 +174,9 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ isClassic, config, onSa
               />
             </div>
             <div className="space-y-1">
-              <label className={labelCls}>Database</label>
+              <label className={labelCls} htmlFor="cf-ss-database">Database</label>
               <input
+                id="cf-ss-database"
                 className={inputCls}
                 placeholder="my_database"
                 value={params.database ?? ''}
@@ -169,8 +185,9 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ isClassic, config, onSa
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className={labelCls}>Username</label>
+                <label className={labelCls} htmlFor="cf-ss-username">Username</label>
                 <input
+                  id="cf-ss-username"
                   className={inputCls}
                   placeholder="sa"
                   value={params.username ?? ''}
@@ -178,8 +195,9 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ isClassic, config, onSa
                 />
               </div>
               <div className="space-y-1">
-                <label className={labelCls}>Password</label>
+                <label className={labelCls} htmlFor="cf-ss-password">Password</label>
                 <input
+                  id="cf-ss-password"
                   type="password"
                   className={inputCls}
                   placeholder="********"
@@ -213,8 +231,9 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ isClassic, config, onSa
       </h4>
 
       <div className="space-y-1">
-        <label className={labelCls}>Integration Name</label>
+        <label className={labelCls} htmlFor="cf-name">Integration Name</label>
         <input
+          id="cf-name"
           className={inputCls}
           placeholder="My Data Source"
           value={name}
@@ -223,8 +242,9 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ isClassic, config, onSa
       </div>
 
       <div className="space-y-1">
-        <label className={labelCls}>Connection Type</label>
+        <label className={labelCls} htmlFor="cf-connectionType">Connection Type</label>
         <select
+          id="cf-connectionType"
           className={selectCls}
           value={connectionType}
           onChange={e => {
@@ -238,10 +258,11 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ isClassic, config, onSa
         </select>
       </div>
 
-      {renderDynamicFields()}
+      {dynamicFields()}
 
       <div className="flex items-center gap-3 pt-2">
         <button
+          type="button"
           onClick={handleTestConnection}
           className={
             isClassic
@@ -261,6 +282,7 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ isClassic, config, onSa
         <div className="flex-1" />
 
         <button
+          type="button"
           onClick={onCancel}
           className={
             isClassic
@@ -272,6 +294,7 @@ const ConnectionForm: React.FC<ConnectionFormProps> = ({ isClassic, config, onSa
         </button>
 
         <button
+          type="button"
           onClick={handleSave}
           disabled={!name.trim()}
           className={

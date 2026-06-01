@@ -122,7 +122,7 @@ function Tree({ def, aspect, palette, frozen }: { def: TreeDef; aspect: number; 
       {/* Canopy ellipses */}
       <group ref={canopyRef} position={[0, canopyBaseY, 0]}>
         {layers.map((l, i) => (
-          <mesh key={i} position={[0, -l.oy * h, i * 0.0005]} scale={[l.rw * w, l.rh * h, 1]}>
+          <mesh key={`${l.color}-${l.oy}`} position={[0, -l.oy * h, i * 0.0005]} scale={[l.rw * w, l.rh * h, 1]}>
             <circleGeometry args={[1, 22]} />
             <meshBasicMaterial color={l.color} />
           </mesh>
@@ -213,8 +213,8 @@ function Worker({
 export function Workers({ aspect, palette, frozen }: { aspect: number; palette: PermianPalette; frozen?: boolean }) {
   return (
     <group>
-      {WORKER_LAYOUT.map((w, i) => (
-        <Worker key={i} worker={w} aspect={aspect} palette={palette} frozen={frozen} />
+      {WORKER_LAYOUT.map((w) => (
+        <Worker key={`worker-${w.bx}-${w.by}`} worker={w} aspect={aspect} palette={palette} frozen={frozen} />
       ))}
     </group>
   );
@@ -223,8 +223,8 @@ export function Workers({ aspect, palette, frozen }: { aspect: number; palette: 
 export function Trees({ aspect, palette, frozen }: { aspect: number; palette: PermianPalette; frozen?: boolean }) {
   return (
     <group>
-      {TREE_LAYOUT.map((t, i) => (
-        <Tree key={i} def={t} aspect={aspect} palette={palette} frozen={frozen} />
+      {TREE_LAYOUT.map((t) => (
+        <Tree key={`tree-${t.x}-${t.y}`} def={t} aspect={aspect} palette={palette} frozen={frozen} />
       ))}
     </group>
   );

@@ -17,16 +17,17 @@ import type { EngineId } from '../economicsEngine';
 
 // ─── Key constants ───────────────────────────────────────────────────────────
 
-export const DESIGN_WORKSPACE_KEY = 'slopcast-design-workspace';
+const DESIGN_WORKSPACE_KEY = 'slopcast-design-workspace';
 export const ECONOMICS_RESULTS_TAB_KEY = 'slopcast-econ-results-tab';
 export const ECONOMICS_MODULE_KEY = 'slopcast-econ-module';
-export const ECONOMICS_FOCUS_MODE_KEY = 'slopcast-econ-focus-mode';
-export const FX_QUERY_KEY = 'fx';
-export const FX_STORAGE_KEY_PREFIX = 'slopcast-fx-';
-export const ANALYSIS_OPEN_SECTION_KEY = 'slopcast-analysis-open-section';
-export const SIDEBAR_COLLAPSED_KEY = 'slopcast-sidebar-collapsed';
-export const ENGINE_ID_KEY = 'slopcast_engine_id';
-export const ONBOARDING_KEY = 'slopcast-onboarding-done';
+const ECONOMICS_FOCUS_MODE_KEY = 'slopcast-econ-focus-mode';
+const FX_QUERY_KEY = 'fx';
+const FX_STORAGE_KEY_PREFIX = 'slopcast-fx-';
+const ANALYSIS_OPEN_SECTION_KEY = 'slopcast-analysis-open-section';
+const SIDEBAR_COLLAPSED_KEY = 'slopcast-sidebar-collapsed';
+const ENGINE_ID_KEY = 'slopcast_engine_id';
+const ONBOARDING_KEY = 'slopcast-onboarding-done';
+const WELL_FILTER_KEY_PREFIX = 'slopcast_filter_';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -69,7 +70,7 @@ export function setDesignWorkspace(value: DesignWorkspace): void {
 // ─── Economics results tab ───────────────────────────────────────────────────
 // Migration: SUMMARY/CHARTS/DRIVERS → OVERVIEW (legacy tab names removed)
 
-export function getEconomicsResultsTab(): EconomicsResultsTab {
+function getEconomicsResultsTab(): EconomicsResultsTab {
   const raw = safeGet(ECONOMICS_RESULTS_TAB_KEY);
   if (raw === 'OVERVIEW' || raw === 'CASH_FLOW' || raw === 'RESERVES') return raw;
   // Migrate legacy tab names
@@ -80,7 +81,7 @@ export function getEconomicsResultsTab(): EconomicsResultsTab {
   return 'OVERVIEW';
 }
 
-export function setEconomicsResultsTab(value: EconomicsResultsTab): void {
+function setEconomicsResultsTab(value: EconomicsResultsTab): void {
   safeSet(ECONOMICS_RESULTS_TAB_KEY, value);
 }
 
@@ -147,7 +148,7 @@ export function clearFxMode(themeId: string): void {
 
 // ─── Analysis open section ───────────────────────────────────────────────────
 
-export function getAnalysisOpenSection(): AnalysisOpenSection | null {
+function getAnalysisOpenSection(): AnalysisOpenSection | null {
   const raw = safeGet(ANALYSIS_OPEN_SECTION_KEY);
   if (raw === 'PRICING' || raw === 'SCHEDULE' || raw === 'SCALARS') return raw;
   return null;
@@ -183,10 +184,31 @@ export function setEngineId(id: EngineId): void {
 
 // ─── Onboarding ──────────────────────────────────────────────────────────────
 
-export function getOnboardingDone(): boolean {
+function getOnboardingDone(): boolean {
   return safeGet(ONBOARDING_KEY) === '1';
 }
 
-export function setOnboardingDone(): void {
+function setOnboardingDone(): void {
   safeSet(ONBOARDING_KEY, '1');
+}
+
+// ─── Well filter sets ────────────────────────────────────────────────────────
+// Stored as JSON arrays (string[]). Empty array / missing = no filter (show all).
+
+export function getWellFilter(key: string): string[] {
+  const raw = safeGet(`${WELL_FILTER_KEY_PREFIX}${key}`);
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed as string[];
+  } catch { /* ignore corrupt data */ }
+  return [];
+}
+
+export function setWellFilter(key: string, values: string[]): void {
+  if (values.length === 0) {
+    safeRemove(`${WELL_FILTER_KEY_PREFIX}${key}`);
+  } else {
+    safeSet(`${WELL_FILTER_KEY_PREFIX}${key}`, JSON.stringify(values));
+  }
 }

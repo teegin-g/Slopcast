@@ -1,42 +1,16 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import React, { useMemo, useRef, useState } from 'react';
+import { AnimatePresence, LazyMotion, m, domAnimation } from 'motion/react';
 import WaterfallChart from './WaterfallChart';
+import type { TopDriver, ShockResult } from '../../hooks/useDerivedMetrics';
+import type { ScenarioRanking } from '../../domain/workspace/selectors';
 
 export type DriverFamilyId = 'oil' | 'capex' | 'eur' | 'rig';
 
-interface DriverShockSummary {
-  label: string;
-  deltaNpv: number;
-}
-
-interface DriverInsight {
-  id: DriverFamilyId;
-  label: string;
-  dominantDelta: number;
-  upShock?: DriverShockSummary;
-  downShock?: DriverShockSummary;
-}
-
-interface ShockSummary {
-  label: string;
-  deltaNpv: number;
-}
-
-interface ScenarioRanking {
-  id: string;
-  name: string;
-  npv10: number;
-  roi: number;
-  totalCapex: number;
-  payoutMonths: number;
-  wellCount: number;
-}
-
 export interface EconomicsDriversPanelProps {
   isClassic: boolean;
-  topDrivers: DriverInsight[];
-  biggestPositive: ShockSummary | null;
-  biggestNegative: ShockSummary | null;
+  topDrivers: TopDriver[];
+  biggestPositive: ShockResult | null;
+  biggestNegative: ShockResult | null;
   breakevenOilPrice: number | null;
   payoutMonths: number;
   fastestPayoutScenarioName: string;
@@ -46,7 +20,7 @@ export interface EconomicsDriversPanelProps {
 }
 
 const RankBadge: React.FC<{ rank: number }> = ({ rank }) => (
-  <span className="w-5 h-5 rounded-full bg-theme-surface2 border border-theme-border text-xs font-black text-theme-text flex items-center justify-center shrink-0">
+  <span className="size-5 rounded-full bg-theme-surface2 border border-theme-border text-xs font-black text-theme-text flex items-center justify-center shrink-0">
     {rank}
   </span>
 );
@@ -79,20 +53,25 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
   );
 
   const [selectedDriverId, setSelectedDriverId] = useState<DriverFamilyId | null>(() => topDrivers[0]?.id ?? null);
+  const prevDriversRef = useRef(topDrivers);
 
-  useEffect(() => {
+  let effectiveSelectedId = selectedDriverId;
+  if (prevDriversRef.current !== topDrivers) {
+    prevDriversRef.current = topDrivers;
     if (!topDrivers.length) {
-      setSelectedDriverId(null);
-      return;
+      effectiveSelectedId = null;
+    } else if (!selectedDriverId || !topDrivers.some(d => d.id === selectedDriverId)) {
+      effectiveSelectedId = topDrivers[0].id;
     }
-    if (!selectedDriverId || !topDrivers.some(d => d.id === selectedDriverId)) {
-      setSelectedDriverId(topDrivers[0].id);
+    if (effectiveSelectedId !== selectedDriverId) {
+      setSelectedDriverId(effectiveSelectedId);
     }
-  }, [selectedDriverId, topDrivers]);
+  }
 
   const selectedDriver = useMemo(
-    () => topDrivers.find(d => d.id === selectedDriverId) ?? null,
-    [selectedDriverId, topDrivers]
+    () => topDrivers.find(d => d.id === effectiveSelectedId) ?? null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [effectiveSelectedId, topDrivers]
   );
 
   const narrative = useMemo(() => {
@@ -150,7 +129,7 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
         >
           <div className="space-y-1">
             {topDrivers.map((driver) => {
-              const selected = driver.id === selectedDriverId;
+              const selected = driver.id === effectiveSelectedId;
               const pct = maxAbs > 0 ? Math.min(Math.abs(driver.dominantDelta) / maxAbs, 1) * 100 : 0;
               const positive = driver.dominantDelta >= 0;
 
@@ -197,9 +176,10 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
           </div>
         </div>
 
+        <LazyMotion features={domAnimation}>
         <AnimatePresence initial={false}>
           {selectedDriver && narrative && (
-            <motion.div
+            <m.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
@@ -296,9 +276,10 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
               </div>
             </div>
               </div>
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
+        </LazyMotion>
       </div>
 
       {/* Waterfall Chart - Value Bridge */}
@@ -333,7 +314,7 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
 
       {/* Breakeven + Payout - mixed layout for rhythm */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="rounded-inner border p-4 border-theme-border bg-theme-bg theme-transition border-l-2 border-l-theme-lavender">
+        <div className="rounded-inner border p-4 border-theme-border bg-theme-bg theme-transition" style={{ boxShadow: 'inset 3px 0 0 var(--lav)' }}>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-theme-muted mb-2 heading-font">Breakeven Oil</p>
           <p className="text-3xl font-black text-theme-text leading-none">
             {breakevenOilPrice !== null ? `$${breakevenOilPrice.toFixed(1)}` : 'N/A'}
@@ -342,7 +323,7 @@ const EconomicsDriversPanel: React.FC<EconomicsDriversPanelProps> = ({
             <p className="text-xs text-theme-muted mt-1 uppercase tracking-wide">per barrel</p>
           )}
         </div>
-        <div className="rounded-inner border p-4 border-theme-border bg-theme-bg theme-transition border-l-2 border-l-theme-cyan">
+        <div className="rounded-inner border p-4 border-theme-border bg-theme-bg theme-transition" style={{ boxShadow: 'inset 3px 0 0 var(--cyan)' }}>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-theme-muted mb-2 heading-font">Payout Highlights</p>
           <p className="text-xl font-black text-theme-text leading-none">
             {payoutMonths > 0 ? `${payoutMonths} mo` : '-'}

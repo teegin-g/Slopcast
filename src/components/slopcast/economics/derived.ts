@@ -1,5 +1,6 @@
-import { DEFAULT_TAX_ASSUMPTIONS, TaxAssumptions } from '../../../types';
+import { DEFAULT_TAX_ASSUMPTIONS } from '../../../constants';
 import type {
+  TaxAssumptions,
   CapexCategory,
   CommodityPricingAssumptions,
   DealMetrics,
@@ -22,7 +23,7 @@ export const ratio = (value: number, digits = 2) => `${value.toFixed(digits)}x`;
 
 export const monthsToYears = (months: number) => (months > 0 ? months / 12 : 0);
 
-export const getGroupWells = (group: WellGroup, wells: Well[]) => wells.filter((well) => group.wellIds.has(well.id));
+const getGroupWells = (group: WellGroup, wells: Well[]) => wells.filter((well) => group.wellIds.has(well.id));
 
 export const getFlow = (group: WellGroup) => group.flow ?? [];
 export const getMetrics = (group: WellGroup): DealMetrics => (
@@ -153,16 +154,16 @@ export function summarizeCapex(group: WellGroup, wells: Well[]) {
     ? groupWells.reduce((sum, well) => sum + well.lateralLength, 0) / groupWells.length
     : STANDARD_LATERAL_FT;
 
-  const categories = CATEGORY_ORDER.map((category) => {
+  const categories = CATEGORY_ORDER.flatMap((category) => {
     const total = group.capex.items
       .filter((item) => item.category === category)
       .reduce((sum, item) => sum + (item.basis === 'PER_FOOT' ? item.value * representativeLateral : item.value), 0);
-    return { category, total };
-  }).filter((row) => row.total > 0);
+    return total > 0 ? [{ category, total }] : [];
+  });
 
   const total = categories.reduce((sum, row) => sum + row.total, 0);
-  const timing = [...group.capex.items]
-    .sort((a, b) => a.offsetDays - b.offsetDays)
+  const timing = group.capex.items
+    .slice().sort((a, b) => a.offsetDays - b.offsetDays)
     .reduce<Array<{ offsetDays: number; cumulative: number; item: string }>>((rows, item) => {
       const cost = item.basis === 'PER_FOOT' ? item.value * representativeLateral : item.value;
       const cumulative = (rows[rows.length - 1]?.cumulative ?? 0) + cost;

@@ -15,10 +15,7 @@ export type OpsTab = 'SELECTION_ACTIONS' | 'KEY_DRIVERS';
 export type FxMode = 'cinematic' | 'max';
 export type ControlsSection = 'TYPE_CURVE' | 'CAPEX' | 'OPEX' | 'OWNERSHIP';
 export type AnalysisOpenSection = 'PRICING' | 'SCHEDULE' | 'SCALARS';
-export type PageMode = 'landing' | 'workspace';
-
 export function useWorkspaceUiState() {
-  const [pageMode, setPageMode] = useState<PageMode>('landing');
   const [viewMode, setViewMode] = useState<ViewMode>('DASHBOARD');
   const [designWorkspace, setDesignWorkspace] = useState<DesignWorkspace>(getDesignWorkspace);
   const [wellsMobilePanel, setWellsMobilePanel] = useState<WellsMobilePanel>(() => {
@@ -42,8 +39,6 @@ export function useWorkspaceUiState() {
   }, [viewportLayout]);
 
   return {
-    pageMode,
-    setPageMode,
     viewMode,
     setViewMode,
     designWorkspace,

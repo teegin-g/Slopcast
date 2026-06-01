@@ -1,70 +1,26 @@
-import { getSupabaseClient } from './supabaseClient';
+import { unwrapJsonbContract } from './projectContracts';
+import { requireSupabase, requireUserId } from './supabaseGuards';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+// Types have moved to src/types/integrations.ts — re-export for backwards compat.
+export type {
+  ConnectionType,
+  IntegrationStatus,
+  JobStatus,
+  IntegrationConfig,
+  IntegrationJob,
+} from '../types/integrations';
 
-export type ConnectionType = 'supabase' | 'postgres' | 'sqlserver' | 'csv';
-export type IntegrationStatus = 'draft' | 'active' | 'paused' | 'error';
-export type JobStatus = 'pending' | 'running' | 'completed' | 'failed';
-
-export interface IntegrationConfig {
-  id: string;
-  ownerUserId: string;
-  name: string;
-  connectionType: ConnectionType;
-  connectionParams: Record<string, unknown>;
-  fieldMappings: Record<string, string>;
-  status: IntegrationStatus;
-  lastSyncAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface IntegrationJob {
-  id: string;
-  configId: string;
-  status: JobStatus;
-  recordsProcessed: number;
-  recordsFailed: number;
-  errorLog: unknown[] | null;
-  startedAt: string | null;
-  completedAt: string | null;
-  createdAt: string;
-}
+import type {
+  ConnectionType,
+  IntegrationStatus,
+  IntegrationConfig,
+  IntegrationJob,
+  JobStatus,
+} from '../types/integrations';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function requireSupabase() {
-  const supabase = getSupabaseClient();
-  if (!supabase) {
-    throw new Error('Supabase client is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY.');
-  }
-  return supabase;
-}
-
-async function requireUserId() {
-  const supabase = requireSupabase();
-  const { data, error } = await supabase.auth.getUser();
-  if (error) throw error;
-  if (!data.user?.id) {
-    throw new Error('No authenticated Supabase user.');
-  }
-  return data.user.id;
-}
-
-function unwrapContract<T>(value: unknown): T {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return (value ?? {}) as T;
-  }
-  const next = { ...(value as Record<string, unknown>) };
-  delete next.schema_version;
-  delete next.validated_at;
-  delete next.validator_name;
-  return next as T;
-}
 
 function mapRow(row: any): IntegrationConfig {
   return {
@@ -72,8 +28,8 @@ function mapRow(row: any): IntegrationConfig {
     ownerUserId: row.owner_user_id,
     name: row.name,
     connectionType: row.connection_type as ConnectionType,
-    connectionParams: unwrapContract<Record<string, unknown>>(row.config_jsonb),
-    fieldMappings: unwrapContract<Record<string, string>>(row.field_mappings_jsonb),
+    connectionParams: unwrapJsonbContract<Record<string, unknown>>(row.config_jsonb, null),
+    fieldMappings: unwrapJsonbContract<Record<string, string>>(row.field_mappings_jsonb, null),
     status: row.status as IntegrationStatus,
     lastSyncAt: row.last_sync_at ?? row.completed_at ?? null,
     createdAt: row.created_at,
@@ -82,7 +38,7 @@ function mapRow(row: any): IntegrationConfig {
 }
 
 function mapJobRow(row: any): IntegrationJob {
-  const rowCounts = unwrapContract<Record<string, unknown>>(row.row_counts_jsonb);
+  const rowCounts = unwrapJsonbContract<Record<string, unknown>>(row.row_counts_jsonb, null);
   return {
     id: row.id,
     configId: row.source_connection_id,
@@ -114,7 +70,7 @@ export async function listIntegrations(): Promise<IntegrationConfig[]> {
   return (data || []).map(mapRow);
 }
 
-export async function getIntegration(id: string): Promise<IntegrationConfig | null> {
+async function getIntegration(id: string): Promise<IntegrationConfig | null> {
   await requireUserId();
   const supabase = requireSupabase();
 
@@ -211,7 +167,7 @@ export async function deleteIntegration(id: string): Promise<void> {
 // Integration Jobs
 // ---------------------------------------------------------------------------
 
-export async function listJobs(configId: string): Promise<IntegrationJob[]> {
+async function listJobs(configId: string): Promise<IntegrationJob[]> {
   await requireUserId();
   const supabase = requireSupabase();
 
@@ -226,7 +182,7 @@ export async function listJobs(configId: string): Promise<IntegrationJob[]> {
   return (data || []).map(mapJobRow);
 }
 
-export async function createJob(configId: string): Promise<IntegrationJob> {
+async function createJob(configId: string): Promise<IntegrationJob> {
   await requireUserId();
   const supabase = requireSupabase();
 

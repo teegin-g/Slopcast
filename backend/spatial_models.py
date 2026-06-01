@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from .models import Well, WellStatus
 
 DetailLevel = Literal["points", "summary", "full"]
+RenderProfile = Literal["density", "sampled", "summary", "laterals_preview", "full"]
 
 
 class ViewportBounds(BaseModel):
@@ -29,6 +30,7 @@ class SpatialWellsRequest(BaseModel):
     limit: int = Field(2000, ge=1, le=10000)
     include_trajectory: bool = False  # kept for backward compat
     detail_level: DetailLevel = "summary"
+    render_profile: RenderProfile | None = None
     zoom: int | None = Field(None, ge=0, le=24, description="Map zoom level — controls trajectory station density")
 
 

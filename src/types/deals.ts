@@ -1,7 +1,7 @@
 import type { CapexItem, OpexSegment, JvAgreement } from './economics';
 import type { CommodityPricingAssumptions } from './economics';
 import type { ScheduleParams } from './scenarios';
-import type { ModelPresetScope } from './integrations';
+import type { ModelPresetScope, BaseScenarioRecord } from './persistence';
 
 export type DealStatus = 'draft' | 'active' | 'closed' | 'archived';
 export type DealWellType = 'developed' | 'undeveloped';
@@ -103,17 +103,9 @@ export interface DealOwnershipProfile {
   updatedAt: string;
 }
 
-export interface DealScenarioRecord {
-  id: string;
+export interface DealScenarioRecord extends BaseScenarioRecord {
   dealId: string;
-  name: string;
-  color: string;
-  isBaseCase: boolean;
-  pricing: CommodityPricingAssumptions;
-  schedule: ScheduleParams;
-  capexScalar: number;
-  productionScalar: number;
-  sortOrder: number;
+  // Non-optional overrides: deal records always have these fields
   createdAt: string;
   updatedAt: string;
 }

@@ -1,20 +1,15 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import tailwindcss from '@tailwindcss/vite';
-import react from '@vitejs/plugin-react';
 import { playwright } from '@vitest/browser-playwright';
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { defineConfig } from 'vitest/config';
+import { sharedPlugins, sharedResolve } from './vite.base';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  plugins: [tailwindcss(), react()],
-  resolve: {
-    alias: {
-      '@': path.resolve(dirname, 'src'),
-    },
-  },
+  plugins: sharedPlugins,
+  resolve: sharedResolve,
   test: {
     projects: [
       {

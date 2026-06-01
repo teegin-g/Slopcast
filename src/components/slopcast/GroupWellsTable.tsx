@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import type { Well, WellGroup } from '../../types';
+import { formatFeet } from '../../utils/formatters';
 
 type SortKey = 'name' | 'formation' | 'lateralLength' | 'status' | 'operator';
 type SortDir = 'asc' | 'desc';
@@ -11,10 +12,6 @@ export interface GroupWellsTableProps {
   title?: string;
   defaultSort?: { key: SortKey; dir: SortDir };
   dense?: boolean;
-}
-
-function formatFeet(value: number) {
-  return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value)} ft`;
 }
 
 function normalize(value: string) {
@@ -126,6 +123,7 @@ const GroupWellsTable: React.FC<GroupWellsTableProps> = ({
                   Search
                 </div>
                 <input
+                  aria-label="Filter wells"
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   placeholder="Name, formation, operator, status…"

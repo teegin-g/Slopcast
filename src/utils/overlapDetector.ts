@@ -19,7 +19,7 @@ const MINIMUM_OVERLAP_RATIO = 0.05; // overlap must be ≥5% of the smaller elem
  * Generates a readable CSS selector for an element.
  * Prefers data-testid, then id, then tag.class notation.
  */
-export function getSelector(el: HTMLElement): string {
+function getSelector(el: HTMLElement): string {
   // Prefer data-testid
   const testId = el.getAttribute('data-testid');
   if (testId) {
@@ -163,7 +163,7 @@ function getVisibleElements(root: HTMLElement): HTMLElement[] {
  * Performance: Only checks sibling elements and direct parent-child pairs,
  * not all N^2 combinations.
  */
-export function detectOverlaps(root?: HTMLElement): OverlapViolation[] {
+function detectOverlaps(root?: HTMLElement): OverlapViolation[] {
   const violations: OverlapViolation[] = [];
   const rootElement = root ?? document.body;
 

@@ -38,7 +38,7 @@ const PricingModule: React.FC<EconomicsModuleProps> = ({
                   <CartesianGrid stroke="rgb(var(--border) / 0.35)" strokeDasharray="4 4" vertical={false} />
                   <XAxis dataKey="month" tickFormatter={(value) => (value % 24 === 0 ? `${value / 12}Y` : '')} tick={{ fontSize: 10, fill: 'rgb(var(--muted))' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: 'rgb(var(--muted))' }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ background: 'rgb(var(--surface-1))', border: '1px solid rgb(var(--border))', borderRadius: 8, color: 'rgb(var(--text))' }} formatter={(value: number) => currency(value)} />
+                  <Tooltip contentStyle={{ background: 'rgb(var(--surface-1))', border: '1px solid rgb(var(--border))', borderRadius: 8, color: 'rgb(var(--text))' }} formatter={(value: number | undefined) => currency(value ?? 0)} />
                   <Line type="monotone" dataKey="revenuePerBoe" name="Revenue / bbl" stroke="#34d399" strokeWidth={3} dot={false} />
                   <Line type="monotone" dataKey="oil" name="Oil net" stroke="#22d3ee" strokeWidth={2} dot={false} strokeDasharray="6 4" />
                 </LineChart>

@@ -19,6 +19,25 @@ View your app in AI Studio: https://ai.studio/apps/drive/12YB-fbdVhBUTK7AIo6AYsp
 3. Run the app:
    `npm run dev`
 
+## Backend and Databricks Validation
+
+The backend is a local FastAPI spatial service that uses `databricks-sql-connector`
+when Databricks SQL Warehouse credentials are configured, and deterministic mock
+spatial data otherwise.
+
+- Local backend gate, excluding live services:
+  `bash scripts/validate-backend.sh`
+- Equivalent direct pytest command:
+  `python -m pytest backend/tests -m "not integration"`
+- Live Databricks integration gate, only after selecting/approving a
+  non-production token/profile:
+  `ALLOW_LIVE_DATABRICKS_TESTS=1 bash scripts/validate-backend.sh --live-databricks`
+
+Live Databricks tests require `DATABRICKS_SERVER_HOSTNAME`/`DATABRICKS_HOST`,
+`DATABRICKS_HTTP_PATH`/`DATABRICKS_WAREHOUSE_ID`, and `DATABRICKS_TOKEN` or
+`DATABRICKS_ACCESS_TOKEN`. If those are not configured, the live gate is skipped
+by design.
+
 ## Launch and deploy (no cloud-specific tooling)
 
 Use the provided shell script to build and run the app locally without any

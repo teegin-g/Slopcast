@@ -27,12 +27,16 @@ def create_app() -> FastAPI:
 
     app = FastAPI(title="Slopcast Backend", version="0.1.0", lifespan=lifespan)
 
-    # Local-dev CORS: Vite defaults to :3000, and users may use localhost or 127.0.0.1.
+    # Local-dev CORS: Vite (default :3000; alternate :3001 if busy), and direct tooling on :5173.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[
             "http://127.0.0.1:3000",
             "http://localhost:3000",
+            "http://127.0.0.1:3001",
+            "http://localhost:3001",
+            "http://127.0.0.1:5173",
+            "http://localhost:5173",
         ],
         allow_credentials=True,
         allow_methods=["*"],
@@ -43,6 +47,10 @@ def create_app() -> FastAPI:
     def health(request: Request) -> dict:
         return {"ok": True, "spatial_db": request.app.state.spatial_db.health()}
 
+    # DEV-COMPARISON: /api/economics/* and /api/sensitivity/* are reachable only via the
+    # dev-only engine toggle in DebugOverlay (R4-01). The Python engine is the retained
+    # reference implementation — kept intentionally for parity comparison against the
+    # authoritative TypeScript engine. Do not delete these routes.
     @app.post("/api/economics/calculate", response_model=EconomicsResponse)
     def economics_calculate(req: CalculateEconomicsRequest) -> EconomicsResponse:
         scalars = req.scalars or Scalars()
@@ -78,6 +86,8 @@ def create_app() -> FastAPI:
             y_steps=req.ySteps,
         )
 
+    # ALWAYS-LIVE: /api/spatial/* is polled by the app's connection-status check
+    # regardless of which economics engine is active.
     app.include_router(create_spatial_router())
 
     return app

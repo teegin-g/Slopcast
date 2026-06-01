@@ -1,7 +1,13 @@
 
-import { Well, TypeCurveParams, CapexAssumptions, CommodityPricingAssumptions, MonthlyCashFlow, DealMetrics, WellGroup, Scenario, SensitivityVariable, SensitivityMatrixResult, ScheduleParams, OpexAssumptions, OwnershipAssumptions, JvAgreement, TaxAssumptions, DebtAssumptions, ReserveCategory, DEFAULT_RESERVE_RISK_FACTORS, ForecastSegment, CutoffKind, EconomicsCalculationInput } from '../types';
+import type { Well, WellGroup } from '../types';
+import type { TypeCurveParams, CapexAssumptions, CommodityPricingAssumptions, MonthlyCashFlow, DealMetrics, OpexAssumptions, OwnershipAssumptions, JvAgreement, TaxAssumptions, DebtAssumptions, ReserveCategory, ForecastSegment, CutoffKind, EconomicsCalculationInput } from '../types';
+import type { Scenario, SensitivityVariable, SensitivityMatrixResult, ScheduleParams } from '../types';
+import { DEFAULT_RESERVE_RISK_FACTORS } from '../constants';
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+
+export const MONTHS_TO_PROJECT = 120;
+export const MONTHLY_DISCOUNT_RATE = 0.10 / 12;
 
 // --- LRU Memoization Cache for calculateEconomics ---
 export const ECONOMICS_INPUT_SCHEMA_VERSION = 'economics-input-v1';
@@ -10,7 +16,7 @@ const econCache = new Map<string, { flow: MonthlyCashFlow[], metrics: DealMetric
 
 const stableNormalize = (value: unknown): unknown => {
   if (value instanceof Set) {
-    return [...value].sort();
+    return Array.from(value).sort();
   }
   if (Array.isArray(value)) {
     return value.map(stableNormalize);
@@ -108,7 +114,7 @@ const cachedCalculateEconomics = (
 };
 
 const getOpexSegmentForAgeMonth = (opex: OpexAssumptions, ageMonth: number) => {
-  const segments = [...(opex.segments || [])].sort((a, b) => a.startMonth - b.startMonth);
+  const segments = (opex.segments || []).slice().sort((a, b) => a.startMonth - b.startMonth);
   return segments.find(seg => ageMonth >= seg.startMonth && ageMonth <= seg.endMonth) || null;
 };
 
@@ -219,10 +225,10 @@ function evaluateMultiSegmentProduction(
   monthsToProject: number,
   productionScalar: number,
 ): { oilByMonth: number[]; gasByMonth: number[] } {
-  const segments: Array<{ qi: number | null; b: number | null; initialDecline: number | null; cutoffKind?: CutoffKind; cutoffValue?: number | null }> =
+  const segments: ForecastSegment[] =
     tc.segments?.length
       ? tc.segments
-      : [{ qi: tc.qi, b: tc.b, initialDecline: tc.di, cutoffKind: 'default' as CutoffKind, cutoffValue: null }];
+      : [{ id: '', name: '', method: 'arps', qi: tc.qi, b: tc.b, initialDecline: tc.di, cutoffKind: 'default' as CutoffKind, cutoffValue: null }];
 
   const oilByMonth = new Array(monthsToProject).fill(0);
   const gasByMonth = new Array(monthsToProject).fill(0);
@@ -277,8 +283,8 @@ export const calculateEconomics = (
   scheduleOverride?: ScheduleParams 
 ): { flow: MonthlyCashFlow[], metrics: DealMetrics } => {
 
-  const monthsToProject = 120; // 10 years
-  
+  const monthsToProject = MONTHS_TO_PROJECT; // 10 years
+
   if (selectedWells.length === 0) {
       return {
           flow: [],
@@ -287,7 +293,7 @@ export const calculateEconomics = (
   }
 
   // --- 1. Rank Wells ---
-  const sortedWells = [...selectedWells].sort((a, b) => b.lateralLength - a.lateralLength);
+  const sortedWells = selectedWells.slice().sort((a, b) => b.lateralLength - a.lateralLength);
 
   // --- 2. Schedule Wells ---
   // Determine Drill/Stim days
@@ -347,7 +353,7 @@ export const calculateEconomics = (
 
   let totalOil = 0;
 
-  const monthlyDiscountRate = 0.10 / 12;
+  const monthlyDiscountRate = MONTHLY_DISCOUNT_RATE;
 
   // Realized Prices (Net of Differentials)
   const realizedOil = pricing.oilPrice - (pricing.oilDifferential || 0);
@@ -451,7 +457,7 @@ export const applyTaxLayer = (
   metrics: DealMetrics,
   tax: TaxAssumptions
 ): { flow: MonthlyCashFlow[], metrics: DealMetrics } => {
-  const monthlyDiscountRate = 0.10 / 12;
+  const monthlyDiscountRate = MONTHLY_DISCOUNT_RATE;
   let cumulativeAfterTax = 0;
   let afterTaxNpv = 0;
   let afterTaxPayoutMonth = 0;
@@ -510,7 +516,7 @@ export const applyDebtLayer = (
 ): { flow: MonthlyCashFlow[], metrics: DealMetrics } => {
   if (!debt.enabled) return { flow, metrics };
 
-  const monthlyDiscountRate = 0.10 / 12;
+  const monthlyDiscountRate = MONTHLY_DISCOUNT_RATE;
   const revolverMonthlyRate = (debt.revolverRate / 100) / 12;
   const termMonthlyRate = (debt.termLoanRate / 100) / 12;
   const termMonthlyPayment = debt.termLoanAmount > 0 && debt.termLoanAmortMonths > 0
@@ -605,7 +611,7 @@ export const applyReservesRisk = (
 // --- AGGREGATION ---
 export const aggregateEconomics = (groups: WellGroup[]): { flow: MonthlyCashFlow[], metrics: DealMetrics } => {
     // Basic aggregation remains the same
-    const monthsToProject = 120;
+    const monthsToProject = MONTHS_TO_PROJECT;
     const aggregatedFlow: MonthlyCashFlow[] = [];
     
     for(let t = 1; t <= monthsToProject; t++) {

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 
 from .spatial_models import (
     SpatialLayersResponse,
@@ -26,6 +26,7 @@ def create_spatial_router() -> APIRouter:
             limit=req.limit,
             detail_level=detail,
             zoom=req.zoom,
+            render_profile=req.render_profile,
         )
 
     @router.get("/layers", response_model=SpatialLayersResponse)
@@ -36,5 +37,20 @@ def create_spatial_router() -> APIRouter:
     def spatial_status() -> SpatialStatusResponse:
         status = check_connection_status()
         return SpatialStatusResponse(**status)
+
+    @router.get("/tiles/{z}/{x}/{y}.mvt")
+    def spatial_vector_tile(z: int, x: int, y: int, render_profile: str = "sampled") -> Response:
+        # Scaffold only: the repo does not currently include an MVT encoder.
+        # Returning a valid empty tile-shaped response lets the frontend wire a
+        # vector source without introducing new binary geometry dependencies.
+        del z, x, y, render_profile
+        return Response(
+            content=b"",
+            media_type="application/vnd.mapbox-vector-tile",
+            headers={
+                "X-Slopcast-MVT": "scaffold",
+                "Cache-Control": "public, max-age=60",
+            },
+        )
 
     return router

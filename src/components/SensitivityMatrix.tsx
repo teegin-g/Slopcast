@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { SensitivityMatrixResult, SensitivityVariable } from '../types';
+import type { SensitivityMatrixResult, SensitivityVariable } from '../types';
 import { useTheme } from '../theme/ThemeProvider';
 
 interface SensitivityMatrixProps {
@@ -51,7 +51,7 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
       success: read('--success', [16, 185, 129]),
       danger: read('--danger', [239, 68, 68]),
     };
-  }, [theme.id]);
+  }, []);
 
   const getColor = (val: number) => {
       if (val === 0) return 'rgba(255,255,255,0.05)';
@@ -91,107 +91,81 @@ const SensitivityMatrix: React.FC<SensitivityMatrixProps> = ({ data, xVar, yVar 
   }
 
   const xLabels = data[0].map(d => d.xValue);
-  const yLabels = data.map(d => d[0].yValue);
+
+  const brandFontClass = theme.features.brandFont ? 'brand-font' : '';
+  // Axis labels: classic uses heavy weight + warning accent; modern uses
+  // bold + lavender with the standard transition. Single tree, conditional fragment.
+  const axisLabelClass = isClassic ? 'font-black text-theme-warning' : 'font-bold transition-all text-theme-lavender';
+  // Header cells: weight + color + border differ between themes. Classic hardcodes
+  // an inline border rgb(var(--border)/0.45); modern uses the border-theme-border token.
+  const headerCellClass = isClassic ? 'font-black text-white' : 'font-medium transition-all text-theme-cyan border-theme-border';
+  const headerBorderStyle = isClassic ? { borderColor: 'rgb(var(--border) / 0.45)' } : undefined;
+  // Data cells: classic uses inline border rgb(var(--border)/0.25); modern uses
+  // border-theme-border/20 token. Cell text white (classic) vs text token (modern).
+  const cellBorderClass = isClassic ? '' : 'border-theme-border/20';
+  const cellBorderStyle = isClassic ? { borderColor: 'rgb(var(--border) / 0.25)' } : undefined;
+  const cellTextClass = isClassic ? 'text-white' : 'text-theme-text';
+
+  const matrix = (
+    <div className="relative">
+        <div className={`absolute -left-10 sm:-left-12 top-1/2 transform -translate-y-1/2 -rotate-90 text-[9px] sm:text-[10px] uppercase tracking-widest whitespace-nowrap text-center w-28 sm:w-32 ${axisLabelClass} ${brandFontClass}`}>
+            {formatAxisLabel(yVar)}
+        </div>
+
+        <table className="border-collapse">
+            <thead>
+                <tr>
+                    <th className="p-2" aria-label={`${formatAxisLabel(yVar)} axis`}></th>
+                    {xLabels.map((x) => (
+                        <th key={String(x)} className={`p-2 text-[10px] font-mono border-b ${headerCellClass}`} style={headerBorderStyle}>
+                            {formatValue(xVar, x)}
+                        </th>
+                    ))}
+                </tr>
+            </thead>
+            <tbody>
+                {data.map((row) => (
+                    <tr key={row[0].yValue}>
+                        <th className={`p-2 text-[10px] font-mono border-r text-right ${headerCellClass}`} style={headerBorderStyle}>
+                            {formatValue(yVar, row[0].yValue)}
+                        </th>
+                        {row.map((cell) => (
+                            <td
+                                key={`${cell.xValue}-${cell.yValue}`}
+                                className={`p-3 text-[11px] font-mono text-center border transition-all cursor-default ${cellBorderClass} hover:brightness-110 hover:relative hover:z-10`}
+                                style={{ backgroundColor: getColor(cell.npv), ...cellBorderStyle }}
+                            >
+                                <span className={cellTextClass}>
+                                    {(cell.npv / 1e6).toFixed(1)}
+                                </span>
+                            </td>
+                        ))}
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+
+        <div className={`text-center mt-4 text-[10px] uppercase tracking-widest ${axisLabelClass} ${brandFontClass}`}>
+            {formatAxisLabel(xVar)}
+        </div>
+    </div>
+  );
 
   return (
     <div className={isClassic ? 'sc-panel theme-transition' : 'overflow-hidden rounded-panel border theme-transition bg-theme-surface1/60 border-theme-border shadow-card'}>
         <div className={isClassic ? 'sc-panelTitlebar sc-titlebar--red p-4 flex justify-between items-center' : 'p-4 border-b flex justify-between items-center transition-all bg-theme-surface1 border-theme-border'}>
-            <h3 className={`text-xs font-bold uppercase tracking-widest ${isClassic ? 'text-white' : 'text-theme-magenta'} ${theme.features.brandFont ? 'brand-font' : ''}`}>
+            <h3 className={`text-xs font-bold uppercase tracking-widest ${isClassic ? 'text-white' : 'text-theme-magenta'} ${brandFontClass}`}>
                 Portfolio NPV Sensitivity <span className={`${isClassic ? 'text-theme-warning/90' : 'text-theme-muted'} ml-2`}>(MM)</span>
             </h3>
         </div>
 
         <div className={isClassic ? 'p-4' : 'p-6 overflow-x-auto flex flex-col items-center'}>
-          {isClassic && (
+          {isClassic ? (
             <div className="rounded-inner p-4 overflow-x-auto flex flex-col items-center bg-black/10 border border-black/25">
-              <div className="relative">
-                  <div className={`absolute -left-10 sm:-left-12 top-1/2 transform -translate-y-1/2 -rotate-90 text-[9px] sm:text-[10px] font-black uppercase tracking-widest whitespace-nowrap text-center w-28 sm:w-32 text-theme-warning ${theme.features.brandFont ? 'brand-font' : ''}`}>
-                      {formatAxisLabel(yVar)}
-                  </div>
-  
-                  <table className="border-collapse">
-                      <thead>
-                          <tr>
-                              <th className="p-2"></th>
-                              {xLabels.map((x, i) => (
-                                  <th key={i} className="p-2 text-[10px] font-mono font-black border-b text-white" style={{ borderColor: 'rgb(var(--border) / 0.45)' }}>
-                                      {formatValue(xVar, x)}
-                                  </th>
-                              ))}
-                          </tr>
-                      </thead>
-                      <tbody>
-                          {data.map((row, rowIdx) => (
-                              <tr key={rowIdx}>
-                                  <th className="p-2 text-[10px] font-mono font-black border-r text-right text-white" style={{ borderColor: 'rgb(var(--border) / 0.45)' }}>
-                                      {formatValue(yVar, yLabels[rowIdx])}
-                                  </th>
-                                  {row.map((cell, colIdx) => (
-                                      <td 
-                                          key={colIdx} 
-                                          className="p-3 text-[11px] font-mono text-center border transition-all cursor-default hover:brightness-110 hover:relative hover:z-10"
-                                          style={{ backgroundColor: getColor(cell.npv), borderColor: 'rgb(var(--border) / 0.25)' }}
-                                      >
-                                          <span className="text-white">
-                                              {(cell.npv / 1e6).toFixed(1)}
-                                          </span>
-                                      </td>
-                                  ))}
-                              </tr>
-                          ))}
-                      </tbody>
-                  </table>
-                  
-                  <div className={`text-center mt-4 text-[10px] font-black uppercase tracking-widest text-theme-warning ${theme.features.brandFont ? 'brand-font' : ''}`}>
-                      {formatAxisLabel(xVar)}
-                  </div>
-              </div>
+              {matrix}
             </div>
-          )}
-
-          {!isClassic && (
-            <div className="relative">
-                <div className={`absolute -left-10 sm:-left-12 top-1/2 transform -translate-y-1/2 -rotate-90 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest whitespace-nowrap text-center w-28 sm:w-32 transition-all text-theme-lavender ${theme.features.brandFont ? 'brand-font' : ''}`}>
-                    {formatAxisLabel(yVar)}
-                </div>
-
-                <table className="border-collapse">
-                    <thead>
-                        <tr>
-                            <th className="p-2"></th>
-                            {xLabels.map((x, i) => (
-                                <th key={i} className="p-2 text-[10px] font-mono font-medium border-b transition-all text-theme-cyan border-theme-border">
-                                    {formatValue(xVar, x)}
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {data.map((row, rowIdx) => (
-                            <tr key={rowIdx}>
-                                <th className="p-2 text-[10px] font-mono font-medium border-r text-right transition-all text-theme-cyan border-theme-border">
-                                    {formatValue(yVar, yLabels[rowIdx])}
-                                </th>
-                                {row.map((cell, colIdx) => (
-                                    <td 
-                                        key={colIdx} 
-                                        className="p-3 text-[11px] font-mono text-center border transition-all cursor-default border-theme-border/20 hover:brightness-110 hover:relative hover:z-10"
-                                        style={{ backgroundColor: getColor(cell.npv) }}
-                                    >
-                                        <span className="text-theme-text">
-                                            {(cell.npv / 1e6).toFixed(1)}
-                                        </span>
-                                    </td>
-                                ))}
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-                
-                <div className={`text-center mt-4 text-[10px] font-bold uppercase tracking-widest transition-all text-theme-lavender ${theme.features.brandFont ? 'brand-font' : ''}`}>
-                    {formatAxisLabel(xVar)}
-                </div>
-            </div>
+          ) : (
+            matrix
           )}
         </div>
     </div>

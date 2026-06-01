@@ -35,7 +35,7 @@ const DESIGN_SHOTS = [
     workspaceTab: 'Economics',
     moduleTabTestId: 'economics-module-tab-production',
     expectedModule: 'PRODUCTION',
-    expectText: 'Total Production',
+    expectText: 'Production Inputs',
   },
   {
     id: 'design-economics-pricing',

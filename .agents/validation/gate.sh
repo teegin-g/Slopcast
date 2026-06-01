@@ -50,6 +50,7 @@ SKIP_COUNT=0
 STAGE_TYPECHECK="SKIP"
 STAGE_BUILD="SKIP"
 STAGE_TESTS="SKIP"
+STAGE_BACKEND_TESTS="SKIP"
 STAGE_STORYBOOK_BUILD="SKIP"
 STAGE_STORYBOOK_TEST="SKIP"
 STAGE_UI_AUDIT="SKIP"
@@ -64,6 +65,7 @@ set_stage_result() {
     typecheck*) STAGE_TYPECHECK="$value" ;;
     build*) STAGE_BUILD="$value" ;;
     tests*) STAGE_TESTS="$value" ;;
+    backend:tests*) STAGE_BACKEND_TESTS="$value" ;;
     storybook:build*) STAGE_STORYBOOK_BUILD="$value" ;;
     storybook:test*) STAGE_STORYBOOK_TEST="$value" ;;
     ui:audit*) STAGE_UI_AUDIT="$value" ;;
@@ -115,6 +117,7 @@ write_validation_record() {
     "typecheck": "${STAGE_TYPECHECK}",
     "build": "${STAGE_BUILD}",
     "tests": "${STAGE_TESTS}",
+    "backend_tests": "${STAGE_BACKEND_TESTS}",
     "storybook_build": "${STAGE_STORYBOOK_BUILD}",
     "storybook_test": "${STAGE_STORYBOOK_TEST}",
     "ui_audit": "${STAGE_UI_AUDIT}",
@@ -165,6 +168,18 @@ if npm test 2>&1; then
 else
   stage_fail "tests"
   echo -e "\n${RED}Gate failed at Stage 3: Test failures found.${NC}"
+  write_validation_record "FAIL"
+  exit 1
+fi
+echo ""
+
+# ── Stage 3b: Backend Tests ──────────────────────────────────
+echo -e "${CYAN}Stage 3b: Backend Tests${NC}"
+if bash scripts/validate-backend.sh 2>&1; then
+  stage_pass "backend:tests"
+else
+  stage_fail "backend:tests"
+  echo -e "\n${RED}Gate failed at Stage 3b: Backend test failures found.${NC}"
   write_validation_record "FAIL"
   exit 1
 fi

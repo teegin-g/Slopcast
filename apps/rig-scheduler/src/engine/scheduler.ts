@@ -94,6 +94,12 @@ export const buildRigSlots = (request: ScheduleRunRequest): RigSlot[] => {
   return slots.sort((left, right) => left.spudDate.localeCompare(right.spudDate) || left.rigId.localeCompare(right.rigId));
 };
 
+// Scope note (R6-11): this is the rig-scheduler's OWN bucket-level discounting,
+// intentionally separate from the main app's economics engine (src/utils/economics.ts).
+// It discounts a pre-computed per-well NPV by time-to-online at a flat annual rate
+// (default 10%) for sequencing decisions only — it does NOT model monthly cash flows,
+// tax, or ownership. The 10% default mirrors the main engine's discount rate by
+// convention; the two are not shared code and may diverge — keep them documented, not merged.
 const discountedNpvForEvent = (scenario: ScheduleScenario, bucket: InventoryBucket, spudDate: string) => {
   const onlineDate = addDays(spudDate, bucket.spudToOnlineDays);
   const yearsFromStart = daysFromStart(scenario, onlineDate) / 365;

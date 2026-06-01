@@ -20,7 +20,7 @@ import {
   DEFAULT_TAX_ASSUMPTIONS,
   DEFAULT_DEBT_ASSUMPTIONS,
   TAX_PRESETS,
-} from '../types';
+} from '../constants';
 import type { Well, WellGroup, DebtAssumptions, TypeCurveParams, ForecastSegment } from '../types';
 
 // Small test well sets

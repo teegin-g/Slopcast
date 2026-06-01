@@ -38,13 +38,13 @@ export function useTableFilters(tableId: string) {
   }, [tableId]);
 
   const activeFilters: ActiveFilter[] = useMemo(() => {
-    return columnFilters
-      .filter(f => f.value !== undefined && f.value !== '' && f.value !== 'ALL')
-      .map(f => ({
-        id: f.id,
-        value: String(f.value),
-        label: `${f.id}: ${String(f.value)}`,
-      }));
+    const result: ActiveFilter[] = [];
+    for (const f of columnFilters) {
+      if (f.value !== undefined && f.value !== '' && f.value !== 'ALL') {
+        result.push({ id: f.id, value: String(f.value), label: `${f.id}: ${String(f.value)}` });
+      }
+    }
+    return result;
   }, [columnFilters]);
 
   const removeFilter = useCallback((id: string) => {

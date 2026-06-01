@@ -37,7 +37,6 @@ export function FracSpread({ worldX, groundY, aspect, palette, frozen = false }:
   const trucks = useMemo(
     () => Array.from({ length: TRUCK_COUNT }, (_, i) => ({
       x: -W * 0.07 + i * W * 0.035 + truckW * 0.5,
-      i,
     })),
     [W, truckW],
   );
@@ -63,7 +62,7 @@ export function FracSpread({ worldX, groundY, aspect, palette, frozen = false }:
 
       {/* Pump trucks */}
       {trucks.map((t, i) => (
-        <group key={i} position={[t.x, 0, 0]}>
+        <group key={t.x} position={[t.x, 0, 0]}>
           {/* Truck body */}
           <mesh position={[0, truckH * 0.5, 0]}>
             <planeGeometry args={[truckW, truckH]} />

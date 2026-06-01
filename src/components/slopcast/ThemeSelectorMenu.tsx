@@ -27,7 +27,7 @@ function ThemeIconMark({ theme, className }: { theme: ThemeDefinition; className
 
 function CheckMark() {
   return (
-    <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+    <svg className="size-3.5" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <path d="m3.2 8.1 3 3.1 6.6-6.8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -49,10 +49,7 @@ const ThemeSelectorMenu: React.FC<ThemeSelectorMenuProps> = ({
   const [activeIndex, setActiveIndex] = useState(selectedIndex);
   const currentPreview = getThemePreview(theme);
   const currentChrome = getThemeChrome(theme);
-
-  useEffect(() => {
-    setActiveIndex(selectedIndex);
-  }, [selectedIndex]);
+  const highlightedIndex = open ? activeIndex : selectedIndex;
 
   useEffect(() => {
     if (!open) return;
@@ -125,7 +122,7 @@ const ThemeSelectorMenu: React.FC<ThemeSelectorMenuProps> = ({
       case 'Enter':
       case ' ':
         event.preventDefault();
-        selectTheme(themes[activeIndex]);
+        selectTheme(themes[highlightedIndex]);
         break;
       case 'Escape':
         event.preventDefault();
@@ -134,7 +131,7 @@ const ThemeSelectorMenu: React.FC<ThemeSelectorMenuProps> = ({
     }
   };
 
-  const activeOptionId = `${listboxId}-option-${themes[activeIndex]?.id ?? themeId}`;
+  const activeOptionId = `${listboxId}-option-${themes[highlightedIndex]?.id ?? themeId}`;
   const triggerClass = isClassic || currentChrome.brandTreatment === 'classic-cartridge'
     ? 'border-2 border-black/25 bg-black/15 text-white shadow-card hover:bg-black/20'
     : 'border border-theme-border/70 bg-theme-surface1/70 text-theme-text shadow-[inset_0_1px_0_rgb(var(--text)/0.06)] hover:bg-theme-surface2/80';
@@ -154,10 +151,10 @@ const ThemeSelectorMenu: React.FC<ThemeSelectorMenuProps> = ({
         className={`group inline-flex min-h-[44px] max-w-full items-center gap-2 rounded-inner px-2.5 py-1.5 text-left theme-transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-cyan/50 motion-safe:transition motion-safe:duration-200 motion-reduce:transition-none ${triggerClass}`}
       >
         <span
-          className="grid h-7 w-7 shrink-0 place-items-center rounded-inner border border-current/20"
+          className="grid size-7 shrink-0 place-items-center rounded-inner border border-current/20"
           style={{ background: currentPreview.swatch, color: currentPreview.accent }}
         >
-          <ThemeIconMark theme={theme} className="h-[18px] w-[18px] text-current" />
+          <ThemeIconMark theme={theme} className="size-[18px] text-current" />
         </span>
         <span className="min-w-0">
           <span className="block truncate text-[10px] font-black uppercase tracking-[0.18em] leading-tight">
@@ -167,7 +164,7 @@ const ThemeSelectorMenu: React.FC<ThemeSelectorMenuProps> = ({
             Theme world
           </span>
         </span>
-        <svg className={`h-3 w-3 shrink-0 text-theme-muted motion-safe:transition-transform motion-reduce:transition-none ${open ? 'rotate-180' : ''}`} viewBox="0 0 12 12" fill="none" aria-hidden="true">
+        <svg className={`size-3 shrink-0 text-theme-muted motion-safe:transition-transform motion-reduce:transition-none ${open ? 'rotate-180' : ''}`} viewBox="0 0 12 12" fill="none" aria-hidden="true">
           <path d="M3 4.5 6 7.5l3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
@@ -195,7 +192,7 @@ const ThemeSelectorMenu: React.FC<ThemeSelectorMenuProps> = ({
               const preview = getThemePreview(option);
               const icon = getThemeIcon(option);
               const selected = option.id === themeId;
-              const active = index === activeIndex;
+              const active = index === highlightedIndex;
 
               return (
                 <button
@@ -221,10 +218,10 @@ const ThemeSelectorMenu: React.FC<ThemeSelectorMenuProps> = ({
                   }`}
                 >
                   <span
-                    className="relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-inner border border-current/15"
+                    className="relative grid size-10 shrink-0 place-items-center overflow-hidden rounded-inner border border-current/15"
                     style={{ background: preview.swatch, color: preview.accent }}
                   >
-                    <ThemeIconMark theme={option} className="relative z-10 h-5 w-5 text-current drop-shadow-sm" />
+                    <ThemeIconMark theme={option} className="relative z-10 size-5 text-current drop-shadow-sm" />
                   </span>
 
                   <span className="min-w-0">
@@ -246,7 +243,7 @@ const ThemeSelectorMenu: React.FC<ThemeSelectorMenuProps> = ({
                     </span>
                   </span>
 
-                  <span className={`grid h-6 w-6 place-items-center rounded-full ${selected ? 'opacity-100' : 'opacity-0'}`} aria-hidden="true">
+                  <span className={`grid size-6 place-items-center rounded-full ${selected ? 'opacity-100' : 'opacity-0'}`} aria-hidden="true">
                     <CheckMark />
                   </span>
                   <span className="sr-only">{icon.label}</span>

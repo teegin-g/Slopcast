@@ -8,7 +8,8 @@ import { getSidebarCollapsed, setSidebarCollapsed } from '../../services/storage
 import { useViewportLayout } from '../slopcast/hooks/useViewportLayout';
 import type { WellGroup } from '../../types';
 import type { ThemeMeta } from '../../theme/themes';
-import { ThemeSceneLayer, type ThemeSceneFxMode } from '../../theme/scene';
+import { ThemeSceneLayer } from '../../theme/scene/ThemeSceneLayer';
+import type { ThemeSceneFxMode } from '../../theme/scene/types';
 
 interface AppShellProps {
   /** The workspace object from useSlopcastWorkspace */
@@ -74,6 +75,11 @@ export function AppShell({ workspace, children }: AppShellProps) {
     });
   }, []);
 
+  const handleSetSection = useCallback((nextSection: typeof section) => {
+    setMobileDrawerOpen(false);
+    setSection(nextSection);
+  }, [setSection]);
+
   // Sync section -> workspace state
   useEffect(() => {
     if (section === 'wells') {
@@ -87,16 +93,11 @@ export function AppShell({ workspace, children }: AppShellProps) {
     }
   }, [section]); // eslint-disable-line react-hooks/exhaustive-deps -- intentionally only sync on section change
 
-  // Close mobile drawer on section change
-  useEffect(() => {
-    setMobileDrawerOpen(false);
-  }, [section]);
-
   const sidebarProps = {
     collapsed,
     onToggleCollapse: handleToggleCollapse,
     section,
-    onSetSection: setSection,
+    onSetSection: handleSetSection,
     isClassic: workspace.isClassic,
     groups: workspace.processedGroups,
     activeGroupId: workspace.activeGroupId,

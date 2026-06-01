@@ -98,6 +98,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
           <div className="flex items-center gap-2 w-full min-w-0 flex-nowrap">
             <div className={isClassic ? 'flex items-center gap-1.5 min-w-0 flex-nowrap' : 'flex items-center gap-1 p-1 rounded-panel border theme-transition bg-theme-bg border-theme-border min-w-0 flex-nowrap'}>
               <button
+                type="button"
                 onClick={onNavigateHub}
                 className={
                   isClassic
@@ -108,6 +109,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                 HUB
               </button>
               <button
+                type="button"
                 onClick={() => onSetViewMode('DASHBOARD')}
                 className={
                   isClassic
@@ -126,6 +128,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                 DESIGN
               </button>
               <button
+                type="button"
                 onClick={() => onSetViewMode('ANALYSIS')}
                 className={
                   isClassic

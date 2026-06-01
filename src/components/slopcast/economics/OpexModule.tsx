@@ -17,9 +17,9 @@ const OpexModule: React.FC<EconomicsModuleProps> = ({
     value: estimateSegmentAnnualizedCost(segment, wellCount),
     color: ['#f59e0b', '#22d3ee', '#34d399', '#a78bfa'][index % 4],
   }));
-  const impact = summary.flow
-    .filter((_, index) => index % 12 === 0)
-    .map((row) => ({ year: `${Math.floor(row.month / 12)}Y`, opex: row.opex }));
+  const impact = summary.flow.flatMap((row, index) =>
+    index % 12 === 0 ? [{ year: `${Math.floor(row.month / 12)}Y`, opex: row.opex }] : []
+  );
 
   return (
     <div className="space-y-4">
@@ -32,7 +32,7 @@ const OpexModule: React.FC<EconomicsModuleProps> = ({
                   <Pie data={structure} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={46} outerRadius={74} strokeWidth={1} stroke="rgb(var(--border))">
                     {structure.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
                   </Pie>
-                  <Tooltip formatter={(value: number) => currencyMm(value)} contentStyle={{ background: 'rgb(var(--surface-1))', border: '1px solid rgb(var(--border))', borderRadius: 8 }} />
+                  <Tooltip formatter={(value: number | undefined) => currencyMm(value ?? 0)} contentStyle={{ background: 'rgb(var(--surface-1))', border: '1px solid rgb(var(--border))', borderRadius: 8 }} />
                 </PieChart>
               )}
             </StableChart>
@@ -40,7 +40,7 @@ const OpexModule: React.FC<EconomicsModuleProps> = ({
               <MetricTile label="Total LOE" value={currencyMm(summary.totalOpex)} detail={`${currency(summary.loePerBoe)} / bbl`} accent="amber" compact />
               {structure.map((row) => (
                 <div key={row.name} className="flex items-center gap-2 text-xs">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: row.color }} />
+                  <span className="size-2.5 rounded-full" style={{ backgroundColor: row.color }} />
                   <span className="text-theme-muted truncate">{row.name}</span>
                   <span className="ml-auto font-semibold text-theme-text tabular-nums">{currencyMm(row.value)}</span>
                 </div>
@@ -56,7 +56,7 @@ const OpexModule: React.FC<EconomicsModuleProps> = ({
                 <CartesianGrid stroke="rgb(var(--border) / 0.35)" strokeDasharray="4 4" vertical={false} />
                 <XAxis dataKey="year" tick={{ fontSize: 10, fill: 'rgb(var(--muted))' }} axisLine={false} tickLine={false} />
                 <YAxis tickFormatter={(value) => `$${(Number(value) / 1000).toFixed(0)}k`} tick={{ fontSize: 10, fill: 'rgb(var(--muted))' }} axisLine={false} tickLine={false} />
-                <Tooltip formatter={(value: number) => currencyMm(value)} contentStyle={{ background: 'rgb(var(--surface-1))', border: '1px solid rgb(var(--border))', borderRadius: 8 }} />
+                <Tooltip formatter={(value: number | undefined) => currencyMm(value ?? 0)} contentStyle={{ background: 'rgb(var(--surface-1))', border: '1px solid rgb(var(--border))', borderRadius: 8 }} />
                 <Bar dataKey="opex" fill="#f59e0b" radius={[4, 4, 0, 0]} />
               </BarChart>
             )}

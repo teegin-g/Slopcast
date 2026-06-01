@@ -2,6 +2,9 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { useTheme } from '../theme/ThemeProvider';
+import { formatDateTime } from '../utils/formatters';
+import ThemePanel from '../components/theme/ThemePanel';
+import ThemeButton from '../components/theme/ThemeButton';
 
 interface AppModule {
   id: string;
@@ -42,18 +45,6 @@ const modules: AppModule[] = [
   },
 ];
 
-function formatDateTime(value?: string): string {
-  if (!value) return 'Not available';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Unknown';
-  return new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(date);
-}
 
 const HubPage: React.FC = () => {
   const navigate = useNavigate();
@@ -125,6 +116,7 @@ const HubPage: React.FC = () => {
 
         <div className="flex items-center gap-2 md:gap-3">
           <button
+            type="button"
             onClick={isAuthenticated ? openSlopcast : openSignIn}
             className={
               isClassic
@@ -138,6 +130,7 @@ const HubPage: React.FC = () => {
           <div className={`flex items-center rounded-full p-1 border theme-transition ${isClassic ? 'bg-black/25 border-black/30' : 'bg-theme-bg border-theme-border'}`}>
             {themes.map(t => (
               <button
+                type="button"
                 key={t.id}
                 onClick={() => setThemeId(t.id)}
                 className={
@@ -161,7 +154,7 @@ const HubPage: React.FC = () => {
       <main className="relative z-10 p-4 md:p-6 max-w-[1600px] mx-auto w-full">
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 md:gap-6">
           <section className="xl:col-span-8 space-y-5 md:space-y-6">
-            <div className={`rounded-panel border p-5 md:p-8 theme-transition ${isClassic ? 'sc-panel' : 'bg-theme-surface1/80 border-theme-border shadow-card'}`}>
+            <ThemePanel opacity="80" className="p-5 md:p-8 theme-transition">
               <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5 md:gap-6">
                 <div className="max-w-3xl space-y-3 md:space-y-4">
                   <p className={`text-[10px] uppercase tracking-[0.28em] ${isClassic ? 'text-theme-warning font-black' : 'text-theme-lavender font-bold'}`}>
@@ -177,6 +170,7 @@ const HubPage: React.FC = () => {
 
                 <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
                   <button
+                    type="button"
                     onClick={openSlopcast}
                     className={
                       isClassic
@@ -187,6 +181,7 @@ const HubPage: React.FC = () => {
                     {isAuthenticated ? 'Open Slopcast' : 'Sign In To Access'}
                   </button>
                   <button
+                    type="button"
                     onClick={refreshSession}
                     className={
                       isClassic
@@ -198,9 +193,9 @@ const HubPage: React.FC = () => {
                   </button>
                 </div>
               </div>
-            </div>
+            </ThemePanel>
 
-            <div className={`rounded-panel border p-5 md:p-6 theme-transition ${isClassic ? 'sc-panel' : 'bg-theme-surface1/60 border-theme-border shadow-card'}`}>
+            <ThemePanel opacity="60" className="p-5 md:p-6 theme-transition">
               <div className="flex items-center justify-between mb-4">
                 <h3 className={`text-[11px] uppercase tracking-[0.3em] ${isClassic ? 'text-theme-warning font-black' : 'text-theme-cyan font-black'}`}>
                   App Navigation
@@ -252,6 +247,7 @@ const HubPage: React.FC = () => {
                       </div>
 
                       <button
+                        type="button"
                         disabled={!isAvailable}
                         onClick={isAvailable ? openSlopcast : undefined}
                         className={`w-full rounded-inner px-3 py-2 text-[10px] uppercase tracking-[0.2em] font-black transition-all ${
@@ -270,11 +266,11 @@ const HubPage: React.FC = () => {
                   );
                 })}
               </div>
-            </div>
+            </ThemePanel>
           </section>
 
           <aside className="xl:col-span-4 space-y-4">
-            <div className={`rounded-panel border p-5 md:p-6 theme-transition ${isClassic ? 'sc-panel' : 'bg-theme-surface1/70 border-theme-border shadow-card'}`}>
+            <ThemePanel opacity="70" className="p-5 md:p-6 theme-transition">
               <h3 className={`text-[11px] uppercase tracking-[0.3em] mb-4 ${isClassic ? 'text-theme-warning font-black' : 'text-theme-magenta font-black'}`}>
                 Account Dashboard
               </h3>
@@ -305,48 +301,45 @@ const HubPage: React.FC = () => {
                   </div>
                 ))}
               </div>
-            </div>
+            </ThemePanel>
 
-            <div className={`rounded-panel border p-5 theme-transition ${isClassic ? 'sc-panel' : 'bg-theme-surface1/60 border-theme-border shadow-card'}`}>
+            <ThemePanel opacity="60" className="p-5 theme-transition">
               <h3 className={`text-[11px] uppercase tracking-[0.3em] mb-3 ${isClassic ? 'text-theme-warning font-black' : 'text-theme-lavender font-black'}`}>
                 Quick Actions
               </h3>
               <div className="grid grid-cols-1 gap-3">
-                <button
+                <ThemeButton
+                  type="button"
+                  variant="primary"
+                  px="4"
+                  py="3"
                   onClick={isAuthenticated ? openSlopcast : openSignIn}
-                  className={
-                    isClassic
-                      ? 'rounded-inner px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] bg-theme-cyan text-white border border-theme-magenta/60 shadow-card'
-                      : 'rounded-inner px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] bg-theme-cyan text-theme-bg shadow-glow-cyan'
-                  }
                 >
                   {isAuthenticated ? 'Resume Slopcast' : 'Sign In'}
-                </button>
+                </ThemeButton>
                 {isAuthenticated ? (
-                  <button
+                  <ThemeButton
+                    type="button"
+                    variant="secondary"
+                    px="4"
+                    py="3"
                     onClick={handleSignOut}
-                    className={
-                      isClassic
-                        ? 'rounded-inner px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] bg-black/20 border border-black/25 text-white/90'
-                        : 'rounded-inner px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] bg-theme-bg border border-theme-border text-theme-muted hover:text-theme-text'
-                    }
                   >
                     Sign Out
-                  </button>
+                  </ThemeButton>
                 ) : (
-                  <button
+                  <ThemeButton
+                    type="button"
+                    variant="secondary"
+                    px="4"
+                    py="3"
                     onClick={refreshSession}
-                    className={
-                      isClassic
-                        ? 'rounded-inner px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] bg-black/20 border border-black/25 text-white/90'
-                        : 'rounded-inner px-4 py-3 text-[10px] font-black uppercase tracking-[0.2em] bg-theme-bg border border-theme-border text-theme-muted hover:text-theme-text'
-                    }
                   >
                     Sync Session
-                  </button>
+                  </ThemeButton>
                 )}
               </div>
-            </div>
+            </ThemePanel>
           </aside>
         </div>
       </main>

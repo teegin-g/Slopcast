@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
 import EconomicsGroupBar from './EconomicsGroupBar';
+import EconomicsModuleTabs from './economics/EconomicsModuleTabs';
+import type { EconomicsModule } from './economics/types';
 import { createStoryGroup, storyGroups, storyScenarioRankings } from './storybookData';
 
 interface StoryHarnessProps {
@@ -16,6 +18,7 @@ function EconomicsGroupBarHarness({
   const [groups, setGroups] = useState(storyGroups);
   const [activeGroupId, setActiveGroupId] = useState(storyGroups[0]?.id ?? '');
   const [isFocusMode, setIsFocusMode] = useState(focusMode);
+  const [module, setModule] = useState<EconomicsModule>('PRODUCTION');
 
   const scenarioRankings = useMemo(() => {
     return groups.map((group, index) => ({
@@ -56,6 +59,19 @@ function EconomicsGroupBarHarness({
       scenarioRankings={scenarioRankings}
       focusMode={isFocusMode}
       onToggleFocusMode={() => setIsFocusMode((current) => !current)}
+      moduleSwitcher={<EconomicsModuleTabs module={module} onChange={setModule} variant="compact" />}
+      groupPulse={
+        <div data-testid="story-group-pulse" className="grid grid-cols-2 gap-2">
+          <div className="rounded-inner border border-theme-border bg-theme-bg px-3 py-2">
+            <p className="text-[9px] font-black uppercase tracking-[0.12em] text-theme-muted">NPV10</p>
+            <p className="text-sm font-black text-theme-text">$13.2M</p>
+          </div>
+          <div className="rounded-inner border border-theme-border bg-theme-bg px-3 py-2">
+            <p className="text-[9px] font-black uppercase tracking-[0.12em] text-theme-muted">Payout</p>
+            <p className="text-sm font-black text-theme-text">1.7 yrs</p>
+          </div>
+        </div>
+      }
     />
   );
 }
@@ -79,6 +95,10 @@ export const Interactive: Story = {
 
     await userEvent.click(canvas.getByTestId('economics-group-next'));
     await expect(canvas.getByTestId('economics-active-group-label')).toHaveTextContent(/bravo west/i);
+    await expect(canvas.getByTestId('story-group-pulse')).toBeVisible();
+
+    await userEvent.click(canvas.getByTestId('economics-module-tab-pricing'));
+    await expect(canvas.getByTestId('economics-module-tab-pricing')).toHaveAttribute('aria-pressed', 'true');
 
     await userEvent.click(canvas.getByTestId('economics-group-select'));
     await userEvent.type(canvas.getByLabelText(/search groups/i), 'charlie');

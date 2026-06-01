@@ -13,6 +13,8 @@ import type { Well } from '../../types';
 import { useTableFilters } from './hooks/useTableFilters';
 import FilterChips from './FilterChips';
 import { TableSkeleton, FadeIn } from './Skeleton';
+import { formatFeet } from '../../utils/formatters';
+import { SortableHeader, ResizeHandle, tableRowClass } from './table';
 
 export interface WellsTableProps {
   wells: Well[];
@@ -20,10 +22,6 @@ export interface WellsTableProps {
   onSelectWells: (ids: string[]) => void;
   onToggleWell: (id: string) => void;
   isLoading?: boolean;
-}
-
-function formatFeet(value: number) {
-  return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(value)} ft`;
 }
 
 const WellsTable: React.FC<WellsTableProps> = ({
@@ -68,6 +66,7 @@ const WellsTable: React.FC<WellsTableProps> = ({
       header: ({ table }) => (
         <input
           type="checkbox"
+          aria-label="Select all rows"
           checked={table.getIsAllRowsSelected()}
           onChange={table.getToggleAllRowsSelectedHandler()}
         />
@@ -75,6 +74,7 @@ const WellsTable: React.FC<WellsTableProps> = ({
       cell: ({ row }) => (
         <input
           type="checkbox"
+          aria-label={`Select row ${row.id}`}
           checked={row.getIsSelected()}
           onChange={row.getToggleSelectedHandler()}
         />
@@ -168,6 +168,7 @@ const WellsTable: React.FC<WellsTableProps> = ({
         <div className="px-4 py-2 border-b border-theme-border/60 flex flex-col md:flex-row gap-2">
         <input
           type="text"
+          aria-label="Search wells"
           value={globalFilter ?? ''}
           onChange={e => setGlobalFilter(e.target.value)}
           placeholder="Search wells..."
@@ -214,29 +215,11 @@ const WellsTable: React.FC<WellsTableProps> = ({
                   {headerGroup.headers.map(header => (
                     <th
                       key={header.id}
-                      className="py-2 px-2 text-left text-xs font-black uppercase tracking-[0.24em] text-theme-cyan heading-font relative"
+                      className="p-2 text-left text-xs font-black uppercase tracking-[0.24em] text-theme-cyan heading-font relative"
                       style={{ width: header.getSize() }}
                     >
-                      {header.isPlaceholder ? null : (
-                        <div
-                          className={header.column.getCanSort() ? 'cursor-pointer select-none' : ''}
-                          onClick={header.column.getToggleSortingHandler()}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {{
-                            asc: ' \u25B2',
-                            desc: ' \u25BC',
-                          }[header.column.getIsSorted() as string] ?? ''}
-                        </div>
-                      )}
-                      {/* Resize handle */}
-                      {header.column.getCanResize() && (
-                        <div
-                          onMouseDown={header.getResizeHandler()}
-                          onTouchStart={header.getResizeHandler()}
-                          className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-theme-border/30 hover:bg-theme-cyan/50"
-                        />
-                      )}
+                      <SortableHeader header={header} />
+                      <ResizeHandle header={header} />
                     </th>
                   ))}
                 </tr>
@@ -246,9 +229,10 @@ const WellsTable: React.FC<WellsTableProps> = ({
               {table.getRowModel().rows.map(row => (
                 <tr
                   key={row.id}
-                  className={`border-t border-theme-border/50 hover:bg-theme-surface2/30 ${
-                    row.getIsSelected() ? 'bg-theme-cyan/10' : ''
-                  }`}
+                  className={tableRowClass(
+                    'hover:bg-theme-surface2/30',
+                    row.getIsSelected() && 'bg-theme-cyan/10',
+                  )}
                 >
                   {row.getVisibleCells().map(cell => (
                     <td

@@ -37,8 +37,10 @@
  * ```
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useReducer } from 'react';
 import { createPortal } from 'react-dom';
+import { getEngine, getAllEngines, ECONOMICS_ENGINE_VERSION, type EngineId } from '../../services/economicsEngine';
+import { setEngineId, getEngineId } from '../../services/storage/workspacePreferences';
 
 // ============================================================================
 // Types
@@ -70,6 +72,10 @@ interface DebugOverlayProps {
     isMobile: boolean;
     devicePixelRatio: number;
   };
+  /** Controlled visibility — owned by DebugProvider. */
+  visible: boolean;
+  /** Called when the user clicks the close button. */
+  onClose: () => void;
 }
 
 interface Position {
@@ -78,56 +84,173 @@ interface Position {
 }
 
 // ============================================================================
+// Module-scope static styles
+// ============================================================================
+
+const headerStyle: React.CSSProperties = {
+  padding: '8px 12px',
+  backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  borderBottom: '1px solid rgba(0, 255, 0, 0.3)',
+  cursor: 'grab',
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  fontWeight: 'bold',
+};
+
+const contentStyle: React.CSSProperties = {
+  padding: '8px',
+  overflowY: 'auto',
+  flexGrow: 1,
+};
+
+const sectionHeaderStyle: React.CSSProperties = {
+  padding: '6px 8px',
+  backgroundColor: 'rgba(0, 255, 0, 0.1)',
+  marginTop: '8px',
+  marginBottom: '4px',
+  cursor: 'pointer',
+  borderRadius: '2px',
+  display: 'flex',
+  justifyContent: 'space-between',
+  fontWeight: 'bold',
+};
+
+const sectionContentStyle: React.CSSProperties = {
+  padding: '4px 8px',
+  marginBottom: '8px',
+};
+
+const itemStyle: React.CSSProperties = {
+  padding: '3px 0',
+  borderBottom: '1px solid rgba(0, 255, 0, 0.1)',
+};
+
+const labelStyle: React.CSSProperties = {
+  color: '#00cc00',
+  fontWeight: 'bold',
+};
+
+const valueStyle: React.CSSProperties = {
+  color: '#00ff00',
+  marginLeft: '8px',
+};
+
+const buttonStyle: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  color: '#00ff00',
+  cursor: 'pointer',
+  fontSize: '14px',
+  padding: '0 4px',
+};
+
+// ============================================================================
+// Module-scope pure helpers
+// ============================================================================
+
+function buildHighlightStyle(rect: DOMRect): React.CSSProperties {
+  return {
+    position: 'fixed',
+    left: `${rect.left}px`,
+    top: `${rect.top}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+    border: '2px solid rgba(255, 0, 0, 0.6)',
+    backgroundColor: 'rgba(255, 0, 0, 0.1)',
+    pointerEvents: 'none',
+    zIndex: 999998,
+    boxSizing: 'border-box',
+  };
+}
+
+// ============================================================================
+// Drag state reducer
+// ============================================================================
+
+interface DragState {
+  dragging: boolean;
+  position: Position;
+  dragOffset: Position;
+}
+
+type DragAction =
+  | { type: 'start'; clientX: number; clientY: number }
+  | { type: 'move'; clientX: number; clientY: number }
+  | { type: 'end' };
+
+function dragReducer(state: DragState, action: DragAction): DragState {
+  switch (action.type) {
+    case 'start':
+      return {
+        ...state,
+        dragging: true,
+        dragOffset: {
+          x: action.clientX - state.position.x,
+          y: action.clientY - state.position.y,
+        },
+      };
+    case 'move':
+      if (!state.dragging) return state;
+      return {
+        ...state,
+        position: {
+          x: action.clientX - state.dragOffset.x,
+          y: action.clientY - state.dragOffset.y,
+        },
+      };
+    case 'end':
+      return { ...state, dragging: false };
+    default:
+      return state;
+  }
+}
+
+const INITIAL_DRAG_STATE: DragState = {
+  dragging: false,
+  position: { x: 20, y: 20 },
+  dragOffset: { x: 0, y: 0 },
+};
+
+// ============================================================================
 // Component
 // ============================================================================
 
-export function DebugOverlay({ overlaps, performance, viewport }: DebugOverlayProps) {
-  const [visible, setVisible] = useState(false);
+export function DebugOverlay({ overlaps, performance, viewport, visible, onClose }: DebugOverlayProps) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
     overlaps: false,
     performance: false,
     viewport: false,
+    engine: false,
   });
-  const [position, setPosition] = useState<Position>({ x: 20, y: 20 });
-  const [dragging, setDragging] = useState(false);
-  const [dragStart, setDragStart] = useState<Position>({ x: 0, y: 0 });
-  const panelRef = useRef<HTMLDivElement>(null);
 
-  // Toggle visibility with Ctrl+Shift+D
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
-        e.preventDefault();
-        setVisible(prev => !prev);
-      }
-    };
+  // DEV-ONLY: engine toggle state — reads current persisted preference
+  const [activeEngineId, setActiveEngineId] = useState<EngineId>(() => getEngineId());
+  const allEngines = getAllEngines();
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+  const handleEngineSwitch = useCallback((id: EngineId) => {
+    setEngineId(id);
+    setActiveEngineId(id);
   }, []);
+  const [dragState, dispatchDrag] = useReducer(dragReducer, INITIAL_DRAG_STATE);
+  const { dragging, position } = dragState;
+  const panelRef = useRef<HTMLDivElement>(null);
 
   // Handle dragging
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button !== 0) return; // Only left click
-    setDragging(true);
-    setDragStart({
-      x: e.clientX - position.x,
-      y: e.clientY - position.y,
-    });
-  }, [position]);
+    if (e.button !== 0) return;
+    dispatchDrag({ type: 'start', clientX: e.clientX, clientY: e.clientY });
+  }, []);
 
   useEffect(() => {
     if (!dragging) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      setPosition({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y,
-      });
+      dispatchDrag({ type: 'move', clientX: e.clientX, clientY: e.clientY });
     };
 
     const handleMouseUp = () => {
-      setDragging(false);
+      dispatchDrag({ type: 'end' });
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -137,17 +260,13 @@ export function DebugOverlay({ overlaps, performance, viewport }: DebugOverlayPr
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [dragging, dragStart]);
+  }, [dragging]);
 
-  const toggleSection = (section: string) => {
+  const toggleSection = useCallback((section: string) => {
     setCollapsed(prev => ({ ...prev, [section]: !prev[section] }));
-  };
+  }, []);
 
   if (!visible) return null;
-
-  // ============================================================================
-  // Styles
-  // ============================================================================
 
   const panelStyle: React.CSSProperties = {
     position: 'fixed',
@@ -158,7 +277,7 @@ export function DebugOverlay({ overlaps, performance, viewport }: DebugOverlayPr
     backgroundColor: 'rgba(20, 20, 20, 0.95)',
     color: '#00ff00',
     fontFamily: 'monospace',
-    fontSize: '11px',
+    fontSize: '12px',
     border: '1px solid rgba(0, 255, 0, 0.3)',
     borderRadius: '4px',
     zIndex: 999999,
@@ -169,64 +288,6 @@ export function DebugOverlay({ overlaps, performance, viewport }: DebugOverlayPr
     userSelect: 'none',
   };
 
-  const headerStyle: React.CSSProperties = {
-    padding: '8px 12px',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    borderBottom: '1px solid rgba(0, 255, 0, 0.3)',
-    cursor: 'grab',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    fontWeight: 'bold',
-  };
-
-  const contentStyle: React.CSSProperties = {
-    padding: '8px',
-    overflowY: 'auto',
-    flexGrow: 1,
-  };
-
-  const sectionHeaderStyle: React.CSSProperties = {
-    padding: '6px 8px',
-    backgroundColor: 'rgba(0, 255, 0, 0.1)',
-    marginTop: '8px',
-    marginBottom: '4px',
-    cursor: 'pointer',
-    borderRadius: '2px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    fontWeight: 'bold',
-  };
-
-  const sectionContentStyle: React.CSSProperties = {
-    padding: '4px 8px',
-    marginBottom: '8px',
-  };
-
-  const itemStyle: React.CSSProperties = {
-    padding: '3px 0',
-    borderBottom: '1px solid rgba(0, 255, 0, 0.1)',
-  };
-
-  const labelStyle: React.CSSProperties = {
-    color: '#00cc00',
-    fontWeight: 'bold',
-  };
-
-  const valueStyle: React.CSSProperties = {
-    color: '#00ff00',
-    marginLeft: '8px',
-  };
-
-  const buttonStyle: React.CSSProperties = {
-    background: 'none',
-    border: 'none',
-    color: '#00ff00',
-    cursor: 'pointer',
-    fontSize: '14px',
-    padding: '0 4px',
-  };
-
   // ============================================================================
   // Render Panel
   // ============================================================================
@@ -235,11 +296,12 @@ export function DebugOverlay({ overlaps, performance, viewport }: DebugOverlayPr
     <>
       {/* Main Debug Panel */}
       <div ref={panelRef} style={panelStyle}>
-        <div style={headerStyle} onMouseDown={handleMouseDown}>
+        <div role="none" style={headerStyle} onMouseDown={handleMouseDown}>
           <span>DEBUG OVERLAY</span>
           <button
+            type="button"
             style={buttonStyle}
-            onClick={() => setVisible(false)}
+            onClick={onClose}
             title="Close (Ctrl+Shift+D)"
           >
             ✕
@@ -249,17 +311,21 @@ export function DebugOverlay({ overlaps, performance, viewport }: DebugOverlayPr
         <div style={contentStyle}>
           {/* Overlaps Section */}
           <div>
-            <div style={sectionHeaderStyle} onClick={() => toggleSection('overlaps')}>
+            <button
+              type="button"
+              style={sectionHeaderStyle}
+              onClick={() => toggleSection('overlaps')}
+            >
               <span>OVERLAPS ({overlaps.length})</span>
               <span>{collapsed.overlaps ? '▼' : '▲'}</span>
-            </div>
+            </button>
             {!collapsed.overlaps && (
               <div style={sectionContentStyle}>
                 {overlaps.length === 0 ? (
                   <div style={{ color: '#666' }}>No overlaps detected</div>
                 ) : (
                   overlaps.slice(0, 10).map((overlap, idx) => (
-                    <div key={idx} style={itemStyle}>
+                    <div key={`${overlap.elementA.selector}-${overlap.elementB.selector}-${idx}`} style={itemStyle}>
                       <div>
                         <span style={labelStyle}>A:</span>
                         <span style={valueStyle}>{overlap.elementA.selector}</span>
@@ -286,10 +352,14 @@ export function DebugOverlay({ overlaps, performance, viewport }: DebugOverlayPr
 
           {/* Performance Section */}
           <div>
-            <div style={sectionHeaderStyle} onClick={() => toggleSection('performance')}>
+            <button
+              type="button"
+              style={sectionHeaderStyle}
+              onClick={() => toggleSection('performance')}
+            >
               <span>PERFORMANCE</span>
               <span>{collapsed.performance ? '▼' : '▲'}</span>
-            </div>
+            </button>
             {!collapsed.performance && (
               <div style={sectionContentStyle}>
                 <div style={itemStyle}>
@@ -305,10 +375,10 @@ export function DebugOverlay({ overlaps, performance, viewport }: DebugOverlayPr
                     <div style={{ ...labelStyle, marginBottom: '4px' }}>
                       Slow Renders ({'>'} 16ms):
                     </div>
-                    {performance.slowRenders.slice(0, 5).map((entry, idx) => (
-                      <div key={idx} style={{ padding: '2px 0', color: '#ff6600' }}>
+                    {performance.slowRenders.slice(0, 5).map((entry) => (
+                      <div key={`${entry.component}-${entry.timestamp}`} style={{ padding: '2px 0', color: '#ff6600' }}>
                         <div>{entry.component}</div>
-                        <div style={{ fontSize: '10px', color: '#cc5500' }}>
+                        <div style={{ fontSize: '12px', color: '#cc5500' }}>
                           {entry.renderTime.toFixed(2)}ms @ {new Date(entry.timestamp).toLocaleTimeString()}
                         </div>
                       </div>
@@ -326,10 +396,14 @@ export function DebugOverlay({ overlaps, performance, viewport }: DebugOverlayPr
 
           {/* Viewport Section */}
           <div>
-            <div style={sectionHeaderStyle} onClick={() => toggleSection('viewport')}>
+            <button
+              type="button"
+              style={sectionHeaderStyle}
+              onClick={() => toggleSection('viewport')}
+            >
               <span>VIEWPORT</span>
               <span>{collapsed.viewport ? '▼' : '▲'}</span>
-            </div>
+            </button>
             {!collapsed.viewport && (
               <div style={sectionContentStyle}>
                 <div style={itemStyle}>
@@ -353,6 +427,57 @@ export function DebugOverlay({ overlaps, performance, viewport }: DebugOverlayPr
               </div>
             )}
           </div>
+
+          {/* Economics Engine Section — DEV-ONLY toggle (import.meta.env.DEV) */}
+          {import.meta.env.DEV && (
+            <div>
+              <button
+                type="button"
+                style={sectionHeaderStyle}
+                onClick={() => toggleSection('engine')}
+              >
+                <span>ECONOMICS ENGINE</span>
+                <span>{collapsed.engine ? '▼' : '▲'}</span>
+              </button>
+              {!collapsed.engine && (
+                <div style={sectionContentStyle}>
+                  <div style={itemStyle}>
+                    <span style={labelStyle}>Version:</span>
+                    <span style={valueStyle}>{ECONOMICS_ENGINE_VERSION}</span>
+                  </div>
+                  <div style={itemStyle}>
+                    <span style={labelStyle}>Active:</span>
+                    <span style={{ ...valueStyle, color: activeEngineId === 'python' ? '#ff9900' : '#00ff00' }}>
+                      {getEngine(activeEngineId).label}
+                    </span>
+                  </div>
+                  <div style={{ ...itemStyle, display: 'flex', gap: '6px', paddingTop: '6px', flexWrap: 'wrap' }}>
+                    {allEngines.map((eng) => (
+                      <button
+                        key={eng.id}
+                        type="button"
+                        onClick={() => handleEngineSwitch(eng.id)}
+                        style={{
+                          background: activeEngineId === eng.id ? 'rgba(0, 255, 0, 0.2)' : 'none',
+                          border: `1px solid ${activeEngineId === eng.id ? '#00ff00' : 'rgba(0, 255, 0, 0.4)'}`,
+                          color: activeEngineId === eng.id ? '#00ff00' : '#009900',
+                          cursor: 'pointer',
+                          fontSize: '11px',
+                          padding: '2px 8px',
+                          borderRadius: '2px',
+                        }}
+                      >
+                        {eng.id}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ ...itemStyle, color: '#666', fontSize: '11px', paddingTop: '4px' }}>
+                    Re-run economics to apply change.
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -376,25 +501,12 @@ interface OverlapHighlightsProps {
 function OverlapHighlights({ overlaps }: OverlapHighlightsProps) {
   if (overlaps.length === 0) return null;
 
-  const highlightStyle = (rect: DOMRect): React.CSSProperties => ({
-    position: 'fixed',
-    left: `${rect.left}px`,
-    top: `${rect.top}px`,
-    width: `${rect.width}px`,
-    height: `${rect.height}px`,
-    border: '2px solid rgba(255, 0, 0, 0.6)',
-    backgroundColor: 'rgba(255, 0, 0, 0.1)',
-    pointerEvents: 'none',
-    zIndex: 999998,
-    boxSizing: 'border-box',
-  });
-
   return (
     <>
       {overlaps.map((overlap, idx) => (
-        <div key={`overlap-${idx}`}>
-          <div style={highlightStyle(overlap.elementA.rect)} />
-          <div style={highlightStyle(overlap.elementB.rect)} />
+        <div key={`${overlap.elementA.selector}-${overlap.elementB.selector}-${idx}`}>
+          <div style={buildHighlightStyle(overlap.elementA.rect)} />
+          <div style={buildHighlightStyle(overlap.elementB.rect)} />
         </div>
       ))}
     </>

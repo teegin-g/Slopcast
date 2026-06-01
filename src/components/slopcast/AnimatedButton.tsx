@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion, type HTMLMotionProps } from 'motion/react';
+import { LazyMotion, domAnimation, m, type HTMLMotionProps } from 'motion/react';
 import { SPRING } from '../../theme/motion';
 
 interface AnimatedButtonProps extends Omit<HTMLMotionProps<'button'>, 'children'> {
@@ -29,14 +29,16 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   disabled,
   ...props
 }) => (
-  <motion.button
-    className={`rounded-inner transition-colors focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${variantClasses[variant]} ${sizeClasses[size]} ${disabled ? 'opacity-40 cursor-not-allowed' : ''} ${className}`}
-    whileTap={disabled ? undefined : { scale: 0.97 }}
-    whileHover={disabled ? undefined : { scale: 1.02 }}
-    transition={SPRING.snappy}
-    disabled={disabled}
-    {...props}
-  >
-    {children}
-  </motion.button>
+  <LazyMotion features={domAnimation}>
+    <m.button
+      className={`rounded-inner transition-colors focus-visible:ring-2 focus-visible:ring-theme-cyan/40 focus-visible:outline-none ${variantClasses[variant]} ${sizeClasses[size]} ${disabled ? 'opacity-40 cursor-not-allowed' : ''} ${className}`}
+      whileTap={disabled ? undefined : { scale: 0.97 }}
+      whileHover={disabled ? undefined : { scale: 1.02 }}
+      transition={SPRING.snappy}
+      disabled={disabled}
+      {...props}
+    >
+      {children}
+    </m.button>
+  </LazyMotion>
 );

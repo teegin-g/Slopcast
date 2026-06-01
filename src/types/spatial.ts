@@ -21,11 +21,22 @@ export interface SpatialLayerFilter {
   layers?: string[];
 }
 
+export type SpatialRenderProfile = 'density' | 'sampled' | 'summary' | 'laterals_preview' | 'full';
+
 export interface SpatialWellsResponse {
   wells: Well[];
   total_count: number;
   truncated: boolean;
   source: 'databricks' | 'mock';
+}
+
+export interface SpatialFeatureCollectionResponse {
+  type: 'FeatureCollection';
+  features: GeoJSON.Feature[];
+  total_count: number;
+  truncated: boolean;
+  source: 'databricks' | 'mock';
+  diagnostics: Record<string, unknown>;
 }
 
 export interface SpatialLayer {

@@ -1,5 +1,5 @@
-import {
-  Well,
+import type { Well, WellGroup } from '../types';
+import type {
   TypeCurveParams,
   CapexAssumptions,
   CommodityPricingAssumptions,
@@ -7,11 +7,8 @@ import {
   OwnershipAssumptions,
   MonthlyCashFlow,
   DealMetrics,
-  WellGroup,
-  ScheduleParams,
-  SensitivityVariable,
-  SensitivityMatrixResult,
 } from '../types';
+import type { ScheduleParams, SensitivityVariable, SensitivityMatrixResult } from '../types';
 import * as tsCalc from '../utils/economics';
 
 // ---------------------------------------------------------------------------
@@ -146,7 +143,6 @@ const engines: Record<EngineId, EconomicsEngine> = {
   python: pyEngine,
 };
 
-export { getEngineId as getStoredEngineId, setEngineId as setStoredEngineId } from './storage/workspacePreferences';
 import { getEngineId } from './storage/workspacePreferences';
 
 export function getEngine(id?: EngineId): EconomicsEngine {

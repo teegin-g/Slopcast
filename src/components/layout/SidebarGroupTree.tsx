@@ -39,6 +39,7 @@ export function SidebarGroupTree({
   return (
     <div className="px-2 py-1">
       <button
+        type="button"
         onClick={() => setOpen(prev => !prev)}
         className={`flex items-center gap-1.5 w-full px-2 py-1 typo-label font-bold tracking-widest rounded-inner theme-transition focus-visible:outline-2 focus-visible:outline-theme-cyan focus-visible:outline-offset-[-2px] ${
           isClassic ? 'text-white/50 hover:text-white/70' : 'text-theme-muted hover:text-theme-text'
@@ -62,13 +63,14 @@ export function SidebarGroupTree({
             return (
               <button
                 key={group.id}
+                type="button"
                 onClick={() => onActivateGroup(group.id)}
                 className={`flex items-center gap-2 px-3 py-1 rounded-inner typo-body text-xs theme-transition focus-visible:outline-2 focus-visible:outline-theme-cyan focus-visible:outline-offset-[-2px] ${
                   isActive ? activeStyles : inactiveStyles
                 }`}
               >
                 <span
-                  className="w-2 h-2 rounded-full shrink-0"
+                  className="size-2 rounded-full shrink-0"
                   style={{ backgroundColor: group.color }}
                 />
                 <span className="truncate flex-1 text-left">{group.name}</span>

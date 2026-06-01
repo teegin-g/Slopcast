@@ -87,11 +87,6 @@
   --bar-blue-text: var(--bg-deep);
   --bar-blue-border: var(--border);
 
-  --bar-brown-bg-1: var(--surface-2);
-  --bar-brown-bg-2: var(--surface-1);
-  --bar-brown-text: var(--text);
-  --bar-brown-border: var(--border);
-
   --bar-dark-bg-1: var(--bg-deep);
   --bar-dark-bg-2: var(--bg-deep);
   --bar-dark-text: var(--text);
@@ -630,12 +625,6 @@
   --bar-neutral-text: 255 255 255;
   --bar-neutral-border: 7 18 33;
   /* #071221 */
-
-  /* Back-compat: anything still using --bar-brown maps to neutral. */
-  --bar-brown-bg-1: var(--bar-neutral-bg-1);
-  --bar-brown-bg-2: var(--bar-neutral-bg-2);
-  --bar-brown-text: var(--bar-neutral-text);
-  --bar-brown-border: var(--bar-neutral-border);
 
   --bar-dark-bg-1: 24 24 24;
   /* #181818 */
@@ -2131,17 +2120,6 @@ body {
   --_screen-title-bg-2: var(--bar-neutral-bg-2);
   --_screen-title-text: var(--bar-neutral-text);
   --_screen-title-border: var(--bar-neutral-border);
-}
-
-.sc-titlebar--brown {
-  --_panel-title-bg-1: var(--bar-brown-bg-1);
-  --_panel-title-bg-2: var(--bar-brown-bg-2);
-  --_panel-title-text: var(--bar-brown-text);
-  --_panel-title-border: var(--bar-brown-border);
-  --_screen-title-bg-1: var(--bar-brown-bg-1);
-  --_screen-title-bg-2: var(--bar-brown-bg-2);
-  --_screen-title-text: var(--bar-brown-text);
-  --_screen-title-border: var(--bar-brown-border);
 }
 
 .sc-titlebar--dark {

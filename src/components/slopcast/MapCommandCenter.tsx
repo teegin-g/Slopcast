@@ -1,9 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { useMapboxMap } from '../../hooks/useMapboxMap';
 import { useTheme } from '../../theme/ThemeProvider';
-import { overlayPanelClass, type MapboxOverrides } from '../../theme/themes';
+import { overlayPanelClass } from '../../theme/themes';
 import type { Well, WellGroup, SpatialLayerFilter, SpatialDataSourceId } from '../../types';
-import type { WellboreData, WellboreRenderDiagnostics } from './MapWellboreLayer';
+import { useMapTheme, applyMapThemeOverrides } from './map/useMapTheme';
+import { useMapInit } from './map/useMapInit';
+import { simplifyWellborePath, type WellboreData, type WellboreRenderDiagnostics } from './MapWellboreLayer';
 import { useViewportData } from '../../hooks/useViewportData';
 import { OverlayGroupsPanel } from './map/OverlayGroupsPanel';
 import { OverlayFiltersBar } from './map/OverlayFiltersBar';
@@ -20,9 +22,11 @@ import {
   WELL_STATUS_LAYER_IDS,
   addWellSourceAndLayers,
   bindWellLayerEvents,
-  buildWellColorMatchExpression,
+  buildWellColorExpression,
+  updateWellFeatureState,
   updateWellLayerPaint,
 } from './map/wellLayerController';
+import { stableSelectWellsForBudget, wellboreZoomBucket } from './map/spatialSampling';
 
 export type WellsMobilePanel = 'GROUPS' | 'MAP';
 
@@ -37,17 +41,33 @@ const EMPTY_WELLBORE_DIAGNOSTICS: WellboreRenderDiagnostics = {
   drawCalls: 0,
   lastUploadVertexCount: 0,
   lastDrawVertexCount: 0,
+  frameCount: 0,
+  lastFrameMs: 0,
   dirty: true,
   hasProgram: false,
 };
 
+const SELECTED_WELLBORE_MIN_ZOOM = 10;
+const BACKGROUND_WELLBORE_MIN_ZOOM = 12;
+const MAX_BACKGROUND_WELLBORES = 250;
+const MAX_TOTAL_WELLBORES = 320;
+
+function setKey(values: Set<string>): string {
+  return Array.from(values).sort().join(',');
+}
+
+function wellboreSimplificationTolerance(zoom: number, selected: boolean): number {
+  const base =
+    zoom >= 15 ? 0 :
+    zoom >= 14 ? 0.000035 :
+    zoom >= 12 ? 0.00012 :
+    0.00025;
+  return selected ? base * 0.5 : base;
+}
+
 interface MapCommandCenterProps {
   isClassic: boolean;
-  theme: any;
-  themeId: string;
   viewportLayout: 'mobile' | 'mid' | 'desktop' | 'wide';
-  mobilePanel: WellsMobilePanel;
-  onSetMobilePanel: (panel: WellsMobilePanel) => void;
   groups: WellGroup[];
   activeGroupId: string;
   selectedWellCount: number;
@@ -81,33 +101,6 @@ interface MapCommandCenterProps {
   onWellsLoaded?: (wells: Well[]) => void;
 }
 
-function applyMapThemeOverrides(map: any, overrides: MapboxOverrides | undefined) {
-  if (!map || !overrides) return;
-  try {
-    if (map.getLayer('background')) {
-      map.setPaintProperty('background', 'background-color', overrides.bgColor);
-    }
-    ['water', 'water-shadow'].forEach(id => {
-      if (map.getLayer(id)) map.setPaintProperty(id, 'fill-color', overrides.waterColor);
-    });
-    const style = map.getStyle();
-    if (style?.layers) {
-      for (const layer of style.layers) {
-        if ((layer.id === 'land' || layer.id.startsWith('landuse') || layer.id.startsWith('landcover')) && layer.type === 'fill') {
-          map.setPaintProperty(layer.id, 'fill-color', overrides.landColor);
-        }
-        if (layer.type === 'symbol' && layer.id.includes('label')) {
-          map.setPaintProperty(layer.id, 'text-color', overrides.labelColor);
-        }
-        if ((layer.id.includes('road') || layer.id.includes('bridge') || layer.id.includes('tunnel')) && layer.type === 'line') {
-          map.setPaintProperty(layer.id, 'line-opacity', overrides.roadOpacity);
-        }
-      }
-    }
-  } catch (e) {
-    console.warn('[MapCommandCenter] Failed to apply theme overrides:', e);
-  }
-}
 
 export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   isClassic,
@@ -148,28 +141,8 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   const mp = theme.mapPalette;
   const { map, isLoaded, mapContainerRef, viewState, selectionTrail, wellboreLayer } = useMapboxMap();
 
-  // Detect map canvas presence as a fallback for isLoaded (handles StrictMode race)
-  const [canvasDetected, setCanvasDetected] = useState(false);
-  useEffect(() => {
-    if (isLoaded || canvasDetected) return;
-    const container = mapContainerRef.current;
-    if (!container) return;
-    const observer = new MutationObserver(() => {
-      if (container.querySelector('canvas.mapboxgl-canvas')) {
-        setCanvasDetected(true);
-        observer.disconnect();
-      }
-    });
-    // Check immediately
-    if (container.querySelector('canvas.mapboxgl-canvas')) {
-      setCanvasDetected(true);
-      return;
-    }
-    observer.observe(container, { childList: true, subtree: true });
-    return () => observer.disconnect();
-  }, [isLoaded, canvasDetected, mapContainerRef]);
-
-  const mapReady = isLoaded || canvasDetected;
+  // Canvas detection + nav/scale controls
+  const { mapReady } = useMapInit({ map, isLoaded, mapContainerRef });
   const ensureTerrain = useCallback((targetMap: any) => {
     try {
       if (!targetMap.getSource('mapbox-dem')) {
@@ -194,6 +167,14 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   const [wellboreDiagnostics, setWellboreDiagnostics] = useState<WellboreRenderDiagnostics>(
     () => wellboreLayer?.getDiagnostics() ?? EMPTY_WELLBORE_DIAGNOSTICS,
   );
+  const [sourceSetDataCount, setSourceSetDataCount] = useState(0);
+  const lastSourceSetDataMs = useRef(0);
+  const previousFeatureStateRef = useRef<Map<string, { selected: boolean; dimmed: boolean; visible: boolean }>>(
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- lazy init below
+    null!
+  );
+  if (!previousFeatureStateRef.current) previousFeatureStateRef.current = new Map();
+  const hoverRafRef = useRef<number | null>(null);
 
   // Hover tooltip state
   const [hoveredWellId, setHoveredWellId] = useState<string | null>(null);
@@ -207,7 +188,7 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     producing: true,
     duc: true,
     permit: true,
-    laterals: false,
+    laterals: true,
   });
 
   const spatialFilters = useMemo<SpatialLayerFilter>(() => {
@@ -258,13 +239,14 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     totalCount: spatialTotalCount,
     truncated: spatialTruncated,
     fallbackActive: spatialFallback,
+    diagnostics: viewportDiagnostics,
     refetch: spatialRefetch,
   } = useViewportData({
     map,
     isLoaded: mapReady,
     filters: spatialFilters,
     dataSourceId,
-    includeLaterals: dataLayers.laterals || groupLateralWellIds.size > 0,
+    includeLaterals: dataLayers.laterals || groupLateralWellIds.size > 0 || selectedWellIds.size > 0,
   });
   const displayedSpatialError = spatialError ?? spatialTrajectoryError;
   const isTrajectoryOnlyError = !spatialError && !!spatialTrajectoryError;
@@ -283,10 +265,12 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     return wells;
   }, [viewportWells, spatialSource, wells]);
 
+  const onWellsLoadedEvent = useEffectEvent((wells: typeof effectiveWells) => onWellsLoaded?.(wells));
+
   // Notify parent when effective wells change
   useEffect(() => {
-    onWellsLoaded?.(effectiveWells);
-  }, [effectiveWells, onWellsLoaded]);
+    onWellsLoadedEvent(effectiveWells);
+  }, [effectiveWells]);
 
   // Derive full Well objects for tooltip/popup from effectiveWells
   const hoveredWell = useMemo(
@@ -316,25 +300,52 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     return mp.unassignedFill;
   }, [groups, mp.unassignedFill]);
 
-  // Set selection trail color from theme lasso stroke
-  useEffect(() => {
-    selectionTrail?.setColor(mp.lassoStroke);
-  }, [selectionTrail, mp.lassoStroke]);
+  // Theme overrides: lasso trail colour + Mapbox tile-style paint overrides
+  useMapTheme({ map, isLoaded, selectionTrail, mp, satelliteActive: layers.satellite });
 
   const activeWellboreData = useMemo<WellboreData[]>(() => {
-    return effectiveWells
-      .filter(w => {
-        if (!w.trajectory || w.trajectory.path.length < 2) return false;
-        if (dataLayers.laterals) return true;
-        return groupLateralWellIds.has(w.id);
-      })
-      .map(w => ({
-        id: w.id,
-        path: w.trajectory!.path,
-        color: getWellColor(w.id),
-        selected: selectedWellIds.has(w.id),
+    if (viewState.zoom < SELECTED_WELLBORE_MIN_ZOOM) return [];
+
+    const priorityWellIds = new Set([...selectedWellIds, ...groupLateralWellIds]);
+    const backgroundBudget = dataLayers.laterals && viewState.zoom >= BACKGROUND_WELLBORE_MIN_ZOOM
+      ? MAX_BACKGROUND_WELLBORES
+      : 0;
+    const sampleSeed = [
+      `z${wellboreZoomBucket(viewState.zoom)}`,
+      `status:${setKey(statusFilter as Set<string>)}`,
+      `operator:${setKey(operatorFilter)}`,
+      `formation:${setKey(formationFilter)}`,
+    ].join('|');
+    const candidates = effectiveWells.filter((w) => {
+      if (!w.trajectory || w.trajectory.path.length < 2) return false;
+      return dataLayers.laterals || priorityWellIds.has(w.id);
+    });
+    const selectedWells = stableSelectWellsForBudget(candidates, {
+      seed: sampleSeed,
+      budget: Math.min(MAX_TOTAL_WELLBORES, priorityWellIds.size + backgroundBudget),
+      priorityIds: priorityWellIds,
+    });
+
+    return selectedWells.map((well) => ({
+        id: well.id,
+        path: simplifyWellborePath(
+          well.trajectory!.path,
+          wellboreSimplificationTolerance(viewState.zoom, selectedWellIds.has(well.id)),
+        ),
+        color: getWellColor(well.id),
+        selected: selectedWellIds.has(well.id),
       }));
-  }, [effectiveWells, dataLayers.laterals, getWellColor, selectedWellIds, groupLateralWellIds]);
+  }, [
+    effectiveWells,
+    dataLayers.laterals,
+    getWellColor,
+    selectedWellIds,
+    groupLateralWellIds,
+    viewState.zoom,
+    statusFilter,
+    operatorFilter,
+    formationFilter,
+  ]);
 
   // Feed wellbore data: toggle ON shows all, toggle OFF shows group members of any selected well
   useEffect(() => {
@@ -372,17 +383,14 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
         name: w.name,
         status: w.status,
         groupColor: getWellColor(w.id),
-        selected: selectedWellIds.has(w.id),
-        dimmed: dimmedWellIds.has(w.id),
-        visible: visibleWellIds.has(w.id),
       },
     })),
-  }), [effectiveWells, getWellColor, selectedWellIds, dimmedWellIds, visibleWellIds]);
+  }), [effectiveWells, getWellColor]);
 
-  // Build color match expression for Mapbox
+  // Read per-feature groupColor from GeoJSON instead of building giant per-id match expressions.
   const colorMatchExpr = useMemo(() => {
-    return buildWellColorMatchExpression(wells, getWellColor, mp.unassignedFill) as any;
-  }, [wells, getWellColor, mp.unassignedFill]);
+    return buildWellColorExpression(mp.unassignedFill) as any;
+  }, [mp.unassignedFill]);
 
   // Derive theme colors for cluster/label layers
   const clusterColor = mp.glowColor;
@@ -411,14 +419,41 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
 
     const source = map.getSource(WELL_SOURCE_ID);
     if (source) {
+      const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
       source.setData(wellsGeoJson);
+      lastSourceSetDataMs.current = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startedAt;
+      setSourceSetDataCount(count => count + 1);
+      previousFeatureStateRef.current.clear();
       updateWellLayerPaint(map, colorMatchExpr, wellLayerTheme);
       return;
     }
 
     addWellSourceAndLayers(map, wellsGeoJson, colorMatchExpr, wellLayerTheme);
+    previousFeatureStateRef.current.clear();
+    setSourceSetDataCount(count => count + 1);
     setMapLayerEpoch(epoch => epoch + 1);
   }, [map, isLoaded, wellsGeoJson, colorMatchExpr, wellLayerTheme]);
+
+  useEffect(() => {
+    if (!map || !isLoaded || !map.getSource(WELL_SOURCE_ID)) return;
+
+    const changedWells = effectiveWells.filter(well => {
+      const next = {
+        selected: selectedWellIds.has(well.id),
+        dimmed: dimmedWellIds.has(well.id),
+        visible: visibleWellIds.has(well.id),
+      };
+      const previous = previousFeatureStateRef.current.get(well.id);
+      previousFeatureStateRef.current.set(well.id, next);
+      return !previous ||
+        previous.selected !== next.selected ||
+        previous.dimmed !== next.dimmed ||
+        previous.visible !== next.visible;
+    });
+
+    if (changedWells.length === 0) return;
+    updateWellFeatureState(map, changedWells, selectedWellIds, dimmedWellIds, visibleWellIds);
+  }, [map, isLoaded, effectiveWells, selectedWellIds, dimmedWellIds, visibleWellIds]);
 
   useEffect(() => {
     if (!map || !isLoaded || !map.getLayer(WELL_CLUSTER_LAYER_ID)) return;
@@ -431,10 +466,18 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
         setTooltipPos(null);
       },
       onWellHover: (id, point) => {
-        setHoveredWellId(id);
-        setTooltipPos(point);
+        if (hoverRafRef.current !== null) cancelAnimationFrame(hoverRafRef.current);
+        hoverRafRef.current = requestAnimationFrame(() => {
+          hoverRafRef.current = null;
+          setHoveredWellId(id);
+          setTooltipPos(point);
+        });
       },
       onWellLeave: () => {
+        if (hoverRafRef.current !== null) {
+          cancelAnimationFrame(hoverRafRef.current);
+          hoverRafRef.current = null;
+        }
         setHoveredWellId(null);
         setTooltipPos(null);
       },
@@ -445,36 +488,12 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     });
   }, [map, isLoaded, onToggleWell, mapLayerEpoch]);
 
-  // Apply theme map overrides when theme changes or map loads
   useEffect(() => {
-    if (!map || !isLoaded || layers.satellite) return;
-    applyMapThemeOverrides(map, mp.mapboxOverrides);
-  }, [map, isLoaded, mp.mapboxOverrides, layers.satellite]);
-
-  // Add Mapbox navigation + scale controls
-  useEffect(() => {
-    if (!map || !isLoaded) return;
-    let navControl: any = null;
-    let scaleControl: any = null;
-    (async () => {
-      try {
-        const mapboxgl = await import('mapbox-gl');
-        const mbgl = (mapboxgl as any).default ?? mapboxgl;
-        navControl = new mbgl.NavigationControl({ showCompass: false });
-        scaleControl = new mbgl.ScaleControl({ maxWidth: 120, unit: 'imperial' });
-        map.addControl(navControl, 'bottom-right');
-        map.addControl(scaleControl, 'bottom-left');
-      } catch {
-        // mapbox-gl may not be available in test environments
-      }
-    })();
+    const rafRef = hoverRafRef;
     return () => {
-      try {
-        if (navControl) map.removeControl(navControl);
-        if (scaleControl) map.removeControl(scaleControl);
-      } catch { /* cleanup best-effort */ }
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, [map, isLoaded]);
+  }, []);
 
   // Toggle satellite style
   useEffect(() => {
@@ -524,6 +543,15 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
         <span data-testid="map-wellbore-vertex-count">{wellboreDiagnostics.vertexCount}</span>
         <span data-testid="map-wellbore-draw-calls">{wellboreDiagnostics.drawCalls}</span>
         <span data-testid="map-wellbore-last-draw-vertex-count">{wellboreDiagnostics.lastDrawVertexCount}</span>
+        <span data-testid="map-wellbore-frame-count">{wellboreDiagnostics.frameCount}</span>
+        <span data-testid="map-wellbore-last-frame-ms">{wellboreDiagnostics.lastFrameMs.toFixed(2)}</span>
+        <span data-testid="map-source-setdata-count">{sourceSetDataCount}</span>
+        <span data-testid="map-source-last-setdata-ms">{lastSourceSetDataMs.current.toFixed(2)}</span>
+        <span data-testid="map-viewport-phase1-fetches">{viewportDiagnostics.phase1FetchCount}</span>
+        <span data-testid="map-viewport-phase2-fetches">{viewportDiagnostics.phase2FetchCount}</span>
+        <span data-testid="map-viewport-phase1-cache-hits">{viewportDiagnostics.phase1CacheHits}</span>
+        <span data-testid="map-viewport-phase2-cache-hits">{viewportDiagnostics.phase2CacheHits}</span>
+        <span data-testid="map-viewport-phase2-zoom-bucket">{viewportDiagnostics.lastPhase2ZoomBucket ?? ''}</span>
       </div>
 
       {/* Mapbox canvas */}

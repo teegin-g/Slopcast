@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { LazyMotion, m, domAnimation } from 'motion/react';
 import { SPRING } from '../../theme/motion';
 
 export type DesignStep = 'SETUP' | 'SELECT' | 'RUN' | 'REVIEW';
@@ -65,9 +65,10 @@ const WorkflowStepper: React.FC<WorkflowStepperProps> = ({ isClassic, steps, com
         </h2>
       </div>
       <div className="p-3">
+        <LazyMotion features={domAnimation}>
         <div className={`grid ${compact ? 'grid-cols-2 gap-2' : 'grid-cols-4 gap-2'}`}>
           {steps.map((step, idx) => (
-            <motion.div
+            <m.div
               key={step.id}
               className={`rounded-inner border px-3 py-2 ${statusTone(step.status, isClassic)} transition-colors`}
               initial={{ scale: step.status === 'ACTIVE' ? 0.97 : 1 }}
@@ -76,9 +77,10 @@ const WorkflowStepper: React.FC<WorkflowStepperProps> = ({ isClassic, steps, com
             >
               <p className="text-xs font-black uppercase tracking-[0.18em] heading-font">{idx + 1}. {step.label}</p>
               <p className={`text-xs uppercase tracking-[0.12em] mt-1 ${isClassic ? 'opacity-90' : ''}`}>{caption(step.status)}</p>
-            </motion.div>
+            </m.div>
           ))}
         </div>
+        </LazyMotion>
       </div>
     </div>
   );

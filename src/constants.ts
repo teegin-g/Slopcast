@@ -1,5 +1,17 @@
 
-import { Well, TypeCurveParams, CapexAssumptions, CapexItem, CommodityPricingAssumptions, OpexAssumptions, OwnershipAssumptions, ForecastSegment } from './types';
+import type {
+  Well,
+  TypeCurveParams,
+  CapexAssumptions,
+  CapexItem,
+  CommodityPricingAssumptions,
+  OpexAssumptions,
+  OwnershipAssumptions,
+  ForecastSegment,
+  TaxAssumptions,
+  DebtAssumptions,
+  ReserveCategory,
+} from './types';
 
 // Generate some mock wells in a basin-like cluster
 const generateWells = (count: number): Well[] => {
@@ -96,3 +108,33 @@ export const GROUP_COLORS = [
   '#ec4899', // Pink
   '#06b6d4', // Cyan
 ];
+
+// ---------------------------------------------------------------------------
+// Tax / Debt / Reserve runtime constants (moved from types/economics.ts)
+// ---------------------------------------------------------------------------
+
+export const DEFAULT_RESERVE_RISK_FACTORS: Record<ReserveCategory, number> = {
+  PDP: 1.0,
+  PUD: 0.85,
+  PROBABLE: 0.50,
+  POSSIBLE: 0.15,
+};
+
+export const TAX_PRESETS: Record<string, TaxAssumptions> = {
+  Texas: { severanceTaxPct: 4.6, adValoremTaxPct: 1.5, federalTaxRate: 21, depletionAllowancePct: 15, stateTaxRate: 0 },
+  'New Mexico': { severanceTaxPct: 3.75, adValoremTaxPct: 1.0, federalTaxRate: 21, depletionAllowancePct: 15, stateTaxRate: 4.8 },
+  Oklahoma: { severanceTaxPct: 5.0, adValoremTaxPct: 1.0, federalTaxRate: 21, depletionAllowancePct: 15, stateTaxRate: 4.0 },
+  Colorado: { severanceTaxPct: 5.0, adValoremTaxPct: 1.0, federalTaxRate: 21, depletionAllowancePct: 15, stateTaxRate: 4.4 },
+};
+
+export const DEFAULT_TAX_ASSUMPTIONS: TaxAssumptions = TAX_PRESETS.Texas;
+
+export const DEFAULT_DEBT_ASSUMPTIONS: DebtAssumptions = {
+  enabled: false,
+  revolverSize: 50_000_000,
+  revolverRate: 8.0,
+  termLoanAmount: 0,
+  termLoanRate: 7.0,
+  termLoanAmortMonths: 60,
+  cashSweepPct: 50,
+};

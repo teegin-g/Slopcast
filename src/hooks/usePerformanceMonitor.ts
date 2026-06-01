@@ -60,9 +60,11 @@ export function usePerformanceMonitor(enabled: boolean): PerformanceData {
   const [entries, setEntries] = useState<PerformanceEntry[]>([]);
   const [slowRenders, setSlowRenders] = useState<PerformanceEntry[]>([]);
 
-  const entriesBuffer = useRef(new RingBuffer<PerformanceEntry>(MAX_ENTRIES));
+  const entriesBuffer = useRef<RingBuffer<PerformanceEntry>>(null as unknown as RingBuffer<PerformanceEntry>);
+  if (entriesBuffer.current === null) entriesBuffer.current = new RingBuffer<PerformanceEntry>(MAX_ENTRIES);
   const rafIdRef = useRef<number | null>(null);
-  const lastFrameTimeRef = useRef<number>(performance.now());
+  const lastFrameTimeRef = useRef<number>(null as unknown as number);
+  if (lastFrameTimeRef.current === null) lastFrameTimeRef.current = performance.now();
   const frameCountRef = useRef(0);
   const fpsIntervalRef = useRef<number | null>(null);
 
@@ -173,56 +175,4 @@ export function usePerformanceMonitor(enabled: boolean): PerformanceData {
   }, [enabled]);
 
   return { fps, entries, slowRenders };
-}
-
-/**
- * Manual render time marker
- * Components can call this to log their render time
- *
- * @param componentName - Name of the component being measured
- * @param startTime - performance.now() timestamp from before render
- */
-export function markRender(componentName: string, startTime: number): void {
-  const endTime = performance.now();
-  const duration = endTime - startTime;
-
-  // Create a performance measure entry that usePerformanceMonitor can observe
-  try {
-    performance.mark(`${componentName}-start`);
-    performance.mark(`${componentName}-end`);
-    performance.measure(componentName, `${componentName}-start`, `${componentName}-end`);
-
-    // Clean up marks to avoid memory bloat
-    performance.clearMarks(`${componentName}-start`);
-    performance.clearMarks(`${componentName}-end`);
-  } catch (e) {
-    // Performance API not fully supported
-    console.debug('Performance.measure not supported', e);
-  }
-}
-
-/**
- * Convenience hook for automatic render time tracking
- * Measures the component's render time and reports it via markRender
- *
- * Usage:
- * ```tsx
- * function MyComponent() {
- *   useRenderTime('MyComponent');
- *   return <div>...</div>;
- * }
- * ```
- *
- * @param componentName - Name to identify this component in performance data
- */
-export function useRenderTime(componentName: string): void {
-  const renderStartRef = useRef<number>(performance.now());
-
-  // Capture start time before render
-  renderStartRef.current = performance.now();
-
-  useEffect(() => {
-    // Measure after render (effect runs after DOM updates)
-    markRender(componentName, renderStartRef.current);
-  });
 }

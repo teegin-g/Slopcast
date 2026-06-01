@@ -129,21 +129,29 @@ export class SlopcastApp {
   }
 
   async setTheme(theme: ThemeCase): Promise<void> {
-    const hasDropdown = await this.page
-      .getByTestId('theme-dropdown-toggle')
-      .first()
-      .isVisible()
-      .catch(() => false);
+    const currentTheme = await this.page.evaluate(() => document.documentElement.dataset.theme);
 
-    if (hasDropdown) {
-      await this.page.getByTestId('theme-dropdown-toggle').click();
-      await this.page.getByTestId(`theme-option-${theme.id}`).click();
-    } else {
-      const testIdButton = this.page.getByTestId(`theme-option-${theme.id}`).first();
-      if (await testIdButton.isVisible().catch(() => false)) {
-        await testIdButton.click();
+    if (currentTheme !== theme.id) {
+      const themeTrigger = this.page
+        .getByTestId('theme-selector-trigger')
+        .or(this.page.getByTestId('theme-dropdown-toggle'))
+        .first();
+      const hasDropdown = await themeTrigger.isVisible().catch(() => false);
+
+      if (hasDropdown) {
+        await themeTrigger.click();
+        await this.page
+          .getByTestId(`theme-selector-option-${theme.id}`)
+          .or(this.page.getByTestId(`theme-option-${theme.id}`))
+          .first()
+          .click();
       } else {
-        await this.page.locator(`button[title="${theme.title}"]`).first().click();
+        const testIdButton = this.page.getByTestId(`theme-option-${theme.id}`).first();
+        if (await testIdButton.isVisible().catch(() => false)) {
+          await testIdButton.click();
+        } else {
+          await this.page.locator(`button[title="${theme.title}"]`).first().click();
+        }
       }
     }
 
@@ -563,9 +571,14 @@ export class SlopcastApp {
 
   private async ensureOperatorFilterVisible(): Promise<Locator> {
     const operatorSelect = this.page.getByTestId('wells-filter-operator').first();
-    const isVisible = await operatorSelect.isVisible().catch(() => false);
-    if (!isVisible) {
-      await this.page.getByTestId('wells-filters-toggle').click();
+    try {
+      await expect(operatorSelect).toBeVisible({ timeout: 8_000 });
+      return operatorSelect;
+    } catch {
+      const filtersToggle = this.page.getByTestId('wells-filters-toggle').first();
+      if (await filtersToggle.isVisible().catch(() => false)) {
+        await filtersToggle.click();
+      }
       await expect(operatorSelect).toBeVisible({ timeout: 5_000 });
     }
     return operatorSelect;

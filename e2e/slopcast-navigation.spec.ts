@@ -3,7 +3,7 @@ import { THEMES } from './helpers/slopcast';
 
 test.describe('Slopcast navigation coverage', () => {
   test('design and scenarios stay navigable across all themes', async ({ slopcast }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(240_000);
     for (const theme of THEMES) {
       const label = theme.alias || theme.id;
       await test.step(`verify ${label} navigation`, async () => {

@@ -17,6 +17,8 @@ import math
 import os
 import re
 import time
+from collections import OrderedDict
+from collections.abc import Callable
 from decimal import Decimal
 from typing import Any, Literal
 
@@ -25,6 +27,7 @@ from dotenv import load_dotenv
 from .models import Well, WellStatus, WellTrajectory, WellTrajectoryPoint
 from .spatial_models import (
     DetailLevel,
+    RenderProfile,
     SpatialLayer,
     SpatialLayerFilter,
     SpatialLayersResponse,
@@ -34,9 +37,10 @@ from .spatial_models import (
 
 _BACKEND_DIR = os.path.dirname(__file__)
 _PROJECT_ROOT = os.path.dirname(_BACKEND_DIR)
-load_dotenv(os.path.join(_BACKEND_DIR, ".env"))
+load_dotenv(os.path.join(_PROJECT_ROOT, ".env"))
 load_dotenv(os.path.join(_PROJECT_ROOT, ".env.local"), override=True)
 load_dotenv(os.path.join(_PROJECT_ROOT, ".env.backend.local"), override=True)
+load_dotenv(os.path.join(_BACKEND_DIR, ".env"))
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +49,8 @@ _DEFAULT_DATABRICKS_SCHEMA = "egis"
 _DEFAULT_DATABRICKS_WELLS_TABLE = "gis__well_master"
 _DEFAULT_DATABRICKS_TRAJECTORY_TABLE = "epw.egis.gis__well_master"
 _IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+_DEFAULT_CACHE_MAX_ENTRIES = 128
+_DEFAULT_CACHE_TTL_SECONDS = 30.0
 
 
 def _validate_identifier(value: str, *, label: str) -> str:
@@ -92,6 +98,44 @@ def _build_in_clause(column: str, values: list[str] | None, prefix: str, params:
         params[key] = value
         placeholders.append(f"%({key})s")
     return f"  AND {column} IN ({', '.join(placeholders)})\n"
+
+
+def _build_status_clause(statuses: list[WellStatus] | None, params: dict[str, Any]) -> str:
+    if not statuses:
+        return ""
+
+    exact_values: list[str] = []
+    wants_duc = False
+    wants_permit = False
+    for status in statuses:
+        if status == "PRODUCING":
+            exact_values.append("PRODUCING")
+        elif status == "DUC":
+            exact_values.append("DUC")
+            wants_duc = True
+        elif status == "PERMIT":
+            exact_values.extend(["PERMIT", "PRE-DRILL", "NOT DRILLED"])
+            wants_permit = True
+
+    conditions: list[str] = []
+    if exact_values:
+        placeholders: list[str] = []
+        for index, value in enumerate(dict.fromkeys(exact_values)):
+            key = f"status_{index}"
+            params[key] = value
+            placeholders.append(f"%({key})s")
+        conditions.append(f"UPPER(well_status) IN ({', '.join(placeholders)})")
+
+    if wants_duc:
+        params["status_duc_like"] = "%WAITING ON COMPLETION%"
+        conditions.append("UPPER(well_status) LIKE %(status_duc_like)s")
+    if wants_permit:
+        params["status_permit_like"] = "PERMIT %"
+        conditions.append("UPPER(well_status) LIKE %(status_permit_like)s")
+
+    if not conditions:
+        return ""
+    return f"  AND ({' OR '.join(conditions)})\n"
 
 
 def _resolve_server_hostname() -> str | None:
@@ -247,7 +291,76 @@ _conn_mgr = ConnectionManager()
 # Backward-compat alias: tests that patched _db_connection directly can
 # now patch _conn_mgr.connection instead.  The old _get_db_connection()
 # delegates to the manager.
-_cache: dict[str, SpatialWellsResponse] = {}
+
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return max(1, int(os.getenv(name, str(default))))
+    except ValueError:
+        return default
+
+
+def _env_float(name: str, default: float) -> float:
+    try:
+        return max(0.0, float(os.getenv(name, str(default))))
+    except ValueError:
+        return default
+
+
+class _SpatialResponseCache:
+    """Small in-process LRU cache with TTL for viewport responses."""
+
+    def __init__(
+        self,
+        *,
+        max_entries: int = _DEFAULT_CACHE_MAX_ENTRIES,
+        ttl_seconds: float = _DEFAULT_CACHE_TTL_SECONDS,
+        timer: Callable[[], float] = time.monotonic,
+    ) -> None:
+        self.max_entries = max(1, max_entries)
+        self.ttl_seconds = max(0.0, ttl_seconds)
+        self._timer = timer
+        self._items: OrderedDict[str, tuple[float, Any]] = OrderedDict()
+
+    def clear(self) -> None:
+        self._items.clear()
+
+    def get(self, key: str) -> Any | None:
+        entry = self._items.get(key)
+        if entry is None:
+            return None
+
+        created_at, value = entry
+        if self.ttl_seconds > 0 and self._timer() - created_at > self.ttl_seconds:
+            self._items.pop(key, None)
+            return None
+
+        self._items.move_to_end(key)
+        return value
+
+    def set(self, key: str, value: Any) -> None:
+        self._items[key] = (self._timer(), value)
+        self._items.move_to_end(key)
+        while len(self._items) > self.max_entries:
+            self._items.popitem(last=False)
+
+    def __contains__(self, key: object) -> bool:
+        return isinstance(key, str) and self.get(key) is not None
+
+    def __getitem__(self, key: str) -> Any:
+        value = self.get(key)
+        if value is None:
+            raise KeyError(key)
+        return value
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        self.set(key, value)
+
+
+_cache = _SpatialResponseCache(
+    max_entries=_env_int("SPATIAL_CACHE_MAX_ENTRIES", _DEFAULT_CACHE_MAX_ENTRIES),
+    ttl_seconds=_env_float("SPATIAL_CACHE_TTL_SECONDS", _DEFAULT_CACHE_TTL_SECONDS),
+)
 
 # ---------------------------------------------------------------------------
 # Deterministic mock data — 40 Permian Basin wells
@@ -360,7 +473,9 @@ def _cache_key(
     limit: int,
     detail_level: DetailLevel,
     zoom: int | None = None,
+    render_profile: RenderProfile | None = None,
 ) -> str:
+    normalized_bounds = _normalize_bounds_for_cache(bounds, zoom)
     f_str = ""
     if filters:
         f_str = (
@@ -373,9 +488,96 @@ def _cache_key(
     if detail_level == "full":
         zoom_part = f"|zoom={zoom if zoom is not None else 'none'}"
     return (
-        f"{bounds.sw_lat},{bounds.sw_lng},{bounds.ne_lat},{bounds.ne_lng}"
-        f"|{f_str}|{limit}|detail={detail_level}{zoom_part}"
+        f"{normalized_bounds.sw_lat:.4f},{normalized_bounds.sw_lng:.4f},"
+        f"{normalized_bounds.ne_lat:.4f},{normalized_bounds.ne_lng:.4f}"
+        f"|{f_str}|{limit}|detail={detail_level}|profile={render_profile or 'default'}{zoom_part}"
     )
+
+
+def _tile_grid_degrees(zoom: int | None) -> float:
+    if zoom is None:
+        return 0.01
+    if zoom >= 14:
+        return 0.025
+    if zoom >= 12:
+        return 0.05
+    if zoom >= 10:
+        return 0.1
+    if zoom >= 8:
+        return 0.25
+    return 0.5
+
+
+def _normalize_bounds_for_cache(bounds: ViewportBounds, zoom: int | None = None) -> ViewportBounds:
+    grid = _tile_grid_degrees(zoom)
+    return ViewportBounds(
+        sw_lat=math.floor(bounds.sw_lat / grid) * grid,
+        sw_lng=math.floor(bounds.sw_lng / grid) * grid,
+        ne_lat=math.ceil(bounds.ne_lat / grid) * grid,
+        ne_lng=math.ceil(bounds.ne_lng / grid) * grid,
+    )
+
+
+def _stable_hash(value: str) -> int:
+    hash_value = 2166136261
+    for char in value:
+        hash_value ^= ord(char)
+        hash_value = (hash_value * 16777619) & 0xFFFFFFFF
+    return hash_value
+
+
+def _sample_wells_deterministically(
+    wells: list[Well],
+    *,
+    budget: int,
+    seed: str,
+    priority_ids: set[str] | None = None,
+) -> list[Well]:
+    priority_ids = priority_ids or set()
+    if budget <= 0:
+        return []
+    priority = sorted(
+        (well for well in wells if well.id in priority_ids),
+        key=lambda well: well.id,
+    )
+    remaining_budget = max(0, budget - len(priority))
+    background = sorted(
+        (well for well in wells if well.id not in priority_ids),
+        key=lambda well: (_stable_hash(f"{seed}|{well.id}"), well.id),
+    )[:remaining_budget]
+    return (priority + background)[:budget]
+
+
+def _sampling_seed(
+    bounds: ViewportBounds,
+    filters: SpatialLayerFilter | None,
+    zoom: int | None,
+    render_profile: RenderProfile | None,
+) -> str:
+    filters_key = ""
+    if filters:
+        filters_key = (
+            f"{sorted(filters.statuses or [])}|"
+            f"{sorted(filters.operators or [])}|"
+            f"{sorted(filters.formations or [])}|"
+            f"{sorted(filters.layers or [])}"
+        )
+    normalized = _normalize_bounds_for_cache(bounds, zoom)
+    return (
+        f"z{zoom if zoom is not None else 'none'}|"
+        f"{normalized.sw_lat:.4f},{normalized.sw_lng:.4f},{normalized.ne_lat:.4f},{normalized.ne_lng:.4f}|"
+        f"{filters_key}|{render_profile or 'default'}"
+    )
+
+
+def _sample_budget_for_render_profile(render_profile: RenderProfile | None, limit: int) -> int:
+    if render_profile == "density":
+        return min(limit, 1200)
+    if render_profile == "sampled":
+        return min(limit, 24)
+    if render_profile == "laterals_preview":
+        return min(limit, 300)
+    return limit
 
 
 # ---------------------------------------------------------------------------
@@ -390,6 +592,7 @@ def get_wells_in_bounds(
     include_trajectory: bool = False,
     detail_level: DetailLevel = "summary",
     zoom: int | None = None,
+    render_profile: RenderProfile | None = None,
 ) -> SpatialWellsResponse:
     """
     Return wells within the given viewport bounds.
@@ -408,9 +611,11 @@ def get_wells_in_bounds(
     if include_trajectory and detail_level != "full":
         detail_level = "full"
 
-    key = _cache_key(bounds, filters, limit, detail_level, zoom=zoom)
-    if key in _cache:
-        return _cache[key]
+    normalized_bounds = _normalize_bounds_for_cache(bounds, zoom)
+    key = _cache_key(bounds, filters, limit, detail_level, zoom=zoom, render_profile=render_profile)
+    cached = _cache.get(key)
+    if cached is not None:
+        return cached
 
     has_live_credentials = bool(
         _resolve_server_hostname()
@@ -419,15 +624,23 @@ def get_wells_in_bounds(
     )
     conn = _get_db_connection()
     if conn is not None:
-        result = _query_databricks(conn, bounds, filters, limit, detail_level, zoom=zoom)
+        result = _query_databricks(
+            conn,
+            normalized_bounds,
+            filters,
+            limit,
+            detail_level,
+            zoom=zoom,
+            render_profile=render_profile,
+        )
     else:
-        result = _query_mock(bounds, filters, limit, detail_level)
+        result = _query_mock(normalized_bounds, filters, limit, detail_level, render_profile=render_profile, zoom=zoom)
 
     # When live credentials are configured, avoid caching mock fallback results.
     # A transient Databricks outage would otherwise poison this viewport key and
     # keep serving stale demo data after the warehouse recovers.
     if result.source == "databricks" or not has_live_credentials:
-        _cache[key] = result
+        _cache.set(key, result)
     return result
 
 
@@ -457,7 +670,7 @@ def get_available_layers() -> SpatialLayersResponse:
                 id="laterals",
                 label="Lateral Traces",
                 description="Horizontal wellbore lateral paths",
-                enabled_by_default=False,
+                enabled_by_default=True,
             ),
         ]
     )
@@ -520,12 +733,13 @@ def _query_databricks(
     limit: int,
     detail_level: DetailLevel = "summary",
     zoom: int | None = None,
+    render_profile: RenderProfile | None = None,
 ) -> SpatialWellsResponse:
     try:
         full_table = _databricks_table_path()
     except ValueError as exc:
         logger.warning("Invalid Databricks table configuration, falling back to mock: %s", exc)
-        return _query_mock(bounds, filters, limit, detail_level)
+        return _query_mock(bounds, filters, limit, detail_level, render_profile=render_profile, zoom=zoom)
 
     params = {
         "sw_lat": bounds.sw_lat,
@@ -537,6 +751,7 @@ def _query_databricks(
 
     extra_where = ""
     if filters:
+        extra_where += _build_status_clause(filters.statuses, params)
         extra_where += _build_in_clause("operator", filters.operators, "operator", params)
         extra_where += _build_in_clause("formation", filters.formations, "formation", params)
 
@@ -547,7 +762,8 @@ def _query_databricks(
             WHERE sh_latitude_nad27 BETWEEN %(sw_lat)s AND %(ne_lat)s
               AND sh_longitude_nad27 BETWEEN %(sw_lng)s AND %(ne_lng)s
               AND sh_latitude_nad27 IS NOT NULL
-{extra_where}            LIMIT %(limit)s
+{extra_where}            ORDER BY api_14
+            LIMIT %(limit)s
         """
     else:
         sql = f"""
@@ -556,7 +772,8 @@ def _query_databricks(
             WHERE sh_latitude_nad27 BETWEEN %(sw_lat)s AND %(ne_lat)s
               AND sh_longitude_nad27 BETWEEN %(sw_lng)s AND %(ne_lng)s
               AND sh_latitude_nad27 IS NOT NULL
-{extra_where}            LIMIT %(limit)s
+{extra_where}            ORDER BY api_14
+            LIMIT %(limit)s
         """
 
     try:
@@ -566,7 +783,7 @@ def _query_databricks(
             cols = [d[0] for d in cursor.description]
     except Exception as exc:  # noqa: BLE001
         logger.warning("Databricks query failed, falling back to mock: %s", exc)
-        return _query_mock(bounds, filters, limit, detail_level)
+        return _query_mock(bounds, filters, limit, detail_level, render_profile=render_profile, zoom=zoom)
 
     if detail_level == "points":
         wells: list[Well] = []
@@ -594,11 +811,18 @@ def _query_databricks(
                 continue
             wells.append(well)
 
+        candidate_count = len(wells)
+        if render_profile in {"density", "sampled"}:
+            wells = _sample_wells_deterministically(
+                wells,
+                budget=_sample_budget_for_render_profile(render_profile, limit),
+                seed=_sampling_seed(bounds, filters, zoom, render_profile),
+            )
         total = len(wells)
         return SpatialWellsResponse(
             wells=wells,
             total_count=total,
-            truncated=total >= limit,
+            truncated=candidate_count >= limit or total < candidate_count,
             source="databricks",
         )
 
@@ -645,6 +869,13 @@ def _query_databricks(
         well_data.append((well, lat, lng, bh_lat_wgs84, bh_lng_wgs84, row_dict))
 
     result_wells = [wd[0] for wd in well_data]
+    candidate_count = len(result_wells)
+    if render_profile in {"sampled", "laterals_preview"} and detail_level != "full":
+        result_wells = _sample_wells_deterministically(
+            result_wells,
+            budget=_sample_budget_for_render_profile(render_profile, limit),
+            seed=_sampling_seed(bounds, filters, zoom, render_profile),
+        )
 
     if detail_level == "full" and result_wells:
         api_ids = [w.id for w in result_wells]
@@ -656,7 +887,7 @@ def _query_databricks(
     return SpatialWellsResponse(
         wells=result_wells,
         total_count=total,
-        truncated=total >= limit,
+        truncated=candidate_count >= limit or total < candidate_count,
         source="databricks",
     )
 
@@ -684,6 +915,89 @@ def _subsample(items: list[Any], max_count: int) -> list[Any]:
     step = (n - 1) / (max_count - 1)
     indices = [round(i * step) for i in range(max_count)]
     return [items[i] for i in indices]
+
+
+def _trajectory_tolerance_for_zoom(zoom: int | None) -> float:
+    """Return simplification tolerance in degrees for WGS84 trajectory paths."""
+    if zoom is None:
+        return 0.00005
+    if zoom <= 13:
+        return 0.00025
+    if zoom <= 15:
+        return 0.0001
+    return 0.000025
+
+
+def _point_line_distance(point: tuple[float, float], start: tuple[float, float], end: tuple[float, float]) -> float:
+    px, py = point
+    sx, sy = start
+    ex, ey = end
+    dx = ex - sx
+    dy = ey - sy
+    if dx == 0 and dy == 0:
+        return math.hypot(px - sx, py - sy)
+    t = max(0.0, min(1.0, ((px - sx) * dx + (py - sy) * dy) / (dx * dx + dy * dy)))
+    proj_x = sx + t * dx
+    proj_y = sy + t * dy
+    return math.hypot(px - proj_x, py - proj_y)
+
+
+def _rdp_simplify(items: list[Any], tolerance: float, coord: Callable[[Any], tuple[float, float]]) -> list[Any]:
+    if len(items) <= 2:
+        return items
+
+    start = coord(items[0])
+    end = coord(items[-1])
+    max_distance = -1.0
+    index = 0
+    for i in range(1, len(items) - 1):
+        distance = _point_line_distance(coord(items[i]), start, end)
+        if distance > max_distance:
+            max_distance = distance
+            index = i
+
+    if max_distance > tolerance:
+        left = _rdp_simplify(items[: index + 1], tolerance, coord)
+        right = _rdp_simplify(items[index:], tolerance, coord)
+        return left[:-1] + right
+    return [items[0], items[-1]]
+
+
+def _simplify_polyline(
+    items: list[Any],
+    *,
+    max_count: int,
+    tolerance: float,
+    coord: Callable[[Any], tuple[float, float]],
+) -> list[Any]:
+    if len(items) <= 2:
+        return items
+
+    simplified = _rdp_simplify(items, tolerance, coord)
+    effective_tolerance = tolerance
+    while len(simplified) > max_count:
+        effective_tolerance *= 1.5
+        simplified = _rdp_simplify(items, effective_tolerance, coord)
+        if effective_tolerance > 1.0:
+            break
+
+    if len(simplified) > max_count:
+        simplified = _subsample(simplified, max_count)
+    return simplified
+
+
+def _simplify_trajectory_points(
+    points: list[WellTrajectoryPoint],
+    *,
+    max_count: int,
+    tolerance: float,
+) -> list[WellTrajectoryPoint]:
+    return _simplify_polyline(
+        points,
+        max_count=max_count,
+        tolerance=tolerance,
+        coord=lambda point: (point.lat, point.lng),
+    )
 
 
 def _fetch_trajectories(
@@ -770,10 +1084,8 @@ def _fetch_trajectories(
             continue
 
         if stations:
-            # Subsample if too many stations (adaptive to zoom)
-            stations = _subsample(stations, _max_stations_for_zoom(zoom))
-
-            # Convert each station to a WellTrajectoryPoint
+            # Convert each station to a WellTrajectoryPoint, then simplify by
+            # shape tolerance so curves survive better than uniform sampling.
             path: list[WellTrajectoryPoint] = []
             for st in stations:
                 ns = st.get("north_south_distance")
@@ -787,6 +1099,13 @@ def _fetch_trajectories(
                 pt_lng = sh_lng + (ew_ft / (364000.0 * math.cos(math.radians(sh_lat))))
                 path.append(WellTrajectoryPoint(lat=pt_lat, lng=pt_lng, depthFt=tvd))
 
+            station_by_point_id = {id(point): st for point, st in zip(path, stations)}
+            path = _simplify_trajectory_points(
+                path,
+                max_count=_max_stations_for_zoom(zoom),
+                tolerance=_trajectory_tolerance_for_zoom(zoom),
+            )
+
             surface_pt = path[0]
             toe_pt = path[-1]
 
@@ -795,9 +1114,13 @@ def _fetch_trajectories(
             if kop_raw is not None:
                 kop_depth = float(kop_raw)
                 heel_idx = min(
-                    range(len(stations)),
+                    range(len(path)),
                     key=lambda i: abs(
-                        (float(stations[i]["measured_depth"]) if stations[i].get("measured_depth") is not None else 0.0)
+                        (
+                            float(station_by_point_id[id(path[i])]["measured_depth"])
+                            if station_by_point_id[id(path[i])].get("measured_depth") is not None
+                            else 0.0
+                        )
                         - kop_depth
                     ),
                 )
@@ -1012,8 +1335,12 @@ def _trajectory_from_shape_wkt(
         return None
 
     transformed = [_transform_coords(lat, lng) for lat, lng in coords]
-    if len(transformed) > _max_stations_for_zoom(zoom):
-        transformed = _subsample(transformed, _max_stations_for_zoom(zoom))
+    transformed = _simplify_polyline(
+        transformed,
+        max_count=_max_stations_for_zoom(zoom),
+        tolerance=_trajectory_tolerance_for_zoom(zoom),
+        coord=lambda point: point,
+    )
 
     tvd_estimate = 8000.0
     if well.lateralLength > 0:
@@ -1063,6 +1390,8 @@ def _query_mock(
     filters: SpatialLayerFilter | None,
     limit: int,
     detail_level: DetailLevel = "summary",
+    render_profile: RenderProfile | None = None,
+    zoom: int | None = None,
 ) -> SpatialWellsResponse:
     candidates = [
         w
@@ -1073,8 +1402,16 @@ def _query_mock(
     if filters:
         candidates = [w for w in candidates if _passes_filter(w, filters)]
 
-    truncated = len(candidates) > limit
-    wells = candidates[:limit]
+    budget = _sample_budget_for_render_profile(render_profile, limit)
+    truncated = len(candidates) > budget
+    if render_profile in {"density", "sampled", "laterals_preview"}:
+        wells = _sample_wells_deterministically(
+            candidates,
+            budget=budget,
+            seed=_sampling_seed(bounds, filters, zoom, render_profile),
+        )
+    else:
+        wells = candidates[:limit]
 
     if detail_level == "points":
         # Strip to minimal fields for cluster rendering

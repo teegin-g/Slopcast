@@ -32,9 +32,12 @@ export interface ConnectionStatusState {
  */
 export function useConnectionStatus(sourceId: SpatialDataSourceId): ConnectionStatusState {
   const [status, setStatus] = useState<SpatialConnectionStatus | null>(null);
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [hasFetched, setHasFetched] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Derive isInitializing — true until at least one fetch attempt completes
+  const isInitializing = !hasFetched;
 
   const poll = useCallback(async () => {
     abortRef.current?.abort();
@@ -45,11 +48,11 @@ export function useConnectionStatus(sourceId: SpatialDataSourceId): ConnectionSt
       const result = await fetchConnectionStatus(controller.signal);
       if (!controller.signal.aborted) {
         setStatus(result);
-        setIsInitializing(false);
+        setHasFetched(true);
       }
     } catch {
       // Network error or aborted — keep previous status
-      setIsInitializing(false);
+      setHasFetched(true);
     }
   }, []);
 
@@ -76,7 +79,8 @@ export function useConnectionStatus(sourceId: SpatialDataSourceId): ConnectionSt
     poll().then(scheduleNext);
 
     return () => {
-      abortRef.current?.abort();
+      const abort = abortRef.current;
+      abort?.abort();
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [sourceId, poll]);

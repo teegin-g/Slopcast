@@ -7,6 +7,12 @@ from backend.spatial_service import (
     get_wells_in_bounds,
     _cache,
     ConnectionManager,
+    _SpatialResponseCache,
+    _cache_key,
+    _normalize_bounds_for_cache,
+    _query_databricks,
+    _sample_wells_deterministically,
+    _simplify_trajectory_points,
 )
 import backend.spatial_service as _svc
 
@@ -80,9 +86,9 @@ def test_available_layers():
     assert "duc" in ids
     assert "permit" in ids
     assert "laterals" in ids
-    # laterals should be disabled by default
+    # laterals are default-on; render budgets and zoom thresholds keep them light.
     laterals = next(l for l in resp.layers if l.id == "laterals")
-    assert laterals.enabled_by_default is False
+    assert laterals.enabled_by_default is True
 
 
 def test_cache_returns_same():
@@ -195,6 +201,83 @@ def test_include_trajectory_does_not_override_explicit_full():
     assert resp.source == "mock"
     for w in resp.wells:
         assert w.trajectory is not None
+
+
+def test_cache_key_normalizes_tiny_bounds_shifts():
+    first = _cache_key(
+        ViewportBounds(sw_lat=31.0001, sw_lng=-103.0001, ne_lat=33.0001, ne_lng=-101.0001),
+        None,
+        2000,
+        "summary",
+        zoom=11,
+        render_profile="sampled",
+    )
+    second = _cache_key(
+        ViewportBounds(sw_lat=31.0002, sw_lng=-103.0002, ne_lat=33.0002, ne_lng=-101.0002),
+        None,
+        2000,
+        "summary",
+        zoom=11,
+        render_profile="sampled",
+    )
+
+    assert second == first
+
+
+def test_normalized_bounds_expand_to_tile_bucket():
+    bounds = _normalize_bounds_for_cache(
+        ViewportBounds(sw_lat=31.01, sw_lng=-102.99, ne_lat=31.12, ne_lng=-102.88),
+        zoom=12,
+    )
+
+    assert bounds.sw_lat <= 31.01
+    assert bounds.sw_lng <= -102.99
+    assert bounds.ne_lat >= 31.12
+    assert bounds.ne_lng >= -102.88
+
+
+def test_deterministic_sampling_is_order_independent_and_prioritizes_ids():
+    wells = [
+        Well(
+            id=f"w-{i}",
+            name=f"Well {i}",
+            lat=31.0 + i * 0.001,
+            lng=-102.0,
+            lateralLength=7500,
+            status="PRODUCING",
+            operator="Test",
+            formation="Wolfcamp A",
+        )
+        for i in range(20)
+    ]
+
+    first = _sample_wells_deterministically(
+        wells,
+        budget=5,
+        seed="z12|PRODUCING",
+        priority_ids={"w-19"},
+    )
+    second = _sample_wells_deterministically(
+        list(reversed(wells)),
+        budget=5,
+        seed="z12|PRODUCING",
+        priority_ids={"w-19"},
+    )
+
+    assert [well.id for well in second] == [well.id for well in first]
+    assert first[0].id == "w-19"
+
+
+def test_render_profile_sampled_applies_deterministic_cap():
+    resp = get_wells_in_bounds(
+        bounds=_wide_bounds(),
+        detail_level="summary",
+        render_profile="sampled",
+        limit=40,
+    )
+
+    assert resp.source == "mock"
+    assert len(resp.wells) < 40
 
 
 # ---------------------------------------------------------------------------
@@ -567,3 +650,114 @@ class TestShapeTrajectoryBuilder:
         assert trajectory.toe.lng == -102.00
         assert trajectory.heel.depthFt == trajectory.toe.depthFt
         assert trajectory.toe.depthFt > 0
+
+
+class TestResponseCacheBounds:
+    def test_cache_evicts_least_recently_used_entry(self):
+        now = 100.0
+        cache = _SpatialResponseCache(max_entries=2, ttl_seconds=60.0, timer=lambda: now)
+
+        cache.set("a", "alpha")
+        cache.set("b", "bravo")
+        assert cache.get("a") == "alpha"
+
+        cache.set("c", "charlie")
+
+        assert cache.get("b") is None
+        assert cache.get("a") == "alpha"
+        assert cache.get("c") == "charlie"
+
+    def test_cache_expires_entries_after_ttl(self):
+        now = 100.0
+
+        def timer():
+            return now
+
+        cache = _SpatialResponseCache(max_entries=2, ttl_seconds=5.0, timer=timer)
+        cache.set("a", "alpha")
+
+        now = 106.0
+
+        assert cache.get("a") is None
+        assert "a" not in cache
+
+
+class TestTrajectorySimplification:
+    def test_simplification_reduces_noise_but_keeps_significant_bend(self):
+        points = [
+            _svc.WellTrajectoryPoint(lat=0.0, lng=0.0, depthFt=0.0),
+            _svc.WellTrajectoryPoint(lat=1.0, lng=0.02, depthFt=1000.0),
+            _svc.WellTrajectoryPoint(lat=2.0, lng=-0.01, depthFt=2000.0),
+            _svc.WellTrajectoryPoint(lat=3.0, lng=3.0, depthFt=3000.0),
+            _svc.WellTrajectoryPoint(lat=4.0, lng=0.01, depthFt=4000.0),
+            _svc.WellTrajectoryPoint(lat=5.0, lng=-0.02, depthFt=5000.0),
+            _svc.WellTrajectoryPoint(lat=6.0, lng=0.0, depthFt=6000.0),
+        ]
+
+        simplified = _simplify_trajectory_points(points, max_count=5, tolerance=0.25)
+
+        assert len(simplified) < len(points)
+        assert simplified[0] is points[0]
+        assert simplified[-1] is points[-1]
+        assert points[3] in simplified
+
+
+class _CapturingCursor:
+    description = [
+        ("api_14",),
+        ("well_name",),
+        ("sh_latitude_nad27",),
+        ("sh_longitude_nad27",),
+        ("bh_latitude_nad27",),
+        ("bh_longitude_nad27",),
+        ("lateral_length",),
+        ("well_status",),
+        ("operator",),
+        ("formation",),
+    ]
+
+    def __init__(self):
+        self.sql = ""
+        self.params = {}
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return None
+
+    def execute(self, sql, params=None):
+        self.sql = sql
+        self.params = params or {}
+
+    def fetchall(self):
+        return []
+
+
+class _CapturingConnection:
+    def __init__(self):
+        self.cursor_instance = _CapturingCursor()
+
+    def cursor(self):
+        return self.cursor_instance
+
+
+class TestDatabricksSqlFilters:
+    def test_status_filter_is_pushed_into_sql_with_bound_params(self):
+        conn = _CapturingConnection()
+
+        _query_databricks(
+            conn,
+            _wide_bounds(),
+            SpatialLayerFilter(statuses=["PRODUCING", "DUC"]),
+            10,
+            detail_level="summary",
+        )
+
+        sql = conn.cursor_instance.sql
+        params = conn.cursor_instance.params
+        assert "well_status" in sql
+        assert "%(status_0)s" in sql
+        assert "%(status_1)s" in sql
+        assert params["status_0"] == "PRODUCING"
+        assert params["status_1"] == "DUC"

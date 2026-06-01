@@ -1,26 +1,30 @@
 import React from 'react';
-import { TaxAssumptions, TAX_PRESETS, DEFAULT_TAX_ASSUMPTIONS } from '../types';
+import type { TaxAssumptions } from '../types';
+import { TAX_PRESETS } from '../constants';
+import { useTheme } from '../theme/ThemeProvider';
+import { InlineEditableValue } from './inline/InlineEditableValue';
+import { useControlsStyles } from './slopcast/economics/useControlsStyles';
 
 interface TaxControlsProps {
-  isClassic: boolean;
   tax: TaxAssumptions;
   onChange: (tax: TaxAssumptions) => void;
 }
 
 const PRESET_NAMES = Object.keys(TAX_PRESETS);
 
-const TaxControls: React.FC<TaxControlsProps> = ({ isClassic, tax, onChange }) => {
+const TaxControls: React.FC<TaxControlsProps> = ({ tax, onChange }) => {
+  const { theme } = useTheme();
+  const isClassic = theme.features.isClassicTheme;
+
   const labelClass = isClassic
     ? 'text-[9px] font-black block mb-2 uppercase tracking-[0.2em] text-theme-warning'
     : 'text-[9px] font-black block mb-2 uppercase tracking-[0.2em] text-theme-muted';
 
-  const inputClass = isClassic
-    ? 'w-full rounded-inner px-2 py-1 text-[10px] font-black sc-inputNavy'
-    : 'w-full bg-theme-bg border border-theme-border rounded-inner px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition';
-
   const selectClass = isClassic
     ? 'w-full rounded-inner px-2 py-1 text-[10px] font-black sc-inputNavy'
     : 'w-full bg-theme-bg border border-theme-border rounded-inner px-3 py-2 text-xs text-theme-text outline-none focus:border-theme-cyan theme-transition';
+
+  const { inlineValueClass, inlineInputClass } = useControlsStyles(isClassic);
 
   const handlePresetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const name = e.target.value;
@@ -49,8 +53,9 @@ const TaxControls: React.FC<TaxControlsProps> = ({ isClassic, tax, onChange }) =
     <div className="space-y-4">
       {/* State Preset Dropdown */}
       <div>
-        <label className={labelClass}>State Preset</label>
+        <label htmlFor="tax-state-preset" className={labelClass}>State Preset</label>
         <select
+          id="tax-state-preset"
           value={activePreset}
           onChange={handlePresetChange}
           className={selectClass}
@@ -65,53 +70,88 @@ const TaxControls: React.FC<TaxControlsProps> = ({ isClassic, tax, onChange }) =
       {/* Editable Tax Fields */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className={labelClass}>Severance Tax %</label>
-          <input
-            type="number"
-            step="0.1"
+          <label htmlFor="tax-severance" className={labelClass}>Severance Tax %</label>
+          <InlineEditableValue
+            id="tax-severance"
             value={tax.severanceTaxPct}
-            onChange={e => handleFieldChange('severanceTaxPct', e.target.value)}
-            className={inputClass}
+            onCommit={(v) => handleFieldChange('severanceTaxPct', v)}
+            format={(v) => `${Number(v).toFixed(2)}%`}
+            type="number"
+            validate={(raw) => {
+              const n = parseFloat(raw);
+              if (isNaN(n) || n < 0) return 'Must be >= 0';
+              return null;
+            }}
+            className={`${inlineValueClass}`}
+            inputClassName={`${inlineInputClass} w-full`}
           />
         </div>
         <div>
-          <label className={labelClass}>Ad Valorem %</label>
-          <input
-            type="number"
-            step="0.1"
+          <label htmlFor="tax-advalorem" className={labelClass}>Ad Valorem %</label>
+          <InlineEditableValue
+            id="tax-advalorem"
             value={tax.adValoremTaxPct}
-            onChange={e => handleFieldChange('adValoremTaxPct', e.target.value)}
-            className={inputClass}
+            onCommit={(v) => handleFieldChange('adValoremTaxPct', v)}
+            format={(v) => `${Number(v).toFixed(2)}%`}
+            type="number"
+            validate={(raw) => {
+              const n = parseFloat(raw);
+              if (isNaN(n) || n < 0) return 'Must be >= 0';
+              return null;
+            }}
+            className={`${inlineValueClass}`}
+            inputClassName={`${inlineInputClass} w-full`}
           />
         </div>
         <div>
-          <label className={labelClass}>Federal Tax Rate %</label>
-          <input
-            type="number"
-            step="0.1"
+          <label htmlFor="tax-federal" className={labelClass}>Federal Tax Rate %</label>
+          <InlineEditableValue
+            id="tax-federal"
             value={tax.federalTaxRate}
-            onChange={e => handleFieldChange('federalTaxRate', e.target.value)}
-            className={inputClass}
+            onCommit={(v) => handleFieldChange('federalTaxRate', v)}
+            format={(v) => `${Number(v).toFixed(2)}%`}
+            type="number"
+            validate={(raw) => {
+              const n = parseFloat(raw);
+              if (isNaN(n) || n < 0) return 'Must be >= 0';
+              return null;
+            }}
+            className={`${inlineValueClass}`}
+            inputClassName={`${inlineInputClass} w-full`}
           />
         </div>
         <div>
-          <label className={labelClass}>Depletion Allowance %</label>
-          <input
-            type="number"
-            step="0.1"
+          <label htmlFor="tax-depletion" className={labelClass}>Depletion Allowance %</label>
+          <InlineEditableValue
+            id="tax-depletion"
             value={tax.depletionAllowancePct}
-            onChange={e => handleFieldChange('depletionAllowancePct', e.target.value)}
-            className={inputClass}
+            onCommit={(v) => handleFieldChange('depletionAllowancePct', v)}
+            format={(v) => `${Number(v).toFixed(2)}%`}
+            type="number"
+            validate={(raw) => {
+              const n = parseFloat(raw);
+              if (isNaN(n) || n < 0) return 'Must be >= 0';
+              return null;
+            }}
+            className={`${inlineValueClass}`}
+            inputClassName={`${inlineInputClass} w-full`}
           />
         </div>
         <div>
-          <label className={labelClass}>State Tax Rate %</label>
-          <input
-            type="number"
-            step="0.1"
+          <label htmlFor="tax-state" className={labelClass}>State Tax Rate %</label>
+          <InlineEditableValue
+            id="tax-state"
             value={tax.stateTaxRate}
-            onChange={e => handleFieldChange('stateTaxRate', e.target.value)}
-            className={inputClass}
+            onCommit={(v) => handleFieldChange('stateTaxRate', v)}
+            format={(v) => `${Number(v).toFixed(2)}%`}
+            type="number"
+            validate={(raw) => {
+              const n = parseFloat(raw);
+              if (isNaN(n) || n < 0) return 'Must be >= 0';
+              return null;
+            }}
+            className={`${inlineValueClass}`}
+            inputClassName={`${inlineInputClass} w-full`}
           />
         </div>
       </div>

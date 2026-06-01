@@ -39,7 +39,7 @@ const CapexModule: React.FC<EconomicsModuleProps> = ({
                 <CartesianGrid stroke="rgb(var(--border) / 0.35)" strokeDasharray="4 4" vertical={false} />
                 <XAxis dataKey="offsetDays" tickFormatter={(value) => `${value}d`} tick={{ fontSize: 10, fill: 'rgb(var(--muted))' }} axisLine={false} tickLine={false} />
                 <YAxis tickFormatter={(value) => `$${(Number(value) / 1e6).toFixed(0)}M`} tick={{ fontSize: 10, fill: 'rgb(var(--muted))' }} axisLine={false} tickLine={false} />
-                <Tooltip formatter={(value: number) => currencyMm(value)} contentStyle={{ background: 'rgb(var(--surface-1))', border: '1px solid rgb(var(--border))', borderRadius: 8 }} />
+                <Tooltip formatter={(value: number | undefined) => currencyMm(value ?? 0)} contentStyle={{ background: 'rgb(var(--surface-1))', border: '1px solid rgb(var(--border))', borderRadius: 8 }} />
                 <Area type="stepAfter" dataKey="cumulative" stroke="#a78bfa" fill="#8b5cf633" strokeWidth={3} />
               </AreaChart>
             )}
@@ -54,7 +54,7 @@ const CapexModule: React.FC<EconomicsModuleProps> = ({
                 <CartesianGrid stroke="rgb(var(--border) / 0.35)" strokeDasharray="4 4" vertical={false} />
                 <XAxis dataKey="month" tickFormatter={(value) => (value % 24 === 0 ? `${value / 12}Y` : '')} tick={{ fontSize: 10, fill: 'rgb(var(--muted))' }} axisLine={false} tickLine={false} />
                 <YAxis tickFormatter={(value) => `$${(Number(value) / 1e6).toFixed(0)}M`} tick={{ fontSize: 10, fill: 'rgb(var(--muted))' }} axisLine={false} tickLine={false} />
-                <Tooltip formatter={(value: number) => currencyMm(value)} contentStyle={{ background: 'rgb(var(--surface-1))', border: '1px solid rgb(var(--border))', borderRadius: 8 }} />
+                <Tooltip formatter={(value: number | undefined) => currencyMm(value ?? 0)} contentStyle={{ background: 'rgb(var(--surface-1))', border: '1px solid rgb(var(--border))', borderRadius: 8 }} />
                 <Bar dataKey="netCashFlow" fill="#8b5cf655" barSize={2} />
                 <Area dataKey="cumulativeCashFlow" stroke="#a78bfa" fill="#8b5cf622" strokeWidth={2} />
               </ComposedChart>

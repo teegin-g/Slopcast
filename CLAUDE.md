@@ -167,6 +167,15 @@ O&G professionals (A&D analysts, reservoir engineers, deal teams) evaluating acq
 - **Typography**: `--font-sans` (Inter body), `--font-heading` (per-theme headings), `--font-brand` (per-theme display), `--font-script` (Permanent Marker accents)
 - **Panel styles**: `glass` (60% opacity), `solid` (100% opacity), `outline` (20% opacity) — driven by `ThemeFeatures.panelStyle`
 
+## Backend Routes
+
+| Route group | Status | Notes |
+|-------------|--------|-------|
+| `/api/economics/*` | DEV-COMPARISON | Reachable via the engine toggle in DebugOverlay (R4-01). Python is the retained reference impl for parity comparison against the authoritative TypeScript engine. |
+| `/api/sensitivity/*` | DEV-COMPARISON | Same as above — proxied when engine is set to `python`. |
+| `/api/spatial/*` | ALWAYS-LIVE | Polled by the app's connection-status check regardless of active engine. |
+| `/api/health` | ALWAYS-LIVE | Backend health + spatial DB status. |
+
 ## UI Audit Workflow
 
 When making visual/layout/style changes:
