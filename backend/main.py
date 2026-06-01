@@ -14,6 +14,7 @@ from .models import (
     SensitivityMatrixResult,
 )
 from .sensitivity import generate_sensitivity_matrix
+from .setup_routes import create_setup_router
 from .spatial_routes import create_spatial_router
 from .spatial_service import SpatialDBManager
 
@@ -89,6 +90,10 @@ def create_app() -> FastAPI:
     # ALWAYS-LIVE: /api/spatial/* is polled by the app's connection-status check
     # regardless of which economics engine is active.
     app.include_router(create_spatial_router())
+
+    # /api/setup/* backs the Project Setup / Launchpad surface: schema catalog,
+    # distinct field values, well-count estimates, NL query interpretation, presets.
+    app.include_router(create_setup_router())
 
     return app
 
