@@ -1,3 +1,4 @@
+import { SlateThemeIcon } from '../../icons';
 import type { ThemeDefinition } from '../../types';
 
 export const slate: ThemeDefinition = {
@@ -6,7 +7,30 @@ export const slate: ThemeDefinition = {
   hasLightVariant: true,
   label: 'Slate',
   icon: '🏢',
+  iconDefinition: { kind: 'svg', component: SlateThemeIcon, fallback: '🏢', label: 'Slate' },
   description: 'Corporate blue-gray',
+  preview: {
+    swatch: 'linear-gradient(135deg, #12141b 0%, #23262f 52%, #3b82f6 100%)',
+    accent: '#3b82f6',
+    surface: '#23262f',
+    shortLabel: 'Slate',
+    tagline: 'Crisp command center for deal intelligence.',
+  },
+  chrome: {
+    density: 'comfortable',
+    panelStyle: 'solid',
+    radius: 'sharp',
+    brandTreatment: 'wordmark',
+    navTreatment: 'tabs',
+  },
+  scene: {
+    renderer: 'none',
+    supportsFx: false,
+    requiresWebGL: false,
+    hasFallback: true,
+    pauseWhenHidden: false,
+    respectsReducedMotion: true,
+  },
   appName: 'SLOPCAST',
   appSubtitle: 'Deal Intelligence',
   chartPalette: {

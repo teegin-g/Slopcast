@@ -161,21 +161,31 @@ export default function SynthwaveBackground() {
           </linearGradient>
 
           {/* ── Foreground beam gradients ── */}
-          <linearGradient id="sw-fgBeamMagenta" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0%"   stopColor="#ff3cac" stopOpacity="0.38" />
-            <stop offset="40%"  stopColor="#ff3cac" stopOpacity="0.12" />
-            <stop offset="100%" stopColor="#ff3cac" stopOpacity="0" />
+          <linearGradient id="sw-fgBeamMagenta" x1="960" y1="440" x2="290" y2="1080" gradientUnits="userSpaceOnUse">
+            <stop offset="0%"   stopColor="#ff3cac" stopOpacity="0.02" />
+            <stop offset="24%"  stopColor="#ff3cac" stopOpacity="0.26" />
+            <stop offset="72%"  stopColor="#ff3cac" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="#ff3cac" stopOpacity="0.04" />
           </linearGradient>
-          <linearGradient id="sw-fgBeamCyan" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0%"   stopColor="#00e5ff" stopOpacity="0.32" />
-            <stop offset="40%"  stopColor="#00e5ff" stopOpacity="0.10" />
-            <stop offset="100%" stopColor="#00e5ff" stopOpacity="0" />
+          <linearGradient id="sw-fgBeamCyan" x1="960" y1="440" x2="1540" y2="1080" gradientUnits="userSpaceOnUse">
+            <stop offset="0%"   stopColor="#00e5ff" stopOpacity="0.02" />
+            <stop offset="24%"  stopColor="#00e5ff" stopOpacity="0.22" />
+            <stop offset="72%"  stopColor="#00e5ff" stopOpacity="0.16" />
+            <stop offset="100%" stopColor="#00e5ff" stopOpacity="0.03" />
           </linearGradient>
-          <linearGradient id="sw-fgBeamViolet" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0%"   stopColor="#c840e9" stopOpacity="0.34" />
-            <stop offset="40%"  stopColor="#c840e9" stopOpacity="0.10" />
-            <stop offset="100%" stopColor="#c840e9" stopOpacity="0" />
+          <linearGradient id="sw-fgBeamViolet" x1="960" y1="440" x2="960" y2="1080" gradientUnits="userSpaceOnUse">
+            <stop offset="0%"   stopColor="#c840e9" stopOpacity="0.02" />
+            <stop offset="22%"  stopColor="#c840e9" stopOpacity="0.24" />
+            <stop offset="70%"  stopColor="#c840e9" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="#c840e9" stopOpacity="0.03" />
           </linearGradient>
+          <filter id="sw-beamBlur" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="7" result="softBeam" />
+            <feMerge>
+              <feMergeNode in="softBeam" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
 
         {/* ════════════ BASE SKY ════════════ */}
@@ -415,20 +425,14 @@ export default function SynthwaveBackground() {
         </g>
 
         {/* ════════════ FOREGROUND BEAMS ════════════ */}
-        <g className="sw-fg-beams" filter="url(#sw-glow)">
-          {/* Vertical light pillars rising from the terrain/horizon */}
-          <rect className="sw-fg-beam" x="120"  y="500" width="4"   height="580" fill="url(#sw-fgBeamMagenta)" />
-          <rect className="sw-fg-beam" x="285"  y="460" width="3"   height="620" fill="url(#sw-fgBeamCyan)" />
-          <rect className="sw-fg-beam" x="430"  y="520" width="5"   height="560" fill="url(#sw-fgBeamViolet)" />
-          <rect className="sw-fg-beam" x="580"  y="480" width="3.5" height="600" fill="url(#sw-fgBeamMagenta)" />
-          <rect className="sw-fg-beam" x="720"  y="500" width="4"   height="580" fill="url(#sw-fgBeamCyan)" />
-          <rect className="sw-fg-beam" x="860"  y="450" width="3"   height="630" fill="url(#sw-fgBeamViolet)" />
-          <rect className="sw-fg-beam" x="1060" y="450" width="3"   height="630" fill="url(#sw-fgBeamViolet)" />
-          <rect className="sw-fg-beam" x="1200" y="500" width="4"   height="580" fill="url(#sw-fgBeamCyan)" />
-          <rect className="sw-fg-beam" x="1340" y="480" width="3.5" height="600" fill="url(#sw-fgBeamMagenta)" />
-          <rect className="sw-fg-beam" x="1490" y="520" width="5"   height="560" fill="url(#sw-fgBeamViolet)" />
-          <rect className="sw-fg-beam" x="1635" y="460" width="3"   height="620" fill="url(#sw-fgBeamCyan)" />
-          <rect className="sw-fg-beam" x="1800" y="500" width="4"   height="580" fill="url(#sw-fgBeamMagenta)" />
+        <g className="sw-fg-beams" filter="url(#sw-beamBlur)">
+          {/* Tapered beams now anchor at the sun and spread across the grid plane. */}
+          <path className="sw-fg-beam" d="M 945 510 C 750 650, 470 875, 170 1080 L 330 1080 C 560 855, 780 650, 960 506 Z" fill="url(#sw-fgBeamMagenta)" />
+          <path className="sw-fg-beam sw-fg-beam-soft" d="M 955 505 C 830 650, 670 840, 520 1080 L 650 1080 C 760 825, 870 650, 968 504 Z" fill="url(#sw-fgBeamViolet)" />
+          <path className="sw-fg-beam" d="M 965 506 C 1035 650, 1110 825, 1180 1080 L 1325 1080 C 1205 820, 1085 640, 975 506 Z" fill="url(#sw-fgBeamCyan)" />
+          <path className="sw-fg-beam sw-fg-beam-soft" d="M 976 512 C 1160 660, 1380 875, 1630 1080 L 1790 1080 C 1510 845, 1245 650, 988 508 Z" fill="url(#sw-fgBeamMagenta)" />
+          <path className="sw-fg-beam sw-fg-beam-core" d="M 952 500 C 875 665, 815 860, 770 1080 L 930 1080 C 930 850, 942 660, 962 500 Z" fill="url(#sw-fgBeamCyan)" />
+          <path className="sw-fg-beam sw-fg-beam-core" d="M 968 500 C 985 660, 1002 850, 1015 1080 L 1180 1080 C 1140 860, 1072 665, 978 500 Z" fill="url(#sw-fgBeamViolet)" />
         </g>
 
         {/* ════════════ ATMOSPHERIC LAYERS ════════════ */}

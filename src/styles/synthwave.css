@@ -180,32 +180,58 @@
   animation: swSunRingPulse 3.5s ease-in-out infinite;
 }
 
-/* ── Foreground beam sweep ── */
-@keyframes swBeamSweep {
-  0%, 100% { opacity: 0.0; }
-  15%      { opacity: 0.32; }
-  50%      { opacity: 0.14; }
-  85%      { opacity: 0.28; }
+/* ── Foreground beams: sun-origin wave phase ── */
+[data-theme='synthwave'] .sw-fg-beams {
+  mix-blend-mode: screen;
+  opacity: 0.72;
+}
+
+@keyframes swBeamWave {
+  0%, 100% {
+    opacity: 0.10;
+    transform: translateY(8px) skewX(-2deg) scaleX(0.92);
+  }
+  34% {
+    opacity: 0.38;
+    transform: translateY(-12px) skewX(3deg) scaleX(1.08);
+  }
+  66% {
+    opacity: 0.20;
+    transform: translateY(4px) skewX(-4deg) scaleX(1.02);
+  }
 }
 
 [data-theme='synthwave'] .sw-fg-beam {
-  animation: swBeamSweep 6s ease-in-out infinite;
+  transform-box: view-box;
+  transform-origin: 960px 500px;
+  animation: swBeamWave 8s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+[data-theme='synthwave'] .sw-fg-beam-soft {
+  opacity: 0.75;
+}
+[data-theme='synthwave'] .sw-fg-beam-core {
+  opacity: 0.88;
 }
 [data-theme='synthwave'] .sw-fg-beam:nth-child(2n) {
-  animation-delay: -1.5s;
-  animation-duration: 7s;
+  animation-delay: -2.2s;
+  animation-duration: 9.5s;
 }
 [data-theme='synthwave'] .sw-fg-beam:nth-child(3n) {
-  animation-delay: -3s;
-  animation-duration: 5s;
+  animation-delay: -4.4s;
+  animation-duration: 7.2s;
 }
 [data-theme='synthwave'] .sw-fg-beam:nth-child(5n) {
-  animation-delay: -4.2s;
-  animation-duration: 8s;
+  animation-delay: -5.5s;
+  animation-duration: 10.5s;
 }
-[data-theme='synthwave'] .sw-fg-beam:nth-child(7n) {
-  animation-delay: -0.8s;
-  animation-duration: 4.5s;
+[data-theme='synthwave'] .theme-atmo.fx-max .sw-fg-beams,
+[data-theme='synthwave'] .theme-atmo-bands.fx-max ~ .synthwave-bg-wrap .sw-fg-beams {
+  opacity: 0.92;
+}
+[data-theme='synthwave'] .theme-atmo.fx-max .sw-fg-beam,
+[data-theme='synthwave'] .theme-atmo-bands.fx-max ~ .synthwave-bg-wrap .sw-fg-beam {
+  animation-duration: 5.8s;
 }
 
 /* ── Reduced-motion preference ── */
@@ -225,5 +251,13 @@
   [data-theme='synthwave'] .sw-sun-pulse-ring,
   [data-theme='synthwave'] .sw-fg-beam {
     animation: none !important;
+  }
+
+  [data-theme='synthwave'] .sw-fg-beams {
+    opacity: 0.58;
+  }
+
+  [data-theme='synthwave'] .sw-fg-beam {
+    transform: none !important;
   }
 }

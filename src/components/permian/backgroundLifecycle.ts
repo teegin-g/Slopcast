@@ -1,6 +1,10 @@
 import { useEffect, useState, type RefObject } from 'react';
+import { usePageVisibilityPaused } from '../../theme/scene/usePageVisibilityPaused';
+import { useReducedMotionPreference } from '../../theme/scene/useReducedMotionPreference';
 import type { PermianTier } from './useDeviceTier';
 import type { PermianFxLevel, PermianMode } from './variants';
+
+export { usePageVisibilityPaused, useReducedMotionPreference };
 
 interface ModeResolutionInput {
   forceMode?: PermianMode;
@@ -38,42 +42,6 @@ export function computeCanvasSize({ width, height, dpr = 1 }: CanvasSizeInput): 
     width: Math.round(width * scale),
     height: Math.round(height * scale),
   };
-}
-
-export function usePageVisibilityPaused(): boolean {
-  const [paused, setPaused] = useState(() => (typeof document === 'undefined' ? false : document.hidden));
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    const onVisibility = () => setPaused(document.hidden);
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
-  }, []);
-
-  return paused;
-}
-
-export function useReducedMotionPreference(forceReducedMotion?: boolean): boolean {
-  const [reducedMotion, setReducedMotion] = useState(() => forceReducedMotion ?? false);
-
-  useEffect(() => {
-    if (forceReducedMotion !== undefined) {
-      setReducedMotion(forceReducedMotion);
-      return;
-    }
-    if (typeof window === 'undefined' || !window.matchMedia) {
-      setReducedMotion(false);
-      return;
-    }
-
-    const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const sync = () => setReducedMotion(mql.matches);
-    sync();
-    mql.addEventListener?.('change', sync);
-    return () => mql.removeEventListener?.('change', sync);
-  }, [forceReducedMotion]);
-
-  return reducedMotion;
 }
 
 export function useAtmosphereFxLevel(

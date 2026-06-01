@@ -1,7 +1,6 @@
-import React, { Suspense, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Sidebar } from './Sidebar';
 import { MobileDrawer } from './MobileDrawer';
-import { Vignette } from '../ui/Vignette';
 import PageHeader from '../slopcast/PageHeader';
 import { ViewTransition } from './ViewTransition';
 import { useSidebarNav } from '../../hooks/useSidebarNav';
@@ -9,53 +8,36 @@ import { getSidebarCollapsed, setSidebarCollapsed } from '../../services/storage
 import { useViewportLayout } from '../slopcast/hooks/useViewportLayout';
 import type { WellGroup } from '../../types';
 import type { ThemeMeta } from '../../theme/themes';
-
-/** Visual/atmospheric rendering fields */
-interface AppShellAtmosphere {
-  isClassic: boolean;
-  BackgroundComponent: React.ComponentType | null | undefined;
-  atmosphereClass: string;
-  fxClass: string;
-  atmosphericOverlays: string[];
-  headerAtmosphereClass: string;
-}
-
-/** Workspace view-state and attention indicators */
-interface AppShellViewState {
-  viewMode: 'DASHBOARD' | 'ANALYSIS';
-  setViewMode: (mode: 'DASHBOARD' | 'ANALYSIS') => void;
-  designWorkspace: 'WELLS' | 'ECONOMICS';
-  setDesignWorkspace: (ws: 'WELLS' | 'ECONOMICS') => void;
-  economicsNeedsAttention: boolean;
-  wellsNeedsAttention: boolean;
-}
-
-/** Well-group data and active selection */
-interface AppShellGroups {
-  processedGroups: WellGroup[];
-  activeGroupId: string | null;
-  setActiveGroupId: (id: string) => void;
-}
-
-/** Theme picker state */
-interface AppShellTheme {
-  themeId: string;
-  setThemeId: (id: string) => void;
-  themes: ThemeMeta[];
-  theme: ThemeMeta;
-}
+import { ThemeSceneLayer } from '../../theme/scene/ThemeSceneLayer';
+import type { ThemeSceneFxMode } from '../../theme/scene/types';
 
 interface AppShellProps {
-  /** Visual/atmospheric rendering (background, CSS classes, overlays) */
-  atmosphere: AppShellAtmosphere;
-  /** Workspace view-state and attention indicators */
-  viewState: AppShellViewState;
-  /** Well-group data and active selection */
-  groups: AppShellGroups;
-  /** Theme picker state */
-  themeState: AppShellTheme;
-  /** Navigate to a route path */
-  navigate: (path: string) => void;
+  /** The workspace object from useSlopcastWorkspace */
+  workspace: {
+    isClassic: boolean;
+    BackgroundComponent: React.ComponentType | null | undefined;
+    atmosphereClass: string;
+    fxClass: string;
+    viewMode: 'DASHBOARD' | 'ANALYSIS';
+    setViewMode: (mode: 'DASHBOARD' | 'ANALYSIS') => void;
+    designWorkspace: 'WELLS' | 'ECONOMICS';
+    setDesignWorkspace: (ws: 'WELLS' | 'ECONOMICS') => void;
+    processedGroups: WellGroup[];
+    activeGroupId: string | null;
+    setActiveGroupId: (id: string) => void;
+    economicsNeedsAttention: boolean;
+    wellsNeedsAttention: boolean;
+    themeId: string;
+    setThemeId: (id: string) => void;
+    themes: ThemeMeta[];
+    theme: ThemeMeta;
+    effectiveMode: 'dark' | 'light';
+    fxMode: ThemeSceneFxMode;
+    navigate: (path: string) => void;
+    atmosphericOverlays: string[];
+    headerAtmosphereClass: string;
+    pageOverlayClasses: string[];
+  };
   children: React.ReactNode;
 }
 
@@ -64,15 +46,10 @@ interface AppShellProps {
  * Background canvas renders behind everything, sidebar is a solid anchor,
  * content floats in the glass area.
  */
-export function AppShell({ atmosphere, viewState, groups, themeState, navigate, children }: AppShellProps) {
+export function AppShell({ workspace, children }: AppShellProps) {
   const { section, setSection } = useSidebarNav();
   const viewport = useViewportLayout();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const [prevSection, setPrevSection] = useState(section);
-  if (prevSection !== section) {
-    setPrevSection(section);
-    setMobileDrawerOpen(false);
-  }
 
   // Sidebar collapse: auto-collapse on mid viewport, manual toggle on desktop
   const [collapsed, setCollapsed] = useState(() => {
@@ -98,49 +75,48 @@ export function AppShell({ atmosphere, viewState, groups, themeState, navigate, 
     });
   }, []);
 
+  const handleSetSection = useCallback((nextSection: typeof section) => {
+    setMobileDrawerOpen(false);
+    setSection(nextSection);
+  }, [setSection]);
+
   // Sync section -> workspace state
   useEffect(() => {
     if (section === 'wells') {
-      if (viewState.designWorkspace !== 'WELLS') viewState.setDesignWorkspace('WELLS');
-      if (viewState.viewMode !== 'DASHBOARD') viewState.setViewMode('DASHBOARD');
+      if (workspace.designWorkspace !== 'WELLS') workspace.setDesignWorkspace('WELLS');
+      if (workspace.viewMode !== 'DASHBOARD') workspace.setViewMode('DASHBOARD');
     } else if (section === 'economics') {
-      if (viewState.designWorkspace !== 'ECONOMICS') viewState.setDesignWorkspace('ECONOMICS');
-      if (viewState.viewMode !== 'DASHBOARD') viewState.setViewMode('DASHBOARD');
+      if (workspace.designWorkspace !== 'ECONOMICS') workspace.setDesignWorkspace('ECONOMICS');
+      if (workspace.viewMode !== 'DASHBOARD') workspace.setViewMode('DASHBOARD');
     } else if (section === 'scenarios') {
-      if (viewState.viewMode !== 'ANALYSIS') viewState.setViewMode('ANALYSIS');
+      if (workspace.viewMode !== 'ANALYSIS') workspace.setViewMode('ANALYSIS');
     }
   }, [section]); // eslint-disable-line react-hooks/exhaustive-deps -- intentionally only sync on section change
-
 
   const sidebarProps = {
     collapsed,
     onToggleCollapse: handleToggleCollapse,
     section,
-    onSetSection: setSection,
-    isClassic: atmosphere.isClassic,
-    groups: groups.processedGroups,
-    activeGroupId: groups.activeGroupId,
-    onActivateGroup: groups.setActiveGroupId,
-    economicsNeedsAttention: viewState.economicsNeedsAttention,
-    wellsNeedsAttention: viewState.wellsNeedsAttention,
+    onSetSection: handleSetSection,
+    isClassic: workspace.isClassic,
+    groups: workspace.processedGroups,
+    activeGroupId: workspace.activeGroupId,
+    onActivateGroup: workspace.setActiveGroupId,
+    economicsNeedsAttention: workspace.economicsNeedsAttention,
+    wellsNeedsAttention: workspace.wellsNeedsAttention,
   };
 
-  return (
-    <div className={`flex h-screen overflow-hidden ${atmosphere.atmosphereClass} ${atmosphere.fxClass}`}>
-      {/* Animated background - fixed behind everything */}
-      <div className="fixed inset-0 z-0">
-        {atmosphere.BackgroundComponent && (
-          <Suspense fallback={null}>
-            <atmosphere.BackgroundComponent />
-          </Suspense>
-        )}
-      </div>
+  const sectionLabel = section === 'wells' ? 'Wells' : section === 'economics' ? 'Economics' : 'Scenarios';
 
-      {/* Vignette overlay — skip when theme has an animated background,
-          because each canvas scene draws its own tuned vignette. Stacking
-          both darkens corners past 0.8 effective opacity, wasting the
-          background art. */}
-      {!atmosphere.BackgroundComponent && <Vignette />}
+  return (
+    <div className={`flex h-screen overflow-hidden theme-transition ${workspace.atmosphereClass} ${workspace.fxClass}`}>
+      <ThemeSceneLayer
+        theme={workspace.theme}
+        effectiveMode={workspace.effectiveMode}
+        fxMode={workspace.fxMode}
+        pageOverlayClasses={workspace.pageOverlayClasses}
+        fxClass={workspace.fxClass}
+      />
 
       {/* Desktop/mid sidebar */}
       {viewport !== 'mobile' && (
@@ -170,25 +146,25 @@ export function AppShell({ atmosphere, viewState, groups, themeState, navigate, 
       <div className="relative z-20 flex-1 flex flex-col overflow-hidden">
         {/* Original PageHeader with brand, HUB/DESIGN/SCENARIOS tabs, theme icons */}
         <PageHeader
-          isClassic={atmosphere.isClassic}
-          theme={themeState.theme}
-          themes={themeState.themes}
-          themeId={themeState.themeId}
-          setThemeId={themeState.setThemeId}
-          viewMode={viewState.viewMode}
-          onSetViewMode={viewState.setViewMode}
-          designWorkspace={viewState.designWorkspace}
-          onSetDesignWorkspace={viewState.setDesignWorkspace}
-          economicsNeedsAttention={viewState.economicsNeedsAttention}
-          wellsNeedsAttention={viewState.wellsNeedsAttention}
-          onNavigateHub={() => navigate('/hub')}
-          atmosphericOverlays={atmosphere.atmosphericOverlays}
-          headerAtmosphereClass={atmosphere.headerAtmosphereClass}
-          fxClass={atmosphere.fxClass}
+          isClassic={workspace.isClassic}
+          theme={workspace.theme}
+          themes={workspace.themes}
+          themeId={workspace.themeId}
+          setThemeId={workspace.setThemeId}
+          viewMode={workspace.viewMode}
+          onSetViewMode={workspace.setViewMode}
+          designWorkspace={workspace.designWorkspace}
+          onSetDesignWorkspace={workspace.setDesignWorkspace}
+          economicsNeedsAttention={workspace.economicsNeedsAttention}
+          wellsNeedsAttention={workspace.wellsNeedsAttention}
+          onNavigateHub={() => workspace.navigate('/hub')}
+          atmosphericOverlays={workspace.atmosphericOverlays}
+          headerAtmosphereClass={workspace.headerAtmosphereClass}
+          fxClass={workspace.fxClass}
         />
 
-        {/* relative z-0: subtree z-index stays below sticky PageHeader (z-50). */}
-        <main className="relative z-0 flex-1 overflow-y-auto">
+        {/* Content area */}
+        <main className="flex-1 overflow-y-auto">
           <div className="p-3 md:p-5 xl:p-8 max-w-[1920px] mx-auto w-full">
             <ViewTransition transitionKey={section}>
               {children}

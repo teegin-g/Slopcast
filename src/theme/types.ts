@@ -1,4 +1,5 @@
 import type React from 'react';
+import type { ThemeSceneConfig } from './scene/types';
 
 export type KnownThemeId =
   | 'slate'
@@ -17,6 +18,30 @@ export type ColorMode = 'dark' | 'light' | 'system';
 export type ThemeVariant = 'dark' | 'light';
 
 export type PanelStyle = 'glass' | 'solid' | 'outline';
+
+export interface ThemeIconDefinition {
+  kind: 'svg' | 'emoji';
+  component?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  value?: string;
+  fallback: string;
+  label: string;
+}
+
+export interface ThemePreview {
+  swatch: string;
+  accent: string;
+  surface: string;
+  shortLabel: string;
+  tagline: string;
+}
+
+export interface ThemeChrome {
+  density: 'comfortable' | 'compact' | 'dense';
+  panelStyle: PanelStyle;
+  radius: 'sharp' | 'soft' | 'round' | 'custom';
+  brandTreatment: 'wordmark' | 'badge' | 'classic-cartridge' | 'cinematic';
+  navTreatment: 'tabs' | 'pills' | 'classic-buttons';
+}
 
 /** Per-theme chart series colors (Recharts / D3). */
 export interface ChartPalette {
@@ -92,10 +117,18 @@ export interface ThemeDefinition {
   variant: ThemeVariant;
   /** Whether this theme has a light mode variant */
   hasLightVariant?: boolean;
+  /** Selector-facing visual metadata. */
+  preview?: ThemePreview;
+  /** Authored icon metadata; legacy emoji `icon` remains the fallback. */
+  iconDefinition?: ThemeIconDefinition;
+  /** Theme chrome traits for selectors, headers, and future shell migration. */
+  chrome?: ThemeChrome;
   /** Runtime CSS variables for future theme wiring. */
   tokens?: ThemeTokenDefinition;
   /** Optional animated background component for this theme */
   BackgroundComponent?: React.ComponentType;
+  /** Formal scene renderer metadata; falls back to BackgroundComponent during migration. */
+  scene?: ThemeSceneConfig;
   /** CSS class names for atmospheric overlay divs rendered in the header */
   atmosphericOverlays?: string[];
   /** CSS class applied to the header for atmospheric effects */

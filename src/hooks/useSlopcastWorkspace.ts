@@ -485,7 +485,7 @@ export function useSlopcastWorkspace() {
 
     // Theme
     isClassic, themeId, theme, themes, setThemeId, colorMode, setColorMode, effectiveMode,
-    fxClass, atmosphereClass, headerAtmosphereClass, BackgroundComponent, atmosphericOverlays, pageOverlayClasses,
+    fxMode, fxClass, atmosphereClass, headerAtmosphereClass, BackgroundComponent, atmosphericOverlays, pageOverlayClasses,
 
     // View state
     viewMode, setViewMode,

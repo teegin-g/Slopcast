@@ -132,15 +132,19 @@ export class SlopcastApp {
     const currentTheme = await this.page.evaluate(() => document.documentElement.dataset.theme);
 
     if (currentTheme !== theme.id) {
-      const hasDropdown = await this.page
-        .getByTestId('theme-dropdown-toggle')
-        .first()
-        .isVisible()
-        .catch(() => false);
+      const themeTrigger = this.page
+        .getByTestId('theme-selector-trigger')
+        .or(this.page.getByTestId('theme-dropdown-toggle'))
+        .first();
+      const hasDropdown = await themeTrigger.isVisible().catch(() => false);
 
       if (hasDropdown) {
-        await this.page.getByTestId('theme-dropdown-toggle').click();
-        await this.page.getByTestId(`theme-option-${theme.id}`).click();
+        await themeTrigger.click();
+        await this.page
+          .getByTestId(`theme-selector-option-${theme.id}`)
+          .or(this.page.getByTestId(`theme-option-${theme.id}`))
+          .first()
+          .click();
       } else {
         const testIdButton = this.page.getByTestId(`theme-option-${theme.id}`).first();
         if (await testIdButton.isVisible().catch(() => false)) {

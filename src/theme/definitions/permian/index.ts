@@ -1,4 +1,5 @@
 import { PermianBackground } from '../../backgrounds';
+import { PermianThemeIcon } from '../../icons';
 import type { ThemeDefinition } from '../../types';
 
 export const permian: ThemeDefinition = {
@@ -7,7 +8,31 @@ export const permian: ThemeDefinition = {
   hasLightVariant: true,
   label: 'Permian',
   icon: '🛢️',
+  iconDefinition: { kind: 'svg', component: PermianThemeIcon, fallback: '🛢️', label: 'Permian' },
   description: 'Oilpatch dusk-to-noon',
+  preview: {
+    swatch: 'linear-gradient(135deg, #0A1F18 0%, #1A3A2A 50%, #E87030 100%)',
+    accent: '#E87030',
+    surface: '#162f26',
+    shortLabel: 'Patch',
+    tagline: 'Industrial dusk, teal cashflow, oilfield heat.',
+  },
+  chrome: {
+    density: 'comfortable',
+    panelStyle: 'glass',
+    radius: 'soft',
+    brandTreatment: 'cinematic',
+    navTreatment: 'pills',
+  },
+  scene: {
+    renderer: 'r3f',
+    component: PermianBackground,
+    supportsFx: true,
+    requiresWebGL: true,
+    hasFallback: true,
+    pauseWhenHidden: true,
+    respectsReducedMotion: true,
+  },
   appName: 'SLOPCAST',
   appSubtitle: 'Patch Economics',
   chartPalette: {
