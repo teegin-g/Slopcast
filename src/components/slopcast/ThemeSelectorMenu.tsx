@@ -1,6 +1,17 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { getThemeChrome, getThemeIcon, getThemePreview } from '../../theme/registry';
 import type { ThemeDefinition, ThemeId } from '../../theme/types';
+
+const MENU_GAP = 9; // ~0.55rem below the trigger
+const VIEWPORT_MARGIN = 12;
+const MENU_MAX_WIDTH = 352; // 22rem
+
+interface MenuCoords {
+  top: number;
+  left: number;
+  width: number;
+}
 
 interface ThemeSelectorMenuProps {
   isClassic: boolean;
@@ -47,6 +58,7 @@ const ThemeSelectorMenu: React.FC<ThemeSelectorMenuProps> = ({
   const selectedIndex = Math.max(0, themes.findIndex(option => option.id === themeId));
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(selectedIndex);
+  const [coords, setCoords] = useState<MenuCoords | null>(null);
   const currentPreview = getThemePreview(theme);
   const currentChrome = getThemeChrome(theme);
   const highlightedIndex = open ? activeIndex : selectedIndex;
@@ -55,13 +67,37 @@ const ThemeSelectorMenu: React.FC<ThemeSelectorMenuProps> = ({
     if (!open) return;
 
     const handlePointerDown = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
+      const target = event.target as Node;
+      // The menu is portaled to <body>, so it is no longer inside rootRef.
+      if (rootRef.current?.contains(target) || listboxRef.current?.contains(target)) return;
+      setOpen(false);
     };
 
     document.addEventListener('mousedown', handlePointerDown);
     return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [open]);
+
+  // Anchor the portaled menu to the trigger with fixed positioning so it
+  // escapes the header's backdrop-filter stacking context (which otherwise
+  // paints it behind the map canvas). Recomputes on scroll/resize.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const compute = () => {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const width = Math.min(MENU_MAX_WIDTH, vw - VIEWPORT_MARGIN * 2);
+      const left = Math.max(VIEWPORT_MARGIN, Math.min(rect.left, vw - width - VIEWPORT_MARGIN));
+      setCoords({ top: rect.bottom + MENU_GAP, left, width });
+    };
+    compute();
+    window.addEventListener('scroll', compute, true);
+    window.addEventListener('resize', compute);
+    return () => {
+      window.removeEventListener('scroll', compute, true);
+      window.removeEventListener('resize', compute);
+    };
   }, [open]);
 
   useEffect(() => {
@@ -169,7 +205,7 @@ const ThemeSelectorMenu: React.FC<ThemeSelectorMenuProps> = ({
         </svg>
       </button>
 
-      {open && (
+      {open && createPortal(
         <div
           ref={listboxRef}
           id={listboxId}
@@ -178,7 +214,13 @@ const ThemeSelectorMenu: React.FC<ThemeSelectorMenuProps> = ({
           aria-activedescendant={activeOptionId}
           tabIndex={-1}
           onKeyDown={handleListboxKeyDown}
-          className={`absolute left-0 top-[calc(100%+0.55rem)] z-50 w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-panel border p-2 outline-none theme-transition motion-safe:animate-in motion-reduce:transition-none ${
+          style={{
+            top: coords?.top ?? -9999,
+            left: coords?.left ?? -9999,
+            width: coords?.width ?? MENU_MAX_WIDTH,
+            visibility: coords ? 'visible' : 'hidden',
+          }}
+          className={`fixed z-[1300] overflow-hidden rounded-panel border p-2 outline-none theme-transition motion-safe:animate-in motion-reduce:transition-none ${
             isClassic
               ? 'border-black/35 bg-[#141414]/95 shadow-card'
               : 'border-theme-border/80 bg-theme-surface1/95 shadow-[0_24px_70px_rgb(0_0_0/0.38),inset_0_1px_0_rgb(var(--text)/0.06)] backdrop-blur-xl'
@@ -251,7 +293,8 @@ const ThemeSelectorMenu: React.FC<ThemeSelectorMenuProps> = ({
               );
             })}
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
