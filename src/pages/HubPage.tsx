@@ -54,12 +54,14 @@ const HubPage: React.FC = () => {
   const isClassic = theme.features.isClassicTheme;
   const isAuthenticated = status === 'authenticated';
 
+  // The Launchpad (/setup) is the entry point to Slopcast: scope the well
+  // universe first, then continue into the workspace.
   const openSlopcast = () => {
     if (isAuthenticated) {
-      navigate('/slopcast');
+      navigate('/setup');
       return;
     }
-    navigate('/auth?redirect=%2Fslopcast');
+    navigate('/auth?redirect=%2Fsetup');
   };
 
   const openSignIn = () => {

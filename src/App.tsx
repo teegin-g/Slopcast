@@ -6,6 +6,7 @@ const AuthPage = lazy(() => import('./pages/AuthPage'));
 const HubPage = lazy(() => import('./pages/HubPage'));
 const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const ProjectSetupPage = lazy(() => import('./pages/ProjectSetupPage'));
 const SlopcastPage = lazy(() => import('./pages/SlopcastPage'));
 
 const RouteFallback = () => (
@@ -30,6 +31,14 @@ const App: React.FC = () => {
         />
         <Route path="/hub" element={<HubPage />} />
         <Route path="/auth" element={<AuthPage />} />
+        <Route
+          path="/setup"
+          element={(
+            <ProtectedRoute>
+              <ProjectSetupPage />
+            </ProtectedRoute>
+          )}
+        />
         <Route
           path="/slopcast"
           element={(
