@@ -105,12 +105,15 @@ export function getThemeScene(theme: ThemeDefinition): ThemeSceneConfig {
 }
 
 export function overlayPanelClass(style: ThemeFeatures['panelStyle']): string {
+  // Overlay panels float over the Mapbox canvas. Borders carry an alpha so they
+  // read as a soft edge rather than a bright outline on the dark map, and every
+  // style gets a shadow so panels read as intentional floating cards with depth.
   switch (style) {
     case 'glass':
-      return 'backdrop-blur-sm bg-[var(--surface-1)]/80 border border-[var(--border)]';
+      return 'backdrop-blur-md bg-[var(--surface-1)]/85 border border-[var(--border)]/55 shadow-lg shadow-black/25';
     case 'solid':
-      return 'bg-[var(--surface-1)] border border-[var(--border)]';
+      return 'bg-[var(--surface-1)] border border-[var(--border)]/70 shadow-lg shadow-black/25';
     case 'outline':
-      return 'bg-[var(--surface-1)]/45 border border-[var(--border)]/70';
+      return 'bg-[var(--surface-1)]/55 border border-[var(--border)]/35 shadow-md shadow-black/15';
   }
 }

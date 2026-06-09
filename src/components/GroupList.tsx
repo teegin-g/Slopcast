@@ -10,17 +10,18 @@ interface GroupListProps {
   onCloneGroup: (groupId: string) => void;
 }
 
-const GroupList: React.FC<GroupListProps> = ({ 
+// Shared clone-icon SVG: byte-identical across both themes. Hoisted to module
+// scope so it isn't recreated on every render.
+const cloneIcon = (
+  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+);
+
+const GroupList: React.FC<GroupListProps> = ({
   groups, activeGroupId, onActivateGroup, onAddGroup, onCloneGroup
 }) => {
   const { theme } = useTheme();
   const isClassic = theme.features.isClassicTheme;
   const brandFontClass = theme.features.brandFont ? 'brand-font' : '';
-
-  // Shared clone-icon SVG: byte-identical across both themes.
-  const cloneIcon = (
-    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-  );
 
   // Header (title + add button) — same structure, theme-specific chrome.
   const header = isClassic ? (
@@ -42,7 +43,7 @@ const GroupList: React.FC<GroupListProps> = ({
         <button
             type="button"
             onClick={onAddGroup}
-            className="text-[10px] px-3 py-1 rounded transition-all font-bold uppercase border bg-theme-magenta/20 hover:bg-theme-magenta/40 text-theme-magenta border-theme-magenta/30"
+            className="text-[10px] px-3 py-1 rounded transition-all font-bold uppercase border bg-theme-cyan/15 hover:bg-theme-cyan/25 text-theme-cyan border-theme-cyan/30"
         >
             + New Group
         </button>
@@ -133,8 +134,8 @@ const GroupList: React.FC<GroupListProps> = ({
           className={`
               w-full text-left relative rounded-inner border cursor-pointer transition-all duration-200 group
               ${isActive
-                  ? 'bg-theme-surface2 border-theme-magenta glow-magenta scale-[1.01]'
-                  : 'bg-theme-surface1/60 border-theme-border hover:bg-theme-surface1 hover:border-theme-lavender hover:scale-[1.01]'}
+                  ? 'bg-theme-surface2 border-theme-cyan glow-cyan scale-[1.01]'
+                  : 'bg-theme-surface1/60 border-theme-border hover:bg-theme-surface1 hover:border-theme-cyan/50 hover:scale-[1.01]'}
           `}
       >
           <button
@@ -180,7 +181,7 @@ const GroupList: React.FC<GroupListProps> = ({
           </button>
 
           {isActive && (
-              <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-inner transition-all bg-theme-magenta glow-magenta pointer-events-none"></div>
+              <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-inner transition-all bg-theme-cyan glow-cyan pointer-events-none"></div>
           )}
       </div>
     );

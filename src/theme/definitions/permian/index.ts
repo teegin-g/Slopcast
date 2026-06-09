@@ -54,11 +54,11 @@ export const permian: ThemeDefinition = {
     lassoStroke: '#F0C020',
     lassoDash: '6, 3',
     mapboxOverrides: {
-      bgColor: '#0A1F18',
-      waterColor: '#14654A',
-      landColor: '#1A3A2A',
-      labelColor: '#6B8870',
-      roadOpacity: 0.14,
+      bgColor: '#081A14',
+      waterColor: '#0F3328',
+      landColor: '#13241D',
+      labelColor: '#BACABE',
+      roadOpacity: 0.1,
     },
   },
   features: {

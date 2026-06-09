@@ -72,3 +72,9 @@ playwright-screens/
 /baseline-*.png
 /after-*.png
 /after5-*.png
+/map-current-*.png
+/slopcast-map-*.png
+/redesign-*.png
+
+# Superpowers brainstorming companion (local mockups)
+.superpowers/
