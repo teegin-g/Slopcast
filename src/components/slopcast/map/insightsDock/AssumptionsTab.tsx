@@ -20,10 +20,14 @@ const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   </p>
 );
 
-/** Format a rate that may be stored as fraction (0.65) or percent (65) into a % string. */
-function asPct(v: number): string {
-  const pct = Math.abs(v) <= 2 ? v * 100 : v;
-  return `${pct.toFixed(1)}%`;
+/** Format an ownership fraction (0..1) as a percentage string, e.g. 0.75 → "75.0%". */
+function fractionToPct(v: number): string {
+  return `${(v * 100).toFixed(1)}%`;
+}
+
+/** Format a decline rate already stored in percent-scale, e.g. 65 → "65%". */
+function declinePct(v: number): string {
+  return `${v.toFixed(0)}%`;
 }
 
 function fmtMoney(v: number): string {
@@ -54,8 +58,8 @@ const AssumptionsTab: React.FC<AssumptionsTabProps> = ({ group, isClassic: _isCl
       <div className="rounded-inner border border-theme-border/60 bg-theme-bg/50 px-3">
         <Row k="Qi (initial rate)" v={`${tc.qi.toLocaleString()} bopd`} />
         <Row k="b-factor" v={tc.b.toFixed(2)} />
-        <Row k="Initial decline (Di)" v={asPct(tc.di)} />
-        <Row k="Terminal decline" v={asPct(tc.terminalDecline)} />
+        <Row k="Initial decline (Di)" v={declinePct(tc.di)} />
+        <Row k="Terminal decline" v={declinePct(tc.terminalDecline)} />
         <Row k="GOR" v={`${tc.gorMcfPerBbl.toFixed(2)} mcf/bbl`} />
       </div>
 
@@ -73,8 +77,8 @@ const AssumptionsTab: React.FC<AssumptionsTabProps> = ({ group, isClassic: _isCl
 
       <SectionLabel>Ownership</SectionLabel>
       <div className="rounded-inner border border-theme-border/60 bg-theme-bg/50 px-3">
-        <Row k="Base NRI" v={asPct(nri)} />
-        <Row k="Cost interest" v={asPct(group.ownership.baseCostInterest)} />
+        <Row k="Base NRI" v={fractionToPct(nri)} />
+        <Row k="Cost interest" v={fractionToPct(group.ownership.baseCostInterest)} />
       </div>
     </div>
   );

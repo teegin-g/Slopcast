@@ -85,7 +85,7 @@ const ForecastTab: React.FC<ForecastTabProps> = ({ group, wells, isClassic: _isC
   const unit = STREAM_UNIT[stream];
 
   return (
-    <div className="flex flex-col gap-2 py-2 px-3">
+    <div className="flex flex-col gap-2 py-2 px-3" aria-label="Group production forecast">
       {/* Stream toggle */}
       <div className="flex items-center gap-1 self-end">
         {STREAM_OPTIONS.map((opt) => (

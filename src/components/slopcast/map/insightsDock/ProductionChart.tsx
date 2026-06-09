@@ -135,7 +135,7 @@ const ProductionChart: React.FC<ProductionChartProps> = ({
   }
 
   return (
-    <div className="flex flex-col gap-2 py-2 px-3">
+    <div className="flex flex-col gap-2 py-2 px-3" aria-label="Selected wells production history">
       {/* Color-by toggle */}
       <div className="flex items-center gap-1.5 self-end">
         <span className="text-[9px] font-black uppercase tracking-[0.14em] text-theme-muted mr-1">
@@ -175,7 +175,7 @@ const ProductionChart: React.FC<ProductionChartProps> = ({
             axisLine={false}
             tickLine={false}
             interval={0}
-            domain={[0, maxMonths]}
+            domain={[0, Math.max(maxMonths, 12)]}
           />
           <YAxis
             tickFormatter={fmtYAxis}

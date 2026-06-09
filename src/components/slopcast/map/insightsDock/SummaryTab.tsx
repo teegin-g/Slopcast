@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import type { Well } from '../../../../types';
-import { summarizeGroupWells } from '../groupInspectorStats';
+import { summarizeGroupWells, STATUS_COLORS, type WellStatus } from '../groupInspectorStats';
 import { formatFeet } from '../../../../utils/formatters';
 
 export interface SummaryTabProps {
@@ -20,7 +20,7 @@ export interface SummaryTabProps {
  * lateral length, status) and a handful of aggregate stats (total, avg
  * lateral, status mix). Presentational — props in, no callbacks out.
  */
-const SummaryTab: React.FC<SummaryTabProps> = ({ wells }) => {
+const SummaryTab: React.FC<SummaryTabProps> = ({ wells, isClassic: _isClassic }) => {
   const summary = useMemo(() => summarizeGroupWells(wells), [wells]);
 
   if (wells.length === 0) {
@@ -125,16 +125,10 @@ const SummaryTab: React.FC<SummaryTabProps> = ({ wells }) => {
 
 // ─── Internal status badge ────────────────────────────────────────────────────
 
-const STATUS_COLOR: Record<string, string> = {
-  PRODUCING: '#34d399',
-  DUC: '#f0b86c',
-  PERMIT: '#a78bfa',
-};
-
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => (
   <span
     className="text-[9px] font-black uppercase tracking-[0.12em]"
-    style={{ color: STATUS_COLOR[status] ?? 'currentColor' }}
+    style={{ color: STATUS_COLORS[status as WellStatus] ?? 'currentColor' }}
   >
     {status}
   </span>

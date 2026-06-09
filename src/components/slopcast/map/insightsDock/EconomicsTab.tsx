@@ -41,7 +41,7 @@ const EconomicsTab: React.FC<EconomicsTabProps> = ({ group, isClassic }) => {
   ];
 
   return (
-    <div className="py-1 px-1">
+    <div className="py-1 px-1" aria-label="Group economics waterfall">
       <WaterfallChart
         isClassic={isClassic}
         baseNpv={0}
