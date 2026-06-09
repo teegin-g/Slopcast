@@ -1,5 +1,15 @@
 {
   "mcpServers": {
+    "codegraph": {
+      "type": "stdio",
+      "command": "codegraph",
+      "args": [
+        "serve",
+        "--mcp",
+        "--path",
+        "${workspaceFolder}"
+      ]
+    },
     "databricks": {
       "command": "/Users/teegingroves/.ai-dev-kit/.venv/bin/python",
       "args": [

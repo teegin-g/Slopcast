@@ -1,0 +1,21 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "jupyter.kernels.excludePythonEnvironments": [
+    "${workspaceFolder}/.venv/bin/python"
+  ],
+  "codegraph.enabled": true,
+  "codegraph.indexOnStartup": true,
+  "codegraph.embeddingModel": "bge-small",
+  "codegraph.visualization.defaultDepth": 3,
+  "codegraph.excludePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/.worktrees/**",
+    "**/.agents/**",
+    "**/.cursor/**",
+    "**/.claude/**",
+    "**/playwright-report/**",
+    "**/artifacts/**",
+    "**/output/**"
+  ]
+}

@@ -18,6 +18,7 @@ dist-ssr
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
 .idea
 .DS_Store
 *.suo
@@ -45,6 +46,9 @@ artifacts/
 playwright-report/
 test-results/
 output/playwright/**/*.png
+
+# CodeGraph local index (per-machine; rebuild with `codegraph init`)
+.codegraph/
 
 # Multi-agent system
 .worktrees/
