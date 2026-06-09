@@ -594,32 +594,27 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
 
   // Economics-heat layer — recolours wells by NPV/acre. Re-bakes when wells or
   // the active group's metrics change. Guarded: the style may be mid-load.
+  // Off-path returns early so getNpvPerAcre is never called when heat is off.
   useEffect(() => {
     if (!map || !mapReady) return;
-    try {
-      if (layerVisibility.heat) {
-        const heat = getNpvPerAcre(effectiveWells, activeGroup?.metrics);
-        addHeatLayer(map, effectiveWells, heat);
-      } else {
-        removeHeatLayer(map);
-      }
-    } catch (e) {
-      console.warn('[MapCommandCenter] heat layer update failed:', e);
+    if (!layerVisibility.heat) {
+      try { removeHeatLayer(map); } catch (e) { console.warn('[map] removeHeatLayer failed', e); }
+      return () => { if (map) { try { removeHeatLayer(map); } catch { /* map torn down */ } } };
     }
+    try {
+      addHeatLayer(map, effectiveWells, getNpvPerAcre(effectiveWells, activeGroup?.metrics));
+    } catch (e) { console.warn('[map] addHeatLayer failed', e); }
+    return () => { if (map) { try { removeHeatLayer(map); } catch { /* map torn down */ } } };
   }, [map, mapReady, layerVisibility.heat, effectiveWells, activeGroup]);
 
   // Formation polygon layers (fill + line + label). Static mock polygons.
   useEffect(() => {
     if (!map || !mapReady) return;
     try {
-      if (layerVisibility.formations) {
-        addFormationLayer(map, getFormationPolygons());
-      } else {
-        removeFormationLayer(map);
-      }
-    } catch (e) {
-      console.warn('[MapCommandCenter] formation layer update failed:', e);
-    }
+      if (layerVisibility.formations) addFormationLayer(map, getFormationPolygons());
+      else removeFormationLayer(map);
+    } catch (e) { console.warn('[map] formation layer failed', e); }
+    return () => { if (map) { try { removeFormationLayer(map); } catch { /* map torn down */ } } };
   }, [map, mapReady, layerVisibility.formations]);
 
   return (
