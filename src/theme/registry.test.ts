@@ -152,9 +152,9 @@ describe('theme registry', () => {
     });
   });
 
-  it('returns the existing overlay panel class names', () => {
-    expect(overlayPanelClass('glass')).toBe('backdrop-blur-sm bg-[var(--surface-1)]/80 border border-[var(--border)]');
-    expect(overlayPanelClass('solid')).toBe('bg-[var(--surface-1)] border border-[var(--border)]');
-    expect(overlayPanelClass('outline')).toBe('bg-[var(--surface-1)]/45 border border-[var(--border)]/70');
+  it('returns grounded overlay panel class names (soft border + shadow)', () => {
+    expect(overlayPanelClass('glass')).toBe('backdrop-blur-md bg-[var(--surface-1)]/85 border border-[var(--border)]/55 shadow-lg shadow-black/25');
+    expect(overlayPanelClass('solid')).toBe('bg-[var(--surface-1)] border border-[var(--border)]/70 shadow-lg shadow-black/25');
+    expect(overlayPanelClass('outline')).toBe('bg-[var(--surface-1)]/55 border border-[var(--border)]/35 shadow-md shadow-black/15');
   });
 });
