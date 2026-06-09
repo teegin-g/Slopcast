@@ -29,7 +29,14 @@ import {
   buildWellColorExpression,
   updateWellFeatureState,
   updateWellLayerPaint,
+  addHeatLayer,
+  removeHeatLayer,
+  addFormationLayer,
+  removeFormationLayer,
 } from './map/wellLayerController';
+import { getNpvPerAcre } from '../../services/heatService';
+import { getFormationPolygons } from '../../services/geologyService';
+import type { MapLayerVisibility } from './map/MapLayersControl';
 import { stableSelectWellsForBudget, wellboreZoomBucket } from './map/spatialSampling';
 import { getPanelCollapsed, setPanelCollapsed } from '../../services/storage/workspacePreferences';
 
@@ -163,6 +170,13 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   const [activeTool, setActiveTool] = useState<SelectionTool | null>(null);
   const [layers, setLayers] = useState<Record<string, boolean>>({ grid: false, heatmap: false, satellite: false });
   const [mapLayerEpoch, setMapLayerEpoch] = useState(0);
+
+  // Rail-toggled economics-heat + formation map layers (Task 3.5).
+  const [layerVisibility, setLayerVisibility] = useState<MapLayerVisibility>({ heat: false, formations: false });
+  const handleToggleMapLayer = useCallback(
+    (key: keyof MapLayerVisibility) => setLayerVisibility(v => ({ ...v, [key]: !v[key] })),
+    [],
+  );
   const [inspectorCollapsed, setInspectorCollapsed] = useState(() => getPanelCollapsed('inspector') ?? false);
   const handleToggleInspector = useCallback(() => {
     setInspectorCollapsed(prev => {
@@ -578,6 +592,36 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     return { producing: c('PRODUCING'), duc: c('DUC'), permit: c('PERMIT') };
   }, [activeGroup, activeGroupWells]);
 
+  // Economics-heat layer — recolours wells by NPV/acre. Re-bakes when wells or
+  // the active group's metrics change. Guarded: the style may be mid-load.
+  useEffect(() => {
+    if (!map || !mapReady) return;
+    try {
+      if (layerVisibility.heat) {
+        const heat = getNpvPerAcre(effectiveWells, activeGroup?.metrics);
+        addHeatLayer(map, effectiveWells, heat);
+      } else {
+        removeHeatLayer(map);
+      }
+    } catch (e) {
+      console.warn('[MapCommandCenter] heat layer update failed:', e);
+    }
+  }, [map, mapReady, layerVisibility.heat, effectiveWells, activeGroup]);
+
+  // Formation polygon layers (fill + line + label). Static mock polygons.
+  useEffect(() => {
+    if (!map || !mapReady) return;
+    try {
+      if (layerVisibility.formations) {
+        addFormationLayer(map, getFormationPolygons());
+      } else {
+        removeFormationLayer(map);
+      }
+    } catch (e) {
+      console.warn('[MapCommandCenter] formation layer update failed:', e);
+    }
+  }, [map, mapReady, layerVisibility.formations]);
+
   return (
     <div className="flex w-full h-[calc(100vh-64px)] overflow-hidden" data-testid="map-command-center">
       <div className={`relative flex-1 overflow-hidden ${mapFrameClass}`}>
@@ -699,6 +743,8 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
             dataSourceId={dataSourceId}
             onSourceChange={handleSourceChange}
             fallbackActive={spatialFallback}
+            layerVisibility={layerVisibility}
+            onToggleMapLayer={handleToggleMapLayer}
           />
 
           <OverlaySelectionBar
