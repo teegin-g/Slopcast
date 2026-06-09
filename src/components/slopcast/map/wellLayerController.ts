@@ -1,5 +1,6 @@
 import type { ExpressionSpecification } from 'mapbox-gl';
 import type { Well } from '../../../types';
+import type { HeatResult } from '../../../services/heatService';
 
 // ---------------------------------------------------------------------------
 // Economics heat layer
@@ -32,12 +33,17 @@ export function buildHeatColorExpression(domain: { min: number; max: number }): 
  * Add (or update) an economics-heat circle layer. Builds a GeoJSON
  * FeatureCollection from wells joined with heat values, colours circles by
  * npvPerAcre. Idempotent: updates source data if source already present;
- * guards addLayer with getLayer.
+ * guards addLayer with getLayer. Re-bakes circle-color every call so a
+ * changed domain (toggle off/on, re-run economics) is reflected.
+ *
+ * @param beforeId optional layer id to insert below — defaults to the well
+ *   glow layer so heat circles sit UNDER the well markers/labels/selection.
  */
 export function addHeatLayer(
   map: any,
   wells: Well[],
-  heat: { values: { wellId: string; npvPerAcre: number }[]; domain: { min: number; max: number } },
+  heat: HeatResult,
+  beforeId?: string,
 ): void {
   // O(1) lookup: build a Map once instead of find-in-loop.
   const heatMap = new Map<string, number>(heat.values.map((v) => [v.wellId, v.npvPerAcre]));
@@ -59,6 +65,8 @@ export function addHeatLayer(
   }
 
   if (!map.getLayer(HEAT_LAYER_ID)) {
+    // Insert UNDER the well chrome so heat circles never occlude markers/labels.
+    const insertBefore = beforeId ?? (map.getLayer(WELL_GLOW_LAYER_ID) ? WELL_GLOW_LAYER_ID : undefined);
     map.addLayer({
       id: HEAT_LAYER_ID,
       type: 'circle',
@@ -72,7 +80,13 @@ export function addHeatLayer(
         'circle-stroke-color': 'rgba(0,0,0,0.25)',
         'circle-stroke-opacity': 0.6,
       },
-    });
+    }, insertBefore);
+  }
+
+  // Re-bake color OUTSIDE the getLayer guard so a changed domain refreshes on
+  // every call (mirrors updateSectionLayerPaint). Avoids stale colors.
+  if (map.getLayer(HEAT_LAYER_ID)) {
+    map.setPaintProperty(HEAT_LAYER_ID, 'circle-color', buildHeatColorExpression(heat.domain));
   }
 }
 
@@ -113,16 +127,23 @@ export function addFormationLayer(map: any, geojson: unknown): void {
     map.addSource(FORMATION_SOURCE_ID, { type: 'geojson', data: geojson });
   }
 
+  // Insert fill + line UNDER the well glow, and the label UNDER the well labels,
+  // so formation polygons never occlude well markers/labels. Guard each beforeId
+  // so it's safe when wells aren't mounted yet.
+  const beforeGlow = map.getLayer(WELL_GLOW_LAYER_ID) ? WELL_GLOW_LAYER_ID : undefined;
+  const beforeLabel = map.getLayer(WELL_LABEL_LAYER_ID) ? WELL_LABEL_LAYER_ID : undefined;
+
   if (!map.getLayer(FORMATION_FILL_LAYER_ID)) {
     map.addLayer({
       id: FORMATION_FILL_LAYER_ID,
       type: 'fill',
       source: FORMATION_SOURCE_ID,
+      minzoom: 9,
       paint: {
         'fill-color': FORMATION_FILL_COLOR,
         'fill-opacity': 0.10,
       },
-    });
+    }, beforeGlow);
   }
 
   if (!map.getLayer(FORMATION_LINE_LAYER_ID)) {
@@ -130,12 +151,13 @@ export function addFormationLayer(map: any, geojson: unknown): void {
       id: FORMATION_LINE_LAYER_ID,
       type: 'line',
       source: FORMATION_SOURCE_ID,
+      minzoom: 9,
       paint: {
         'line-color': FORMATION_FILL_COLOR,
         'line-opacity': 0.55,
         'line-width': 1.5,
       },
-    });
+    }, beforeGlow);
   }
 
   if (!map.getLayer(FORMATION_LABEL_LAYER_ID)) {
@@ -143,6 +165,7 @@ export function addFormationLayer(map: any, geojson: unknown): void {
       id: FORMATION_LABEL_LAYER_ID,
       type: 'symbol',
       source: FORMATION_SOURCE_ID,
+      minzoom: 10,
       layout: {
         'text-field': ['get', 'label'],
         'text-size': 11,
@@ -155,7 +178,7 @@ export function addFormationLayer(map: any, geojson: unknown): void {
         'text-halo-width': 1.5,
         'text-opacity': 0.85,
       },
-    });
+    }, beforeLabel);
   }
 }
 

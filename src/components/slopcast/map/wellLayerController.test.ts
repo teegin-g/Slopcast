@@ -225,10 +225,11 @@ function makeFakeMap() {
       sources.set(id, { setData: vi.fn() });
     }),
     removeSource: vi.fn((id: string) => { sources.delete(id); }),
-    // layer API
+    // layer API (addLayer accepts an optional beforeId second arg — ignored here)
     getLayer: vi.fn((id: string) => (layers.has(id) ? {} : null)),
-    addLayer: vi.fn((spec: { id: string }) => { layers.add(spec.id); }),
+    addLayer: vi.fn((spec: { id: string }, _beforeId?: string) => { layers.add(spec.id); }),
     removeLayer: vi.fn((id: string) => { layers.delete(id); }),
+    setPaintProperty: vi.fn(),
     // expose internals for assertions
     _sources: sources,
     _layers: layers,
@@ -260,7 +261,11 @@ describe('addHeatLayer', () => {
     expect(map.addSource).toHaveBeenCalledTimes(1);
     expect(map.addSource).toHaveBeenCalledWith(HEAT_SOURCE_ID, expect.objectContaining({ type: 'geojson' }));
     expect(map.addLayer).toHaveBeenCalledTimes(1);
-    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({ id: HEAT_LAYER_ID, type: 'circle' }));
+    // addLayer is called with (spec, beforeId); beforeId is undefined when no wells mounted.
+    expect(map.addLayer).toHaveBeenCalledWith(
+      expect.objectContaining({ id: HEAT_LAYER_ID, type: 'circle' }),
+      undefined,
+    );
   });
 
   it('is idempotent: second call uses setData, not addSource again', () => {
@@ -276,7 +281,7 @@ describe('addHeatLayer', () => {
     expect(map.addLayer).toHaveBeenCalledTimes(1);
   });
 
-  it('skips wells with no heat value or defaults them to 0 (no find-in-loop needed)', () => {
+  it('defaults wells with no heat value to 0 (no find-in-loop needed)', () => {
     const map = makeFakeMap();
     // Only w1 has a heat value; w2 is absent.
     const partialHeat = {
@@ -287,9 +292,40 @@ describe('addHeatLayer', () => {
 
     // Verify addLayer was called (layer was added) — no throws from missing heat value.
     expect(map.addLayer).toHaveBeenCalledTimes(1);
-    const call = map.addSource.mock.calls[0]![1] as { data: { features: { properties: { npvPerAcre: number } }[] } };
-    const w2Feature = call.data.features.find((_: unknown, i: number) => i === 1);
-    expect((w2Feature as { properties: { npvPerAcre: number } }).properties.npvPerAcre).toBe(0);
+    type HeatFeature = { id: string; properties: { npvPerAcre: number } };
+    const call = map.addSource.mock.calls[0]![1] as { data: { features: HeatFeature[] } };
+    const w2Feature = call.data.features.find((f) => f.id === 'w2');
+    expect(w2Feature?.properties.npvPerAcre).toBe(0);
+  });
+
+  it('inserts the heat layer below the well glow layer (beforeId) when wells are mounted', () => {
+    const map = makeFakeMap();
+    // Pretend the well glow layer is already on the map.
+    map._layers.add('wells-glow');
+    addHeatLayer(map, STUB_WELLS, STUB_HEAT);
+
+    // addLayer(spec, beforeId) — second arg must be the glow layer id.
+    expect(map.addLayer).toHaveBeenCalledWith(
+      expect.objectContaining({ id: HEAT_LAYER_ID }),
+      'wells-glow',
+    );
+  });
+
+  it('re-bakes circle-color on idempotent re-call so a changed domain is not stale', () => {
+    const map = makeFakeMap();
+    addHeatLayer(map, STUB_WELLS, { ...STUB_HEAT, domain: { min: 0, max: 100 } });
+    map.setPaintProperty.mockClear();
+
+    // Second call with a DIFFERENT domain — layer already exists, so the
+    // getLayer guard skips addLayer but circle-color must still refresh.
+    addHeatLayer(map, STUB_WELLS, { ...STUB_HEAT, domain: { min: 10, max: 500 } });
+
+    expect(map.addLayer).toHaveBeenCalledTimes(1); // not re-added
+    expect(map.setPaintProperty).toHaveBeenCalledWith(
+      HEAT_LAYER_ID,
+      'circle-color',
+      buildHeatColorExpression({ min: 10, max: 500 }),
+    );
   });
 });
 
@@ -336,7 +372,7 @@ describe('addFormationLayer', () => {
     expect(map.addSource).toHaveBeenCalledWith(FORMATION_SOURCE_ID, expect.objectContaining({ type: 'geojson' }));
     expect(map.addLayer).toHaveBeenCalledTimes(3);
 
-    const layerIds = map.addLayer.mock.calls.map((c: [{ id: string }]) => c[0].id);
+    const layerIds = map.addLayer.mock.calls.map((c: [{ id: string }, string?]) => c[0].id);
     expect(layerIds).toContain(FORMATION_FILL_LAYER_ID);
     expect(layerIds).toContain(FORMATION_LINE_LAYER_ID);
     expect(layerIds).toContain(FORMATION_LABEL_LAYER_ID);
@@ -357,11 +393,48 @@ describe('addFormationLayer', () => {
     const map = makeFakeMap();
     addFormationLayer(map, STUB_GEOJSON);
 
-    const calls = map.addLayer.mock.calls as [{ id: string; type: string }][];
+    const calls = map.addLayer.mock.calls as [{ id: string; type: string }, string?][];
     const byId = Object.fromEntries(calls.map((c) => [c[0].id, c[0].type]));
     expect(byId[FORMATION_FILL_LAYER_ID]).toBe('fill');
     expect(byId[FORMATION_LINE_LAYER_ID]).toBe('line');
     expect(byId[FORMATION_LABEL_LAYER_ID]).toBe('symbol');
+  });
+
+  it('layers carry minzoom so formations do not render at world zoom', () => {
+    const map = makeFakeMap();
+    addFormationLayer(map, STUB_GEOJSON);
+
+    const calls = map.addLayer.mock.calls as [{ id: string; minzoom: number }, string?][];
+    const minzoomById = Object.fromEntries(calls.map((c) => [c[0].id, c[0].minzoom]));
+    expect(minzoomById[FORMATION_FILL_LAYER_ID]).toBeGreaterThanOrEqual(9);
+    expect(minzoomById[FORMATION_LINE_LAYER_ID]).toBeGreaterThanOrEqual(9);
+    expect(minzoomById[FORMATION_LABEL_LAYER_ID]).toBeGreaterThanOrEqual(9);
+  });
+
+  it('inserts fill/line below well glow and label below well labels (beforeId) when wells are mounted', () => {
+    const map = makeFakeMap();
+    map._layers.add('wells-glow');
+    map._layers.add('wells-labels');
+    addFormationLayer(map, STUB_GEOJSON);
+
+    const beforeById = Object.fromEntries(
+      (map.addLayer.mock.calls as [{ id: string }, string | undefined][]).map((c) => [c[0].id, c[1]]),
+    );
+    expect(beforeById[FORMATION_FILL_LAYER_ID]).toBe('wells-glow');
+    expect(beforeById[FORMATION_LINE_LAYER_ID]).toBe('wells-glow');
+    expect(beforeById[FORMATION_LABEL_LAYER_ID]).toBe('wells-labels');
+  });
+
+  it('omits beforeId (undefined) when wells are not yet mounted', () => {
+    const map = makeFakeMap();
+    addFormationLayer(map, STUB_GEOJSON);
+
+    const beforeById = Object.fromEntries(
+      (map.addLayer.mock.calls as [{ id: string }, string | undefined][]).map((c) => [c[0].id, c[1]]),
+    );
+    expect(beforeById[FORMATION_FILL_LAYER_ID]).toBeUndefined();
+    expect(beforeById[FORMATION_LINE_LAYER_ID]).toBeUndefined();
+    expect(beforeById[FORMATION_LABEL_LAYER_ID]).toBeUndefined();
   });
 });
 
