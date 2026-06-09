@@ -129,20 +129,9 @@ const ProbitChart: React.FC<ProbitChartProps> = ({ wells, isClassic: _isClassic 
     return { points: pts, domain: dom, shapeMap: sm };
   }, [wells, variable, shapeBy]);
 
-  if (wells.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[120px] py-8 text-center px-4">
-        <p className="text-[11px] font-semibold text-theme-muted leading-relaxed">
-          Lasso wells to compare a custom selection
-        </p>
-      </div>
-    );
-  }
-
-  const varMeta = VARIABLE_OPTIONS.find((o) => o.value === variable) ?? VARIABLE_OPTIONS[0];
-
   // Group by shape for rendering — each distinct shape needs its own <Scatter>
   // when shape-by is active, so tooltip names work correctly.
+  // NOTE: must be declared BEFORE any early return to satisfy Rules of Hooks.
   const scatterGroups = useMemo((): { shape: ScatterShape; pts: PlotPoint[] }[] => {
     if (shapeBy === 'none') {
       return [{ shape: 'circle', pts: points }];
@@ -155,6 +144,18 @@ const ProbitChart: React.FC<ProbitChartProps> = ({ wells, isClassic: _isClassic 
     }
     return Array.from(groups.entries()).map(([shape, pts]) => ({ shape, pts }));
   }, [points, shapeBy]);
+
+  if (wells.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[120px] py-8 text-center px-4">
+        <p className="text-[11px] font-semibold text-theme-muted leading-relaxed">
+          Lasso wells to compare a custom selection
+        </p>
+      </div>
+    );
+  }
+
+  const varMeta = VARIABLE_OPTIONS.find((o) => o.value === variable) ?? VARIABLE_OPTIONS[0];
 
   return (
     <div className="flex flex-col gap-2 py-2 px-3">

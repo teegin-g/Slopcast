@@ -55,17 +55,20 @@ const SummaryTab: React.FC<SummaryTabProps> = ({ wells }) => {
         <div className="rounded-inner border border-theme-border bg-theme-surface2/30 px-2 py-1.5">
           <p className="text-[9px] font-black uppercase tracking-[0.14em] text-theme-muted">Status Mix</p>
           <div className="flex gap-1 mt-0.5 flex-wrap">
-            {summary.slices
-              .filter((s) => s.count > 0)
-              .map((s) => (
-                <span
-                  key={s.status}
-                  className="text-[9px] font-semibold tabular-nums"
-                  style={{ color: s.color }}
-                >
-                  {s.count} {s.label}
-                </span>
-              ))}
+            {summary.slices.reduce<React.ReactElement[]>((acc, s) => {
+              if (s.count > 0) {
+                acc.push(
+                  <span
+                    key={s.status}
+                    className="text-[9px] font-semibold tabular-nums"
+                    style={{ color: s.color }}
+                  >
+                    {s.count} {s.label}
+                  </span>,
+                );
+              }
+              return acc;
+            }, [])}
           </div>
         </div>
       </div>

@@ -98,13 +98,23 @@ const ProductionChart: React.FC<ProductionChartProps> = ({
       if (last && last.monthIndex > maxIdx) maxIdx = last.monthIndex;
     }
 
+    // Pre-index each well's points by monthIndex for O(1) lookup in the loop
+    // below (avoids an O(months × wells × pts) Array.find scan).
+    const indexedMap = new Map<string, Map<number, number>>();
+    for (const [wellId, pts] of normalizedMap) {
+      const byMonth = new Map<number, number>();
+      for (const p of pts) {
+        byMonth.set(p.monthIndex, p.oilBbl);
+      }
+      indexedMap.set(wellId, byMonth);
+    }
+
     // Build wide-format rows
     const rowsArr: ChartRow[] = [];
     for (let mi = 0; mi <= maxIdx; mi++) {
       const row: ChartRow = { monthIndex: mi };
-      for (const [wellId, pts] of normalizedMap) {
-        const pt = pts.find((p) => p.monthIndex === mi);
-        row[wellId] = pt ? pt.oilBbl : 0;
+      for (const [wellId, byMonth] of indexedMap) {
+        row[wellId] = byMonth.get(mi) ?? 0;
       }
       rowsArr.push(row);
     }
