@@ -115,8 +115,8 @@ export function addWellSourceAndLayers(map: any, geoJson: unknown, colorMatchExp
 }
 
 function addWellStatusLayers(map: any, colorMatchExpr: unknown, theme: WellLayerTheme) {
-  const defaultRadius = ['interpolate', ['linear'], ['zoom'], 6, 3, 10, 6, 14, 10];
-  const permitRadius = ['interpolate', ['linear'], ['zoom'], 6, 2, 10, 4, 14, 7];
+  const defaultRadius = ['interpolate', ['linear'], ['zoom'], 6, 4, 10, 7, 14, 11];
+  const permitRadius = ['interpolate', ['linear'], ['zoom'], 6, 3, 10, 5, 14, 8];
   const selectedState = ['boolean', ['feature-state', 'selected'], false];
   const dimmedState = ['boolean', ['feature-state', 'dimmed'], false];
   const visibleState = ['boolean', ['feature-state', 'visible'], true];
@@ -155,11 +155,13 @@ function addWellStatusLayers(map: any, colorMatchExpr: unknown, theme: WellLayer
       source: WELL_SOURCE_ID,
       filter: ['==', ['get', 'status'], 'PRODUCING'],
       paint: {
-        'circle-radius': defaultRadius,
+        'circle-radius': ['case', selectedState, ['*', defaultRadius, 1.25], defaultRadius],
         'circle-color': colorMatchExpr,
-        'circle-stroke-width': ['case', selectedState, 2, 0],
+        'circle-stroke-width': ['case', selectedState, 3, 0],
         'circle-stroke-color': theme.selectedStroke,
+        'circle-stroke-opacity': baseOpacity,
         'circle-opacity': baseOpacity,
+        'circle-radius-transition': { duration: 150 },
       },
     });
   }
@@ -173,9 +175,9 @@ function addWellStatusLayers(map: any, colorMatchExpr: unknown, theme: WellLayer
       paint: {
         'circle-radius': defaultRadius,
         'circle-color': colorMatchExpr,
-        'circle-opacity': ['case', dimmedState, 0.1, visibleState, 0.15, 0.1],
-        'circle-stroke-width': ['case', selectedState, 2.5, 2],
-        'circle-stroke-color': colorMatchExpr,
+        'circle-opacity': ['case', dimmedState, 0.1, visibleState, 0.2, 0.1],
+        'circle-stroke-width': ['case', selectedState, 3.5, 2],
+        'circle-stroke-color': ['case', selectedState, theme.selectedStroke, colorMatchExpr],
         'circle-stroke-opacity': baseOpacity,
       },
     });
@@ -188,11 +190,11 @@ function addWellStatusLayers(map: any, colorMatchExpr: unknown, theme: WellLayer
       source: WELL_SOURCE_ID,
       filter: ['==', ['get', 'status'], 'PERMIT'],
       paint: {
-        'circle-radius': permitRadius,
+        'circle-radius': ['case', selectedState, ['*', permitRadius, 1.25], permitRadius],
         'circle-color': colorMatchExpr,
-        'circle-stroke-width': ['case', selectedState, 2, 0],
+        'circle-stroke-width': ['case', selectedState, 3, 0],
         'circle-stroke-color': theme.selectedStroke,
-        'circle-opacity': ['case', dimmedState, 0.15, visibleState, 0.5, 0.15],
+        'circle-opacity': ['case', dimmedState, 0.15, visibleState, 0.65, 0.15],
       },
     });
   }
