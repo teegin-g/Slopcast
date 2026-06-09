@@ -182,7 +182,7 @@ describe('RESP-01: Desktop layout renders sidebar + content area', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders sidebar aside element on desktop viewport', () => {
+  it('renders contextual panel aside element on desktop viewport', () => {
     const { container } = renderAppShell({}, 'desktop');
     const aside = container.querySelector('aside');
     expect(aside).not.toBeNull();
@@ -200,11 +200,11 @@ describe('RESP-01: Desktop layout renders sidebar + content area', () => {
     expect(root.className).toContain('h-screen');
   });
 
-  it('sidebar has width class w-56 when expanded', () => {
+  it('groups panel has width class w-72 when expanded', () => {
     const { container } = renderAppShell({}, 'desktop');
     const aside = container.querySelector('aside');
     expect(aside).not.toBeNull();
-    expect(aside!.className).toContain('w-56');
+    expect(aside!.className).toContain('w-72');
   });
 });
 
