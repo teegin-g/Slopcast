@@ -158,7 +158,7 @@ const ProbitChart: React.FC<ProbitChartProps> = ({ wells, isClassic: _isClassic 
   const varMeta = VARIABLE_OPTIONS.find((o) => o.value === variable) ?? VARIABLE_OPTIONS[0];
 
   return (
-    <div className="flex flex-col gap-2 py-2 px-3">
+    <div className="flex flex-col gap-2 py-2 px-3" aria-label="Probit plot of selected wells">
       {/* Controls row */}
       <div className="flex items-center gap-3 flex-wrap">
         {/* Shape-by toggle */}
