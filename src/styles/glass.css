@@ -53,3 +53,17 @@
   --glass-sidebar-blur: 6px;
   --glass-sidebar-border: rgba(56, 189, 248, 0.10);
 }
+
+/* ---------- Permian (dusk) ---------- */
+[data-theme='permian'] {
+  --glass-sidebar-bg: rgba(8, 26, 20, 0.90);
+  --glass-sidebar-blur: 6px;
+  --glass-sidebar-border: rgba(0, 232, 144, 0.12);
+}
+
+/* ---------- Permian Noon (light) ---------- */
+[data-theme='permian'][data-mode='light'] {
+  --glass-sidebar-bg: rgba(206, 228, 212, 0.92);
+  --glass-sidebar-blur: 6px;
+  --glass-sidebar-border: rgba(0, 160, 108, 0.18);
+}
