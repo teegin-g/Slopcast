@@ -111,8 +111,16 @@ export interface ProbitPoint {
  * Ties are handled deterministically by stable sort order (equal values keep
  * their original relative order, which the sort below preserves).
  * Returns one point per input value in the ORIGINAL input order.
+ *
+ * @throws {Error} if any value is not a finite number (NaN or ±Infinity would
+ *   produce an implementation-defined sort order via a NaN comparator result).
+ *   All values must be finite numbers.
  */
 export function toProbitPoints(values: number[]): ProbitPoint[] {
+  if (values.some((v) => !Number.isFinite(v))) {
+    throw new Error('toProbitPoints: values must all be finite numbers');
+  }
+
   const n = values.length;
   if (n === 0) return [];
 
@@ -148,9 +156,14 @@ export function toProbitPoints(values: number[]): ProbitPoint[] {
 /**
  * Map a value to a CSS color within a Low→High legend domain {min, max}.
  *
- * Color scheme: cool-to-warm hue interpolation
+ * Color scheme: cool-to-warm hue interpolation via the short "cool" arc
  *   Low  → hsl(210, 70%, 55%)  — steel blue
  *   High → hsl(20,  85%, 55%)  — warm orange
+ *
+ * The arc traverses 210 → 270 → 300 → 330 → 380(≡20°), i.e. blue → purple →
+ * magenta → orange. This avoids the "dirty green" mid-point of the short
+ * 210→20 arc (which passes through ~115° yellow-green) and stays on-brand
+ * with Slopcast's cyan/magenta/lavender palette.
  *
  * Uses a manual hue lerp; no external dependencies.
  * Returns a deterministic hsl() string.
@@ -164,10 +177,12 @@ export function probitColor(
   // Guard division by zero when min === max
   const t = min === max ? 0.5 : Math.max(0, Math.min(1, (value - min) / (max - min)));
 
-  // Lerp hue from 210 (cool) → 20 (warm)
+  // Lerp hue 210 → 380 (≡ 20°) via the cool arc: blue→purple→magenta→orange.
+  // Using 380 instead of 20 forces the traversal through 270/300/330 rather
+  // than the short path through green/yellow (~115° at midpoint).
   const hueLow  = 210;
-  const hueHigh = 20;
-  const hue = Math.round(hueLow + t * (hueHigh - hueLow));
+  const hueHigh = 380; // 380 % 360 = 20°
+  const hue = Math.round(hueLow + t * (hueHigh - hueLow)) % 360;
 
   // Saturation: 70% → 85%
   const satLow  = 70;

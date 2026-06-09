@@ -80,6 +80,14 @@ describe('toProbitPoints', () => {
     const uniqueRanks = new Set(ranks.map(r => r.toFixed(10)));
     expect(uniqueRanks.size).toBe(3);
   });
+
+  it('throws if any value is NaN (NaN comparator would give undefined sort order)', () => {
+    expect(() => toProbitPoints([1, NaN, 3])).toThrow('toProbitPoints: values must all be finite numbers');
+  });
+
+  it('throws if any value is Infinity', () => {
+    expect(() => toProbitPoints([1, Infinity, 3])).toThrow('toProbitPoints: values must all be finite numbers');
+  });
 });
 
 describe('probitColor', () => {

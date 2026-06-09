@@ -9,7 +9,7 @@
  */
 
 import type { Well, TypeCurveParams, WellProductionSeries, MonthlyProduction } from '../types';
-import { calculateEconomics, MONTHS_TO_PROJECT } from '../utils/economics';
+import { calculateEconomics } from '../utils/economics';
 import {
   DEFAULT_CAPEX,
   DEFAULT_COMMODITY_PRICING,
@@ -71,10 +71,9 @@ function wellMonthOffset(wellId: string): number {
  * (drill + completion time, typically month 0), with the first producing month
  * at flow[1] or later. We re-base the series to the well's own t=0 axis by
  * finding the first month with positive oil production and slicing from there.
- * The result is always padded to exactly MONTHS_TO_PROJECT (120) entries.
  *
- * Returns MONTHS_TO_PROJECT (120) entries indexed 0..119, each on the well's
- * own t=0 axis (i.e. monthIndex 0 is the well's first producing month).
+ * Returns only the real producing months (no synthetic zero padding), each
+ * on the well's own t=0 axis (monthIndex 0 = first producing month).
  */
 function computeSeriesForWell(well: Well, typeCurve: TypeCurveParams): MonthlyProduction[] {
   const { flow } = calculateEconomics(
@@ -92,18 +91,14 @@ function computeSeriesForWell(well: Well, typeCurve: TypeCurveParams): MonthlyPr
   const firstProdIdx = flow.findIndex((m) => m.oilProduction > 0);
   const startIdx = firstProdIdx >= 0 ? firstProdIdx : 0;
 
-  // Slice from the well's first producing month and build the well-age series.
-  // Pad to MONTHS_TO_PROJECT with zero entries so consumers always get 120 months.
-  const months: MonthlyProduction[] = [];
-  for (let i = 0; i < MONTHS_TO_PROJECT; i++) {
-    const entry = flow[startIdx + i];
-    months.push({
-      monthIndex: i,
-      oilBbl: entry?.oilProduction ?? 0,
-      gasMcf: entry?.gasProduction ?? 0,
-    });
-  }
-  return months;
+  // Slice from the well's first producing month — no zero-padding past the
+  // real data. This prevents a fabricated synthetic-zero tail that would
+  // render as a dip-to-zero on the dock chart.
+  return flow.slice(startIdx).map((m, i) => ({
+    monthIndex: i,
+    oilBbl: m.oilProduction,
+    gasMcf: m.gasProduction,
+  }));
 }
 
 // ---------------------------------------------------------------------------

@@ -11,6 +11,10 @@ export interface NormalizedPoint {
  * Re-express a single series on the shared t=0 axis: returns its points keyed by
  * monthIndex (0 = the series' own first producing month). firstProductionMonthOffset
  * is intentionally ignored for the t=0 view.
+ *
+ * @remarks months must already be t=0-indexed (monthIndex 0 = first producing month);
+ *   this function does not re-base. productionService produces t=0-indexed series
+ *   by slicing from the first producing month before passing here.
  */
 export function normalizeToFirstProduction(series: WellProductionSeries): NormalizedPoint[] {
   return series.months
@@ -21,6 +25,9 @@ export function normalizeToFirstProduction(series: WellProductionSeries): Normal
 /**
  * Sum oil/gas across multiple series at each aligned monthIndex (t=0 aligned).
  * Returns points for monthIndex 0..maxIndex, with missing months treated as 0.
+ *
+ * @remarks If a single series contains duplicate monthIndex values, the last
+ *   occurrence wins (Map.set overwrites the prior entry for that key).
  */
 export function aggregateNormalized(seriesList: WellProductionSeries[]): NormalizedPoint[] {
   if (seriesList.length === 0) return [];

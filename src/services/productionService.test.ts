@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { MOCK_WELLS, DEFAULT_TYPE_CURVE } from '../constants';
-import { MONTHS_TO_PROJECT } from '../utils/economics';
 import { getProductionSeries, mockProductionService } from './productionService';
 
 // Use a small subset of MOCK_WELLS so the test suite stays fast.
@@ -16,10 +15,14 @@ describe('productionService', () => {
       });
     });
 
-    it('each series has exactly MONTHS_TO_PROJECT (120) monthly entries', () => {
+    it('each series has at least 119 monthly entries (real producing months, no synthetic zero tail)', () => {
       const result = getProductionSeries(TEST_WELLS, DEFAULT_TYPE_CURVE);
       result.forEach((series) => {
-        expect(series.months).toHaveLength(MONTHS_TO_PROJECT);
+        // Should have the full run of real producing months — no fewer than 119.
+        expect(series.months.length).toBeGreaterThanOrEqual(119);
+        // The last entry must be a real (non-zero) decline value — not a fabricated zero.
+        const last = series.months[series.months.length - 1];
+        expect(last.oilBbl).toBeGreaterThan(0);
       });
     });
 
@@ -61,9 +64,9 @@ describe('productionService', () => {
       });
     });
 
-    it('different wellIds can produce different firstProductionMonthOffsets', () => {
-      // With 3 wells drawn from the hash function, at least two different offsets
-      // are plausible — we just check the values are within range and stable.
+    it('different wellIds produce different firstProductionMonthOffsets', () => {
+      // TEST_WELLS = MOCK_WELLS.slice(0, 3) → w-0, w-1, w-2.
+      // djb2 % 6 yields 1, 0, 5 for those ids — three distinct values.
       const result = getProductionSeries(TEST_WELLS, DEFAULT_TYPE_CURVE);
       const offsets = result.map((s) => s.firstProductionMonthOffset);
       // All must be valid integers in [0..5]
@@ -72,6 +75,8 @@ describe('productionService', () => {
         expect(o).toBeGreaterThanOrEqual(0);
         expect(o).toBeLessThanOrEqual(5);
       });
+      // Non-vacuous: at least two distinct offsets across the 3 test wells
+      expect(new Set(offsets).size).toBeGreaterThan(1);
     });
 
     it('returns empty array for empty wells input', () => {
