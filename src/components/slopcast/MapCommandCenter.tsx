@@ -13,6 +13,7 @@ import { OverlayFiltersBar } from './map/OverlayFiltersBar';
 import { OverlayToolbar } from './map/OverlayToolbar';
 import { OverlaySelectionBar } from './map/OverlaySelectionBar';
 import { OverlayLegend } from './map/OverlayLegend';
+import InsightsDock from './map/insightsDock/InsightsDock';
 import { ConnectionWarningBanner } from './map/ConnectionWarningBanner';
 import { deriveConnectionState } from './map/connectionState';
 import { MapWellTooltip } from './map/MapWellTooltip';
@@ -171,6 +172,15 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     });
   }, []);
   const [errorDismissed, setErrorDismissed] = useState(false);
+  // InsightsDock visibility — dismissible, but auto-reopens when a NEW selection
+  // is made (empty → non-empty) so the lasso→analytics flow always surfaces.
+  const [dockDismissed, setDockDismissed] = useState(false);
+  const prevSelCount = useRef(0);
+  const selCount = selectedWellIds.size;
+  useEffect(() => {
+    if (selCount > 0 && prevSelCount.current === 0) setDockDismissed(false);
+    prevSelCount.current = selCount;
+  }, [selCount]);
   const [wellboreDiagnostics, setWellboreDiagnostics] = useState<WellboreRenderDiagnostics>(
     () => wellboreLayer?.getDiagnostics() ?? EMPTY_WELLBORE_DIAGNOSTICS,
   );
@@ -556,6 +566,11 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     () => (activeGroup ? wells.filter(w => activeGroup.wellIds.has(w.id)) : []),
     [activeGroup, wells],
   );
+  // Lasso-selected wells (drives the InsightsDock selection mode).
+  const selectedWells = useMemo(
+    () => wells.filter(w => selectedWellIds.has(w.id)),
+    [wells, selectedWellIds],
+  );
   const activeGroupStatusCounts = useMemo(() => {
     if (!activeGroup) return undefined;
     const s = summarizeGroupWells(activeGroupWells);
@@ -795,6 +810,19 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
                 Shift+drag to select
               </span>
             </div>
+          )}
+
+          {/* Context-aware insights dock — floats bottom-center; flips between
+              group mode and lasso-selection mode based on selectedWells. */}
+          {!dockDismissed && (
+            <InsightsDock
+              activeGroup={activeGroup}
+              groupWells={activeGroupWells}
+              selectedWells={selectedWells}
+              isClassic={isClassic}
+              onDismiss={() => setDockDismissed(true)}
+              onClearSelection={onClearSelection}
+            />
           )}
         </div>
       </div>
