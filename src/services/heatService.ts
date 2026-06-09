@@ -22,7 +22,13 @@
  *     Gives a deterministic multiplier in [0.85, 1.15], distributing heat
  *     values across wells so the overlay isn't a uniform colour.
  *
- *   npvPerAcre = (baselineNpvPerWell / acresPerWell) * jitterFactor
+ *   latLngNoise = continuous per-well spread in ~[-0.10, +0.10] derived from
+ *     the well's lat/lng fractional bits. Breaks the 2-bucket acreage banding
+ *     (10000/7500 ft laterals → only 2 acre values) so the heat overlay reads
+ *     as a gradient, not a binary toggle. Deterministic.
+ *
+ *   npvPerAcre = raw === 0 ? 0 : raw * (jitterFactor + latLngNoise)
+ *     where raw = baselineNpvPerWell / acresPerWell
  * ---
  */
 
@@ -79,6 +85,16 @@ function jitterFactor(wellId: string): number {
 }
 
 /**
+ * Continuous per-well spread in ~[-0.10, +0.10] from lat/lng fractional bits.
+ * Breaks the 2-bucket acreage banding (MOCK_WELLS lateralLength is only 10000/7500)
+ * so the heat overlay reads as a gradient, not a binary toggle. Deterministic.
+ */
+function latLngNoise(lat: number, lng: number): number {
+  const bits = (Math.round((lat % 1) * 1e4) ^ Math.round(Math.abs(lng % 1) * 1e4)) >>> 0;
+  return ((bits % 21) - 10) / 100; // -0.10 … +0.10
+}
+
+/**
  * Mock acreage estimate from lateral length.
  * Formula: acres = max(lateralLength / 10, 40)
  *
@@ -107,7 +123,8 @@ function computeHeatValues(wells: Well[], metrics: DealMetrics | undefined): Wel
 
   return wells.map((well) => {
     const acres = acresFromLateral(well.lateralLength);
-    const npvPerAcre = (baselineNpvPerWell / acres) * jitterFactor(well.id);
+    const raw = baselineNpvPerWell / acres;
+    const npvPerAcre = raw === 0 ? 0 : raw * (jitterFactor(well.id) + latLngNoise(well.lat, well.lng));
     return { wellId: well.id, npvPerAcre };
   });
 }

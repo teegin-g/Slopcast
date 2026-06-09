@@ -6,6 +6,9 @@ import { getNpvPerAcre, mockHeatService } from './heatService';
 // Small subset for fast tests.
 const TEST_WELLS = MOCK_WELLS.slice(0, 4);
 
+// Larger subset to test gradient spread (lat/lng noise breaks 2-bucket banding).
+const TEN_WELLS = MOCK_WELLS.slice(0, 10);
+
 const SAMPLE_METRICS: DealMetrics = {
   totalCapex: 36_000_000,
   eur: 2_000_000,
@@ -68,6 +71,24 @@ describe('heatService', () => {
       const unique = new Set(values.map((v) => v.npvPerAcre));
       // If all values are the same, jitter is a no-op — that is a bug.
       expect(unique.size).toBeGreaterThan(1);
+    });
+
+    it('lat/lng noise breaks 2-bucket banding: ≥9 of 10 wells have distinct npvPerAcre (gradient, not binary)', () => {
+      // MOCK_WELLS lateralLength is only 10000 or 7500 — without lat/lng noise this
+      // produces just 2 distinct acreage buckets and a near-binary heat overlay.
+      // This test asserts that continuous per-well variance from lat/lng fractional
+      // bits produces near-all-unique values across a sample of 10 wells.
+      const { values } = getNpvPerAcre(TEN_WELLS, { ...SAMPLE_METRICS, wellCount: 10 });
+      const unique = new Set(values.map((v) => v.npvPerAcre));
+      expect(unique.size).toBeGreaterThanOrEqual(TEN_WELLS.length - 1);
+    });
+
+    it('lat/lng noise: metrics-undefined path still yields all-zero (noise must not turn 0 into nonzero)', () => {
+      const result = getNpvPerAcre(TEN_WELLS, undefined);
+      result.values.forEach((v) => {
+        expect(v.npvPerAcre).toBe(0);
+      });
+      expect(result.domain).toEqual({ min: 0, max: 0 });
     });
 
     it('empty wells → {values: [], domain: {min: 0, max: 0}}', () => {

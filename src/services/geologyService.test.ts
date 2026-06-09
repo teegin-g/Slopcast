@@ -104,6 +104,12 @@ describe('geologyService', () => {
         expect(labelLat).toBeLessThanOrEqual(LAT_MAX);
       }
     });
+
+    it('all label positions are distinct (no collision)', () => {
+      const fc = mockGeologyService.getFormationPolygons();
+      const keys = new Set(fc.features.map((f) => `${f.properties.labelLng},${f.properties.labelLat}`));
+      expect(keys.size).toBe(fc.features.length);
+    });
   });
 
   describe('getFormationPolygons (convenience delegate)', () => {

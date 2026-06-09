@@ -63,7 +63,7 @@ function makeFeature(
     type: 'Feature',
     geometry: {
       type: 'Polygon',
-      coordinates: [ring as number[][]],
+      coordinates: [ring] as [number, number][][],
     },
     properties: { formation, label, labelLng, labelLat },
   };
@@ -115,6 +115,8 @@ const wolfcampD: Feature<Polygon, FormationProperties> = makeFeature(
 );
 
 // Type-Curve Area — central overlay spanning all three bands
+// labelLat 31.95 (near top of overlay, inside its bbox 31.83–31.97) to avoid
+// colliding with Wolfcamp B whose label sits at 31.90.
 const typeCurveArea: Feature<Polygon, FormationProperties> = makeFeature(
   [
     [-102.38, 31.83],
@@ -126,7 +128,7 @@ const typeCurveArea: Feature<Polygon, FormationProperties> = makeFeature(
   'Type-Curve Area',
   'Type-Curve Area',
   -102.30,
-  31.90,
+  31.95,
 );
 
 // ---------------------------------------------------------------------------
