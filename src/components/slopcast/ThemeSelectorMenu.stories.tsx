@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, userEvent, within, screen } from 'storybook/test';
 import { getTheme, THEMES } from '../../theme/registry';
 import type { ThemeId } from '../../theme/types';
 import ThemeSelectorMenu from './ThemeSelectorMenu';
@@ -49,9 +49,12 @@ export const Interactive: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
 
+    // Trigger lives in the canvas; the listbox + options are portaled to body.
     await userEvent.click(canvas.getByTestId('theme-selector-trigger'));
-    await expect(canvas.getByRole('listbox', { name: /choose theme/i })).toBeInTheDocument();
-    await userEvent.click(canvas.getByTestId('theme-selector-option-permian'));
+    const listbox = await screen.findByRole('listbox', { name: /choose theme/i });
+    await expect(listbox).toBeInTheDocument();
+    await userEvent.click(screen.getByTestId('theme-selector-option-permian'));
+    // The "active theme:" harness text stays in the canvas.
     await expect(canvas.getByText(/active theme:/i)).toHaveTextContent(/permian/i);
   },
 };

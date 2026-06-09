@@ -72,8 +72,6 @@ const SlopcastPage: React.FC = () => {
                   activeGroupId={ws.activeGroupId}
                   selectedWellCount={ws.selectedVisibleCount}
                   onActivateGroup={ws.setActiveGroupId}
-                  onAddGroup={ws.handleAddGroup}
-                  onCloneGroup={ws.handleCloneGroup}
                   onAssignWells={ws.handleAssignWellsToActive}
                   onCreateGroupFromSelection={ws.handleCreateGroupFromSelection}
                   onSelectAll={ws.handleSelectAll}

@@ -7,7 +7,7 @@ import { useMapTheme, applyMapThemeOverrides } from './map/useMapTheme';
 import { useMapInit } from './map/useMapInit';
 import { simplifyWellborePath, type WellboreData, type WellboreRenderDiagnostics } from './MapWellboreLayer';
 import { useViewportData } from '../../hooks/useViewportData';
-import { OverlayGroupsPanel } from './map/OverlayGroupsPanel';
+import { GroupInspector } from './map/GroupInspector';
 import { OverlayFiltersBar } from './map/OverlayFiltersBar';
 import { OverlayToolbar } from './map/OverlayToolbar';
 import { OverlaySelectionBar } from './map/OverlaySelectionBar';
@@ -29,6 +29,7 @@ import {
   updateWellLayerPaint,
 } from './map/wellLayerController';
 import { stableSelectWellsForBudget, wellboreZoomBucket } from './map/spatialSampling';
+import { getPanelCollapsed, setPanelCollapsed } from '../../services/storage/workspacePreferences';
 
 export type WellsMobilePanel = 'GROUPS' | 'MAP';
 
@@ -74,8 +75,6 @@ interface MapCommandCenterProps {
   activeGroupId: string;
   selectedWellCount: number;
   onActivateGroup: (id: string) => void;
-  onAddGroup: () => void;
-  onCloneGroup: (groupId: string) => void;
   onAssignWells: () => void;
   onCreateGroupFromSelection: () => void;
   onSelectAll: () => void;
@@ -111,8 +110,6 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   activeGroupId,
   selectedWellCount,
   onActivateGroup,
-  onAddGroup,
-  onCloneGroup,
   onAssignWells,
   onCreateGroupFromSelection,
   onSelectAll,
@@ -164,7 +161,17 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   const [activeTool, setActiveTool] = useState<SelectionTool | null>(null);
   const [layers, setLayers] = useState<Record<string, boolean>>({ grid: false, heatmap: false, satellite: false });
   const [mapLayerEpoch, setMapLayerEpoch] = useState(0);
-  const [groupsPanelOpen, setGroupsPanelOpen] = useState(true);
+  // TODO(1.8): remove groupsPanelOpen — OverlayFiltersBar no longer needs it once the
+  // floating groups panel is fully retired. Kept harmless here for typecheck/layout.
+  const groupsPanelOpen = false;
+  const [inspectorCollapsed, setInspectorCollapsed] = useState(() => getPanelCollapsed('inspector') ?? false);
+  const handleToggleInspector = useCallback(() => {
+    setInspectorCollapsed(prev => {
+      const next = !prev;
+      setPanelCollapsed('inspector', next);
+      return next;
+    });
+  }, []);
   const [errorDismissed, setErrorDismissed] = useState(false);
   const [wellboreDiagnostics, setWellboreDiagnostics] = useState<WellboreRenderDiagnostics>(
     () => wellboreLayer?.getDiagnostics() ?? EMPTY_WELLBORE_DIAGNOSTICS,
@@ -542,249 +549,294 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     setLayers(prev => ({ ...prev, [layer]: !prev[layer] }));
   }, []);
 
+  // Right inspector targets the active group (empty-safe).
+  const activeGroup = useMemo(
+    () => groups.find(g => g.id === activeGroupId) ?? groups[0] ?? null,
+    [groups, activeGroupId],
+  );
+  const activeGroupWells = useMemo(
+    () => (activeGroup ? wells.filter(w => activeGroup.wellIds.has(w.id)) : []),
+    [activeGroup, wells],
+  );
+
   return (
-    <div className={`relative w-full h-[calc(100vh-64px)] overflow-hidden ${mapFrameClass}`} data-testid="map-command-center">
-      <div className="sr-only">
-        <span data-testid="wells-selected-visible-count">{selectedWellCount}</span>
-        <span data-testid="wells-filtered-count">{filteredWellsCount}</span>
-        <span data-testid="map-instance-present">{map ? '1' : '0'}</span>
-        <span data-testid="map-view-zoom">{viewState.zoom.toFixed(2)}</span>
-        <span data-testid="map-viewport-well-count">{viewportWells.length}</span>
-        <span data-testid="map-spatial-source">{spatialSource ?? 'none'}</span>
-        <span data-testid="map-trajectory-error">{spatialTrajectoryError ?? ''}</span>
-        <span data-testid="map-wellbore-mounted">{wellboreDiagnostics.mounted ? '1' : '0'}</span>
-        <span data-testid="map-wellbore-count">{wellboreDiagnostics.wellboreCount}</span>
-        <span data-testid="map-wellbore-vertex-count">{wellboreDiagnostics.vertexCount}</span>
-        <span data-testid="map-wellbore-draw-calls">{wellboreDiagnostics.drawCalls}</span>
-        <span data-testid="map-wellbore-last-draw-vertex-count">{wellboreDiagnostics.lastDrawVertexCount}</span>
-        <span data-testid="map-wellbore-frame-count">{wellboreDiagnostics.frameCount}</span>
-        <span data-testid="map-wellbore-last-frame-ms">{wellboreDiagnostics.lastFrameMs.toFixed(2)}</span>
-        <span data-testid="map-source-setdata-count">{sourceSetDataCount}</span>
-        <span data-testid="map-source-last-setdata-ms">{lastSourceSetDataMs.current.toFixed(2)}</span>
-        <span data-testid="map-viewport-phase1-fetches">{viewportDiagnostics.phase1FetchCount}</span>
-        <span data-testid="map-viewport-phase2-fetches">{viewportDiagnostics.phase2FetchCount}</span>
-        <span data-testid="map-viewport-phase1-cache-hits">{viewportDiagnostics.phase1CacheHits}</span>
-        <span data-testid="map-viewport-phase2-cache-hits">{viewportDiagnostics.phase2CacheHits}</span>
-        <span data-testid="map-viewport-phase2-zoom-bucket">{viewportDiagnostics.lastPhase2ZoomBucket ?? ''}</span>
-      </div>
-
-      {/* Mapbox canvas */}
-      <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" />
-
-      {/* Vignette — themed edge treatment */}
-      <div className="map-vignette absolute inset-0 z-[1] pointer-events-none" />
-
-      {/* Atmospheric bleed — top edge gradient from header */}
-      <div
-        className="absolute inset-x-0 top-0 h-16 z-[1] pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, rgb(var(--bg-deep)), transparent)' }}
-      />
-
-      {/* Lasso / Rectangle selection overlay */}
-      {selectionOverlay}
-
-      {/* Fallback when no Mapbox token */}
-      {!mapReady && (
-        <div className={`absolute inset-0 flex items-center justify-center ${
-          isClassic ? 'bg-[#101010]' : 'bg-[var(--bg-deep)]'
-        }`}>
-          <div className="text-center space-y-2">
-            <div className={`text-[11px] font-black uppercase tracking-[0.2em] ${
-              isClassic ? 'text-white/40' : 'text-[var(--text-muted)]'
-            }`}>
-              Map unavailable
-            </div>
-            <div className={`text-[10px] ${
-              isClassic ? 'text-white/25' : 'text-[var(--text-muted)]/60'
-            }`}>
-              Mapbox couldn’t load. Check your connection, or set VITE_MAPBOX_TOKEN to enable the map.
-            </div>
-          </div>
+    <div className="flex w-full h-[calc(100vh-64px)] overflow-hidden" data-testid="map-command-center">
+      <div className={`relative flex-1 overflow-hidden ${mapFrameClass}`}>
+        <div className="sr-only">
+          <span data-testid="wells-selected-visible-count">{selectedWellCount}</span>
+          <span data-testid="wells-filtered-count">{filteredWellsCount}</span>
+          <span data-testid="map-instance-present">{map ? '1' : '0'}</span>
+          <span data-testid="map-view-zoom">{viewState.zoom.toFixed(2)}</span>
+          <span data-testid="map-viewport-well-count">{viewportWells.length}</span>
+          <span data-testid="map-spatial-source">{spatialSource ?? 'none'}</span>
+          <span data-testid="map-trajectory-error">{spatialTrajectoryError ?? ''}</span>
+          <span data-testid="map-wellbore-mounted">{wellboreDiagnostics.mounted ? '1' : '0'}</span>
+          <span data-testid="map-wellbore-count">{wellboreDiagnostics.wellboreCount}</span>
+          <span data-testid="map-wellbore-vertex-count">{wellboreDiagnostics.vertexCount}</span>
+          <span data-testid="map-wellbore-draw-calls">{wellboreDiagnostics.drawCalls}</span>
+          <span data-testid="map-wellbore-last-draw-vertex-count">{wellboreDiagnostics.lastDrawVertexCount}</span>
+          <span data-testid="map-wellbore-frame-count">{wellboreDiagnostics.frameCount}</span>
+          <span data-testid="map-wellbore-last-frame-ms">{wellboreDiagnostics.lastFrameMs.toFixed(2)}</span>
+          <span data-testid="map-source-setdata-count">{sourceSetDataCount}</span>
+          <span data-testid="map-source-last-setdata-ms">{lastSourceSetDataMs.current.toFixed(2)}</span>
+          <span data-testid="map-viewport-phase1-fetches">{viewportDiagnostics.phase1FetchCount}</span>
+          <span data-testid="map-viewport-phase2-fetches">{viewportDiagnostics.phase2FetchCount}</span>
+          <span data-testid="map-viewport-phase1-cache-hits">{viewportDiagnostics.phase1CacheHits}</span>
+          <span data-testid="map-viewport-phase2-cache-hits">{viewportDiagnostics.phase2CacheHits}</span>
+          <span data-testid="map-viewport-phase2-zoom-bucket">{viewportDiagnostics.lastPhase2ZoomBucket ?? ''}</span>
         </div>
-      )}
 
-      {/* Overlay container */}
-      <div className="absolute inset-0 z-10 pointer-events-none">
-        {mapReady && (
-          <ConnectionWarningBanner
-            state={connectionState}
-            onRetry={spatialRefetch}
-            onUseMock={onSourceChange ? () => onSourceChange('mock') : undefined}
-          />
-        )}
+        {/* Mapbox canvas */}
+        <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" />
 
-        <OverlayGroupsPanel
-          isClassic={isClassic}
-          groups={groups}
-          activeGroupId={activeGroupId}
-          onActivateGroup={onActivateGroup}
-          onAddGroup={onAddGroup}
-          onCloneGroup={onCloneGroup}
-          wells={wells}
-          selectedWellIds={selectedWellIds}
-          visibleWellIds={visibleWellIds}
+        {/* Vignette — themed edge treatment */}
+        <div className="map-vignette absolute inset-0 z-[1] pointer-events-none" />
+
+        {/* Atmospheric bleed — top edge gradient from header */}
+        <div
+          className="absolute inset-x-0 top-0 h-16 z-[1] pointer-events-none"
+          style={{ background: 'linear-gradient(to bottom, rgb(var(--bg-deep)), transparent)' }}
         />
 
-        <OverlayFiltersBar
-          isClassic={isClassic}
-          visibleCount={visibleWellIds.size}
-          selectedCount={selectedWellIds.size}
-          totalCount={totalWellCount}
-          groupsPanelOpen={groupsPanelOpen}
-          operatorFilter={operatorFilter}
-          formationFilter={formationFilter}
-          statusFilter={statusFilter}
-          operatorOptions={operatorOptions}
-          formationOptions={formationOptions}
-          statusOptions={statusOptions}
-          onToggleOperator={onToggleOperator}
-          onToggleFormation={onToggleFormation}
-          onToggleStatus={onToggleStatus}
-          onResetFilters={onResetFilters}
-          onSelectAll={onSelectAll}
-          onClearSelection={onClearSelection}
-        />
+        {/* Lasso / Rectangle selection overlay */}
+        {selectionOverlay}
 
-        {(spatialLoading || spatialLoadingTrajectories) && (
-          <div className="absolute top-14 right-14 z-20 pointer-events-none">
-            <div className={`px-2 py-1 rounded text-[9px] font-bold uppercase tracking-widest ${
-              isClassic
-                ? 'bg-black/60 text-white/60'
-                : 'bg-[var(--surface-1)]/80 text-[var(--text-muted)] backdrop-blur-sm'
-            }`}>
-              {spatialLoadingTrajectories ? 'Loading laterals…' : 'Loading wells…'}
-            </div>
-          </div>
-        )}
-
-        <OverlayToolbar
-          isClassic={isClassic}
-          activeTool={activeTool}
-          onSetTool={setActiveTool}
-          layers={layers}
-          onToggleLayer={handleToggleLayer}
-          dataLayers={dataLayers}
-          onToggleDataLayer={(layer) => setDataLayers(prev => ({ ...prev, [layer]: !prev[layer] }))}
-          isLoading={spatialLoading}
-          source={spatialSource}
-          totalCount={spatialTotalCount}
-          truncated={spatialTruncated}
-          dataSourceId={dataSourceId}
-          onSourceChange={handleSourceChange}
-          fallbackActive={spatialFallback}
-        />
-
-        <OverlaySelectionBar
-          isClassic={isClassic}
-          selectedCount={selectedWellCount}
-          onAssignWells={onAssignWells}
-          onCreateGroupFromSelection={onCreateGroupFromSelection}
-          onSelectAll={onSelectAll}
-          onClearSelection={onClearSelection}
-        />
-
-        <OverlayLegend
-          isClassic={isClassic}
-          groups={groups}
-          wells={effectiveWells}
-          viewportLayout={viewportLayout}
-        />
-
-        {/* Well hover tooltip — hidden when popup is open */}
-        {!popupWellId && (
-          <MapWellTooltip
-            well={hoveredWell}
-            groups={groups}
-            position={tooltipPos}
-            isClassic={isClassic}
-          />
-        )}
-
-        {/* Well click popup card */}
-        <WellPopupCard
-          well={popupWell}
-          groups={groups}
-          position={popupPos}
-          isClassic={isClassic}
-          onClose={() => { setPopupWellId(null); setPopupPos(null); }}
-        />
-
-        {/* Trajectory-only error card — full data-source errors are shown by
-            the ConnectionWarningBanner above; this covers the laterals layer. */}
-        {isTrajectoryOnlyError && !errorDismissed && (
-          <div className="absolute bottom-16 right-4 z-30 pointer-events-auto max-w-xs">
-            <div className={`${
-              isClassic
-                ? 'sc-panel theme-transition'
-                : `rounded-panel ${overlayPanelClass(theme.features.panelStyle)} theme-transition`
-            } px-4 py-3 border-l-2 ${
-              isClassic ? 'border-l-red-500' : 'border-l-red-400'
-            }`}>
-              <div className="flex items-start gap-2">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className={`mt-0.5 shrink-0 ${isClassic ? 'text-red-400' : 'text-red-400'}`}>
-                  <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
-                  <path d="M8 4.5V9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                  <circle cx="8" cy="11.5" r="0.75" fill="currentColor" />
-                </svg>
-                <div className="flex-1 min-w-0">
-                  <div className={`text-[10px] font-black uppercase tracking-widest ${isClassic ? 'text-red-400' : 'text-red-400'}`}>
-                    {isTrajectoryOnlyError ? '3D laterals unavailable' : 'Failed to load wells'}
-                  </div>
-                  <div className={`text-[9px] mt-1 leading-snug ${isClassic ? 'text-white/50' : 'text-[var(--text-muted)]'}`}>
-                    {displayedSpatialError}
-                  </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <button
-                      type="button"
-                      onClick={() => { setErrorDismissed(true); spatialRefetch(); }}
-                      className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded ${
-                        isClassic
-                          ? 'bg-white/10 text-white/70 hover:bg-white/20'
-                          : 'bg-[var(--cyan)]/15 text-[var(--cyan)] hover:bg-[var(--cyan)]/25 border border-[var(--cyan)]/30'
-                      } transition-colors`}
-                    >
-                      Retry
-                    </button>
-                    {spatialError && onSourceChange && (
-                      <button
-                        type="button"
-                        onClick={() => { setErrorDismissed(true); onSourceChange('mock'); }}
-                        className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded ${
-                          isClassic
-                            ? 'bg-white/10 text-white/70 hover:bg-white/20'
-                            : 'bg-[var(--surface-2)] text-[var(--text-secondary)] hover:bg-[var(--surface-2)]/80 border border-[var(--border)]'
-                        } transition-colors`}
-                      >
-                        Use mock data
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setErrorDismissed(true)}
-                      className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-1 rounded ${
-                        isClassic ? 'text-white/40 hover:text-white/60' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-                      } transition-colors`}
-                    >
-                      Dismiss
-                    </button>
-                  </div>
-                </div>
+        {/* Fallback when no Mapbox token */}
+        {!mapReady && (
+          <div className={`absolute inset-0 flex items-center justify-center ${
+            isClassic ? 'bg-[#101010]' : 'bg-[var(--bg-deep)]'
+          }`}>
+            <div className="text-center space-y-2">
+              <div className={`text-[11px] font-black uppercase tracking-[0.2em] ${
+                isClassic ? 'text-white/40' : 'text-[var(--text-muted)]'
+              }`}>
+                Map unavailable
+              </div>
+              <div className={`text-[10px] ${
+                isClassic ? 'text-white/25' : 'text-[var(--text-muted)]/60'
+              }`}>
+                Mapbox couldn’t load. Check your connection, or set VITE_MAPBOX_TOKEN to enable the map.
               </div>
             </div>
           </div>
         )}
 
-        {/* Keyboard shortcut hint */}
-        {!activeTool && (
-          <div className="absolute bottom-3 right-14 z-10 pointer-events-none">
-            <span className={`text-[9px] tracking-wide ${
-              isClassic ? 'text-white/20' : 'text-[var(--text-muted)]/40'
-            }`}>
-              Shift+drag to select
-            </span>
+        {/* Overlay container */}
+        <div className="absolute inset-0 z-10 pointer-events-none">
+          {mapReady && (
+            <ConnectionWarningBanner
+              state={connectionState}
+              onRetry={spatialRefetch}
+              onUseMock={onSourceChange ? () => onSourceChange('mock') : undefined}
+            />
+          )}
+
+          <OverlayFiltersBar
+            isClassic={isClassic}
+            visibleCount={visibleWellIds.size}
+            selectedCount={selectedWellIds.size}
+            totalCount={totalWellCount}
+            groupsPanelOpen={groupsPanelOpen}
+            operatorFilter={operatorFilter}
+            formationFilter={formationFilter}
+            statusFilter={statusFilter}
+            operatorOptions={operatorOptions}
+            formationOptions={formationOptions}
+            statusOptions={statusOptions}
+            onToggleOperator={onToggleOperator}
+            onToggleFormation={onToggleFormation}
+            onToggleStatus={onToggleStatus}
+            onResetFilters={onResetFilters}
+            onSelectAll={onSelectAll}
+            onClearSelection={onClearSelection}
+          />
+
+          {(spatialLoading || spatialLoadingTrajectories) && (
+            <div className="absolute top-14 right-14 z-20 pointer-events-none">
+              <div className={`px-2 py-1 rounded text-[9px] font-bold uppercase tracking-widest ${
+                isClassic
+                  ? 'bg-black/60 text-white/60'
+                  : 'bg-[var(--surface-1)]/80 text-[var(--text-muted)] backdrop-blur-sm'
+              }`}>
+                {spatialLoadingTrajectories ? 'Loading laterals…' : 'Loading wells…'}
+              </div>
+            </div>
+          )}
+
+          <OverlayToolbar
+            isClassic={isClassic}
+            activeTool={activeTool}
+            onSetTool={setActiveTool}
+            layers={layers}
+            onToggleLayer={handleToggleLayer}
+            dataLayers={dataLayers}
+            onToggleDataLayer={(layer) => setDataLayers(prev => ({ ...prev, [layer]: !prev[layer] }))}
+            isLoading={spatialLoading}
+            source={spatialSource}
+            totalCount={spatialTotalCount}
+            truncated={spatialTruncated}
+            dataSourceId={dataSourceId}
+            onSourceChange={handleSourceChange}
+            fallbackActive={spatialFallback}
+          />
+
+          <OverlaySelectionBar
+            isClassic={isClassic}
+            selectedCount={selectedWellCount}
+            onAssignWells={onAssignWells}
+            onCreateGroupFromSelection={onCreateGroupFromSelection}
+            onSelectAll={onSelectAll}
+            onClearSelection={onClearSelection}
+          />
+
+          <OverlayLegend
+            isClassic={isClassic}
+            groups={groups}
+            wells={effectiveWells}
+            viewportLayout={viewportLayout}
+          />
+
+          {/* Well hover tooltip — hidden when popup is open */}
+          {!popupWellId && (
+            <MapWellTooltip
+              well={hoveredWell}
+              groups={groups}
+              position={tooltipPos}
+              isClassic={isClassic}
+            />
+          )}
+
+          {/* Well click popup card */}
+          <WellPopupCard
+            well={popupWell}
+            groups={groups}
+            position={popupPos}
+            isClassic={isClassic}
+            onClose={() => { setPopupWellId(null); setPopupPos(null); }}
+          />
+
+          {/* Trajectory-only error card — full data-source errors are shown by
+              the ConnectionWarningBanner above; this covers the laterals layer. */}
+          {isTrajectoryOnlyError && !errorDismissed && (
+            <div className="absolute bottom-16 right-4 z-30 pointer-events-auto max-w-xs">
+              <div className={`${
+                isClassic
+                  ? 'sc-panel theme-transition'
+                  : `rounded-panel ${overlayPanelClass(theme.features.panelStyle)} theme-transition`
+              } px-4 py-3 border-l-2 ${
+                isClassic ? 'border-l-red-500' : 'border-l-red-400'
+              }`}>
+                <div className="flex items-start gap-2">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className={`mt-0.5 shrink-0 ${isClassic ? 'text-red-400' : 'text-red-400'}`}>
+                    <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M8 4.5V9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    <circle cx="8" cy="11.5" r="0.75" fill="currentColor" />
+                  </svg>
+                  <div className="flex-1 min-w-0">
+                    <div className={`text-[10px] font-black uppercase tracking-widest ${isClassic ? 'text-red-400' : 'text-red-400'}`}>
+                      {isTrajectoryOnlyError ? '3D laterals unavailable' : 'Failed to load wells'}
+                    </div>
+                    <div className={`text-[9px] mt-1 leading-snug ${isClassic ? 'text-white/50' : 'text-[var(--text-muted)]'}`}>
+                      {displayedSpatialError}
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <button
+                        type="button"
+                        onClick={() => { setErrorDismissed(true); spatialRefetch(); }}
+                        className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded ${
+                          isClassic
+                            ? 'bg-white/10 text-white/70 hover:bg-white/20'
+                            : 'bg-[var(--cyan)]/15 text-[var(--cyan)] hover:bg-[var(--cyan)]/25 border border-[var(--cyan)]/30'
+                        } transition-colors`}
+                      >
+                        Retry
+                      </button>
+                      {spatialError && onSourceChange && (
+                        <button
+                          type="button"
+                          onClick={() => { setErrorDismissed(true); onSourceChange('mock'); }}
+                          className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded ${
+                            isClassic
+                              ? 'bg-white/10 text-white/70 hover:bg-white/20'
+                              : 'bg-[var(--surface-2)] text-[var(--text-secondary)] hover:bg-[var(--surface-2)]/80 border border-[var(--border)]'
+                          } transition-colors`}
+                        >
+                          Use mock data
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setErrorDismissed(true)}
+                        className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-1 rounded ${
+                          isClassic ? 'text-white/40 hover:text-white/60' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                        } transition-colors`}
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Keyboard shortcut hint */}
+          {!activeTool && (
+            <div className="absolute bottom-3 right-14 z-10 pointer-events-none">
+              <span className={`text-[9px] tracking-wide ${
+                isClassic ? 'text-white/20' : 'text-[var(--text-muted)]/40'
+              }`}>
+                Shift+drag to select
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Right inspector column — active-group detail (collapsible, Task 1.2 'inspector' key) */}
+      <aside
+        data-testid="inspector-column"
+        className={`flex-none transition-[width] duration-300 overflow-y-auto ${inspectorCollapsed ? 'w-9' : 'w-[288px]'}`}
+        style={{ background: 'var(--glass-sidebar-bg)', borderLeft: '1px solid var(--glass-sidebar-border)' }}
+        aria-label="Group inspector"
+      >
+        {inspectorCollapsed ? (
+          <button
+            type="button"
+            data-testid="inspector-expand"
+            aria-label="Expand inspector"
+            title="Expand inspector"
+            onClick={handleToggleInspector}
+            className="w-full h-12 flex items-center justify-center text-theme-muted hover:text-theme-text focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-theme-cyan"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 2L4 6L8 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        ) : (
+          <div className="p-3">
+            <div className="flex justify-end mb-1">
+              <button
+                type="button"
+                data-testid="inspector-collapse"
+                aria-label="Collapse inspector"
+                title="Collapse inspector"
+                onClick={handleToggleInspector}
+                className="w-6 h-6 flex items-center justify-center text-theme-muted hover:text-theme-text rounded-inner focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-theme-cyan"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M4 2L8 6L4 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
+            {activeGroup ? (
+              <GroupInspector group={activeGroup} wells={activeGroupWells} />
+            ) : (
+              <div className="text-[10px] uppercase tracking-widest text-theme-muted p-2">No active group</div>
+            )}
           </div>
         )}
-      </div>
+      </aside>
     </div>
   );
 };
