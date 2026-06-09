@@ -42,7 +42,7 @@ const GroupList: React.FC<GroupListProps> = ({
         <button
             type="button"
             onClick={onAddGroup}
-            className="text-[10px] px-3 py-1 rounded transition-all font-bold uppercase border bg-theme-magenta/20 hover:bg-theme-magenta/40 text-theme-magenta border-theme-magenta/30"
+            className="text-[10px] px-3 py-1 rounded transition-all font-bold uppercase border bg-theme-cyan/15 hover:bg-theme-cyan/25 text-theme-cyan border-theme-cyan/30"
         >
             + New Group
         </button>
@@ -133,8 +133,8 @@ const GroupList: React.FC<GroupListProps> = ({
           className={`
               w-full text-left relative rounded-inner border cursor-pointer transition-all duration-200 group
               ${isActive
-                  ? 'bg-theme-surface2 border-theme-magenta glow-magenta scale-[1.01]'
-                  : 'bg-theme-surface1/60 border-theme-border hover:bg-theme-surface1 hover:border-theme-lavender hover:scale-[1.01]'}
+                  ? 'bg-theme-surface2 border-theme-cyan glow-cyan scale-[1.01]'
+                  : 'bg-theme-surface1/60 border-theme-border hover:bg-theme-surface1 hover:border-theme-cyan/50 hover:scale-[1.01]'}
           `}
       >
           <button
@@ -180,7 +180,7 @@ const GroupList: React.FC<GroupListProps> = ({
           </button>
 
           {isActive && (
-              <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-inner transition-all bg-theme-magenta glow-magenta pointer-events-none"></div>
+              <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-inner transition-all bg-theme-cyan glow-cyan pointer-events-none"></div>
           )}
       </div>
     );
