@@ -1,6 +1,6 @@
 # Map Workspace Redesign Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Spec: `docs/superpowers/specs/2026-06-09-map-workspace-redesign-design.md`.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Spec: `docs/superpowers/specs/2026-06-09-map-workspace-redesign-design.md`. Orientation: `docs/superpowers/HANDOFF.md`.
 
 **Goal:** Turn the WELLS/map workspace from amateur into a professional, cinematic-but-legible command center: unified surfaces + accent discipline, per-theme atmosphere taming, slim chrome + status strip, connection warnings, a right-side group inspector, a context-aware bottom dock (group economics ↔ selection analytics), and economics-heat + type-curve/formation map layers.
 
@@ -9,6 +9,24 @@
 **Tech Stack:** React + Vite + TypeScript, Mapbox GL, recharts + d3 (already installed), Vitest, Storybook, Playwright.
 
 **Execution order = priority:** Phase 1 (polish/chrome) must land first. Phase 2 (dock). Phase 3 (layers). Commit atomically; run `npm run typecheck` + `npm test` per task; screenshot WELLS across slate/permian/mario after visual changes; open a draft PR after Phase 1's first green commit.
+
+---
+
+## Execution status — updated 2026-06-09
+
+> **▶ Resume at Task 1.3.** Phase 1 *polish* is committed on `feat/map-workspace-redesign` (draft PR #7) and validated (typecheck/build/ui:audit/unit tests green; 2 failures pre-exist on `main`). This table is authoritative; some tasks were adapted from the original steps (noted inline + in commits).
+
+| Task | Status | Notes |
+|---|---|---|
+| 1.1 Atmosphere | ✅ done (adapted) | No opacity token — the wash was Mapbox paint + light-mode panels, not one layer; tuned Permian map palette instead. Screenshot-verified. |
+| 1.2 Surfaces + accent | ✅ done | Soft (alpha) border + shadow; secondary magenta/orange → primary cyan. Tests updated. |
+| 1.3 Top bar | ⬜ not started | **← resume here** |
+| 1.4 Context strip | ⬜ not started | Consolidate with `OverlayFiltersBar`, don't duplicate. |
+| 1.5 Right inspector | ⚠️ component done, NOT integrated | Built + Storybook-verified. In-app placement blocked on tool-rail collision (needs layout reflow). |
+| 1.6 Legibility + connection | ✅ done | Markers + 3px selection ring; tested `deriveConnectionState` + `ConnectionWarningBanner`. |
+| 1.7 Sidebar | ✅ theming fixed | Added missing Permian sidebar tokens. Cosmetic "richer rows" deferred. |
+| Phase 2 — dock | ⬜ not started | Context-aware hybrid + mock `productionService`. |
+| Phase 3 — layers | ⬜ not started | Economics heat + type-curve/formation polygons. |
 
 ---
 
@@ -21,107 +39,101 @@
 - `src/services/productionService.ts` — deterministic mock monthly production per well; adapter shape for future Databricks.
 - `src/services/geologyService.ts` — mock formation/type-curve polygons (GeoJSON) + labels.
 - `src/services/heatService.ts` — per-well NPV/acre values + legend domain (mock).
-- `src/components/slopcast/map/GroupInspector.tsx` (+ `.stories.tsx`) — right sidebar.
-- `src/components/slopcast/map/StatusDonut.tsx` — well-status donut (recharts Pie).
-- `src/components/slopcast/map/ConnectionStatusChip.tsx` — header live/degraded/down chip.
-- `src/components/slopcast/map/ConnectionWarningBanner.tsx` — persistent inline warning.
+- ✅ `src/components/slopcast/map/GroupInspector.tsx` (+ `.stories.tsx`) — right sidebar. **DONE (component).**
+- ✅ `src/components/slopcast/map/StatusDonut.tsx` — well-status donut (CSS conic-gradient). **DONE.**
+- `src/components/slopcast/map/ConnectionStatusChip.tsx` — header live/degraded/down chip. *(Header version pending; logic exists in `connectionState.ts`.)*
+- ✅ `src/components/slopcast/map/ConnectionWarningBanner.tsx` — persistent inline warning. **DONE.**
 - `src/components/slopcast/map/MapLayersControl.tsx` — consolidated layers toggle.
 - `src/components/slopcast/map/insightsDock/InsightsDock.tsx` (+ `.stories.tsx`) — dock shell + mode switch.
 - `src/components/slopcast/map/insightsDock/useDockMode.ts` — derive mode from selection + remember last tab.
 - `src/components/slopcast/map/insightsDock/ForecastTab.tsx`, `EconomicsTab.tsx`, `AssumptionsTab.tsx`, `WellListTab.tsx` (group mode).
 - `src/components/slopcast/map/insightsDock/SummaryTab.tsx`, `ProductionChart.tsx`, `ProbitChart.tsx` (selection mode).
+- ✅ *(added)* `src/components/slopcast/map/connectionState.ts` + `groupInspectorStats.ts` (+ tests) — tested pure helpers.
 
 **Modified:**
-- `src/theme/types.ts` — add `mapAtmosphereOpacity` to `ThemeFeatures`.
-- `src/theme/definitions/*/index.ts` — set per-theme atmosphere opacity (tame permian).
-- `src/theme/registry.ts` — unify `overlayPanelClass` (remove glass white-outline artifact).
-- `src/styles/theme.css` — `--map-atmosphere-opacity` token + unified overlay-surface tokens.
-- `src/components/slopcast/MapCommandCenter.tsx` — compose inspector + dock + layers; drop floating groups panel; apply atmosphere token; wire connection warning.
-- `src/components/slopcast/map/useMapTheme.ts` — apply atmosphere opacity; surface Mapbox load failure.
-- `src/components/slopcast/PageHeader.tsx` + `DesignWorkspaceTabs.tsx` — slim top bar, scenario/price chips, connection chip, status strip.
-- `src/components/layout/AppShell.tsx` — left sidebar groups list polish; right inspector slot.
-- `src/components/slopcast/map/OverlayGroupsPanel.tsx` — retire (delete usage; remove file once inspector covers it).
-- `src/components/slopcast/WaterfallChart.tsx` — reuse in EconomicsTab.
+- `src/theme/types.ts` — add `mapAtmosphereOpacity` to `ThemeFeatures`. *(Skipped — adapted, see 1.1.)*
+- ✅ `src/theme/definitions/permian/index.ts` — Permian map palette tuned for legibility.
+- ✅ `src/theme/registry.ts` — unified `overlayPanelClass` (soft border + shadow).
+- ✅ `src/styles/glass.css` — added Permian sidebar tokens (dusk + Noon).
+- ✅ `src/components/slopcast/MapCommandCenter.tsx` — wired connection banner; narrowed bottom error card; clarified Mapbox fallback. *(Inspector/dock/layers wiring pending.)*
+- `src/components/slopcast/map/useMapTheme.ts` — (atmosphere applied via palette, not a token).
+- `src/components/slopcast/PageHeader.tsx` + `DesignWorkspaceTabs.tsx` — slim top bar, scenario/price chips, connection chip, status strip. **(Task 1.3 — pending.)**
+- `src/components/layout/AppShell.tsx` — left sidebar groups list polish; right inspector slot. **(Pending.)**
+- `src/components/slopcast/map/OverlayGroupsPanel.tsx` — retire once inspector is integrated. **(Pending.)**
+- ✅ `src/components/GroupList.tsx` — accent discipline (magenta/orange → cyan); hoisted static icon.
+- ✅ `src/components/slopcast/map/wellLayerController.ts` — marker legibility + selection ring.
+- `src/components/slopcast/WaterfallChart.tsx` — reuse in EconomicsTab. **(Phase 2.)**
 
 ---
 
 ## Phase 1 — Polish & Chrome (PRIORITY)
 
-### Task 1.1: Per-theme atmosphere opacity token
+### ✅ Task 1.1: Per-theme atmosphere (ADAPTED → Permian basemap legibility)
 
-**Files:** Modify `src/theme/types.ts`, `src/theme/definitions/*/index.ts`, `src/styles/theme.css`, `src/components/slopcast/map/useMapTheme.ts`
+**Adaptation:** the green wash was the Mapbox paint overrides + light-mode panel surfaces, not a single atmosphere layer, so no `--map-atmosphere-opacity` token was added. Instead the Permian map palette (land/water/label) was receded/brightened. Verified by screenshot.
 
-- [ ] **Step 1 — Test:** add `src/theme/themeAtmosphere.test.ts` asserting every theme in `THEMES` defines a numeric `features.mapAtmosphereOpacity` in `[0,1]`, and that `permian` < `slate`.
-- [ ] **Step 2 — Run:** `npm test -- themeAtmosphere` → FAIL (property missing).
-- [ ] **Step 3 — Implement:** add `mapAtmosphereOpacity: number` to `ThemeFeatures` in `theme/types.ts`; set per theme (slate ~0.9 baseline pass-through, permian ~0.35, others tuned). In `useMapTheme.ts` set `--map-atmosphere-opacity` on the map container from the active theme; the atmosphere/background layer over the map multiplies its opacity by this var.
-- [ ] **Step 4 — Run:** `npm test -- themeAtmosphere` → PASS; `npm run typecheck`.
-- [ ] **Step 5 — Verify UI:** screenshot WELLS in permian → wells/labels legible; slate unchanged.
-- [ ] **Step 6 — Commit:** `feat(theme): add per-theme map atmosphere opacity; tame Permian wash`
+- [x] Receded Permian `mapboxOverrides` land/water + brighter label color (`src/theme/definitions/permian/index.ts`).
+- [x] Screenshot WELLS in Permian → city labels + wells legible; Slate unchanged.
+- [x] Commit: `feat(theme): improve Permian basemap legibility`
 
-### Task 1.2: Unify overlay panel surface + accent discipline
+### ✅ Task 1.2: Unify overlay panel surface + accent discipline
 
-**Files:** Modify `src/theme/registry.ts`, `src/styles/theme.css`
+- [x] Test `src/theme/overlayPanelClass.test.ts` — soft (alpha) border + shadow; glass keeps blur.
+- [x] Rewrite `overlayPanelClass` (`src/theme/registry.ts`) so glass/solid/outline read as grounded cards (no full-strength outline on the dark map).
+- [x] Replace the magenta/orange "New Group" + active-group accent with the primary `--cyan` (`src/components/GroupList.tsx`).
+- [x] Update `src/theme/registry.test.ts` exact-string assertion; `npm run typecheck`; `npm run ui:audit`; screenshot Slate.
+- [x] Commit: surfaces/accent + (follow-up) hoist static clone icon.
 
-- [ ] **Step 1 — Test:** `src/theme/registry.test.ts` — `overlayPanelClass('glass')` no longer contains the bright-border artifact; all three styles return a class string using `--surface`/`--border` consistent with sidebar.
-- [ ] **Step 2 — Run:** FAIL.
-- [ ] **Step 3 — Implement:** rewrite `overlayPanelClass` so glass/solid/outline all read as intentional over the map (no `border-[var(--border)]` full-opacity glow on dark); align radius/border with sidebar+toolbar. Replace the magenta/orange "New Group" accent usage with the theme primary/neutral.
-- [ ] **Step 4 — Run:** PASS; `npm run typecheck`.
-- [ ] **Step 5 — Verify:** `npm run ui:audit`; screenshot WELLS slate + permian.
-- [ ] **Step 6 — Commit:** `refactor(theme): unify overlay panel surfaces and accent usage`
+### ⬜ Task 1.3: Slim top bar + scenario/price chips + connection chip  ◀ RESUME HERE
 
-### Task 1.3: Slim top bar + scenario/price chips + connection chip
+**Files:** Modify `src/components/slopcast/PageHeader.tsx`, `DesignWorkspaceTabs.tsx`; Create `ConnectionStatusChip.tsx` (can wrap the existing `deriveConnectionState` helper).
 
-**Files:** Modify `src/components/slopcast/PageHeader.tsx`, `DesignWorkspaceTabs.tsx`; Create `ConnectionStatusChip.tsx`
-
-- [ ] Test `ConnectionStatusChip.test.tsx`: renders `Live` (green) when connected, `Degraded`/`Unreachable` (amber/red) with message otherwise; never color-only (has icon + label).
+- [ ] Test `ConnectionStatusChip.test.tsx`: renders `Live` (green) when connected, `Degraded`/`Unreachable` (amber/red) with message otherwise; never color-only (icon + label).
 - [ ] Run → FAIL. Implement chip consuming `useConnectionStatus` + a Mapbox-status prop. Run → PASS.
 - [ ] Replace the oversized WELLS/ECONOMICS segmented pill with: nav pills + `Scenario ▾` + `Price deck ▾` chips + connection chip + theme chip + `Compare` ghost + `Run economics` primary. Keep wiring to existing handlers.
 - [ ] `npm run typecheck`; screenshot header across slate/permian/mario.
 - [ ] Commit: `feat(chrome): slim top bar, add scenario/price + connection chips`
 
-### Task 1.4: Group context strip
+### ⬜ Task 1.4: Group context strip
 
-**Files:** Create `src/components/slopcast/map/GroupContextStrip.tsx` (+ story); compose in `MapCommandCenter.tsx` (replaces part of OverlayFiltersBar)
+**Files:** Create `src/components/slopcast/map/GroupContextStrip.tsx` (+ story); compose in `MapCommandCenter.tsx` (consolidate with `OverlayFiltersBar`).
 
 - [ ] Test: given a group + status counts, renders name, well-count pill, Producing/DUC/Permit counts, "N of M in view", Filters[n], Clear.
 - [ ] Run → FAIL → implement (consume existing filter/selection state; reuse status colors). Run → PASS.
 - [ ] `npm run typecheck`; screenshot. Commit: `feat(map): add group context strip`
 
-### Task 1.5: Right inspector + status donut
+### ⚠️ Task 1.5: Right inspector + status donut — COMPONENT DONE, INTEGRATION PENDING
 
-**Files:** Create `StatusDonut.tsx`, `GroupInspector.tsx` (+ stories); compose into `MapCommandCenter.tsx`; remove `OverlayGroupsPanel` usage
+**Done:** `StatusDonut.tsx`, `GroupInspector.tsx` (+ story), tested `summarizeGroupWells`. Verified in Storybook.
 
-- [ ] Test `StatusDonut.test.tsx`: aggregates wells into Producing/DUC/Permit/Other counts + percentages summing to 100.
-- [ ] Run → FAIL → implement donut (recharts `PieChart`, theme `chartPalette`). Run → PASS.
-- [ ] Test `GroupInspector.test.tsx`: renders 6-stat grid from `DealMetrics`, donut, assumptions summary (qi/b/Di, CAPEX, OPEX, NRI), "View details".
-- [ ] Run → FAIL → implement inspector (collapsible right sidebar; consume active group + derived metrics via existing `useDerivedMetrics`). Run → PASS.
-- [ ] Remove `<OverlayGroupsPanel>` from `MapCommandCenter.tsx`; delete the component + story once green.
-- [ ] `npm run typecheck`; `npm run ui:audit`; screenshot WELLS slate/permian/mario (inspector open).
-- [ ] Commit: `feat(map): add right group inspector with status donut; retire floating groups panel`
+- [x] Test `groupInspectorStats.test.ts`: status breakdown (counts + %) and avg lateral; empty-safe.
+- [x] Implement `StatusDonut` (CSS conic-gradient, theme-token hole).
+- [x] Implement `GroupInspector` (6-stat grid via `KpiTile`, donut, assumptions, View details).
+- [x] Storybook story (Default / NoEconomicsYet / Permian); screenshot-verified.
+- [ ] **INTEGRATION (blocked on layout):** place the inspector as a right column in `MapCommandCenter.tsx`. ⚠️ The tool rail (`OverlayToolbar`) sits at the map's right edge — needs a reflow / rail move. Then remove `<OverlayGroupsPanel>` (metrics now live in the inspector) and delete the component + story.
+- [ ] `npm run ui:audit`; screenshot WELLS slate/permian/mario (inspector open).
+- [ ] Commit: `feat(map): integrate right group inspector; retire floating groups panel`
 
-### Task 1.6: Well legibility + connection warning banner
+### ✅ Task 1.6: Well legibility + connection warning banner
 
-**Files:** Modify `src/components/slopcast/map/wellLayerController.ts`, `useMapTheme.ts`, `MapCommandCenter.tsx`; Create `ConnectionWarningBanner.tsx`
+- [x] Brighter status-colored markers; 3px accent selection ring (+radius bump); more visible permits/DUCs (`wellLayerController.ts`).
+- [x] Test `connectionState.test.ts` (`deriveConnectionState`): ok/degraded/down, retry/use-mock, dismissibility, map-outage priority.
+- [x] Implement `ConnectionWarningBanner` + wire into `MapCommandCenter` (data unreachable / fallback); narrow bottom card to trajectory-only; clarify Mapbox fallback copy.
+- [x] `npm run typecheck`; screenshot (healthy = banner hidden). Commit: connection warnings.
 
-- [ ] Brighter status-colored markers; selected wells ringed in theme accent; verify ≥3:1 contrast on tamed backdrops (manual screenshot check across themes).
-- [ ] Test `ConnectionWarningBanner.test.tsx`: shows persistent dismissible warning with impact text when Databricks OR Mapbox unreachable; hidden when both live.
-- [ ] Run → FAIL → implement; wire Mapbox load/`error` event + token-missing + `useConnectionStatus` into a combined status. Run → PASS.
-- [ ] `npm run typecheck`; screenshots (force a failure by unsetting token in a story/manual). Commit: `feat(map): boost well legibility and surface connection warnings`
+### ✅ Task 1.7: Left sidebar groups list (theming bug)
 
-### Task 1.7: Left sidebar groups list polish
-
-**Files:** Modify `src/components/layout/AppShell.tsx`, `src/components/GroupList.tsx`
-
-- [ ] Richer group rows (color dot, name, muted NPV, well count); `+ New` in header; `Compare groups` pinned bottom. No new behavior — restyle + reuse handlers.
-- [ ] `npm run typecheck`; `npm run ui:audit`; screenshot. Commit: `feat(chrome): polish left sidebar groups list`
+- [x] Added the missing Permian sidebar glass tokens (was falling back to slate-blue): dusk + Noon (`src/styles/glass.css`).
+- [x] Screenshot Permian (sidebar now theme-toned). Commit: `fix(theme): add missing Permian sidebar glass tokens`.
+- [ ] *(Deferred, cosmetic)* Richer group rows (color dot, NPV, count), `Compare groups` pinned — `AppShell.tsx`/`GroupList.tsx`.
 
 ### Phase 1 close-out
-- [ ] Run `.agents/validation/gate.sh` (or the subset: typecheck → test → build → ui:audit → ui:shots). Fix failures.
-- [ ] Push branch; open **draft PR** with summary. Commit any fixups.
+- [x] Run validation subset (typecheck → test → build → ui:audit). 2 failing tests confirmed pre-existing on `main`.
+- [x] Push branch; open **draft PR #7** with summary + status comment.
 
 ---
 
-## Phase 2 — Context-aware Dock
+## Phase 2 — Context-aware Dock  ⬜ not started
 
 ### Task 2.1: Production types + mock service + normalization
 - [ ] `src/types/production.ts`: `MonthlyProduction { month: number; oil: number; gas: number; boe: number }`, `WellProductionSeries { wellId: string; months: MonthlyProduction[] }`. Export via barrel.
@@ -138,7 +150,7 @@
 - [ ] `ForecastTab.tsx` (recharts ComposedChart: rate vs time, P10–P90 band, type curve, actuals; oil/gas/boe selector).
 - [ ] `EconomicsTab.tsx` (reuse `WaterfallChart`).
 - [ ] `AssumptionsTab.tsx` (param table) + `WellListTab.tsx` (group wells table; reuse `WellsTable`/`GroupWellsTable`).
-- [ ] Stories + light tests (render with `DEFAULT_*`). Commit per tab or grouped: `feat(dock): group-mode forecast/economics/assumptions/well-list`
+- [ ] Stories + light tests (render with `DEFAULT_*`). Commit per tab or grouped.
 
 ### Task 2.4: Selection-mode tabs
 - [ ] `SummaryTab.tsx` (selected wells table).
@@ -150,7 +162,7 @@
 
 ---
 
-## Phase 3 — Map Layers
+## Phase 3 — Map Layers  ⬜ not started
 
 ### Task 3.1: Layers control + economics heat
 - [ ] `MapLayersControl.tsx` (Wells/Laterals/Economics heat/Type-curve areas/Satellite) consolidating existing toggles.
@@ -170,4 +182,4 @@
 
 - **Spec coverage:** chrome (1.3/1.4/1.7), atmosphere (1.1), surfaces/accent (1.2), inspector (1.5), well legibility (1.6), connection (1.3 chip + 1.6 banner), dock hybrid (2.x), production/probit (2.4), layers heat+polygons (3.x), mock adapters (2.1/3.1/3.2). All spec sections map to a task.
 - **Placeholders:** none — each task names exact files, test focus, command, and commit. (Phase 2–3 steps are task-level by design for inline execution by the same author who holds the spec; flesh code per-task during execution.)
-- **Type consistency:** `MonthlyProduction`/`WellProductionSeries` defined once (2.1) and consumed by `productionNormalize`, `ProductionChart`; `mapAtmosphereOpacity` defined once (1.1). Dock mode strings `'group'|'selection'` consistent across `useDockMode`/`InsightsDock`.
+- **Type consistency:** `MonthlyProduction`/`WellProductionSeries` defined once (2.1) and consumed by `productionNormalize`, `ProductionChart`; dock mode strings `'group'|'selection'` consistent across `useDockMode`/`InsightsDock`.
