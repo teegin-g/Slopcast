@@ -10,17 +10,18 @@ interface GroupListProps {
   onCloneGroup: (groupId: string) => void;
 }
 
-const GroupList: React.FC<GroupListProps> = ({ 
+// Shared clone-icon SVG: byte-identical across both themes. Hoisted to module
+// scope so it isn't recreated on every render.
+const cloneIcon = (
+  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+);
+
+const GroupList: React.FC<GroupListProps> = ({
   groups, activeGroupId, onActivateGroup, onAddGroup, onCloneGroup
 }) => {
   const { theme } = useTheme();
   const isClassic = theme.features.isClassicTheme;
   const brandFontClass = theme.features.brandFont ? 'brand-font' : '';
-
-  // Shared clone-icon SVG: byte-identical across both themes.
-  const cloneIcon = (
-    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-  );
 
   // Header (title + add button) — same structure, theme-specific chrome.
   const header = isClassic ? (
