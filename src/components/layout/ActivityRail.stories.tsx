@@ -9,6 +9,7 @@ const meta = {
     section: 'wells',
     isClassic: false,
     onSetSection: fn(),
+    onNavigateHub: fn(),
   },
   decorators: [
     (Story) => (

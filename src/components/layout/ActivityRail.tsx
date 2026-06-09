@@ -4,6 +4,8 @@ import type { Section } from '../../hooks/useSidebarNav';
 interface ActivityRailProps {
   section: Section;
   onSetSection: (s: Section) => void;
+  /** Navigate to the Hub route. HUB is a route, not a Section, so it has no active state. */
+  onNavigateHub: () => void;
   isClassic: boolean;
 }
 
@@ -29,13 +31,20 @@ const LayersIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
+const HomeIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 10.5 12 3l9 7.5" />
+    <path d="M5 9.5V21h14V9.5" />
+  </svg>
+);
+
 const NAV: { id: Section; label: string; Icon: React.FC<{ className?: string }> }[] = [
   { id: 'wells', label: 'Wells', Icon: MapPinIcon },
   { id: 'economics', label: 'Economics', Icon: ChartIcon },
   { id: 'scenarios', label: 'Scenarios', Icon: LayersIcon },
 ];
 
-export function ActivityRail({ section, onSetSection, isClassic }: ActivityRailProps) {
+export function ActivityRail({ section, onSetSection, onNavigateHub, isClassic }: ActivityRailProps) {
   return (
     <nav
       data-testid="activity-rail"
@@ -44,7 +53,7 @@ export function ActivityRail({ section, onSetSection, isClassic }: ActivityRailP
         background: 'var(--glass-sidebar-bg)',
         borderRight: '1px solid var(--glass-sidebar-border)',
       }}
-      aria-label="Main sections"
+      aria-label="Primary navigation"
     >
       <div aria-hidden="true" className={`typo-label font-bold mb-2 ${isClassic ? 'text-theme-warning' : 'text-theme-cyan'}`}>SL</div>
       {NAV.map(({ id, label, Icon }) => {
@@ -71,6 +80,21 @@ export function ActivityRail({ section, onSetSection, isClassic }: ActivityRailP
           </button>
         );
       })}
+
+      {/* HUB — route nav, not a Section, so always inactive-styled. Pinned to bottom. */}
+      <button
+        type="button"
+        title="Hub"
+        data-testid="activity-rail-hub"
+        onClick={onNavigateHub}
+        className={`mt-auto w-9 h-9 flex items-center justify-center rounded-inner theme-transition focus-visible:outline-2 focus-visible:outline-theme-cyan focus-visible:outline-offset-[-2px] ${
+          isClassic
+            ? 'text-white/70 hover:bg-white/5 hover:text-white/90'
+            : 'text-theme-muted hover:text-theme-text hover:bg-theme-surface2/50'
+        }`}
+      >
+        <HomeIcon className="shrink-0" />
+      </button>
     </nav>
   );
 }

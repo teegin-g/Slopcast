@@ -13,7 +13,9 @@ import {
   setPanelCollapsed,
 } from '../../services/storage/workspacePreferences';
 import { useViewportLayout } from '../slopcast/hooks/useViewportLayout';
-import type { Well, WellGroup } from '../../types';
+import { useConnectionStatus } from '../../hooks/useConnectionStatus';
+import { deriveConnectionState } from '../slopcast/map/connectionState';
+import type { Scenario, SpatialDataSourceId, Well, WellGroup } from '../../types';
 import type { ThemeMeta } from '../../theme/themes';
 import { ThemeSceneLayer } from '../../theme/scene/ThemeSceneLayer';
 import type { ThemeSceneFxMode } from '../../theme/scene/types';
@@ -50,6 +52,11 @@ interface AppShellProps {
     atmosphericOverlays: string[];
     headerAtmosphereClass: string;
     pageOverlayClasses: string[];
+    /** Active spatial data source — drives the header connection chip. */
+    spatialSourceId?: SpatialDataSourceId;
+    /** Scenarios — the active one drives the header scenario + price-deck chips. */
+    scenarios?: Scenario[];
+    activeScenarioId?: string;
   };
   children: React.ReactNode;
 }
@@ -137,6 +144,29 @@ export function AppShell({ workspace, children }: AppShellProps) {
 
   const sectionLabel = section === 'wells' ? 'Wells' : section === 'economics' ? 'Economics' : 'Scenarios';
 
+  // Header connection chip — the header can't observe Mapbox (the in-map
+  // ConnectionWarningBanner covers basemap-down), so treat mapReady=true here
+  // and derive only the spatial-data state from the backend status poll.
+  const spatialSourceId = workspace.spatialSourceId ?? 'mock';
+  const { status: connectionStatus } = useConnectionStatus(spatialSourceId);
+  const connectionState = deriveConnectionState({
+    mapReady: true,
+    dataError: connectionStatus?.error ?? null,
+    dataSource: connectionStatus?.source ?? spatialSourceId,
+    fallbackActive: connectionStatus != null && !connectionStatus.connected,
+  });
+
+  // Header scenario + price-deck chips — read-only context for the active scenario.
+  const activeScenario =
+    workspace.scenarios?.find(s => s.id === workspace.activeScenarioId) ??
+    workspace.scenarios?.find(s => s.isBaseCase) ??
+    workspace.scenarios?.[0] ??
+    null;
+  const scenarioName = activeScenario?.name ?? null;
+  const priceDeck = activeScenario
+    ? `$${activeScenario.pricing.oilPrice.toFixed(2)} / $${activeScenario.pricing.gasPrice.toFixed(2)}`
+    : null;
+
   return (
     <div className={`flex h-screen overflow-hidden theme-transition ${workspace.atmosphereClass} ${workspace.fxClass}`}>
       <ThemeSceneLayer
@@ -154,6 +184,7 @@ export function AppShell({ workspace, children }: AppShellProps) {
           <ActivityRail
             section={section}
             onSetSection={handleSetSection}
+            onNavigateHub={() => workspace.navigate('/hub')}
             isClassic={workspace.isClassic}
           />
           {/* Tier 2: contextual panel. Plain flex container — the inner panel
@@ -189,20 +220,18 @@ export function AppShell({ workspace, children }: AppShellProps) {
 
       {/* Main column: header + content */}
       <div className="relative z-20 flex-1 flex flex-col overflow-hidden">
-        {/* Original PageHeader with brand, HUB/DESIGN/SCENARIOS tabs, theme icons */}
+        {/* Slim action/context bar: brand + read-only chips + theme selector.
+            Section nav lives in the two-tier nav; HUB moved to the ActivityRail. */}
         <PageHeader
           isClassic={workspace.isClassic}
           theme={workspace.theme}
           themes={workspace.themes}
           themeId={workspace.themeId}
           setThemeId={workspace.setThemeId}
-          viewMode={workspace.viewMode}
-          onSetViewMode={workspace.setViewMode}
-          designWorkspace={workspace.designWorkspace}
-          onSetDesignWorkspace={workspace.setDesignWorkspace}
-          economicsNeedsAttention={workspace.economicsNeedsAttention}
-          wellsNeedsAttention={workspace.wellsNeedsAttention}
-          onNavigateHub={() => workspace.navigate('/hub')}
+          scenarioName={scenarioName}
+          priceDeck={priceDeck}
+          connectionLevel={connectionState.level}
+          connectionTitle={connectionState.title}
           atmosphericOverlays={workspace.atmosphericOverlays}
           headerAtmosphereClass={workspace.headerAtmosphereClass}
           fxClass={workspace.fxClass}
