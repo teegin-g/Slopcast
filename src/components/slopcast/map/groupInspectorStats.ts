@@ -19,10 +19,17 @@ export interface GroupWellSummary {
 }
 
 // Status colors are semantic (paired with labels in the UI), not theme accents.
+// Single source of truth — also consumed by the map context strip.
+export const STATUS_COLORS: Record<WellStatus, string> = {
+  PRODUCING: '#34d399',
+  DUC: '#f0b86c',
+  PERMIT: '#a78bfa',
+};
+
 const STATUS_META: { status: WellStatus; label: string; color: string }[] = [
-  { status: 'PRODUCING', label: 'Producing', color: '#34d399' },
-  { status: 'DUC', label: 'DUC', color: '#f0b86c' },
-  { status: 'PERMIT', label: 'Permit', color: '#a78bfa' },
+  { status: 'PRODUCING', label: 'Producing', color: STATUS_COLORS.PRODUCING },
+  { status: 'DUC', label: 'DUC', color: STATUS_COLORS.DUC },
+  { status: 'PERMIT', label: 'Permit', color: STATUS_COLORS.PERMIT },
 ];
 
 /**

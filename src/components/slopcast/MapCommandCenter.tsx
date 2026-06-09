@@ -8,6 +8,7 @@ import { useMapInit } from './map/useMapInit';
 import { simplifyWellborePath, type WellboreData, type WellboreRenderDiagnostics } from './MapWellboreLayer';
 import { useViewportData } from '../../hooks/useViewportData';
 import { GroupInspector } from './map/GroupInspector';
+import { summarizeGroupWells, type WellStatus } from './map/groupInspectorStats';
 import { OverlayFiltersBar } from './map/OverlayFiltersBar';
 import { OverlayToolbar } from './map/OverlayToolbar';
 import { OverlaySelectionBar } from './map/OverlaySelectionBar';
@@ -161,9 +162,6 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   const [activeTool, setActiveTool] = useState<SelectionTool | null>(null);
   const [layers, setLayers] = useState<Record<string, boolean>>({ grid: false, heatmap: false, satellite: false });
   const [mapLayerEpoch, setMapLayerEpoch] = useState(0);
-  // TODO(1.8): remove groupsPanelOpen — OverlayFiltersBar no longer needs it once the
-  // floating groups panel is fully retired. Kept harmless here for typecheck/layout.
-  const groupsPanelOpen = false;
   const [inspectorCollapsed, setInspectorCollapsed] = useState(() => getPanelCollapsed('inspector') ?? false);
   const handleToggleInspector = useCallback(() => {
     setInspectorCollapsed(prev => {
@@ -558,6 +556,12 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
     () => (activeGroup ? wells.filter(w => activeGroup.wellIds.has(w.id)) : []),
     [activeGroup, wells],
   );
+  const activeGroupStatusCounts = useMemo(() => {
+    if (!activeGroup) return undefined;
+    const s = summarizeGroupWells(activeGroupWells);
+    const c = (st: WellStatus) => s.slices.find(x => x.status === st)?.count ?? 0;
+    return { producing: c('PRODUCING'), duc: c('DUC'), permit: c('PERMIT') };
+  }, [activeGroup, activeGroupWells]);
 
   return (
     <div className="flex w-full h-[calc(100vh-64px)] overflow-hidden" data-testid="map-command-center">
@@ -636,7 +640,9 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
             visibleCount={visibleWellIds.size}
             selectedCount={selectedWellIds.size}
             totalCount={totalWellCount}
-            groupsPanelOpen={groupsPanelOpen}
+            activeGroupName={activeGroup?.name}
+            activeGroupColor={activeGroup?.color}
+            statusCounts={activeGroupStatusCounts}
             operatorFilter={operatorFilter}
             formationFilter={formationFilter}
             statusFilter={statusFilter}

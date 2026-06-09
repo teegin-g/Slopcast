@@ -10,7 +10,9 @@ const meta = {
     visibleCount: 35,
     selectedCount: 8,
     totalCount: 40,
-    groupsPanelOpen: false,
+    activeGroupName: 'Tier 1 - Core',
+    activeGroupColor: '#38bdf8',
+    statusCounts: { producing: 14, duc: 13, permit: 13 },
     operatorFilter: new Set<string>(),
     formationFilter: new Set<string>(),
     statusFilter: new Set<string>(),
@@ -31,6 +33,12 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
+
+export const NoActiveGroup: Story = {
+  args: {
+    activeGroupName: undefined,
+  },
+};
 
 export const ActiveFilters: Story = {
   args: {
