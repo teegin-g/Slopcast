@@ -179,9 +179,12 @@ load_env_file "$ROOT_DIR/.env"
 load_env_file "$ROOT_DIR/.env.local"
 load_env_file "$ROOT_DIR/.env.backend.local"
 
-if [[ -d "$ROOT_DIR/.venv" ]]; then
+if [[ -f "$ROOT_DIR/.venv/bin/activate" ]]; then
   # shellcheck disable=SC1091
   source "$ROOT_DIR/.venv/bin/activate"
+elif [[ -d "$ROOT_DIR/.venv" ]]; then
+  echo "Warning: $ROOT_DIR/.venv exists but is incomplete (missing bin/activate)."
+  echo "Recreate it with: rm -rf .venv && python3 -m venv .venv && source .venv/bin/activate && pip install -r backend/requirements.txt"
 fi
 
 if ! command -v python >/dev/null 2>&1; then
