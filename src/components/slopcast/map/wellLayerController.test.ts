@@ -4,8 +4,33 @@ import {
   WELL_STATUS_LAYER_IDS,
   bindWellLayerEvents,
   buildWellColorExpression,
+  buildStatusRadius,
   updateWellFeatureState,
 } from './wellLayerController';
+
+describe('buildStatusRadius', () => {
+  it('produces a top-level interpolate (zoom never nested in case/*)', () => {
+    const expr = buildStatusRadius([4, 7, 11], 1.25);
+    expect(expr[0]).toBe('interpolate');
+    const firstOutput = expr[4];
+    expect(Array.isArray(firstOutput)).toBe(true);
+    expect(firstOutput[0]).toBe('case');
+  });
+
+  it('selected stop output is base * multiplier', () => {
+    const expr = buildStatusRadius([4, 7, 11], 1.25);
+    const caseExpr = expr[4];
+    expect(caseExpr[2]).toBeCloseTo(5); // 4 * 1.25
+    expect(caseExpr[3]).toBe(4);
+  });
+
+  it('no array node anywhere is a zoom-interpolate inside a case', () => {
+    const expr = buildStatusRadius([3, 5, 8], 1.25);
+    const json = JSON.stringify(expr);
+    const zoomCount = (json.match(/\["zoom"\]/g) || []).length;
+    expect(zoomCount).toBe(1);
+  });
+});
 
 describe('wellLayerController', () => {
   it('builds a property-based Mapbox expression for well colors', () => {

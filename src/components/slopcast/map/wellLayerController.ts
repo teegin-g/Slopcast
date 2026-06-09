@@ -1,3 +1,4 @@
+import type { ExpressionSpecification } from 'mapbox-gl';
 import type { Well } from '../../../types';
 
 export const WELL_SOURCE_ID = 'wells-source';
@@ -114,9 +115,28 @@ export function addWellSourceAndLayers(map: any, geoJson: unknown, colorMatchExp
   }
 }
 
+/**
+ * Build a circle-radius expression that interpolates on zoom AND enlarges when
+ * the feature is selected. Mapbox forbids nesting a zoom expression inside
+ * `case`/`*`, so selection is applied to each interpolate STOP OUTPUT instead.
+ * @param stops three radii [z6, z10, z14]
+ * @param selectedMultiplier scale factor when feature-state `selected` is true
+ */
+export function buildStatusRadius(
+  stops: readonly [number, number, number],
+  selectedMultiplier: number,
+): ExpressionSpecification {
+  const selected = ['boolean', ['feature-state', 'selected'], false];
+  const stopFor = (r: number) => ['case', selected, r * selectedMultiplier, r];
+  return [
+    'interpolate', ['linear'], ['zoom'],
+    6, stopFor(stops[0]),
+    10, stopFor(stops[1]),
+    14, stopFor(stops[2]),
+  ];
+}
+
 function addWellStatusLayers(map: any, colorMatchExpr: unknown, theme: WellLayerTheme) {
-  const defaultRadius = ['interpolate', ['linear'], ['zoom'], 6, 4, 10, 7, 14, 11];
-  const permitRadius = ['interpolate', ['linear'], ['zoom'], 6, 3, 10, 5, 14, 8];
   const selectedState = ['boolean', ['feature-state', 'selected'], false];
   const dimmedState = ['boolean', ['feature-state', 'dimmed'], false];
   const visibleState = ['boolean', ['feature-state', 'visible'], true];
@@ -155,7 +175,7 @@ function addWellStatusLayers(map: any, colorMatchExpr: unknown, theme: WellLayer
       source: WELL_SOURCE_ID,
       filter: ['==', ['get', 'status'], 'PRODUCING'],
       paint: {
-        'circle-radius': ['case', selectedState, ['*', defaultRadius, 1.25], defaultRadius],
+        'circle-radius': buildStatusRadius([4, 7, 11], 1.25),
         'circle-color': colorMatchExpr,
         'circle-stroke-width': ['case', selectedState, 3, 0],
         'circle-stroke-color': theme.selectedStroke,
@@ -173,7 +193,7 @@ function addWellStatusLayers(map: any, colorMatchExpr: unknown, theme: WellLayer
       source: WELL_SOURCE_ID,
       filter: ['==', ['get', 'status'], 'DUC'],
       paint: {
-        'circle-radius': defaultRadius,
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 6, 4, 10, 7, 14, 11],
         'circle-color': colorMatchExpr,
         'circle-opacity': ['case', dimmedState, 0.1, visibleState, 0.2, 0.1],
         'circle-stroke-width': ['case', selectedState, 3.5, 2],
@@ -190,7 +210,7 @@ function addWellStatusLayers(map: any, colorMatchExpr: unknown, theme: WellLayer
       source: WELL_SOURCE_ID,
       filter: ['==', ['get', 'status'], 'PERMIT'],
       paint: {
-        'circle-radius': ['case', selectedState, ['*', permitRadius, 1.25], permitRadius],
+        'circle-radius': buildStatusRadius([3, 5, 8], 1.25),
         'circle-color': colorMatchExpr,
         'circle-stroke-width': ['case', selectedState, 3, 0],
         'circle-stroke-color': theme.selectedStroke,
