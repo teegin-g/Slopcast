@@ -12,6 +12,8 @@ import { OverlayFiltersBar } from './map/OverlayFiltersBar';
 import { OverlayToolbar } from './map/OverlayToolbar';
 import { OverlaySelectionBar } from './map/OverlaySelectionBar';
 import { OverlayLegend } from './map/OverlayLegend';
+import { ConnectionWarningBanner } from './map/ConnectionWarningBanner';
+import { deriveConnectionState } from './map/connectionState';
 import { MapWellTooltip } from './map/MapWellTooltip';
 import { WellPopupCard } from './map/WellPopupCard';
 import { useSpatialSourcePolicy } from './map/useSpatialSourcePolicy';
@@ -250,6 +252,18 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   });
   const displayedSpatialError = spatialError ?? spatialTrajectoryError;
   const isTrajectoryOnlyError = !spatialError && !!spatialTrajectoryError;
+
+  // Combined connection state (data source). Mapbox availability is surfaced by
+  // the centered fallback panel below; this banner covers the live data source.
+  const connectionState = useMemo(
+    () => deriveConnectionState({
+      mapReady: true,
+      dataError: spatialError ?? null,
+      dataSource: dataSourceId ?? spatialSource ?? null,
+      fallbackActive: spatialFallback,
+    }),
+    [spatialError, dataSourceId, spatialSource, spatialFallback],
+  );
 
   const { handleSourceChange } = useSpatialSourcePolicy({ dataSourceId, onSourceChange });
 
@@ -578,12 +592,12 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
             <div className={`text-[11px] font-black uppercase tracking-[0.2em] ${
               isClassic ? 'text-white/40' : 'text-[var(--text-muted)]'
             }`}>
-              Map Command Center
+              Map unavailable
             </div>
             <div className={`text-[10px] ${
               isClassic ? 'text-white/25' : 'text-[var(--text-muted)]/60'
             }`}>
-              Set VITE_MAPBOX_TOKEN to enable the interactive map
+              Mapbox couldn’t load. Check your connection, or set VITE_MAPBOX_TOKEN to enable the map.
             </div>
           </div>
         </div>
@@ -591,6 +605,14 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
 
       {/* Overlay container */}
       <div className="absolute inset-0 z-10 pointer-events-none">
+        {mapReady && (
+          <ConnectionWarningBanner
+            state={connectionState}
+            onRetry={spatialRefetch}
+            onUseMock={onSourceChange ? () => onSourceChange('mock') : undefined}
+          />
+        )}
+
         <OverlayGroupsPanel
           isClassic={isClassic}
           groups={groups}
@@ -687,8 +709,9 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
           onClose={() => { setPopupWellId(null); setPopupPos(null); }}
         />
 
-        {/* Error overlay — spatial data loading failure */}
-        {displayedSpatialError && !errorDismissed && (
+        {/* Trajectory-only error card — full data-source errors are shown by
+            the ConnectionWarningBanner above; this covers the laterals layer. */}
+        {isTrajectoryOnlyError && !errorDismissed && (
           <div className="absolute bottom-16 right-4 z-30 pointer-events-auto max-w-xs">
             <div className={`${
               isClassic
