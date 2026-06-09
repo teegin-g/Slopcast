@@ -1,6 +1,174 @@
 import type { ExpressionSpecification } from 'mapbox-gl';
 import type { Well } from '../../../types';
 
+// ---------------------------------------------------------------------------
+// Economics heat layer
+// ---------------------------------------------------------------------------
+
+export const HEAT_SOURCE_ID = 'heat-source';
+export const HEAT_LAYER_ID = 'heat-circles';
+
+/**
+ * Build a circle-color interpolate expression over the NPV/acre domain
+ * (min → cool, max → warm). Top-level interpolate on ['get','npvPerAcre']
+ * (a DATA expression, never zoom).
+ *
+ * Guard: when min === max (single-value domain), nudge max by 1 so Mapbox
+ * receives strictly-ascending stop inputs (stops must be strictly increasing).
+ */
+export function buildHeatColorExpression(domain: { min: number; max: number }): ExpressionSpecification {
+  const lo = domain.min;
+  const hi = domain.max === domain.min ? domain.min + 1 : domain.max;
+  const mid = lo + (hi - lo) / 2;
+  return [
+    'interpolate', ['linear'], ['get', 'npvPerAcre'],
+    lo,  '#2b6cb0',  // cool blue  — low NPV/acre
+    mid, '#f6c453',  // warm gold  — mid NPV/acre
+    hi,  '#e53e3e',  // hot red    — high NPV/acre
+  ] as unknown as ExpressionSpecification;
+}
+
+/**
+ * Add (or update) an economics-heat circle layer. Builds a GeoJSON
+ * FeatureCollection from wells joined with heat values, colours circles by
+ * npvPerAcre. Idempotent: updates source data if source already present;
+ * guards addLayer with getLayer.
+ */
+export function addHeatLayer(
+  map: any,
+  wells: Well[],
+  heat: { values: { wellId: string; npvPerAcre: number }[]; domain: { min: number; max: number } },
+): void {
+  // O(1) lookup: build a Map once instead of find-in-loop.
+  const heatMap = new Map<string, number>(heat.values.map((v) => [v.wellId, v.npvPerAcre]));
+
+  const features = wells
+    .map((well) => ({
+      type: 'Feature' as const,
+      id: well.id,
+      geometry: { type: 'Point' as const, coordinates: [well.lng, well.lat] },
+      properties: { npvPerAcre: heatMap.get(well.id) ?? 0 },
+    }));
+
+  const geojson = { type: 'FeatureCollection' as const, features };
+
+  if (map.getSource(HEAT_SOURCE_ID)) {
+    map.getSource(HEAT_SOURCE_ID).setData(geojson);
+  } else {
+    map.addSource(HEAT_SOURCE_ID, { type: 'geojson', data: geojson });
+  }
+
+  if (!map.getLayer(HEAT_LAYER_ID)) {
+    map.addLayer({
+      id: HEAT_LAYER_ID,
+      type: 'circle',
+      source: HEAT_SOURCE_ID,
+      paint: {
+        // circle-radius: top-level zoom interpolate (no nesting inside case/*)
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 6, 6, 10, 10, 14, 16],
+        'circle-color': buildHeatColorExpression(heat.domain),
+        'circle-opacity': 0.85,
+        'circle-stroke-width': 1,
+        'circle-stroke-color': 'rgba(0,0,0,0.25)',
+        'circle-stroke-opacity': 0.6,
+      },
+    });
+  }
+}
+
+/** Remove the heat circle layer and its source (guarded — safe if absent). */
+export function removeHeatLayer(map: any): void {
+  if (map.getLayer(HEAT_LAYER_ID)) map.removeLayer(HEAT_LAYER_ID);
+  if (map.getSource(HEAT_SOURCE_ID)) map.removeSource(HEAT_SOURCE_ID);
+}
+
+// ---------------------------------------------------------------------------
+// Formation polygon layers
+// ---------------------------------------------------------------------------
+
+export const FORMATION_SOURCE_ID = 'formation-source';
+export const FORMATION_FILL_LAYER_ID = 'formation-fill';
+export const FORMATION_LINE_LAYER_ID = 'formation-line';
+export const FORMATION_LABEL_LAYER_ID = 'formation-label';
+
+// Formation colours (match on the 'formation' property).
+const FORMATION_FILL_COLOR = [
+  'match', ['get', 'formation'],
+  'Wolfcamp A',    '#7c3aed',  // violet
+  'Wolfcamp B',    '#0891b2',  // teal
+  'Wolfcamp D',    '#15803d',  // green
+  'Type-Curve Area', '#d97706', // amber
+  '#64748b',                    // fallback slate
+] as const;
+
+/**
+ * Add (or update) formation polygon layers: fill + line + symbol label.
+ * geojson is the geologyService FeatureCollection<Polygon, FormationProperties>.
+ * Idempotent: if source already exists calls setData; guards addLayer with getLayer.
+ */
+export function addFormationLayer(map: any, geojson: unknown): void {
+  if (map.getSource(FORMATION_SOURCE_ID)) {
+    map.getSource(FORMATION_SOURCE_ID).setData(geojson);
+  } else {
+    map.addSource(FORMATION_SOURCE_ID, { type: 'geojson', data: geojson });
+  }
+
+  if (!map.getLayer(FORMATION_FILL_LAYER_ID)) {
+    map.addLayer({
+      id: FORMATION_FILL_LAYER_ID,
+      type: 'fill',
+      source: FORMATION_SOURCE_ID,
+      paint: {
+        'fill-color': FORMATION_FILL_COLOR,
+        'fill-opacity': 0.10,
+      },
+    });
+  }
+
+  if (!map.getLayer(FORMATION_LINE_LAYER_ID)) {
+    map.addLayer({
+      id: FORMATION_LINE_LAYER_ID,
+      type: 'line',
+      source: FORMATION_SOURCE_ID,
+      paint: {
+        'line-color': FORMATION_FILL_COLOR,
+        'line-opacity': 0.55,
+        'line-width': 1.5,
+      },
+    });
+  }
+
+  if (!map.getLayer(FORMATION_LABEL_LAYER_ID)) {
+    map.addLayer({
+      id: FORMATION_LABEL_LAYER_ID,
+      type: 'symbol',
+      source: FORMATION_SOURCE_ID,
+      layout: {
+        'text-field': ['get', 'label'],
+        'text-size': 11,
+        'text-allow-overlap': false,
+        'text-optional': true,
+      },
+      paint: {
+        'text-color': '#f1f5f9',
+        'text-halo-color': 'rgba(0,0,0,0.7)',
+        'text-halo-width': 1.5,
+        'text-opacity': 0.85,
+      },
+    });
+  }
+}
+
+/**
+ * Remove the 3 formation layers and their source (guarded — safe if absent).
+ */
+export function removeFormationLayer(map: any): void {
+  if (map.getLayer(FORMATION_LABEL_LAYER_ID)) map.removeLayer(FORMATION_LABEL_LAYER_ID);
+  if (map.getLayer(FORMATION_LINE_LAYER_ID)) map.removeLayer(FORMATION_LINE_LAYER_ID);
+  if (map.getLayer(FORMATION_FILL_LAYER_ID)) map.removeLayer(FORMATION_FILL_LAYER_ID);
+  if (map.getSource(FORMATION_SOURCE_ID)) map.removeSource(FORMATION_SOURCE_ID);
+}
+
 export const WELL_SOURCE_ID = 'wells-source';
 export const WELL_CLUSTER_LAYER_ID = 'wells-clusters';
 const WELL_CLUSTER_COUNT_LAYER_ID = 'wells-cluster-count';
