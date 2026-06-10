@@ -1,5 +1,5 @@
 import React from 'react';
-import { mapOverlayControlClass } from './mapOverlayChrome';
+import { mapOverlayControlClass, mapOverlayIconButtonClass } from './mapOverlayChrome';
 
 export interface MapLayerVisibility {
   heat: boolean;
@@ -11,9 +11,6 @@ interface MapLayersControlProps {
   visibility: MapLayerVisibility;
   onToggle: (key: keyof MapLayerVisibility) => void;
 }
-
-const iconButtonClass =
-  'w-11 h-11 rounded-lg flex shrink-0 items-center justify-center touch-manipulation transition-colors';
 
 const layerButtons: ReadonlyArray<{
   key: keyof MapLayerVisibility;
@@ -68,7 +65,7 @@ export function MapLayersControl({ isClassic, visibility, onToggle }: MapLayersC
             aria-label={title}
             aria-pressed={active}
             data-testid={`map-layer-${key}`}
-            className={`${iconButtonClass} ${mapOverlayControlClass(isClassic, active)}`}
+            className={`${mapOverlayIconButtonClass} ${mapOverlayControlClass(isClassic, active)}`}
           >
             {icon}
           </button>

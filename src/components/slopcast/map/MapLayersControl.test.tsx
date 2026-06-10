@@ -22,6 +22,20 @@ describe('MapLayersControl', () => {
     expect(onToggle).toHaveBeenCalledWith('heat');
   });
 
+  it('calls onToggle("formations") when the formations button is clicked', () => {
+    const onToggle = vi.fn();
+    render(
+      <MapLayersControl
+        isClassic={false}
+        visibility={{ heat: false, formations: false }}
+        onToggle={onToggle}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('map-layer-formations'));
+    expect(onToggle).toHaveBeenCalledWith('formations');
+  });
+
   it('marks the heat button aria-pressed when heat is on', () => {
     render(
       <MapLayersControl
@@ -33,5 +47,18 @@ describe('MapLayersControl', () => {
 
     expect(screen.getByTestId('map-layer-heat').getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByTestId('map-layer-formations').getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('marks the formations button aria-pressed when formations is on (and heat off)', () => {
+    render(
+      <MapLayersControl
+        isClassic={false}
+        visibility={{ heat: false, formations: true }}
+        onToggle={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId('map-layer-formations').getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByTestId('map-layer-heat').getAttribute('aria-pressed')).toBe('false');
   });
 });
