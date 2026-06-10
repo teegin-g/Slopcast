@@ -33,6 +33,7 @@
  */
 
 import type { Well, DealMetrics } from '../types';
+import { djb2 } from '../utils/hash';
 
 // ---------------------------------------------------------------------------
 // Public interfaces
@@ -64,24 +65,11 @@ export interface HeatService {
 // ---------------------------------------------------------------------------
 
 /**
- * Tiny deterministic string hash (djb2-style). Returns a non-negative integer.
- * Never uses Math.random() — determinism is a hard requirement.
- */
-function hashStringToInt(s: string): number {
-  let hash = 5381;
-  for (let i = 0; i < s.length; i++) {
-    hash = (hash * 33) ^ s.charCodeAt(i);
-  }
-  // >>> 0 coerces to unsigned 32-bit, ensuring a non-negative result.
-  return hash >>> 0;
-}
-
-/**
  * Deterministic per-well jitter factor in [0.85, 1.15].
  * djb2hash(wellId) % 31 → 0..30, divided by 100 → 0.00..0.30, plus 0.85.
  */
 function jitterFactor(wellId: string): number {
-  return 0.85 + (hashStringToInt(wellId) % 31) / 100;
+  return 0.85 + (djb2(wellId) % 31) / 100;
 }
 
 /**

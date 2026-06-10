@@ -19,16 +19,11 @@ import {
 } from '../../../services/projectRepository';
 import { ECONOMICS_ENGINE_VERSION } from '../../../services/economicsEngine';
 import { ECONOMICS_INPUT_SCHEMA_VERSION, stableStringify } from '../../../utils/economics';
+import { djb2Hex } from '../../../utils/hash';
 
 const MIGRATION_KEY = 'slopcast-supabase-v1-migrated';
 
-const buildHash = (value: string): string => {
-  let hash = 5381;
-  for (let i = 0; i < value.length; i += 1) {
-    hash = (hash * 33) ^ value.charCodeAt(i);
-  }
-  return `h-${(hash >>> 0).toString(16)}`;
-};
+const buildHash = (value: string): string => `h-${djb2Hex(value)}`;
 
 const sameIdMap = (map: Record<string, string>) => Object.keys(map).every((key) => key === map[key]);
 

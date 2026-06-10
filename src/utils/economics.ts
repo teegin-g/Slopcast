@@ -3,6 +3,7 @@ import type { Well, WellGroup } from '../types';
 import type { TypeCurveParams, CapexAssumptions, CommodityPricingAssumptions, MonthlyCashFlow, DealMetrics, OpexAssumptions, OwnershipAssumptions, JvAgreement, TaxAssumptions, DebtAssumptions, ReserveCategory, ForecastSegment, CutoffKind, EconomicsCalculationInput } from '../types';
 import type { Scenario, SensitivityVariable, SensitivityMatrixResult, ScheduleParams } from '../types';
 import { DEFAULT_RESERVE_RISK_FACTORS } from '../constants';
+import { djb2Hex } from './hash';
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
@@ -64,12 +65,8 @@ export const normalizeEconomicsCalculationInput = (
 });
 
 export const buildEconomicsInputHash = (input: EconomicsCalculationInput): string => {
-  let hash = 5381;
   const value = stableStringify(normalizeEconomicsCalculationInput(input));
-  for (let i = 0; i < value.length; i += 1) {
-    hash = (hash * 33) ^ value.charCodeAt(i);
-  }
-  return `${ECONOMICS_INPUT_SCHEMA_VERSION}:${(hash >>> 0).toString(16)}`;
+  return `${ECONOMICS_INPUT_SCHEMA_VERSION}:${djb2Hex(value)}`;
 };
 
 const cachedCalculateEconomics = (
