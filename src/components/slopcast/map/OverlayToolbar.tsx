@@ -7,6 +7,7 @@ import {
   mapOverlayControlClass,
   mapOverlayDividerClass,
 } from './mapOverlayChrome';
+import { MapLayersControl, type MapLayerVisibility } from './MapLayersControl';
 
 const spinKeyframes = `@keyframes spin { to { transform: rotate(360deg) } }
 @keyframes source-flash { 0%,100% { opacity: 1 } 50% { opacity: 0.3 } }`;
@@ -31,6 +32,8 @@ interface OverlayToolbarProps {
   dataSourceId?: SpatialDataSourceId;
   onSourceChange?: (sourceId: SpatialDataSourceId) => void;
   fallbackActive?: boolean;
+  layerVisibility?: MapLayerVisibility;
+  onToggleMapLayer?: (key: keyof MapLayerVisibility) => void;
 }
 
 const iconButtonClass =
@@ -241,6 +244,8 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
   dataSourceId,
   onSourceChange,
   fallbackActive,
+  layerVisibility,
+  onToggleMapLayer,
 }) => {
   const { theme } = useTheme();
   const panelClass = isClassic
@@ -309,6 +314,17 @@ export const OverlayToolbar: React.FC<OverlayToolbarProps> = ({
             {icon}
           </ToolButton>
         ))}
+
+        {layerVisibility && onToggleMapLayer && (
+          <>
+            <div className={`h-px my-0.5 ${mapOverlayDividerClass(isClassic)}`} />
+            <MapLayersControl
+              isClassic={isClassic}
+              visibility={layerVisibility}
+              onToggle={onToggleMapLayer}
+            />
+          </>
+        )}
 
         <div className={`flex flex-col items-center gap-1 pt-1 ${footerTextClass} text-[9px] md:text-[8px]`}>
           {isLoading ? (

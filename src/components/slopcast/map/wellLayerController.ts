@@ -1,4 +1,196 @@
+import type { ExpressionSpecification } from 'mapbox-gl';
 import type { Well } from '../../../types';
+import type { HeatResult } from '../../../services/heatService';
+
+// ---------------------------------------------------------------------------
+// Economics heat layer
+// ---------------------------------------------------------------------------
+
+export const HEAT_SOURCE_ID = 'heat-source';
+export const HEAT_LAYER_ID = 'heat-circles';
+
+/**
+ * Build a circle-color interpolate expression over the NPV/acre domain
+ * (min → cool, max → warm). Top-level interpolate on ['get','npvPerAcre']
+ * (a DATA expression, never zoom).
+ *
+ * Guard: when min === max (single-value domain), nudge max by 1 so Mapbox
+ * receives strictly-ascending stop inputs (stops must be strictly increasing).
+ */
+export function buildHeatColorExpression(domain: { min: number; max: number }): ExpressionSpecification {
+  const lo = domain.min;
+  const hi = domain.max === domain.min ? domain.min + 1 : domain.max;
+  const mid = lo + (hi - lo) / 2;
+  return [
+    'interpolate', ['linear'], ['get', 'npvPerAcre'],
+    lo,  '#2b6cb0',  // cool blue  — low NPV/acre
+    mid, '#f6c453',  // warm gold  — mid NPV/acre
+    hi,  '#e53e3e',  // hot red    — high NPV/acre
+  ] as unknown as ExpressionSpecification;
+}
+
+/**
+ * Add (or update) an economics-heat circle layer. Builds a GeoJSON
+ * FeatureCollection from wells joined with heat values, colours circles by
+ * npvPerAcre. Idempotent: updates source data if source already present;
+ * guards addLayer with getLayer. Re-bakes circle-color every call so a
+ * changed domain (toggle off/on, re-run economics) is reflected.
+ *
+ * @param beforeId optional layer id to insert below — defaults to the well
+ *   glow layer so heat circles sit UNDER the well markers/labels/selection.
+ */
+export function addHeatLayer(
+  map: any,
+  wells: Well[],
+  heat: HeatResult,
+  beforeId?: string,
+): void {
+  // O(1) lookup: build a Map once instead of find-in-loop.
+  const heatMap = new Map<string, number>(heat.values.map((v) => [v.wellId, v.npvPerAcre]));
+
+  const features = wells
+    .map((well) => ({
+      type: 'Feature' as const,
+      id: well.id,
+      geometry: { type: 'Point' as const, coordinates: [well.lng, well.lat] },
+      properties: { npvPerAcre: heatMap.get(well.id) ?? 0 },
+    }));
+
+  const geojson = { type: 'FeatureCollection' as const, features };
+
+  if (map.getSource(HEAT_SOURCE_ID)) {
+    map.getSource(HEAT_SOURCE_ID).setData(geojson);
+  } else {
+    map.addSource(HEAT_SOURCE_ID, { type: 'geojson', data: geojson });
+  }
+
+  if (!map.getLayer(HEAT_LAYER_ID)) {
+    // Insert UNDER the well chrome so heat circles never occlude markers/labels.
+    const insertBefore = beforeId ?? (map.getLayer(WELL_GLOW_LAYER_ID) ? WELL_GLOW_LAYER_ID : undefined);
+    map.addLayer({
+      id: HEAT_LAYER_ID,
+      type: 'circle',
+      source: HEAT_SOURCE_ID,
+      paint: {
+        // circle-radius: top-level zoom interpolate (no nesting inside case/*)
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 6, 6, 10, 10, 14, 16],
+        'circle-color': buildHeatColorExpression(heat.domain),
+        'circle-opacity': 0.85,
+        'circle-stroke-width': 1,
+        'circle-stroke-color': 'rgba(0,0,0,0.25)',
+        'circle-stroke-opacity': 0.6,
+      },
+    }, insertBefore);
+  }
+
+  // Re-bake color OUTSIDE the getLayer guard so a changed domain refreshes on
+  // every call (mirrors updateSectionLayerPaint). Avoids stale colors.
+  if (map.getLayer(HEAT_LAYER_ID)) {
+    map.setPaintProperty(HEAT_LAYER_ID, 'circle-color', buildHeatColorExpression(heat.domain));
+  }
+}
+
+/** Remove the heat circle layer and its source (guarded — safe if absent). */
+export function removeHeatLayer(map: any): void {
+  if (map.getLayer(HEAT_LAYER_ID)) map.removeLayer(HEAT_LAYER_ID);
+  if (map.getSource(HEAT_SOURCE_ID)) map.removeSource(HEAT_SOURCE_ID);
+}
+
+// ---------------------------------------------------------------------------
+// Formation polygon layers
+// ---------------------------------------------------------------------------
+
+export const FORMATION_SOURCE_ID = 'formation-source';
+export const FORMATION_FILL_LAYER_ID = 'formation-fill';
+export const FORMATION_LINE_LAYER_ID = 'formation-line';
+export const FORMATION_LABEL_LAYER_ID = 'formation-label';
+
+// Formation colours (match on the 'formation' property).
+const FORMATION_FILL_COLOR = [
+  'match', ['get', 'formation'],
+  'Wolfcamp A',    '#7c3aed',  // violet
+  'Wolfcamp B',    '#0891b2',  // teal
+  'Wolfcamp D',    '#15803d',  // green
+  'Type-Curve Area', '#d97706', // amber
+  '#64748b',                    // fallback slate
+] as const;
+
+/**
+ * Add (or update) formation polygon layers: fill + line + symbol label.
+ * geojson is the geologyService FeatureCollection<Polygon, FormationProperties>.
+ * Idempotent: if source already exists calls setData; guards addLayer with getLayer.
+ */
+export function addFormationLayer(map: any, geojson: unknown): void {
+  if (map.getSource(FORMATION_SOURCE_ID)) {
+    map.getSource(FORMATION_SOURCE_ID).setData(geojson);
+  } else {
+    map.addSource(FORMATION_SOURCE_ID, { type: 'geojson', data: geojson });
+  }
+
+  // Insert fill + line UNDER the well glow, and the label UNDER the well labels,
+  // so formation polygons never occlude well markers/labels. Guard each beforeId
+  // so it's safe when wells aren't mounted yet.
+  const beforeGlow = map.getLayer(WELL_GLOW_LAYER_ID) ? WELL_GLOW_LAYER_ID : undefined;
+  const beforeLabel = map.getLayer(WELL_LABEL_LAYER_ID) ? WELL_LABEL_LAYER_ID : undefined;
+
+  if (!map.getLayer(FORMATION_FILL_LAYER_ID)) {
+    map.addLayer({
+      id: FORMATION_FILL_LAYER_ID,
+      type: 'fill',
+      source: FORMATION_SOURCE_ID,
+      minzoom: 9,
+      paint: {
+        'fill-color': FORMATION_FILL_COLOR,
+        'fill-opacity': 0.10,
+      },
+    }, beforeGlow);
+  }
+
+  if (!map.getLayer(FORMATION_LINE_LAYER_ID)) {
+    map.addLayer({
+      id: FORMATION_LINE_LAYER_ID,
+      type: 'line',
+      source: FORMATION_SOURCE_ID,
+      minzoom: 9,
+      paint: {
+        'line-color': FORMATION_FILL_COLOR,
+        'line-opacity': 0.55,
+        'line-width': 1.5,
+      },
+    }, beforeGlow);
+  }
+
+  if (!map.getLayer(FORMATION_LABEL_LAYER_ID)) {
+    map.addLayer({
+      id: FORMATION_LABEL_LAYER_ID,
+      type: 'symbol',
+      source: FORMATION_SOURCE_ID,
+      minzoom: 10,
+      layout: {
+        'text-field': ['get', 'label'],
+        'text-size': 11,
+        'text-allow-overlap': false,
+        'text-optional': true,
+      },
+      paint: {
+        'text-color': '#f1f5f9',
+        'text-halo-color': 'rgba(0,0,0,0.7)',
+        'text-halo-width': 1.5,
+        'text-opacity': 0.85,
+      },
+    }, beforeLabel);
+  }
+}
+
+/**
+ * Remove the 3 formation layers and their source (guarded — safe if absent).
+ */
+export function removeFormationLayer(map: any): void {
+  if (map.getLayer(FORMATION_LABEL_LAYER_ID)) map.removeLayer(FORMATION_LABEL_LAYER_ID);
+  if (map.getLayer(FORMATION_LINE_LAYER_ID)) map.removeLayer(FORMATION_LINE_LAYER_ID);
+  if (map.getLayer(FORMATION_FILL_LAYER_ID)) map.removeLayer(FORMATION_FILL_LAYER_ID);
+  if (map.getSource(FORMATION_SOURCE_ID)) map.removeSource(FORMATION_SOURCE_ID);
+}
 
 export const WELL_SOURCE_ID = 'wells-source';
 export const WELL_CLUSTER_LAYER_ID = 'wells-clusters';
@@ -114,9 +306,28 @@ export function addWellSourceAndLayers(map: any, geoJson: unknown, colorMatchExp
   }
 }
 
+/**
+ * Build a circle-radius expression that interpolates on zoom AND enlarges when
+ * the feature is selected. Mapbox forbids nesting a zoom expression inside
+ * `case`/`*`, so selection is applied to each interpolate STOP OUTPUT instead.
+ * @param stops three radii [z6, z10, z14]
+ * @param selectedMultiplier scale factor when feature-state `selected` is true
+ */
+export function buildStatusRadius(
+  stops: readonly [number, number, number],
+  selectedMultiplier: number,
+): ExpressionSpecification {
+  const selected = ['boolean', ['feature-state', 'selected'], false];
+  const stopFor = (r: number) => ['case', selected, r * selectedMultiplier, r];
+  return [
+    'interpolate', ['linear'], ['zoom'],
+    6, stopFor(stops[0]),
+    10, stopFor(stops[1]),
+    14, stopFor(stops[2]),
+  ];
+}
+
 function addWellStatusLayers(map: any, colorMatchExpr: unknown, theme: WellLayerTheme) {
-  const defaultRadius = ['interpolate', ['linear'], ['zoom'], 6, 4, 10, 7, 14, 11];
-  const permitRadius = ['interpolate', ['linear'], ['zoom'], 6, 3, 10, 5, 14, 8];
   const selectedState = ['boolean', ['feature-state', 'selected'], false];
   const dimmedState = ['boolean', ['feature-state', 'dimmed'], false];
   const visibleState = ['boolean', ['feature-state', 'visible'], true];
@@ -155,7 +366,7 @@ function addWellStatusLayers(map: any, colorMatchExpr: unknown, theme: WellLayer
       source: WELL_SOURCE_ID,
       filter: ['==', ['get', 'status'], 'PRODUCING'],
       paint: {
-        'circle-radius': ['case', selectedState, ['*', defaultRadius, 1.25], defaultRadius],
+        'circle-radius': buildStatusRadius([4, 7, 11], 1.25),
         'circle-color': colorMatchExpr,
         'circle-stroke-width': ['case', selectedState, 3, 0],
         'circle-stroke-color': theme.selectedStroke,
@@ -173,7 +384,7 @@ function addWellStatusLayers(map: any, colorMatchExpr: unknown, theme: WellLayer
       source: WELL_SOURCE_ID,
       filter: ['==', ['get', 'status'], 'DUC'],
       paint: {
-        'circle-radius': defaultRadius,
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 6, 4, 10, 7, 14, 11],
         'circle-color': colorMatchExpr,
         'circle-opacity': ['case', dimmedState, 0.1, visibleState, 0.2, 0.1],
         'circle-stroke-width': ['case', selectedState, 3.5, 2],
@@ -190,7 +401,7 @@ function addWellStatusLayers(map: any, colorMatchExpr: unknown, theme: WellLayer
       source: WELL_SOURCE_ID,
       filter: ['==', ['get', 'status'], 'PERMIT'],
       paint: {
-        'circle-radius': ['case', selectedState, ['*', permitRadius, 1.25], permitRadius],
+        'circle-radius': buildStatusRadius([3, 5, 8], 1.25),
         'circle-color': colorMatchExpr,
         'circle-stroke-width': ['case', selectedState, 3, 0],
         'circle-stroke-color': theme.selectedStroke,

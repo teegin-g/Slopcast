@@ -7,13 +7,16 @@ import {
   mapOverlayDividerClass,
   mapOverlayMenuClass,
 } from './mapOverlayChrome';
+import { STATUS_COLORS } from './groupInspectorStats';
 
 interface OverlayFiltersBarProps {
   isClassic: boolean;
   visibleCount: number;
   selectedCount: number;
   totalCount: number;
-  groupsPanelOpen: boolean;
+  activeGroupName?: string;
+  activeGroupColor?: string;
+  statusCounts?: { producing: number; duc: number; permit: number };
   operatorFilter: Set<string>;
   formationFilter: Set<string>;
   statusFilter: Set<string>;
@@ -114,7 +117,9 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
   visibleCount,
   selectedCount,
   totalCount,
-  groupsPanelOpen,
+  activeGroupName,
+  activeGroupColor,
+  statusCounts,
   operatorFilter,
   formationFilter,
   statusFilter,
@@ -141,12 +146,45 @@ export const OverlayFiltersBar: React.FC<OverlayFiltersBarProps> = ({
 
   return (
     <div
-      className={`absolute top-3 z-20 pointer-events-auto transition-all duration-200 ${
-        groupsPanelOpen ? 'left-[300px]' : 'left-3'
-      } right-[56px]`}
+      data-testid="map-context-strip"
+      className="absolute top-3 left-3 right-[56px] z-20 pointer-events-auto"
     >
       <div className={`${panelClass} px-3 py-2`}>
         <div className="flex items-center gap-3 flex-wrap">
+          {/* Active group context */}
+          {activeGroupName && (
+            <>
+              <div className="flex items-center gap-2 shrink-0" data-testid="map-context-group">
+                <span
+                  aria-hidden="true"
+                  className="inline-block w-2 h-2 rounded-full shrink-0"
+                  style={{ background: activeGroupColor ?? 'var(--text-muted)' }}
+                />
+                <span className={`text-[10px] font-black tabular-nums ${isClassic ? 'text-white' : 'text-[var(--text-primary)]'}`}>
+                  {activeGroupName}
+                </span>
+                {statusCounts && (
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-black tabular-nums" style={{ color: STATUS_COLORS.PRODUCING }}>
+                      {statusCounts.producing} P
+                    </span>
+                    <span className={`text-[10px] font-black ${isClassic ? 'text-white/30' : 'text-[var(--text-muted)]/60'}`}>·</span>
+                    <span className="text-[10px] font-black tabular-nums" style={{ color: STATUS_COLORS.DUC }}>
+                      {statusCounts.duc} D
+                    </span>
+                    <span className={`text-[10px] font-black ${isClassic ? 'text-white/30' : 'text-[var(--text-muted)]/60'}`}>·</span>
+                    <span className="text-[10px] font-black tabular-nums" style={{ color: STATUS_COLORS.PERMIT }}>
+                      {statusCounts.permit} Pm
+                    </span>
+                  </span>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div className={`w-px h-4 ${mapOverlayDividerClass(isClassic)}`} />
+            </>
+          )}
+
           {/* Well counts */}
           <div className="flex items-center gap-2 shrink-0">
             <span className={`text-[10px] font-black tabular-nums ${isClassic ? 'text-white' : 'text-[var(--cyan)]'}`}>

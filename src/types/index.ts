@@ -1,4 +1,5 @@
 export * from './economics';
+export * from './production';
 export * from './wells';
 export * from './scenarios';
 export * from './deals';

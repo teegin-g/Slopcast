@@ -25,6 +25,7 @@ const FX_QUERY_KEY = 'fx';
 const FX_STORAGE_KEY_PREFIX = 'slopcast-fx-';
 const ANALYSIS_OPEN_SECTION_KEY = 'slopcast-analysis-open-section';
 const SIDEBAR_COLLAPSED_KEY = 'slopcast-sidebar-collapsed';
+const PANEL_COLLAPSED_KEY_PREFIX = 'slopcast-panel-';
 const ENGINE_ID_KEY = 'slopcast_engine_id';
 const ONBOARDING_KEY = 'slopcast-onboarding-done';
 const WELL_FILTER_KEY_PREFIX = 'slopcast_filter_';
@@ -169,6 +170,23 @@ export function getSidebarCollapsed(): boolean | null {
 
 export function setSidebarCollapsed(collapsed: boolean): void {
   safeSet(SIDEBAR_COLLAPSED_KEY, collapsed ? '1' : '0');
+}
+
+// ─── Panel collapse ───────────────────────────────────────────────────────────
+
+export type PanelKey = 'groups' | 'inspector';
+
+const panelCollapsedKey = (key: PanelKey) => `${PANEL_COLLAPSED_KEY_PREFIX}${key}-collapsed`;
+
+export function getPanelCollapsed(key: PanelKey): boolean | null {
+  const raw = safeGet(panelCollapsedKey(key));
+  if (raw === '1') return true;
+  if (raw === '0') return false;
+  return null; // not yet stored — let caller decide default
+}
+
+export function setPanelCollapsed(key: PanelKey, collapsed: boolean): void {
+  safeSet(panelCollapsedKey(key), collapsed ? '1' : '0');
 }
 
 // ─── Engine preference ───────────────────────────────────────────────────────
