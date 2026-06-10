@@ -10,6 +10,7 @@
 
 import type { Well, TypeCurveParams, WellProductionSeries, MonthlyProduction } from '../types';
 import { calculateEconomics } from '../utils/economics';
+import { djb2 } from '../utils/hash';
 import {
   DEFAULT_CAPEX,
   DEFAULT_COMMODITY_PRICING,
@@ -32,26 +33,12 @@ export interface ProductionService {
 // ---------------------------------------------------------------------------
 
 /**
- * Tiny deterministic string hash (djb2-ish). Returns a non-negative integer.
- * Used exclusively for deriving per-well mock first-production month staggering.
- * Never call Math.random() here — determinism is a hard requirement.
- */
-function hashStringToInt(s: string): number {
-  let hash = 5381;
-  for (let i = 0; i < s.length; i++) {
-    hash = (hash * 33) ^ s.charCodeAt(i);
-  }
-  // >>> 0 coerces to unsigned 32-bit integer, ensuring non-negative result
-  return hash >>> 0;
-}
-
-/**
  * Derive a small deterministic per-well month stagger (0..5 months)
  * from the well's id. Simulates real-world staggered spud dates without
  * introducing non-determinism (Math.random). Range is 0..5 inclusive.
  */
 function wellMonthOffset(wellId: string): number {
-  return hashStringToInt(wellId) % 6;
+  return djb2(wellId) % 6;
 }
 
 // ---------------------------------------------------------------------------

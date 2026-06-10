@@ -1,3 +1,10 @@
+/**
+ * Shared base class for square map-overlay icon buttons (tool rail + layers
+ * control). Pair with `mapOverlayControlClass(isClassic, active)` for theming.
+ */
+export const mapOverlayIconButtonClass =
+  'w-11 h-11 rounded-lg flex shrink-0 items-center justify-center touch-manipulation transition-colors';
+
 export function mapOverlayControlClass(isClassic: boolean, active = false): string {
   if (isClassic) {
     return active

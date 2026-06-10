@@ -11,7 +11,10 @@ vi.mock('../services/spatialService', () => ({
   fetchConnectionStatus: (...args: any[]) => mockFetchConnectionStatus(...args),
 }));
 
-import { useConnectionStatus } from './useConnectionStatus';
+import {
+  useConnectionStatus,
+  __resetConnectionStatusStoreForTests,
+} from './useConnectionStatus';
 import type { SpatialConnectionStatus } from '../services/spatialService';
 
 // ---------------------------------------------------------------------------
@@ -59,6 +62,7 @@ describe('useConnectionStatus', () => {
 
   afterEach(() => {
     cleanup();
+    __resetConnectionStatusStoreForTests();
     vi.useRealTimers();
   });
 
@@ -145,5 +149,88 @@ describe('useConnectionStatus', () => {
     // 60s total — should have polled
     await advanceAndFlush(30_000);
     expect(mockFetchConnectionStatus.mock.calls.length).toBeGreaterThan(callsAfterInit);
+  });
+
+  // -------------------------------------------------------------------------
+  // Dedup (follow-up #26): two consumers on the same source share one poll loop
+  // -------------------------------------------------------------------------
+
+  it('two consumers of the same source share a SINGLE initial fetch', async () => {
+    const status = makeStatus({ connected: true, source: 'databricks' });
+    mockFetchConnectionStatus.mockResolvedValue(status);
+
+    // Mirrors production: AppShell header chip + MapCommandCenter source-policy
+    // hook both observe the same sourceId.
+    const a = renderHook(() => useConnectionStatus('live'));
+    const b = renderHook(() => useConnectionStatus('live'));
+
+    await advanceAndFlush(0);
+
+    // ONE network request despite two mounted consumers.
+    expect(mockFetchConnectionStatus).toHaveBeenCalledTimes(1);
+    // Both consumers receive the shared snapshot.
+    expect(a.result.current.status).toEqual(status);
+    expect(b.result.current.status).toEqual(status);
+    expect(a.result.current.isInitializing).toBe(false);
+    expect(b.result.current.isInitializing).toBe(false);
+  });
+
+  it('two consumers share a single recurring poll (not one each)', async () => {
+    mockFetchConnectionStatus.mockResolvedValue(makeStatus({ connected: true }));
+
+    renderHook(() => useConnectionStatus('live'));
+    renderHook(() => useConnectionStatus('live'));
+
+    await advanceAndFlush(0);
+    expect(mockFetchConnectionStatus).toHaveBeenCalledTimes(1);
+
+    // After one 30s interval there should be exactly ONE additional fetch,
+    // not two (which is the double-poll bug this dedup fixes).
+    await advanceAndFlush(30_000);
+    expect(mockFetchConnectionStatus).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps polling while one of two consumers stays mounted', async () => {
+    mockFetchConnectionStatus.mockResolvedValue(makeStatus({ connected: true }));
+
+    const a = renderHook(() => useConnectionStatus('live'));
+    renderHook(() => useConnectionStatus('live'));
+
+    await advanceAndFlush(0);
+    expect(mockFetchConnectionStatus).toHaveBeenCalledTimes(1);
+
+    // Unmount one consumer — the shared loop must survive for the other.
+    a.unmount();
+
+    await advanceAndFlush(30_000);
+    expect(mockFetchConnectionStatus).toHaveBeenCalledTimes(2);
+  });
+
+  it('different sources poll independently (not deduped together)', async () => {
+    mockFetchConnectionStatus.mockResolvedValue(makeStatus());
+
+    renderHook(() => useConnectionStatus('live'));
+    renderHook(() => useConnectionStatus('mock'));
+
+    await advanceAndFlush(0);
+
+    // Distinct sources → distinct loops → two initial fetches.
+    expect(mockFetchConnectionStatus).toHaveBeenCalledTimes(2);
+  });
+
+  it('a late second consumer reuses the already-fetched snapshot without refetching', async () => {
+    const status = makeStatus({ connected: true });
+    mockFetchConnectionStatus.mockResolvedValue(status);
+
+    renderHook(() => useConnectionStatus('live'));
+    await advanceAndFlush(0);
+    expect(mockFetchConnectionStatus).toHaveBeenCalledTimes(1);
+
+    // Second consumer mounts later — should immediately see the cached snapshot
+    // and not trigger a fresh fetch.
+    const late = renderHook(() => useConnectionStatus('live'));
+    expect(late.result.current.status).toEqual(status);
+    expect(late.result.current.isInitializing).toBe(false);
+    expect(mockFetchConnectionStatus).toHaveBeenCalledTimes(1);
   });
 });

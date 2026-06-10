@@ -121,3 +121,16 @@ export function useTheme(): ThemeContextValue {
   if (!ctx) throw new Error('useTheme() must be used within <ThemeProvider>');
   return ctx;
 }
+
+/**
+ * Non-throwing variant of {@link useTheme}: returns `null` when no
+ * `<ThemeProvider>` is above in the tree instead of throwing.
+ *
+ * Use this ONLY at boundaries that must stay resilient even if they transiently
+ * render outside the provider — e.g. the auth gate, which can briefly mount
+ * during dev HMR/lazy-route recovery before the provider re-stitches. Everywhere
+ * else, prefer the strict {@link useTheme} so genuine provider-order bugs throw.
+ */
+export function useThemeOptional(): ThemeContextValue | null {
+  return useContext(ThemeContext);
+}

@@ -6,6 +6,7 @@ import { overlayPanelClass } from '../../../theme/themes';
 import {
   mapOverlayControlClass,
   mapOverlayDividerClass,
+  mapOverlayIconButtonClass,
 } from './mapOverlayChrome';
 import { MapLayersControl, type MapLayerVisibility } from './MapLayersControl';
 
@@ -35,9 +36,6 @@ interface OverlayToolbarProps {
   layerVisibility?: MapLayerVisibility;
   onToggleMapLayer?: (key: keyof MapLayerVisibility) => void;
 }
-
-const iconButtonClass =
-  'w-11 h-11 rounded-lg flex shrink-0 items-center justify-center touch-manipulation transition-colors';
 
 const layerButtons: ReadonlyArray<{ key: ToolbarLayerKey; title: string; icon: React.ReactNode }> = [
   {
@@ -164,7 +162,7 @@ const ToolButton: React.FC<{
     title={title}
     aria-label={title}
     aria-pressed={active}
-    className={`${iconButtonClass} ${mapOverlayControlClass(isClassic, active)}`}
+    className={`${mapOverlayIconButtonClass} ${mapOverlayControlClass(isClassic, active)}`}
   >
     {children}
   </button>

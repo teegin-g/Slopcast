@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useThemeOptional } from '../../theme/ThemeProvider';
 import { useAuth } from '../../auth/AuthProvider';
 
 interface ProtectedRouteProps {
@@ -9,8 +9,11 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { status } = useAuth();
-  const { theme } = useTheme();
-  const isClassic = theme.features.isClassicTheme;
+  // Auth gate must not hard-crash just to style its loading panel. useThemeOptional
+  // returns null if this transiently mounts outside <ThemeProvider> (dev HMR /
+  // lazy-route recovery); default to non-classic styling rather than throw.
+  const themeCtx = useThemeOptional();
+  const isClassic = themeCtx?.theme.features.isClassicTheme ?? false;
   const location = useLocation();
 
   if (status === 'loading') {
