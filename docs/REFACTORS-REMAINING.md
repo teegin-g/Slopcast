@@ -47,6 +47,42 @@
 - **Suggested approach:** Per-background, only with side-by-side animation A/B;
   otherwise leave — the duplication is contained.
 
+### #28 — Permian FX `glBlitFramebuffer` WebGL warnings (assessed: document, don't blind-fix)
+- **Symptom (reproduced 2026-06-10):** switching into the **Permian** theme emits
+  a burst of ~170 identical console **warnings** (not errors):
+  `GL_INVALID_OPERATION: glBlitFramebuffer: Read and write depth stencil
+  attachments cannot be the same image`, then the browser self-throttles
+  (`WebGL: too many errors, no more errors will be reported`). The map, markers,
+  inspector, dock and atmosphere all render correctly (screenshot-verified).
+- **Source (confirmed, not "FX themes" plural):** only **Permian** — its R3F
+  `<EffectComposer>` in `src/components/permian/PermianPostFx.tsx`. **Mario is
+  NOT a source** (it's a 2D-canvas background via `useCanvasBackground`, can't emit
+  `glBlitFramebuffer`); the earlier "Permian + Mario" note conflated them.
+- **Root cause:** the composer's main render targets allocate a **combined
+  depth+stencil** attachment (postprocessing default `depthBuffer:true`,
+  `stencilBuffer:false`), and the **GodRays** pass samples scene depth. During the
+  composer's ping-pong blit, the read and write targets reference the same
+  depth-stencil image, which WebGL2 flags on every `blitFramebuffer`. One warning
+  per blit per frame → the burst. Known upstream behaviour of
+  `postprocessing` 6.39 / `@react-three/postprocessing` 3.0.4 / three 0.170 with a
+  depth-dependent effect (GodRays) in the chain.
+- **Impact:** cosmetic console noise + (potential) minor GPU validation overhead.
+  No incorrect rendering, no crash, not a regression (FX files predate this branch;
+  last touched 7 weeks ago).
+- **Why deferred (not fixed here):** Permian is a **design-locked, pixel-sensitive
+  cinematic theme**. Every plausible fix touches the GodRays render path —
+  e.g. on `<EffectComposer>`: `stencilBuffer={false}` is already the default;
+  `multisampling` is `0`; reordering GodRays, giving it its own depth texture, or
+  setting `frameBufferType`/`depthBuffer` — any of which **can change** the rendered
+  god-rays/bloom output. Per CLAUDE.md + the map-workbench locked decisions, FX
+  changes require side-by-side **pixel A/B** verification, which is out of scope for
+  a code-quality follow-up.
+- **Suggested fix path (when someone does the A/B):** try, in increasing risk:
+  (1) bump `@react-three/postprocessing` / `postprocessing` to a version where the
+  depth-stencil-share blit is patched, then re-check; (2) give GodRays a dedicated
+  depth texture / `DepthDownsamplingPass` so the shared-attachment blit is avoided;
+  (3) split depth and stencil. Screenshot Permian (Noon + Dusk) vs `main` for each.
+
 ### R6-09 / R6-17 / R6-18 — fixtures / playground / snapshot-script reorg
 - **Why still deferred:** `playground/` notebooks (DCA Sandbox, sensitivity_demo,
   type_curve_analysis) and `fixtures/` look like intentional dev assets; moving
