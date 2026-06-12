@@ -593,10 +593,12 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
   }, [activeGroup, activeGroupWells]);
 
   // Economics-heat layer — recolours wells by NPV/acre. Re-bakes when wells or
-  // the active group's metrics change. Guarded: the style may be mid-load.
+  // the active group's metrics change. Gated on isLoaded (not mapReady) so we
+  // never addLayer before the style finishes loading. mapLayerEpoch is bumped
+  // on basemap swap (after wells re-mount), re-adding the overlay on top.
   // Off-path returns early so getNpvPerAcre is never called when heat is off.
   useEffect(() => {
-    if (!map || !mapReady) return;
+    if (!map || !isLoaded) return;
     if (!layerVisibility.heat) {
       try { removeHeatLayer(map); } catch (e) { console.warn('[map] removeHeatLayer failed', e); }
       return () => { if (map) { try { removeHeatLayer(map); } catch { /* map torn down */ } } };
@@ -605,17 +607,19 @@ export const MapCommandCenter: React.FC<MapCommandCenterProps> = ({
       addHeatLayer(map, effectiveWells, getNpvPerAcre(effectiveWells, activeGroup?.metrics));
     } catch (e) { console.warn('[map] addHeatLayer failed', e); }
     return () => { if (map) { try { removeHeatLayer(map); } catch { /* map torn down */ } } };
-  }, [map, mapReady, layerVisibility.heat, effectiveWells, activeGroup]);
+  }, [map, isLoaded, layerVisibility.heat, effectiveWells, activeGroup, mapLayerEpoch]);
 
   // Formation polygon layers (fill + line + label). Static mock polygons.
+  // Gated on isLoaded; re-runs on mapLayerEpoch so the polygons survive a
+  // basemap swap (setStyle wipes all custom layers).
   useEffect(() => {
-    if (!map || !mapReady) return;
+    if (!map || !isLoaded) return;
     try {
       if (layerVisibility.formations) addFormationLayer(map, getFormationPolygons());
       else removeFormationLayer(map);
     } catch (e) { console.warn('[map] formation layer failed', e); }
     return () => { if (map) { try { removeFormationLayer(map); } catch { /* map torn down */ } } };
-  }, [map, mapReady, layerVisibility.formations]);
+  }, [map, isLoaded, layerVisibility.formations, mapLayerEpoch]);
 
   return (
     <div className="flex w-full h-[calc(100vh-64px)] overflow-hidden" data-testid="map-command-center">
